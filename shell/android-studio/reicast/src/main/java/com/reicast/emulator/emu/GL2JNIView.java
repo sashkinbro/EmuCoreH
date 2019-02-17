@@ -172,7 +172,7 @@ public class GL2JNIView extends GLSurfaceView
 
             throw new EmulatorInitFailed();
         }
-        JNIdc.query(ethd);
+        // FIXME JNIdc.query((ethd);
 
         // By default, GLSurfaceView() creates a RGB_565 opaque surface.
         // If we want a translucent one, we should change the surface's
@@ -570,9 +570,9 @@ public class GL2JNIView extends GLSurfaceView
         {
             gl.glViewport(0, 0, width, height);
             if (Emulator.widescreen) {
-                JNIdc.rendinit(width, height);
+                // FIXME JNIdc.rendinit(width, height);
             } else {
-                JNIdc.rendinit(height * (4 / 3), height);
+                // FIXME JNIdc.rendinit(height * (4 / 3), height);
             }
         }
 
@@ -652,7 +652,7 @@ public class GL2JNIView extends GLSurfaceView
                 Player.play();
             }
 
-            JNIdc.run(this);
+            // FIXME JNIdc.run(this);
         }
 
         int WriteBuffer(short[] samples, int wait)
