@@ -28,3 +28,8 @@ void gui_open_onboarding();
 void gui_term();
 
 extern int screen_dpi;
+
+typedef enum { Closed, Commands, Settings, ClosedNoResume, Main, Onboarding, VJoyEdit, VJoyEditCommands } GuiState;
+extern GuiState gui_state;
+void ImGui_Impl_NewFrame();
+
