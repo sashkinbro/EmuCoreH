@@ -41,12 +41,12 @@ alignas(4096) static u8 CodeBuffer[32 * 1024]
 #else
 	#error CodeBuffer code section unknown
 #endif
-static u8 *pCodeBuffer;
+static u8 *WritableCodeBuffer;
 
-class DSPAssembler : public Xbyak::CodeGenerator
+class X64DSPAssembler : public Xbyak::CodeGenerator
 {
 public:
-	DSPAssembler(u8 *code_buffer, size_t size) : Xbyak::CodeGenerator(size, code_buffer) {}
+	X64DSPAssembler(u8 *code_buffer, size_t size) : Xbyak::CodeGenerator(size, code_buffer) {}
 
 	void Compile(struct dsp_t *DSP)
 	{
@@ -152,7 +152,7 @@ public:
 			else
 			{
 				//X = DSP->TEMP[(TRA + DSP->regs.MDEC_CT) & 0x7F];
-				if (!op.ZERO && !op.BSEL)
+				if (!op.ZERO && !op.BSEL && !op.NEGB)
 					X_alias = B;
 				else
 				{
@@ -420,53 +420,18 @@ void dsp_recompile()
 			break;
 		}
 	}
-	DSPAssembler assembler(pCodeBuffer, sizeof(CodeBuffer));
+	X64DSPAssembler assembler(WritableCodeBuffer, sizeof(CodeBuffer));
 	assembler.Compile(&dsp);
 }
 
-void dsp_init()
+void dsp_rec_init()
 {
-	memset(&dsp, 0, sizeof(dsp));
-	dsp.RBL = 0x8000 - 1;
-	dsp.RBP = 0;
-	dsp.regs.MDEC_CT = 1;
-	dsp.dyndirty = true;
-
-	if (!vmem_platform_prepare_jit_block(CodeBuffer, sizeof(CodeBuffer), (void**)&pCodeBuffer))
+	if (!vmem_platform_prepare_jit_block(CodeBuffer, sizeof(CodeBuffer), (void**)&WritableCodeBuffer))
 		die("mprotect failed in x64 dsp");
 }
 
-void dsp_step()
+void dsp_rec_step()
 {
-	if (dsp.dyndirty)
-	{
-		dsp.dyndirty = false;
-		dsp_recompile();
-	}
-	if (dsp.Stopped)
-		return;
-	((void (*)())pCodeBuffer)();
-}
-
-void dsp_writenmem(u32 addr)
-{
-	if (addr >= 0x3400 && addr < 0x3C00)
-	{
-		dsp.dyndirty = true;
-	}
-	else if (addr >= 0x4000 && addr < 0x4400)
-	{
-		// TODO proper sharing of memory with sh4 through DSPData
-		memset(dsp.TEMP, 0, sizeof(dsp.TEMP));
-	}
-	else if (addr >= 0x4400 && addr < 0x4500)
-	{
-		// TODO proper sharing of memory with sh4 through DSPData
-		memset(dsp.MEMS, 0, sizeof(dsp.MEMS));
-	}
-}
-
-void dsp_term()
-{
+	((void (*)())CodeBuffer)();
 }
 #endif
