@@ -18,13 +18,15 @@
 */
 #pragma once
 #include "build.h"
-#if defined(_WIN32)
+#ifdef LIBRETRO
+#include "dx11context_lr.h"
+#elif defined(_WIN32)
 #include "types.h"
 #include <windows.h>
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include "imgui_impl_dx11.h"
-#include "../dx9/comptr.h"
+#include "windows/comptr.h"
 #include "dx11_overlay.h"
 #include "wsi/context.h"
 
@@ -62,6 +64,9 @@ public:
 	Samplers& getSamplers() {
 		return samplers;
 	}
+	bool hasShaderCache() const {
+		return _hasShaderCache;
+	}
 
 private:
 	void handleDeviceLost();
@@ -78,6 +83,7 @@ private:
 	std::string adapterDesc;
 	std::string adapterVersion;
 	UINT vendorId = 0;
+	bool _hasShaderCache = false;
 	DX11Shaders shaders;
 	Samplers samplers;
 
