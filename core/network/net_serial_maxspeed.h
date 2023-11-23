@@ -88,12 +88,14 @@ struct MaxSpeedNetPipe : public SerialPort::Pipe
 		}
 
 		createSocket();
+		SCIFSerialPort::Instance().setPipe(this);
 
 		return true;
 	}
 
 	void shutdown()
 	{
+		SCIFSerialPort::Instance().setPipe(nullptr);
 		enableNetworkBroadcast(false);
 		if (VALID(sock))
 			closesocket(sock);
@@ -215,7 +217,8 @@ private:
 	    peerAddress.sin_family = AF_INET;
 	    peerAddress.sin_addr.s_addr = INADDR_BROADCAST;
 	    peerAddress.sin_port = htons(NaomiNetwork::SERVER_PORT);
-		if (!config::NetworkServer.get().empty())
+		// ignore server name if acting as server
+		if (!config::NetworkServer.get().empty() && !config::ActAsServer)
 		{
 			auto pos = config::NetworkServer.get().find_last_of(':');
 			std::string server;
@@ -242,8 +245,6 @@ private:
 		}
 		else
 			enableNetworkBroadcast(true);
-
-		SCIFSerialPort::Instance().setPipe(this);
 	}
 
 	sock_t sock = INVALID_SOCKET;
