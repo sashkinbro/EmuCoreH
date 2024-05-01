@@ -16,6 +16,7 @@
 */
 #pragma once
 #include "types.h"
+#include <future>
 
 namespace achievements
 {
@@ -23,15 +24,9 @@ namespace achievements
 
 bool init();
 void term();
-void login(const char *username, const char *password);
+std::future<void> login(const char *username, const char *password);
+void logout();
 bool isLoggedOn();
-
-#else
-
-static inline bool init() { return false; }
-static inline void term() {}
-static inline void login(const char *username, const char *password) {}
-static inline bool isLoggedOn() { return false; }
 
 #endif
 
