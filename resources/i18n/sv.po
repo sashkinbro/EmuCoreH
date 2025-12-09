@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: flycast\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-08 16:00+0100\n"
-"PO-Revision-Date: 2025-12-08 19:05\n"
+"PO-Revision-Date: 2025-12-09 08:12\n"
 "Last-Translator: \n"
 "Language: sv_SE\n"
 "MIME-Version: 1.0\n"
@@ -269,7 +269,7 @@ msgstr "Hastighet: %3d"
 
 #: core/hw/naomi/printer.cpp:857
 msgid "Print out saved"
-msgstr ""
+msgstr "Utdata sparades"
 
 #: core/hw/naomi/systemsp.cpp:2188
 #, c-format
@@ -409,7 +409,7 @@ msgstr "Uppstartsfel för Naomi"
 
 #: core/reios/reios.cpp:724
 msgid "Invalid cart size"
-msgstr ""
+msgstr "Ogiltig kortstorlek"
 
 #: core/cheats.cpp:824 core/cheats.cpp:829
 msgid "Invalid cheat code"
@@ -477,11 +477,11 @@ msgstr "Sortera transparenta polygoner per triangel. Snabbt men kan orsaka grafi
 
 #: core/ui/settings_video.cpp:125
 msgid "Per Strip"
-msgstr ""
+msgstr "Per remsa"
 
 #: core/ui/settings_video.cpp:127
 msgid "Sort transparent polygons per strip. Faster but may produce graphical glitches"
-msgstr ""
+msgstr "Sortera transparenta polygoner per remsa. Snabbare men kan producera grafiska artefakter"
 
 #: core/ui/settings_video.cpp:131
 msgid "Per Pixel"
@@ -537,11 +537,11 @@ msgstr "Synkroniserar bildfrekvensen med skärmens uppdateringsfrekvens. Rekomme
 
 #: core/ui/settings_video.cpp:214
 msgid "Duplicate frames"
-msgstr ""
+msgstr "Duplikata bildrutor"
 
 #: core/ui/settings_video.cpp:214
 msgid "Duplicate frames on high refresh rate monitors (120 Hz and higher)"
-msgstr ""
+msgstr "Duplikata bildrutor på skärmar med hög uppdatingsfrekvens (120 Hz och högre)"
 
 #: core/ui/settings_video.cpp:219
 msgid "Show VMU In-game"
@@ -549,15 +549,15 @@ msgstr "Visa VMU i spelet"
 
 #: core/ui/settings_video.cpp:219
 msgid "Show the VMU LCD screens while in-game"
-msgstr ""
+msgstr "Visa VMU-LCD-skärmarna i spelet"
 
 #: core/ui/settings_video.cpp:220
 msgid "Full Framebuffer Emulation"
-msgstr ""
+msgstr "Fullständig emulering av framebuffer"
 
 #: core/ui/settings_video.cpp:221
 msgid "Fully accurate VRAM framebuffer emulation. Helps games that directly access the framebuffer for special effects. Very slow and incompatible with upscaling and wide screen."
-msgstr ""
+msgstr "Helt korrekt VRAM-rambuffertemulering. Hjälper spel som direkt använder rambuffert för specialeffekter. Mycket långsam och oförenlig med uppskalning och bredbild."
 
 #: core/ui/settings_video.cpp:225
 msgid "Load Custom Textures"
@@ -586,11 +586,12 @@ msgstr "Bredbild"
 #: core/ui/settings_video.cpp:240
 msgid "Draw geometry outside of the normal 4:3 aspect ratio. May produce graphical glitches in the revealed areas.\n"
 "Aspect Fit and shows the full 16:9 content."
-msgstr ""
+msgstr "Rita geometri utanför det normala bildförhållandet 4:3. Kan orsaka grafiska fel i de synliga områdena.\n"
+"Bildanpassning och visar hela innehållet i 16:9."
 
 #: core/ui/settings_video.cpp:245
 msgid "Super Widescreen"
-msgstr ""
+msgstr "Superbredbild"
 
 #: core/ui/settings_video.cpp:246
 msgid "Use the full width of the screen or window when its aspect ratio is greater than 16:9.\n"
@@ -705,7 +706,7 @@ msgstr "Skuggor"
 
 #: core/ui/settings_video.cpp:322
 msgid "Enable modifier volumes, usually used for shadows"
-msgstr ""
+msgstr "Aktivera modifieringsvolymer, oftast använda för skuggor"
 
 #: core/ui/settings_video.cpp:323
 msgid "Fog"
@@ -721,15 +722,15 @@ msgstr "Avancerat"
 
 #: core/ui/settings_video.cpp:328
 msgid "Delay Frame Swapping"
-msgstr ""
+msgstr "Fördröj växling av bildrutor"
 
 #: core/ui/settings_video.cpp:329
 msgid "Useful to avoid flashing screen or glitchy videos. Not recommended on slow platforms"
-msgstr ""
+msgstr "Användbart för att undvika blinkande skärm eller hackiga videor. Rekommenderas inte på långsamma plattformar"
 
 #: core/ui/settings_video.cpp:330
 msgid "Fix Upscale Bleeding Edge"
-msgstr ""
+msgstr "Fixa blödande kant vid uppskalning"
 
 #: core/ui/settings_video.cpp:331
 msgid "Helps with texture bleeding case when upscaling. Disabling it can help if pixels are warping when upscaling in 2D games (MVC2, CVS, KOF, etc.)"
@@ -737,7 +738,7 @@ msgstr "Hjälper till med texturblödning vid uppskalning. Att inaktivera den ka
 
 #: core/ui/settings_video.cpp:332
 msgid "Native Depth Interpolation"
-msgstr ""
+msgstr "Inbyggd djupinterpolering"
 
 #: core/ui/settings_video.cpp:333
 msgid "Helps with texture corruption and depth issues on AMD GPUs. Can also help Intel GPUs in some cases."
@@ -749,7 +750,7 @@ msgstr "Kopiera renderade texturer till VRAM"
 
 #: core/ui/settings_video.cpp:335
 msgid "Copy rendered-to textures back to VRAM. Slower but accurate"
-msgstr ""
+msgstr "Kopiera renderade-till-texturer tillbaka till VRAM. Långsammare men exakta"
 
 #: core/ui/settings_video.cpp:374
 msgid "Anisotropic Filtering"
@@ -794,19 +795,19 @@ msgstr "Visa bildfrekvensräknare"
 
 #: core/ui/settings_video.cpp:387
 msgid "Show on-screen frame/sec counter"
-msgstr ""
+msgstr "Visa skärmräknare för bildfrekvens"
 
 #: core/ui/settings_video.cpp:392
 msgid "Video Routing (Syphon)"
-msgstr ""
+msgstr "Videorouting (Syphon)"
 
 #: core/ui/settings_video.cpp:395
 msgid "Video Routing (Spout)"
-msgstr ""
+msgstr "Videorouting (Spout)"
 
 #: core/ui/settings_video.cpp:397
 msgid "Video Routing (Only available with OpenGL or DirectX 11)"
-msgstr ""
+msgstr "Videorouting (Endast tillgängligt med OpenGL eller DirectX 11)"
 
 #: core/ui/settings_video.cpp:403
 msgid "Send video content to another program"
@@ -814,7 +815,7 @@ msgstr "Skicka videoinnehåll till ett annat program"
 
 #: core/ui/settings_video.cpp:404
 msgid "e.g. Route GPU texture to OBS Studio directly instead of using CPU intensive Display/Window Capture"
-msgstr ""
+msgstr "t.ex. route GPU-textur till OBS Studio direkt istället för att använda CPU-intensiv skärm-/fönsterfångst"
 
 #: core/ui/settings_video.cpp:408
 msgid "Scale down before sending"
@@ -979,7 +980,7 @@ msgstr "Mappen där Flycast sparar konfigurationsfiler och VMUer. BIOS-filer bö
 
 #: core/ui/settings_general.cpp:323
 msgid "Box Art Game List"
-msgstr ""
+msgstr "Spellista med omslagsbilder"
 
 #: core/ui/settings_general.cpp:324
 msgid "Display game cover art in the game list."
@@ -1027,7 +1028,7 @@ msgstr "Nintendo"
 
 #: core/ui/settings_general.cpp:338
 msgid "Aqua Chill"
-msgstr ""
+msgstr "Lugnt vatten"
 
 #: core/ui/settings_general.cpp:340
 msgid "UI Theme"
@@ -1252,7 +1253,7 @@ msgstr "Dreamcast BIOS"
 #: core/ui/settings_controls.cpp:43 core/ui/settings_controls.cpp:61
 #: core/ui/settings_controls.cpp:155
 msgid "None"
-msgstr "Inget"
+msgstr "Ingen"
 
 #: core/ui/settings_controls.cpp:44
 msgid "Sega Controller"
@@ -1559,11 +1560,11 @@ msgstr "Kontrollermappning"
 
 #: core/ui/settings_controls.cpp:578 core/ui/settings_controls.cpp:1022
 msgid "Map"
-msgstr ""
+msgstr "Mappa"
 
 #: core/ui/settings_controls.cpp:579
 msgid "Unmap"
-msgstr ""
+msgstr "Avmappa"
 
 #: core/ui/settings_controls.cpp:595 core/ui/settings_controls.cpp:841
 #: core/ui/settings.cpp:217
@@ -1636,11 +1637,11 @@ msgstr "Haptisk"
 
 #: core/ui/settings_controls.cpp:884 core/ui/settings_controls.cpp:920
 msgid "Power"
-msgstr ""
+msgstr "Styrka"
 
 #: core/ui/settings_controls.cpp:884
 msgid "Haptic feedback power"
-msgstr ""
+msgstr "Styrka för haptisk feedback"
 
 #: core/ui/settings_controls.cpp:886
 msgid "View"
@@ -1652,7 +1653,7 @@ msgstr "Transparens"
 
 #: core/ui/settings_controls.cpp:887
 msgid "Virtual gamepad buttons transparency"
-msgstr ""
+msgstr "Knapptransparens för virtuell gamepad"
 
 #: core/ui/settings_controls.cpp:893
 msgid "Select a PNG file"
@@ -1684,7 +1685,7 @@ msgstr "Dödzon"
 
 #: core/ui/settings_controls.cpp:933
 msgid "Minimum deflection to register as input"
-msgstr ""
+msgstr "Minsta spakrörelse för att registreras som inmatning"
 
 #: core/ui/settings_controls.cpp:936
 msgid "Saturation"
@@ -1692,7 +1693,7 @@ msgstr "Mättnad"
 
 #: core/ui/settings_controls.cpp:939
 msgid "Value sent to the game at 100% thumbstick deflection. Values greater than 100% will saturate before full deflection of the thumbstick."
-msgstr ""
+msgstr "Värde som skickas till spelet vid 100% spakrörelse med tumspak. Värden över 100% mättas innan tumspaken är helt flyttad."
 
 #: core/ui/settings_controls.cpp:952
 msgid "Physical Devices"
@@ -1739,7 +1740,7 @@ msgstr "Använd fysiskt VMU-minne"
 
 #: core/ui/settings_controls.cpp:1062
 msgid "Enables direct read/write access to physical VMU memory via DreamPicoPort/DreamConn. This is not compatible with load state events."
-msgstr ""
+msgstr "Möjliggör direkt läs-/skrivåtkomst till fysiskt VMU-minne via DreamPicoPort/DreamConn. Detta är inte kompatibelt med händelser vid inläsning av tillstånd."
 
 #: core/ui/settings_controls.cpp:1068
 msgid "Dreamcast Devices"
@@ -1772,11 +1773,11 @@ msgstr "Storlek på hårkorset"
 
 #: core/ui/settings_controls.cpp:1197
 msgid "Per Game VMU A1"
-msgstr ""
+msgstr "VMU A1 per spel"
 
 #: core/ui/settings_controls.cpp:1197
 msgid "When enabled, each game has its own VMU on port 1 of controller A."
-msgstr ""
+msgstr "När aktiverad har varje spel sin egna VMU på port 1 för kontroller A."
 
 #: core/ui/gui_achievements.cpp:285 core/ui/gui_cheats.cpp:103
 msgid "Close"
@@ -1977,7 +1978,7 @@ msgstr "Aktivera VMU-ljud"
 
 #: core/ui/settings_audio.cpp:27
 msgid "Play VMU beeps when enabled."
-msgstr ""
+msgstr "Spela VMU-pip när aktiverad."
 
 #: core/ui/settings_audio.cpp:29
 msgid "Volume Level"
@@ -2073,7 +2074,7 @@ msgstr "HLE BIOS"
 
 #: core/ui/settings.cpp:99
 msgid "Force high-level BIOS emulation"
-msgstr ""
+msgstr "Tvinga högnivåemulering av BIOS"
 
 #: core/ui/settings.cpp:100
 msgid "Multi-threaded emulation"
@@ -2370,7 +2371,7 @@ msgstr "Konfigurera din nätverksrouter automatiskt för netplay"
 
 #: core/ui/settings_network.cpp:197
 msgid "Broadcast Digital Outputs"
-msgstr ""
+msgstr "Sänd ut digitala utgångar"
 
 #: core/ui/settings_network.cpp:197
 msgid "Broadcast digital outputs and force-feedback state on TCP port 8000. Compatible with the \"-output network\" MAME option. Arcade games only."
@@ -2402,11 +2403,11 @@ msgstr "ISP-användarnamn som lagras i konsolens Flash RAM-minne. Används av vi
 
 #: core/ui/settings_network.cpp:226
 msgid "Multiboard Screens"
-msgstr ""
+msgstr "Multiboard-skärmar"
 
 #: core/ui/settings_network.cpp:229
 msgid "1 (Twin)"
-msgstr ""
+msgstr "1 (Tvilling)"
 
 #: core/ui/settings_network.cpp:229
 msgid "One screen configuration (F355 Twin)"
