@@ -62198,7 +62198,7 @@ struct retro_core_options_v2 options_or = {
 #define CORE_OPTION_NAME_CUSTOM_TEXTURES_INFO_0_PL NULL
 #define CORE_OPTION_NAME_PRELOAD_CUSTOM_TEXTURES_LABEL_PL NULL
 #define CORE_OPTION_NAME_PRELOAD_CUSTOM_TEXTURES_INFO_0_PL NULL
-#define CORE_OPTION_NAME_DUMP_TEXTURES_LABEL_PL NULL
+#define CORE_OPTION_NAME_DUMP_TEXTURES_LABEL_PL "Zgraj tekstury"
 #define CORE_OPTION_NAME_DUMP_TEXTURES_INFO_0_PL NULL
 #define CORE_OPTION_NAME_DUMP_REPLACED_TEXTURES_LABEL_PL NULL
 #define CORE_OPTION_NAME_DUMP_REPLACED_TEXTURES_INFO_0_PL NULL
@@ -78716,8 +78716,8 @@ struct retro_core_options_v2 options_th = {
 #define OPTION_VAL_500_TR NULL
 #define CORE_OPTION_NAME_CUSTOM_TEXTURES_LABEL_TR "Özel Dokular Yükle"
 #define CORE_OPTION_NAME_CUSTOM_TEXTURES_INFO_0_TR "'system/dc/textures/<game-id>/' klasöründe bulunan özel dokuları yükleyin."
-#define CORE_OPTION_NAME_PRELOAD_CUSTOM_TEXTURES_LABEL_TR NULL
-#define CORE_OPTION_NAME_PRELOAD_CUSTOM_TEXTURES_INFO_0_TR NULL
+#define CORE_OPTION_NAME_PRELOAD_CUSTOM_TEXTURES_LABEL_TR "Özel Dokuları Önceden Yükle"
+#define CORE_OPTION_NAME_PRELOAD_CUSTOM_TEXTURES_INFO_0_TR "Oyun başlangıcında özel dokuları önceden yükleyin. Bu, performansı artırabilir ancak bellek kullanımını yükseltir."
 #define CORE_OPTION_NAME_DUMP_TEXTURES_LABEL_TR "Dokuları Sakla"
 #define CORE_OPTION_NAME_DUMP_TEXTURES_INFO_0_TR "Oyun tarafından her yeni doku kullanıldığında, 'system/dc/texdump/<game-id>/' klasörüne .png dosyası olarak kaydedilecektir."
 #define CORE_OPTION_NAME_DUMP_REPLACED_TEXTURES_LABEL_TR NULL
