@@ -56,6 +56,23 @@ std::mutex GamepadDevice::_gamepads_mutex;
 static FILE *record_input;
 #endif
 
+GamepadDevice::GamepadDevice(int maple_port, const char *api_name, bool remappable)
+	: _api_name(api_name), _maple_port(maple_port), _remappable(remappable),
+	  digitalToAnalogState{}
+{
+	EventManager::listen(Event::LocaleChange, emuEvent, this);
+	// Initialize pressedButtons sets
+	currentInputs.clear();
+}
+
+GamepadDevice::~GamepadDevice() {
+	EventManager::unlisten(Event::LocaleChange, emuEvent, this);
+}
+
+void GamepadDevice::emuEvent(Event event, void *arg) {
+	((GamepadDevice *)arg)->refreshName();
+}
+
 bool GamepadDevice::handleButtonInput(int port, DreamcastKey key, bool pressed)
 {
 	if (key == EMU_BTN_NONE)
@@ -82,13 +99,17 @@ bool GamepadDevice::handleButtonInput(int port, DreamcastKey key, bool pressed)
 	{
 		switch (key)
 		{
+		case EMU_BTN_MENU:
+			if (pressed)
+				gui_open_settings();
+			break;
 		case EMU_BTN_ESCAPE:
 			if (pressed)
 				dc_exit();
 			break;
-		case EMU_BTN_MENU:
+		case EMU_BTN_PAUSE:
 			if (pressed)
-				gui_open_settings();
+				gui_togglePause();
 			break;
 		case EMU_BTN_FFORWARD:
 			if (pressed && !gui_is_open())
@@ -109,6 +130,14 @@ bool GamepadDevice::handleButtonInput(int port, DreamcastKey key, bool pressed)
 		case EMU_BTN_PREVSLOT:
 			if (pressed)
 				gui_cycleSaveStateSlot(-1);
+			break;
+		case EMU_BTN_LOADSTATE_RAM:
+			if (pressed)
+				gui_loadState(true);
+			break;
+		case EMU_BTN_SAVESTATE_RAM:
+			if (pressed)
+				gui_saveState(false, true);
 			break;
 		case EMU_BTN_SCREENSHOT:
 			if (pressed)

@@ -51,7 +51,9 @@
 #endif
 #include "vgamepad.h"
 #include "settings.h"
+#include "wsi/context.h"
 #include "oslib/i18n.h"
+#include "gui_font.h"
 using namespace i18n;
 
 #ifdef _WIN32
@@ -92,7 +94,6 @@ static Chat chat;
 static std::recursive_mutex guiMutex;
 using LockGuard = std::lock_guard<std::recursive_mutex>;
 
-ImFont *largeFont;
 static Toast toast;
 static ThreadRunner uiThreadRunner;
 
@@ -110,6 +111,8 @@ static void emuEventCallback(Event event, void *)
 	case Event::Terminate:
 		GamepadDevice::load_system_mappings();
 		game_started = false;
+		if (GraphicsContext::Instance() != nullptr)
+			GraphicsContext::Instance()->setSwapInterval(1);
 		break;
 	default:
 		break;
@@ -130,7 +133,7 @@ void gui_init()
 	ImGuiIO& io = ImGui::GetIO();
 	io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
 
-	io.IniFilename = NULL;
+	io.IniFilename = nullptr;
 
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
@@ -196,19 +199,7 @@ static ImGuiKey keycodeToImGuiKey(u8 keycode)
 	}
 }
 
-static bool addFont(const char *path, float size, ImFontConfig& fontConfig, const ImWchar *glyphRanges) {
-	ImFont *font = ImGui::GetIO().Fonts->AddFontFromFileTTF(path, size, &fontConfig, glyphRanges);
-	return font != nullptr;
-}
-
-static void addFont(const char *path[], float size, ImFontConfig& fontConfig, const ImWchar *glyphRanges)
-{
-	while (*path != nullptr)
-		if (addFont(*path++, size, fontConfig, glyphRanges))
-			break;
-}
-
-void gui_initFonts()
+void gui_updateStyle()
 {
 	static float uiScale;
 
@@ -241,222 +232,14 @@ void gui_initFonts()
 #endif
 	if (settings.display.uiScale > 1)
 		ImGui::GetStyle().ScaleAllSizes(settings.display.uiScale);
-
-    static const ImWchar ranges[] =
-    {
-    	0x0020, 0xFFFF, // All chars
-        0,
-    };
-
-	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->Clear();
-
-	// Regular font
-	const float fontSize = uiScaled(17.f);
-	size_t dataSize;
-	std::unique_ptr<u8[]> data = resource::load("fonts/Roboto-Medium.ttf", dataSize);
-	verify(data != nullptr);
-	ImFont *regularFont = io.Fonts->AddFontFromMemoryTTF(data.release(), dataSize, fontSize, nullptr, ranges);
-    ImFontConfig fontConfig;
-    fontConfig.MergeMode = true;
-    fontConfig.DstFont = regularFont;
-	// Font Awesome symbols (added to default font)
-	data = resource::load("fonts/" FONT_ICON_FILE_NAME_FAS, dataSize);
-	verify(data != nullptr);
-    fontConfig.FontNo = 0;
-	static ImWchar faRanges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-	io.Fonts->AddFontFromMemoryTTF(data.release(), dataSize, fontSize, &fontConfig, faRanges);
-
-	// Large font
-    const float largeFontSize = uiScaled(21.f);
-	data = resource::load("fonts/Roboto-Regular.ttf", dataSize);
-	verify(data != nullptr);
-	largeFont = io.Fonts->AddFontFromMemoryTTF(data.release(), dataSize, largeFontSize, nullptr, ranges);
-	ImFontConfig largeFontConfig;
-	largeFontConfig.MergeMode = true;
-	largeFontConfig.DstFont = largeFont;
-
-#ifdef _WIN32
-    u32 cp = GetACP();
-    std::string fontDir = std::string(nowide::getenv("SYSTEMROOT")) + "\\Fonts\\";
-    switch (cp)
-    {
-    case 932:	// Japanese
-		{
-			fontConfig.FontNo = 2;	// UIGothic
-			largeFontConfig.FontNo = 2;
-			ImFont* font = io.Fonts->AddFontFromFileTTF((fontDir + "msgothic.ttc").c_str(), fontSize, &fontConfig, io.Fonts->GetGlyphRangesJapanese());
-			io.Fonts->AddFontFromFileTTF((fontDir + "msgothic.ttc").c_str(), largeFontSize, &largeFontConfig, io.Fonts->GetGlyphRangesJapanese());
-			fontConfig.FontNo = 2;	// Meiryo UI
-			largeFontConfig.FontNo = 2;
-			if (font == nullptr) {
-				io.Fonts->AddFontFromFileTTF((fontDir + "Meiryo.ttc").c_str(), fontSize, &fontConfig, io.Fonts->GetGlyphRangesJapanese());
-				io.Fonts->AddFontFromFileTTF((fontDir + "Meiryo.ttc").c_str(), largeFontSize, &largeFontConfig, io.Fonts->GetGlyphRangesJapanese());
-			}
-		}
-		break;
-    case 949:	// Korean
-		{
-			ImFont* font = io.Fonts->AddFontFromFileTTF((fontDir + "Malgun.ttf").c_str(), fontSize, &fontConfig, io.Fonts->GetGlyphRangesKorean());
-			io.Fonts->AddFontFromFileTTF((fontDir + "Malgun.ttf").c_str(), largeFontSize, &largeFontConfig, io.Fonts->GetGlyphRangesKorean());
-			if (font == nullptr)
-			{
-				fontConfig.FontNo = 2;	// Dotum
-				io.Fonts->AddFontFromFileTTF((fontDir + "Gulim.ttc").c_str(), fontSize, &fontConfig, io.Fonts->GetGlyphRangesKorean());
-				largeFontConfig.FontNo = 2;	// Dotum
-				io.Fonts->AddFontFromFileTTF((fontDir + "Gulim.ttc").c_str(), largeFontSize, &largeFontConfig, io.Fonts->GetGlyphRangesKorean());
-			}
-		}
-    	break;
-    case 950:	// Traditional Chinese
-		{
-			fontConfig.FontNo = 1; // Microsoft JhengHei UI Regular
-			ImFont* font = io.Fonts->AddFontFromFileTTF((fontDir + "Msjh.ttc").c_str(), fontSize, &fontConfig, GetGlyphRangesChineseTraditionalOfficial());
-			largeFontConfig.FontNo = 1;
-			io.Fonts->AddFontFromFileTTF((fontDir + "Msjh.ttc").c_str(), largeFontSize, &largeFontConfig, GetGlyphRangesChineseTraditionalOfficial());
-			if (font == nullptr)
-			{
-				fontConfig.FontNo = 0;
-				io.Fonts->AddFontFromFileTTF((fontDir + "MSJH.ttf").c_str(), fontSize, &fontConfig, GetGlyphRangesChineseTraditionalOfficial());
-				largeFontConfig.FontNo = 0;
-				io.Fonts->AddFontFromFileTTF((fontDir + "MSJH.ttf").c_str(), largeFontSize, &largeFontConfig, GetGlyphRangesChineseTraditionalOfficial());
-			}
-		}
-    	break;
-    case 936:	// Simplified Chinese
-		io.Fonts->AddFontFromFileTTF((fontDir + "Simsun.ttc").c_str(), fontSize, &fontConfig, GetGlyphRangesChineseSimplifiedOfficial());
-		io.Fonts->AddFontFromFileTTF((fontDir + "Simsun.ttc").c_str(), largeFontSize, &largeFontConfig, GetGlyphRangesChineseSimplifiedOfficial());
-    	break;
-    default:
-    	break;
-    }
-#elif defined(__APPLE__) && !defined(TARGET_IPHONE)
-    std::string fontDir = std::string("/System/Library/Fonts/");
-    std::string locale = i18n::getCurrentLocale();
-
-    if (locale.find("ja") == 0)             // Japanese
-    {
-        io.Fonts->AddFontFromFileTTF((fontDir + "ヒラギノ角ゴシック W4.ttc").c_str(), fontSize, &fontConfig, io.Fonts->GetGlyphRangesJapanese());
-        io.Fonts->AddFontFromFileTTF((fontDir + "ヒラギノ角ゴシック W4.ttc").c_str(), largeFontSize, &largeFontConfig, io.Fonts->GetGlyphRangesJapanese());
-    }
-    else if (locale.find("ko") == 0)       // Korean
-    {
-        io.Fonts->AddFontFromFileTTF((fontDir + "AppleSDGothicNeo.ttc").c_str(), fontSize, &fontConfig, io.Fonts->GetGlyphRangesKorean());
-        io.Fonts->AddFontFromFileTTF((fontDir + "AppleSDGothicNeo.ttc").c_str(), largeFontSize, &largeFontConfig, io.Fonts->GetGlyphRangesKorean());
-    }
-    else if (locale.find("zh-Hant") == 0)  // Traditional Chinese
-    {
-        io.Fonts->AddFontFromFileTTF((fontDir + "PingFang.ttc").c_str(), fontSize, &fontConfig, GetGlyphRangesChineseTraditionalOfficial());
-        io.Fonts->AddFontFromFileTTF((fontDir + "PingFang.ttc").c_str(), largeFontSize, &largeFontConfig, GetGlyphRangesChineseTraditionalOfficial());
-    }
-    else if (locale.find("zh-Hans") == 0)  // Simplified Chinese
-    {
-        io.Fonts->AddFontFromFileTTF((fontDir + "PingFang.ttc").c_str(), fontSize, &fontConfig, GetGlyphRangesChineseSimplifiedOfficial());
-        io.Fonts->AddFontFromFileTTF((fontDir + "PingFang.ttc").c_str(), largeFontSize, &largeFontConfig, GetGlyphRangesChineseSimplifiedOfficial());
-    }
-#elif defined(__ANDROID__)
-    {
-    	const ImWchar *glyphRanges = nullptr;
-        std::string locale = i18n::getCurrentLocale();
-        if (locale.find("ja") == 0)				// Japanese
-        	glyphRanges = io.Fonts->GetGlyphRangesJapanese();
-        else if (locale.find("ko") == 0)		// Korean
-        	glyphRanges = io.Fonts->GetGlyphRangesKorean();
-        else if (locale.find("zh_TW") == 0
-        		|| locale.find("zh_HK") == 0)	// Traditional Chinese
-        	glyphRanges = GetGlyphRangesChineseTraditionalOfficial();
-        else if (locale.find("zh_CN") == 0)		// Simplified Chinese
-        	glyphRanges = GetGlyphRangesChineseSimplifiedOfficial();
-
-        if (glyphRanges != nullptr) {
-        	io.Fonts->AddFontFromFileTTF("/system/fonts/NotoSansCJK-Regular.ttc", fontSize, &fontConfig, glyphRanges);
-        	io.Fonts->AddFontFromFileTTF("/system/fonts/NotoSansCJK-Regular.ttc", largeFontSize, &largeFontConfig, glyphRanges);
-        }
-    }
-
-#elif defined(__linux__)
-	std::string locale = i18n::getCurrentLocale();
-	if (locale.find("ja_") == 0)			// Japanese
-	{
-		const char *fonts[] = {
-				"/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf",
-				"/usr/share/fonts/ipa-pgothic-fonts/ipagp.ttf",	// redhat
-				"/usr/share/fonts/truetype/takao-gothic/TakaoPGothic.ttf",
-				"/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
-				"/usr/share/fonts/adobe-source-han-sans-jp-fonts/SourceHanSansJP-Regular.otf", // redhat
-				"/usr/share/fonts/vl-gothic-fonts/VL-Gothic-Regular.ttf", // redhat
-				"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-				"/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc", // redhat
-				nullptr
-		};
-		const char *largeFonts[] = {
-				"/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf",
-				"/usr/share/fonts/ipa-pgothic-fonts/ipagp.ttf",	// redhat
-				"/usr/share/fonts/truetype/takao-gothic/TakaoPGothic.ttf",
-				"/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
-				"/usr/share/fonts/adobe-source-han-sans-jp-fonts/SourceHanSansJP-Bold.otf", // redhat
-				"/usr/share/fonts/vl-gothic-fonts/VL-Gothic-Regular.ttf", // redhat
-				"/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
-				"/usr/share/fonts/google-noto-cjk/NotoSansCJK-Bold.ttc", // redhat
-				nullptr
-		};
-		addFont(fonts, fontSize, fontConfig, io.Fonts->GetGlyphRangesJapanese());
-		addFont(largeFonts, largeFontSize, largeFontConfig, io.Fonts->GetGlyphRangesJapanese());
-	}
-	else if (locale.find("ko_") == 0)		// Korean
-	{
-		const char *fonts[] = {
-				"/usr/share/fonts/truetype/unfonts-core/UnDotum.ttf",
-				"/usr/share/fonts-droid-fallback/truetype/DroidSansFallback.ttf",
-				"/usr/share/fonts/baekmuk-dotum-fonts/dotum.ttf", // redhat
-				"/usr/share/fonts/adobe-source-han-sans-kr-fonts/SourceHanSansKR-Regular.otf", // redhat
-				"/usr/share/fonts/naver-nanum-gothic-coding-fonts/NanumGothic_Coding.ttf", // redhat
-				"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-				"/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc", // redhat
-				nullptr
-		};
-		const char *largeFonts[] = {
-				"/usr/share/fonts/truetype/unfonts-core/UnDotumBold.ttf",
-				"/usr/share/fonts-droid-fallback/truetype/DroidSansFallback.ttf",
-				"/usr/share/fonts/adobe-source-han-sans-kr-fonts/SourceHanSansKR-Bold.otf", // redhat
-				"/usr/share/fonts/naver-nanum-gothic-coding-fonts/NanumGothic_Coding_Bold.ttf", // redhat
-				"/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
-				"/usr/share/fonts/google-noto-cjk/NotoSansCJK-Bold.ttc", // redhat
-				nullptr
-		};
-		addFont(fonts, fontSize, fontConfig, io.Fonts->GetGlyphRangesKorean());
-		addFont(largeFonts, largeFontSize, largeFontConfig, io.Fonts->GetGlyphRangesKorean());
-	}
-	else if (locale.find("zh_") == 0)		// Chinese
-	{
-		const ImWchar *glyphRanges = GetGlyphRangesChineseSimplifiedOfficial();
-		if (locale.find("zh_TW") == 0 || locale.find("zh_HK") == 0)
-			glyphRanges = GetGlyphRangesChineseTraditionalOfficial();
-		const char *fonts[] = {
-				"/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
-				"/usr/share/fonts/wqy-zenhei-fonts/wqy-zenhei.ttc", // redhat
-				"/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
-				"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-				"/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc", // redhat
-		};
-		const char *largeFonts[] = {
-				"/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
-				"/usr/share/fonts/wqy-zenhei-fonts/wqy-zenhei.ttc", // redhat
-				"/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
-				"/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
-				"/usr/share/fonts/google-noto-cjk/NotoSansCJK-Bold.ttc", // redhat
-		};
-		addFont(fonts, fontSize, fontConfig, glyphRanges);
-		addFont(largeFonts, largeFontSize, largeFontConfig, glyphRanges);
-	}
-
-	// TODO BSD, iOS, ...
-#endif
+	
+	gui_loadFonts();
+	
     NOTICE_LOG(RENDERER, "Screen DPI is %.0f, size %d x %d. Scaling by %.2f", settings.display.dpi, settings.display.width, settings.display.height, settings.display.uiScale);
 	vgamepad::applyUiScale();
 }
 
-void gui_keyboard_input(u16 wc)
+void gui_keyboard_input(u32 wc)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	if (io.WantCaptureKeyboard)
@@ -655,12 +438,17 @@ void gui_open_settings()
 		GamepadDevice::load_system_mappings();
 		emu.start();
 	}
+	else if (gui_state == GuiState::Pause)
+	{
+		gui_setState(GuiState::Commands);
+	}
 }
 
 void gui_start_game(const std::string& path)
 {
 	const LockGuard lock(guiMutex);
-	if (gui_state != GuiState::Main && gui_state != GuiState::Closed && gui_state != GuiState::Commands)
+	if (gui_state != GuiState::Main && gui_state != GuiState::Closed && gui_state != GuiState::Commands
+			&& gui_state != GuiState::Pause)
 		return;
 	emu.unloadGame();
 	reset_vmus();
@@ -732,7 +520,7 @@ static void gui_display_commands()
 	ImGui::SetNextWindowBgAlpha(0.8f);
 	ImguiStyleVar _{ImGuiStyleVar_WindowBorderSize, 0};
 
-	ImGui::Begin("##commands", NULL, ImGuiWindowFlags_NoDecoration);
+	ImGui::Begin("##commands", nullptr, ImGuiWindowFlags_NoDecoration);
 	{
 		ImguiStyleVar _{ImGuiStyleVar_ButtonTextAlign, ImVec2(0.f, 0.5f)};	// left aligned
 
@@ -761,7 +549,7 @@ static void gui_display_commands()
 		if (!lowHeight)
 		{
 			ImGui::BeginChild("game_info", ScaledVec2(0, 100.f), ImGuiChildFlags_Borders, ImGuiWindowFlags_None);
-			ImGui::PushFont(largeFont);
+			ImGui::PushFont(nullptr, uiLargeFontSize());
 			ImGui::Text("%s", art.name.c_str());
 			ImGui::PopFont();
 			{
@@ -896,7 +684,7 @@ void error_popup()
 		ImguiStyleVar _(ImGuiStyleVar_WindowPadding, padding);
 		ImguiStyleVar _1(ImGuiStyleVar_ItemSpacing, padding);
 		ImGui::OpenPopup("Error");
-		if (ImGui::BeginPopupModal("Error", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar))
+		if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar))
 		{
 			ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + uiScaled(400.f));
 			ImGui::TextWrapped("%s", error_msg.c_str());
@@ -925,7 +713,7 @@ static void contentpath_warning_popup()
     if (scanner.content_path_looks_incorrect)
     {
         ImGui::OpenPopup(T("Incorrect Content Location?"));
-        if (ImGui::BeginPopupModal(T("Incorrect Content Location?"), NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
+        if (ImGui::BeginPopupModal(T("Incorrect Content Location?"), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
         {
             ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + uiScaled(400.f));
             ImGui::TextWrapped((std::string("  ") + T("Scanned %d folders but no game can be found!") + std::string("  ")).c_str(), scanner.empty_folders_scanned);
@@ -975,7 +763,7 @@ static void contentpath_warning_popup()
 
 void os_notify(const char *msg, int durationMs, const char *details)
 {
-	if (gui_state != GuiState::Closed)
+	if (gui_state != GuiState::Closed && gui_state != GuiState::Pause)
 	{
 		std::lock_guard<std::mutex> _{osd_message_mutex};
 		osd_message = msg;
@@ -992,6 +780,28 @@ static std::string get_notification()
 	if (!osd_message.empty() && getTimeMs() >= osd_message_end)
 		osd_message.clear();
 	return osd_message;
+}
+
+static void drawPauseIcon()
+{
+	const char *icon = ICON_FA_PAUSE;
+	ImFont *font = ImGui::GetFont();
+	const float fontSize = uiScaled(52.f);
+	const ScaledVec2 padding(14.f, 6.f);
+	const ScaledVec2 margin(12.f, 12.f);
+	const ImVec2 size =  ImVec2(fontSize * 0.7, fontSize) + padding * 2;
+	const ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+	ImVec2 pos(displaySize.x - insetRight - margin.x - size.x, insetTop + margin.y);
+	ImDrawList *dl = ImGui::GetForegroundDrawList();
+	const ImU32 bgCol = alphaOverride(ImGui::GetColorU32(ImGuiCol_WindowBg), 0.45f);
+	const ImU32 shadowCol = alphaOverride(0, 0.65f);
+	const ImU32 textCol = alphaOverride(ImGui::GetColorU32(ImGuiCol_Text), 0.95f);
+
+	dl->AddRectFilled(pos, pos + size, bgCol, uiScaled(6.f));
+
+	ImVec2 iconPos = pos + padding + ScaledVec2(2.5f, 2.5f);
+	dl->AddText(font, fontSize, iconPos + ScaledVec2(2.5f, 2.5f), shadowCol, icon);
+	dl->AddText(font, fontSize, iconPos, textCol, icon);
 }
 
 inline static void gui_display_demo() {
@@ -1060,7 +870,7 @@ static void gui_display_content()
 	ImguiStyleVar _(ImGuiStyleVar_WindowRounding, 0);
 	ImguiStyleVar _1(ImGuiStyleVar_WindowBorderSize, 0);
 
-    ImGui::Begin("##main", NULL, ImGuiWindowFlags_NoDecoration);
+    ImGui::Begin("##main", nullptr, ImGuiWindowFlags_NoDecoration);
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ScaledVec2(20, 8));
     ImGui::AlignTextToFramePadding();
@@ -1139,13 +949,15 @@ static void gui_display_content()
 						continue;
 				}
 				std::string gameName = game.name;
+				bool passFilter = filter.PassFilter(gameName.c_str());
 				GameBoxart art;
 				if (config::BoxartDisplayMode && !game.device)
 				{
 					art = boxart.getBoxartAndLoad(game);
 					gameName = art.name;
+					passFilter = passFilter || filter.PassFilter(gameName.c_str());
 				}
-				if (filter.PassFilter(gameName.c_str()))
+				if (passFilter)
 				{
 					ImguiID _(game.path.empty() ? "bios" : game.path);
 					bool pressed = false;
@@ -1201,11 +1013,11 @@ static void gui_display_content()
 		{
 			const char *label = T("Your game list is empty");
 			// center horizontally
-			const float w = largeFont->CalcTextSizeA(largeFont->LegacySize, FLT_MAX, -1.f, label).x + ImGui::GetStyle().FramePadding.x * 2;
+			const float w = ImGui::GetFont()->CalcTextSizeA(uiLargeFontSize(), FLT_MAX, -1.f, label).x + ImGui::GetStyle().FramePadding.x * 2;
 			ImGui::SameLine((ImGui::GetContentRegionMax().x - w) / 2);
 			if (ImGui::BeginChild("empty", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_NavFlattened))
 			{
-				ImGui::PushFont(largeFont);
+				ImGui::PushFont(nullptr, uiLargeFontSize());
 				ImGui::NewLine();
 				ImGui::Text("%s", label);
 				ImguiStyleVar _(ImGuiStyleVar_FramePadding, ScaledVec2(20, 8));
@@ -1306,7 +1118,7 @@ static void gui_network_start()
 	ImGui::SetNextWindowBgAlpha(0.8f);
 	ImguiStyleVar _1(ImGuiStyleVar_WindowPadding, ScaledVec2(20, 20));
 
-	if (ImGui::Begin("##network", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::Begin("##network", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		ImguiStyleVar _(ImGuiStyleVar_FramePadding, ScaledVec2(20, 10));
 		ImGui::AlignTextToFramePadding();
@@ -1413,7 +1225,7 @@ static void gui_display_loadscreen()
 	ImGui::SetNextWindowBgAlpha(0.8f);
 	ImguiStyleVar _(ImGuiStyleVar_WindowPadding, ScaledVec2(20, 20));
 
-    if (ImGui::Begin("##loading", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::Begin("##loading", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize))
     {
 		ImguiStyleVar _(ImGuiStyleVar_FramePadding, ScaledVec2(20, 10));
 		ImGui::AlignTextToFramePadding();
@@ -1530,6 +1342,10 @@ void gui_display_ui()
 	case GuiState::Commands:
 		gui_display_commands();
 		break;
+	case GuiState::Pause:
+		toast.draw();
+		drawPauseIcon();
+		break;
 	case GuiState::Main:
 		//gui_display_demo();
 		gui_display_content();
@@ -1616,7 +1432,7 @@ void gui_draw_osd()
 				const float maxW = uiScaled(640.f);
 				ImDrawList *dl = ImGui::GetForegroundDrawList();
 				const ScaledVec2 padding(5.f, 5.f);
-				const ImVec2 size = largeFont->CalcTextSizeA(largeFont->LegacySize, FLT_MAX, maxW, &message.front(), &message.back() + 1)
+				const ImVec2 size = ImGui::GetFont()->CalcTextSizeA(uiLargeFontSize(), FLT_MAX, maxW, &message.front(), &message.back() + 1)
 						+ padding * 2.f;
 				ImVec2 pos(insetLeft, ImGui::GetIO().DisplaySize.y - size.y);
 				constexpr float alpha = 0.7f;
@@ -1624,7 +1440,7 @@ void gui_draw_osd()
 				dl->AddRectFilled(pos, pos + size, bg_col, 0.f);
 				pos += padding;
 				const ImU32 col = alphaOverride(0x0000FFFF, alpha);
-				dl->AddText(largeFont, largeFont->LegacySize, pos, col, &message.front(), &message.back() + 1, maxW);
+				dl->AddText(nullptr, uiLargeFontSize(), pos, col, &message.front(), &message.back() + 1, maxW);
 			}
 		}
 
@@ -1655,7 +1471,7 @@ void gui_display_profiler()
 	gui_newFrame();
 	ImGui::NewFrame();
 
-	ImGui::Begin("Profiler", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground);
+	ImGui::Begin("Profiler", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground);
 
 	{
 		ImguiStyleColor _(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
@@ -1736,14 +1552,17 @@ void gui_error(const std::string& what) {
 	error_msg = what;
 }
 
-void gui_loadState()
+void gui_loadState(bool inRam)
 {
 	const LockGuard lock(guiMutex);
 	if (gui_state == GuiState::Closed && dc_savestateAllowed())
 	{
 		try {
 			emu.stop();
-			dc_loadstate(config::SavestateSlot);
+			if (inRam)
+				dc_loadstate(-2);  // special slot used for inRam states
+			else
+				dc_loadstate(config::SavestateSlot);
 			emu.start();
 		} catch (const FlycastException& e) {
 			gui_stop_game(e.what());
@@ -1751,7 +1570,7 @@ void gui_loadState()
 	}
 }
 
-void gui_saveState(bool stopRestart)
+void gui_saveState(bool stopRestart, bool inRam)
 {
 	const LockGuard lock(guiMutex);
 	if ((gui_state == GuiState::Closed || !stopRestart) && dc_savestateAllowed())
@@ -1759,7 +1578,12 @@ void gui_saveState(bool stopRestart)
 		try {
 			if (stopRestart)
 				emu.stop();
-			savestate();
+			
+			if (inRam)
+				dc_savestate(-2);
+			else
+				savestate();
+
 			if (stopRestart)
 				emu.start();
 		} catch (const FlycastException& e) {
@@ -1775,6 +1599,32 @@ void gui_cycleSaveStateSlot(int step)
 {
 	cycleSaveStateSlot(step);
 	os_notify(strprintf(T("Save state slot %d"), config::SavestateSlot + 1).c_str(), 2000);
+}
+
+void gui_togglePause()
+{
+	const LockGuard lock(guiMutex);
+	if (settings.network.online || settings.naomi.multiboard)
+		return;
+
+	try {
+		if (gui_state == GuiState::Closed)
+		{
+			if (!achievements::canPause())
+				return;
+			vgamepad::hide();
+			emu.stop();
+			gui_setState(GuiState::Pause);
+		}
+		else if (gui_state == GuiState::Pause)
+		{
+			GamepadDevice::load_system_mappings();
+			gui_setState(GuiState::Closed);
+			emu.start();
+		}
+	} catch (const FlycastException& e) {
+		gui_stop_game(e.what());
+	}
 }
 
 void gui_setState(GuiState newState)

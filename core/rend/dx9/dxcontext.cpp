@@ -63,25 +63,7 @@ bool DXContext::init(bool keepCurrentWindow)
 	d3dpp.EnableAutoDepthStencil = FALSE;						// No need for depth/stencil buffer for the backbuffer
 	swapOnVSync = !settings.input.fastForwardMode && config::VSync;
 	if (swapOnVSync)
-	{
-		switch ((int)(settings.display.refreshRate / 60))
-		{
-		case 0:
-		case 1:
-			d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
-			break;
-		case 2:
-			d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_TWO;
-			break;
-		case 3:
-			d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_THREE;
-			break;
-		case 4:
-		default:
-			d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_FOUR;
-			break;
-		}
-	}
+		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE; // Only one supported in Windowed mode
 	else
 		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 	// TODO should be 0 in windowed mode

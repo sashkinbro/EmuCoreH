@@ -19,7 +19,6 @@
     along with Flycast.  If not, see <https://www.gnu.org/licenses/>.
 */
 #pragma once
-#include "rend/tileclip.h"
 #include "rend/transform_matrix.h"
 #include "vulkan.h"
 #include "buffer.h"
@@ -210,7 +209,7 @@ protected:
 
 	vk::Rect2D baseScissor;
 	vk::Rect2D currentScissor;
-	TransformMatrix<COORD_VULKAN> matrices;
+	TransformMatrix matrices;
 	CommandPool *commandPool = nullptr;
 	std::vector<std::unique_ptr<BufferData>> mainBuffers;
 	rend_context *rendContext = nullptr;

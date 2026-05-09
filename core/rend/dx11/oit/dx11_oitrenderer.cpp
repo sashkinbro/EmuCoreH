@@ -27,7 +27,6 @@
 #include "../dx11_renderstate.h"
 #include "dx11_oitbuffers.h"
 #include "dx11_oitshaders.h"
-#include "rend/tileclip.h"
 
 const D3D11_INPUT_ELEMENT_DESC MainLayout[]
 {
@@ -178,7 +177,7 @@ struct DX11OITRenderer : public DX11Renderer
 		else
 			constants.trilinearAlpha = 1.f;
 
-		int clip_rect[4] = {};
+		Rect clip_rect;
 		TileClipping clipmode = setTileClip(gp->tileclip, clip_rect);
 		int gpuPalette = gp->texture == nullptr || !gp->texture->gpuPalette ? 0
 				: gp->tsp.FilterMode + 1;
@@ -250,10 +249,10 @@ struct DX11OITRenderer : public DX11Renderer
 
 		if (clipmode == TileClipping::Inside)
 		{
-			constants.clipTest[0] = (float)clip_rect[0];
-			constants.clipTest[1] = (float)clip_rect[1];
-			constants.clipTest[2] = (float)(clip_rect[0] + clip_rect[2]);
-			constants.clipTest[3] = (float)(clip_rect[1] + clip_rect[3]);
+			constants.clipTest[0] = (float)clip_rect.origin.x;
+			constants.clipTest[1] = (float)clip_rect.origin.y;
+			constants.clipTest[2] = (float)clip_rect.bottomRight().x;
+			constants.clipTest[3] = (float)clip_rect.bottomRight().y;
 		}
 		constants.blend_mode0[0] = gp->tsp.SrcInstr;
 		constants.blend_mode0[1] = gp->tsp.DstInstr;

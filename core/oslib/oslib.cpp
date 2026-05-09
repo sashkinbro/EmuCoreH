@@ -206,6 +206,8 @@ std::string getSavestatePath(int index, bool writable)
 	state_file = state_file + index_str + ".state";
 	if (index == -1)
 		state_file += ".net";
+	if (index == -2)
+		state_file += ".tmp";
 
 	static std::string lastFile;
 	static std::string lastPath;
@@ -470,6 +472,9 @@ void os_TermInput()
 #if defined(USE_SDL)
 	input_sdl_quit();
 #else
+	#if defined(SUPPORT_X11)
+		input_x11_term();
+	#endif
 	#if defined(USE_EVDEV)
 		input_evdev_close();
 	#endif

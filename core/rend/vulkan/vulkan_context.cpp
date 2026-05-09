@@ -148,7 +148,7 @@ bool VulkanContext::InitInstance(const char** extensions, uint32_t extensions_co
 #if defined(__ANDROID__) && HOST_CPU == CPU_ARM64
 		vkGetInstanceProcAddr = loadVulkanDriver();
 #else
-		static vk::DynamicLoader dl;
+		static vk::detail::DynamicLoader dl;
 		vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
 #endif
 		if (vkGetInstanceProcAddr == nullptr) {
@@ -329,7 +329,7 @@ void VulkanContext::InitImgui()
 	initInfo.Queue = (VkQueue)graphicsQueue;
 	initInfo.PipelineCache = (VkPipelineCache)*pipelineCache;
 	initInfo.DescriptorPool = (VkDescriptorPool)*descriptorPool;
-	initInfo.RenderPass = (VkRenderPass)*renderPass;
+	initInfo.PipelineInfoMain.RenderPass = (VkRenderPass)*renderPass;
 	initInfo.MinImageCount = 2;
 	initInfo.ImageCount = GetSwapChainSize();
 #ifdef VK_DEBUG
@@ -337,7 +337,7 @@ void VulkanContext::InitImgui()
 #endif
 
 #if VULKAN_HPP_DISPATCH_LOADER_DYNAMIC == 1
-	ImGui_ImplVulkan_LoadFunctions([](const char *function_name, void *) {
+	ImGui_ImplVulkan_LoadFunctions(0, [](const char *function_name, void *) {
 		return VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr((VkInstance) *contextInstance->instance, function_name);
 	});
 #endif

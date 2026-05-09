@@ -12,7 +12,9 @@ android {
     namespace = "com.flycast.emulator"
     ndkVersion = "29.0.14206865"
     compileSdk {
-        version = release(36)
+        version = release(36) {
+            minorApiLevel = 1
+        }
     }
 
     defaultConfig {
@@ -88,6 +90,6 @@ dependencies {
     implementation(fileTree("libs") { include("*.aar", "*.jar") })
     implementation(libs.documentfile)
     testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.ext.junit)
 }
