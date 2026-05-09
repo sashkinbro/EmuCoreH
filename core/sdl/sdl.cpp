@@ -285,6 +285,11 @@ void input_sdl_quit()
 	EventManager::unlisten(Event::Pause, emuEventCallback);
 	EventManager::unlisten(Event::Resume, emuEventCallback);
 	SDLGamepad::closeAllGamepads();
+	for (auto [id, mouse] : sdl_mice)
+		GamepadDevice::Unregister(mouse);
+	sdl_mice.clear();
+	GamepadDevice::Unregister(sdl_keyboard);
+	sdl_keyboard.reset();
 	SDL_QuitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC);
 }
 
@@ -772,9 +777,16 @@ bool sdl_recreate_window(u32 flags)
 	else
 	{
 		SDL_DisplayMode mode{};
-		if (SDL_GetDesktopDisplayMode(displayIndex, &mode) == 0) {
+		if (SDL_GetDesktopDisplayMode(displayIndex, &mode) == 0)
+		{
 			NOTICE_LOG(RENDERER, "Monitor refresh rate: %d Hz (%d x %d)", mode.refresh_rate, mode.w, mode.h);
-			settings.display.refreshRate = mode.refresh_rate;
+			if (mode.refresh_rate < 60)
+				settings.display.refreshRate = 60.f;
+			else if (mode.refresh_rate % 10 == 9)
+				// Fix Windows reporting 59 Hz or 119 Hz
+				settings.display.refreshRate = mode.refresh_rate + 1;
+			else
+				settings.display.refreshRate = mode.refresh_rate;
 			if (flags & SDL_WINDOW_FULLSCREEN)
 			{
 				settings.display.width = mode.w;

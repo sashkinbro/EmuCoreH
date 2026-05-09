@@ -391,7 +391,7 @@ void CheatManager::loadCheatFile(const std::string& filename)
 		return;
 	}
 
-	FILE* cheatfile = hostfs::storage().openFile(filename, "r");
+	hostfs::File* cheatfile = hostfs::storage().openFile(filename, "r");
 	if (cheatfile == nullptr)
 	{
 		WARN_LOG(COMMON, "Cannot open cheat file '%s'", filename.c_str());
@@ -399,7 +399,7 @@ void CheatManager::loadCheatFile(const std::string& filename)
 	}
 	config::IniFile cfg;
 	cfg.load(cheatfile);
-	fclose(cheatfile);
+	delete cheatfile;
 
 	int count = cfg.getInt("", "cheats", 0);
 	cheats.clear();
@@ -450,7 +450,7 @@ void CheatManager::reset(const std::string& gameId)
 		this->gameId = gameId;
 
 #ifndef LIBRETRO
-		if (!settings.raHardcoreMode)
+		if (!settings.raHardcoreMode && !gameId.empty())
 		{
 			std::string cheatFile = config::loadStr("cheats", gameId);
 			if (!cheatFile.empty())
@@ -556,10 +556,6 @@ found_cheats:
 			cheats.emplace_back(Cheat::Type::runNextIfEq, "bypass auth ifeq", true, 32, 0x0013f150, 0x2fd62fe6, true);
 			cheats.emplace_back(Cheat::Type::setValue, "bypass dricas auth", true, 32, 0x0013f150, 0xe000000b, true);
 		}
-		else if (gameId == "HDR-0124") {	// Hundred Swords
-			cheats.emplace_back(Cheat::Type::runNextIfEq, "bypass auth ifeq", true, 32, 0x006558ac, 0x1f414f22, true);
-			cheats.emplace_back(Cheat::Type::setValue, "bypass dricas auth", true, 32, 0x006558ac, 0xe000000b, true);
-		}
 		else if (gameId == "T43903M") {		// Culdcept II
 			cheats.emplace_back(Cheat::Type::runNextIfEq, "bypass auth ifeq", true, 32, 0x00800524, 0x2fd62fe6, true);
 			cheats.emplace_back(Cheat::Type::setValue, "bypass dricas auth", true, 32, 0x00800524, 0xe000000b, true);
@@ -578,6 +574,10 @@ found_cheats:
 		else if (gameId == "MK-51140") {	// Ooga Booga
 			cheats.emplace_back(Cheat::Type::runNextIfEq, "disable net check ifeq", true, 16, 0x00085d2c, 0x3630, true);
 			cheats.emplace_back(Cheat::Type::setValue, "disable net sync check",    true, 16, 0x00085d2c, 0x3330, true);
+		}
+		else if (gameId == "HDR-0006") {	// Nettou Golf
+			cheats.emplace_back(Cheat::Type::runNextIfEq, "bypass auth ifeq", true, 32, 0x0d5fbc, 0x2fd62fe6, true);
+			cheats.emplace_back(Cheat::Type::setValue, "bypass dricas auth",  true, 32, 0x0d5fbc, 0xe000000b, true);
 		}
 
 		if (cheats.size() > cheatCount)
@@ -1093,10 +1093,10 @@ void CheatManager::saveCheatFile(const std::string& filename)
 		i++;
 	}
 	cfg.set("", "cheats", i);
-	FILE *fp = hostfs::storage().openFile(filename.c_str(), "w");
+	hostfs::File *fp = hostfs::storage().openFile(filename.c_str(), "w");
 	if (fp == nullptr)
 		throw FlycastException(Ts("Can't save cheat file"));
 	cfg.save(fp);
-	fclose(fp);
+	delete fp;
 #endif
 }

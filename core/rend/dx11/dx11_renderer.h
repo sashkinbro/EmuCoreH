@@ -28,7 +28,6 @@
 #include "dx11_shaders.h"
 #include "dx11_renderstate.h"
 #include "dx11_naomi2.h"
-#include "rend/tileclip.h"
 #ifndef LIBRETRO
 #include "dx11_driver.h"
 #endif
@@ -104,7 +103,7 @@ protected:
 	void renderVideoRouting();
 	void resetContextState();
 	void drawOSD();
-	TileClipping setTileClip(u32 val, int clip_rect[4]);
+	TileClipping setTileClip(u32 val, Rect& rect);
 
 	ComPtr<ID3D11Device> device;
 	ComPtr<ID3D11DeviceContext> deviceContext;
@@ -123,7 +122,7 @@ protected:
 	BlendStates blendStates;
 	DepthStencilStates depthStencilStates;
 	Samplers *samplers;
-	TransformMatrix<COORD_DIRECTX> matrices;
+	TransformMatrix matrices{ true };
 	D3D11_RECT scissorRect{};
 	u32 width = 0;
 	u32 height = 0;

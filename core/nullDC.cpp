@@ -27,6 +27,22 @@
 static std::string lastStateFile;
 static time_t lastStateTime;
 
+#if defined(__ANDROID__)
+    #include <android/api-level.h>
+    // fmemopen was added in Marshmallow (API 23)
+    #if __ANDROID_API__ >= 23
+        #define HAS_FMEMOPEN
+    #endif
+#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__GLIBC__)
+    // Standard POSIX platforms usually have fmemopen
+    #define HAS_FMEMOPEN
+#endif
+
+#ifdef HAS_FMEMOPEN
+const u32 QUICKSAVE_DEFAULT_SIZE = 32 * 1024 * 1024; // 32 MB
+static u8 quicksave_buf[QUICKSAVE_DEFAULT_SIZE] = {0};
+#endif
+
 struct SavestateHeader
 {
 	void init()
@@ -84,6 +100,7 @@ int flycast_init(int argc, char* argv[])
 			LogManager::Init();
 			config::Settings::instance().load(false);
 		}
+		i18n::reloadLanguage();
 		gui_init();
 		os_CreateWindow();
 		os_SetupInput();
@@ -182,8 +199,23 @@ void dc_savestate(int index, const u8 *pngData, u32 pngSize)
 	ser = Serializer(data, ser.size());
 	dc_serialize(ser);
 
-	std::string filename = hostfs::getSavestatePath(index, true);
-	FILE *f = nowide::fopen(filename.c_str(), "wb");
+	hostfs::File *f = nullptr;
+	std::string filename = "";
+#ifdef HAS_FMEMOPEN
+	if (index == -2)
+	{
+		// in-ram savestate
+		filename = "RAM";
+		f = new hostfs::StdFile(fmemopen(quicksave_buf, QUICKSAVE_DEFAULT_SIZE, "wb"));
+	}
+	else
+#endif
+	{
+		// regular file savestate
+		filename = hostfs::getSavestatePath(index, true);
+		f = hostfs::storage().openFile(filename.c_str(), "wb");
+	}
+	
 	if (f == nullptr)
 	{
 		WARN_LOG(SAVESTATE, "Failed to save state - could not open %s for writing", filename.c_str());
@@ -196,15 +228,15 @@ void dc_savestate(int index, const u8 *pngData, u32 pngSize)
 	SavestateHeader header;
 	header.init();
 	header.pngSize = pngSize;
-	if (std::fwrite(&header, sizeof(header), 1, f) != 1)
+	if (f->write(&header, sizeof(header), 1) != 1)
 		goto fail;
-	if (pngSize > 0 && std::fwrite(pngData, 1, pngSize, f) != pngSize)
+	if (pngSize > 0 && f->write(pngData, 1, pngSize) != pngSize)
 		goto fail;
 
 #if 0
 	// Uncompressed savestate
-	std::fwrite(data, 1, ser.size(), f);
-	std::fclose(f);
+	f->write(data, 1, ser.size());
+	delete f;
 #else
 	if (!zipFile.Open(f, true))
 		goto fail;
@@ -224,7 +256,7 @@ fail:
 	if (zipFile.rawFile() != nullptr)
 		zipFile.Close();
 	else
-		std::fclose(f);
+		delete f;
 	free(data);
 	// delete failed savestate?
 }
@@ -235,8 +267,23 @@ void dc_loadstate(int index)
 		return;
 	u32 total_size = 0;
 
-	std::string filename = hostfs::getSavestatePath(index, false);
-	FILE *f = hostfs::storage().openFile(filename, "rb");
+	hostfs::File *f = nullptr;
+	std::string filename = "";
+#ifdef HAS_FMEMOPEN
+	if (index == -2)
+	{
+		// in-ram savestate
+		filename = "RAM";
+		f = new hostfs::StdFile(fmemopen(quicksave_buf, QUICKSAVE_DEFAULT_SIZE, "rb"));
+	}
+	else
+#endif
+	{
+		// regular file savestate
+		filename = hostfs::getSavestatePath(index, false);
+		f = hostfs::storage().openFile(filename, "rb");
+	}
+	
 	if (f == nullptr)
 	{
 		WARN_LOG(SAVESTATE, "Failed to load state - could not open %s for reading", filename.c_str());
@@ -244,26 +291,26 @@ void dc_loadstate(int index)
 		return;
 	}
 	SavestateHeader header;
-	if (std::fread(&header, sizeof(header), 1, f) == 1)
+	if (f->read(&header, sizeof(header), 1) == 1)
 	{
 		if (!header.isValid())
 			// seek to beginning of file if this isn't a valid header (legacy savestate)
-			std::fseek(f, 0, SEEK_SET);
+			f->seek(0, SEEK_SET);
 		else
 			// skip png data
-			std::fseek(f, header.pngSize, SEEK_CUR);
+			f->seek(header.pngSize, SEEK_CUR);
 	}
 	else {
 		// probably not a valid savestate but we'll fail later
-		std::fseek(f, 0, SEEK_SET);
+		f->seek(0, SEEK_SET);
 	}
 
 	if (index == -1 && config::GGPOEnable)
 	{
-		long pos = std::ftell(f);
+		long pos = f->tell();
 		MD5Sum().add(f)
 				.getDigest(settings.network.md5.savestate);
-		std::fseek(f, pos, SEEK_SET);
+		f->seek(pos, SEEK_SET);
 	}
 	RZipFile zipFile;
 	if (zipFile.Open(f, false)) {
@@ -271,10 +318,10 @@ void dc_loadstate(int index)
 	}
 	else
 	{
-		long pos = std::ftell(f);
-		std::fseek(f, 0, SEEK_END);
-		total_size = (u32)std::ftell(f) - pos;
-		std::fseek(f, pos, SEEK_SET);
+		long pos = f->tell();
+		f->seek(0, SEEK_END);
+		total_size = (u32)f->tell() - pos;
+		f->seek(pos, SEEK_SET);
 	}
 	void *data = malloc(total_size);
 	if (data == nullptr)
@@ -282,7 +329,7 @@ void dc_loadstate(int index)
 		WARN_LOG(SAVESTATE, "Failed to load state - could not malloc %d bytes", total_size);
 		os_notify(i18n::T("Failed to load state"), 5000, i18n::T("Not enough memory"));
 		if (zipFile.rawFile() == nullptr)
-			std::fclose(f);
+			delete f;
 		else
 			zipFile.Close();
 		return;
@@ -296,8 +343,8 @@ void dc_loadstate(int index)
 	}
 	else
 	{
-		read_size = std::fread(data, 1, total_size, f);
-		std::fclose(f);
+		read_size = f->read(data, 1, total_size);
+		delete f;
 	}
 	if (read_size != total_size)
 	{
@@ -328,15 +375,15 @@ time_t dc_getStateCreationDate(int index)
 	if (filename != lastStateFile)
 	{
 		lastStateFile = filename;
-		FILE *f = hostfs::storage().openFile(filename, "rb");
+		hostfs::File *f = hostfs::storage().openFile(filename, "rb");
 		if (f == nullptr)
 			lastStateTime = 0;
 		else
 		{
 			SavestateHeader header;
-			if (std::fread(&header, sizeof(header), 1, f) != 1 || !header.isValid())
+			if (f->read(&header, sizeof(header), 1) != 1 || !header.isValid())
 			{
-				std::fclose(f);
+				delete f;
 				try {
 					hostfs::FileInfo fileInfo = hostfs::storage().getFileInfo(filename);
 					lastStateTime = fileInfo.updateTime;
@@ -345,7 +392,7 @@ time_t dc_getStateCreationDate(int index)
 				}
 			}
 			else {
-				std::fclose(f);
+				delete f;
 				lastStateTime = (time_t)header.creationDate;
 			}
 		}
@@ -357,17 +404,17 @@ void dc_getStateScreenshot(int index, std::vector<u8>& pngData)
 {
 	pngData.clear();
 	std::string filename = hostfs::getSavestatePath(index, false);
-	FILE *f = hostfs::storage().openFile(filename, "rb");
+	hostfs::File *f = hostfs::storage().openFile(filename, "rb");
 	if (f == nullptr)
 		return;
 	SavestateHeader header;
-	if (std::fread(&header, sizeof(header), 1, f) == 1 && header.isValid() && header.pngSize != 0)
+	if (f->read(&header, sizeof(header), 1) == 1 && header.isValid() && header.pngSize != 0)
 	{
 		pngData.resize(header.pngSize);
-		if (std::fread(pngData.data(), 1, pngData.size(), f) != pngData.size())
+		if (f->read(pngData.data(), 1, pngData.size()) != pngData.size())
 			pngData.clear();
 	}
-	std::fclose(f);
+	delete f;
 }
 
 #endif

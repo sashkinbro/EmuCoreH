@@ -278,7 +278,7 @@ endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
 if(MSVC)
-	target_compile_options(${PROJECT_NAME} PRIVATE /GR /GS-)
+	target_compile_options(${PROJECT_NAME} PRIVATE /GR /GS- /utf-8)
 	if(WINDOWS_STORE)
 		target_compile_options(${PROJECT_NAME} PRIVATE /ZW)
 	endif()
@@ -888,7 +888,17 @@ if(NOT LIBRETRO)
 		core/deps/imgui/imgui_cjk.cpp
 		core/deps/imgui/imgui_stdlib.cpp
 		core/deps/imgui/imgui_tables.cpp
-		core/deps/imgui/imgui_widgets.cpp)
+		core/deps/imgui/imgui_widgets.cpp
+		core/deps/imgui/misc/freetype/imgui_freetype.cpp)
+
+	set(FT_DISABLE_BZIP2 ON CACHE BOOL "" FORCE)
+	set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
+	set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
+	add_subdirectory(core/deps/freetype EXCLUDE_FROM_ALL)
+	if(WINDOWS_STORE)
+		target_compile_definitions(freetype PRIVATE _WINRT_DLL)
+	endif()
+	target_link_libraries(${PROJECT_NAME} PRIVATE freetype)
 
 	if(ENABLE_FC_PROFILER)
 		target_include_directories(${PROJECT_NAME} PRIVATE core/deps/implot)
@@ -917,12 +927,15 @@ if(LIBRETRO)
 	target_sources(${PROJECT_NAME} PRIVATE
 		core/deps/libretro-common/memmap/memalign.c
 		core/deps/libretro-common/file/file_path.c
+		core/deps/libretro-common/file/file_path_io.c
 		core/deps/libretro-common/vfs/vfs_implementation.c
 		core/deps/libretro-common/encodings/encoding_utf.c
 		core/deps/libretro-common/compat/compat_strl.c
 		core/deps/libretro-common/compat/fopen_utf8.c
 		core/deps/libretro-common/compat/compat_strcasestr.c
 		core/deps/libretro-common/file/retro_dirent.c
+		core/deps/libretro-common/streams/file_stream.c
+		core/deps/libretro-common/time/rtime.c
 		core/deps/libretro-common/string/stdstring.c)
 	if(USE_OPENGL)
 		target_sources(${PROJECT_NAME} PRIVATE
@@ -947,6 +960,7 @@ if(LIBRETRO)
 		shell/libretro/LogManager.h
 		shell/libretro/option.cpp
 		shell/libretro/oslib.cpp
+		shell/libretro/storage.cpp
 		shell/libretro/vmu_xhair.cpp)
 	if(APPLE)
 		target_sources(${PROJECT_NAME} PRIVATE shell/libretro/oslib_apple.mm)
@@ -1072,12 +1086,14 @@ endif()
 
 target_sources(${PROJECT_NAME} PRIVATE
 		core/build.h
+		core/chd.h
 		core/cheats.cpp
 		core/cheats.h
 		core/emulator.h
 		core/nullDC.cpp
 		core/serialize.cpp
 		core/serialize.h
+		core/stbi.h
 		core/stdclass.cpp
 		core/stdclass.h
 		core/types.h
@@ -1090,11 +1106,12 @@ target_sources(${PROJECT_NAME} PRIVATE
 		core/rend/osd.h
 		core/rend/sorter.cpp
 		core/rend/sorter.h
-		core/rend/tileclip.h
 		core/rend/TexCache.cpp
 		core/rend/TexCache.h
 		core/rend/texconv.cpp
 		core/rend/texconv.h
+		core/rend/transform_matrix.cpp
+		core/rend/transform_matrix.h
 		core/rend/norend/norend.cpp)
 
 if(USE_VULKAN)
