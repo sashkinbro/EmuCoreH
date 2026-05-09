@@ -1168,6 +1168,9 @@ void WriteTextureToVRam(u32 width, u32 height, const u8 *data, u16 *dst, FB_W_CT
 		else
 			writeTexture<FBLineWriter1555<Red, Green, Blue, Alpha, TexPixelWriter, true>>(width, height, data, dst, fb_w_ctrl, linestride, clip);
 		break;
+	default:
+		ERROR_LOG(PVR, "Invalid/unsupported texture format: %d", fb_w_ctrl.fb_packmode);
+		break;
 	}
 }
 template void WriteTextureToVRam<0, 1, 2, 3>(u32 width, u32 height, const u8 *data, u16 *dst, FB_W_CTRL_type fb_w_ctrl, u32 linestride, const Rect& clip);
@@ -1237,7 +1240,7 @@ void WriteFramebuffer(u32 width, u32 height, const u8 *data, u32 dstAddr, FB_W_C
 		writeFramebufferLW<FBLineWriter8888<Red, Green, Blue, Alpha, FBPixelWriter>>(width, height, data, dstAddr, fb_w_ctrl, linestride, clip);
 		break;
 	default:
-		die("Invalid framebuffer format");
+		ERROR_LOG(PVR, "Invalid framebuffer format: %d", fb_w_ctrl.fb_packmode);
 		break;
 	}
 }
