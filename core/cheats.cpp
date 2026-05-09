@@ -575,6 +575,10 @@ found_cheats:
 			cheats.emplace_back(Cheat::Type::runNextIfEq, "disable net check ifeq", true, 16, 0x00085d2c, 0x3630, true);
 			cheats.emplace_back(Cheat::Type::setValue, "disable net sync check",    true, 16, 0x00085d2c, 0x3330, true);
 		}
+		else if (gameId == "HDR-0006") {	// Nettou Golf
+			cheats.emplace_back(Cheat::Type::runNextIfEq, "bypass auth ifeq", true, 32, 0x0d5fbc, 0x2fd62fe6, true);
+			cheats.emplace_back(Cheat::Type::setValue, "bypass dricas auth",  true, 32, 0x0d5fbc, 0xe000000b, true);
+		}
 
 		if (cheats.size() > cheatCount)
 			setActive(true);
