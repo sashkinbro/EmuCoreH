@@ -1562,48 +1562,65 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_setTextureReplacementsPathOverride(
          g_frontend.save_dir.c_str());
 }
 
+// Turns one "ADDRESS VALUE" line into the eight-hex-digit groups the core's
+// cheat parser expects, dropping the decoration some converters keep.
+std::string NormalizeCheatCodeLine(const std::string& raw) {
+    std::string result;
+    size_t start = 0;
+    while (start < raw.size()) {
+        size_t end = raw.find_first_of(" \t", start);
+        if (end == std::string::npos) end = raw.size();
+        std::string token = raw.substr(start, end - start);
+        start = end + 1;
+        token.erase(std::remove_if(token.begin(), token.end(), [](unsigned char c) {
+            return !std::isxdigit(c);
+        }), token.end());
+        if (token.empty()) continue;
+        // The address group is always eight digits; a shorter trailing value is
+        // the code's payload and is left-padded instead of rejected.
+        if (token.size() < 8) token.insert(0, 8 - token.size(), '0');
+        if (!result.empty()) result += ' ';
+        result += token;
+    }
+    return result;
+}
+
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_loadCheats(JNIEnv* env, jobject, jstring source_path) {
-    if (source_path == nullptr || !g_frontend.game_loaded.load()) return;
+    if (g_core.cheat_reset != nullptr) g_core.cheat_reset();
+    if (source_path == nullptr || !g_frontend.game_loaded.load() || g_core.cheat_set == nullptr) {
+        return;
+    }
     const std::string path = ToString(env, source_path);
     std::ifstream input(path, std::ios::binary);
     if (!input) return;
-    std::string first_line;
-    std::getline(input, first_line);
-    if (first_line.rfind("_S ", 0) != 0) return;
-    const std::string game_id = first_line.substr(3);
-    if (game_id.size() != 9 ||
-        !std::all_of(game_id.begin(), game_id.begin() + 4, [](unsigned char c) { return c >= 'A' && c <= 'Z'; }) ||
-        !std::all_of(game_id.begin() + 4, game_id.end(), [](unsigned char c) { return c >= '0' && c <= '9'; })) {
-        return;
-    }
-    input.seekg(0, std::ios::end);
-    const auto size = input.tellg();
-    if (size <= 0 || size > 1024 * 1024) return;
-    input.seekg(0);
-    std::error_code error;
-    const auto directory = std::filesystem::path(g_frontend.save_dir) / "PSP" / "Cheats";
-    std::filesystem::create_directories(directory, error);
-    if (error) return;
-    const auto target = directory / (game_id + ".ini");
-    const auto temporary = directory / (game_id + ".ini.tmp");
-    {
-        std::ofstream output(temporary, std::ios::binary | std::ios::trunc);
-        if (!output) return;
-        output << input.rdbuf();
-        output.flush();
-        if (!output) {
-            std::filesystem::remove(temporary, error);
-            return;
+    // The cheat manager stages one "// <label>" section per selected block,
+    // followed by address/value code lines. Every section is handed to the
+    // core as one libretro cheat entry.
+    std::string codes;
+    unsigned index = 0;
+    std::string line;
+    while (std::getline(input, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        const size_t start = line.find_first_not_of(" \t");
+        if (start == std::string::npos) continue;
+        const std::string trimmed = line.substr(start);
+        if (trimmed.rfind("//", 0) == 0 || trimmed.rfind("#", 0) == 0) {
+            if (!codes.empty()) {
+                g_core.cheat_set(index++, true, codes.c_str());
+                codes.clear();
+            }
+            continue;
         }
+        if (trimmed.rfind("Author", 0) == 0 && trimmed.find('=') != std::string::npos) continue;
+        const std::string normalized = NormalizeCheatCodeLine(trimmed);
+        if (normalized.empty()) continue;
+        if (!codes.empty()) codes += ' ';
+        codes += normalized;
     }
-    std::filesystem::rename(temporary, target, error);
-    if (error) {
-        std::filesystem::remove(target, error);
-        error.clear();
-        std::filesystem::rename(temporary, target, error);
+    if (!codes.empty()) {
+        g_core.cheat_set(index, true, codes.c_str());
     }
-    if (!error && g_core.cheat_reload != nullptr) g_core.cheat_reload();
 }
 
 JNIEXPORT void JNICALL

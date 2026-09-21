@@ -237,7 +237,7 @@ class CheatRepository(private val context: Context) {
         writeTextAtomically(target, contents)
         recordActiveCheatFile(normalizedGameKey, target)
         val coreTarget = coreCheatFile(target)
-        val coreContents = buildCoreCheatContents(blocks, normalizedSerial)
+        val coreContents = buildCoreCheatContents(blocks)
         if (coreContents == null) {
             if (coreTarget.exists()) coreTarget.delete()
         } else {
@@ -377,26 +377,20 @@ class CheatRepository(private val context: Context) {
     private fun coreCheatFile(pnachFile: File): File =
         File(pnachFile.parentFile, "${pnachFile.nameWithoutExtension}.ini")
 
-    private fun buildCoreCheatContents(blocks: List<CheatBlock>, serial: String?): String? {
-        val gameId = serial?.replace(Regex("[^A-Za-z0-9]"), "")?.uppercase(Locale.US)
-            ?.takeIf { it.matches(Regex("[A-Z]{4}[0-9]{5}")) } ?: return null
-        val output = StringBuilder()
-        output.append("_S ").append(gameId).append('\n')
-        var convertedAny = false
-        blocks.forEach { block ->
-            val codeLines = convertCheatBlock(block) ?: return@forEach
-            convertedAny = true
-            val title = cheatBlockLabel(block).replace('\n', ' ').replace('\r', ' ')
-            output.append("_C1 ").append(title).append('\n')
-            codeLines.forEach { code ->
-                val parts = code.trim().split(Regex("\\s+"), limit = 2)
-                if (parts.size == 2) {
-                    output.append("_L 0x").append(parts[0]).append(" 0x")
-                        .append(parts[1].padStart(8, '0')).append('\n')
-                }
+    /**
+     * Staging file handed to the native bridge, which forwards every block to
+     * the core's cheat API. The core parses the "ADDRESS VALUE" pairs.
+     */
+    private fun buildCoreCheatContents(blocks: List<CheatBlock>): String? {
+        val usable = blocks.filter { !convertCheatBlock(it).isNullOrEmpty() }
+        if (usable.isEmpty()) return null
+        return buildString {
+            usable.forEach { block ->
+                append("// ").append(cheatBlockLabel(block).replace('\n', ' ').replace('\r', ' ')).append('\n')
+                block.lines.forEach { line -> append(line.trim()).append('\n') }
+                append('\n')
             }
         }
-        return if (convertedAny) output.toString() else null
     }
 
     private fun convertCheatBlock(block: CheatBlock): List<String>? {

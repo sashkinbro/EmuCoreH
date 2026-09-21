@@ -83,6 +83,13 @@ public:
 	// Returns true if using 16:9 anamorphic screen ratio
 	bool isWidescreen() const { return widescreen_cheat != nullptr; }
 	void addGameSharkCheat(const std::string& name, const std::string& s);
+	/** Drops every cheat added at or after [index], used by the libretro cheat API. */
+	void removeCheatsFrom(size_t index)
+	{
+		if (index < cheats.size())
+			cheats.erase(cheats.begin() + index, cheats.end());
+		setActive(!cheats.empty());
+	}
 
 private:
 	u32 readRam(u32 addr, u32 bits);
