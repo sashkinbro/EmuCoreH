@@ -237,13 +237,12 @@ fun AppNavigation(
             val hasGameFolder = withContext(Dispatchers.IO) {
                 SetupValidator.isAnyGameFolderPresentForStartup(context, gamePaths)
             }
-            // PPSSPP boots without a firmware dump, so only a game folder is
-            // required before the home screen opens.
-            val hasUsableBios = true
-            val shouldOpenHome = onboardingCompleted && hasUsableBios && hasGameFolder
+            // Dreamcast boots through the HLE BIOS without a dump, so only a
+            // game folder is required before the home screen opens.
+            val shouldOpenHome = onboardingCompleted && hasGameFolder
             Log.i(
                 TAG,
-                "Startup destination onboarding=$onboardingCompleted bios=$hasUsableBios gameFolder=$hasGameFolder launch=${launchRequest != null}"
+                "Startup destination onboarding=$onboardingCompleted gameFolder=$hasGameFolder launch=${launchRequest != null}"
             )
             if (shouldOpenHome) StartupDestination.HOME else StartupDestination.ONBOARDING
         }.first()
