@@ -2620,4 +2620,7 @@
     <string name="flycast_opt_vmu4_screen_opacity_choice_v80">80%</string>
     <string name="flycast_opt_vmu4_screen_opacity_choice_v90">90%</string>
     <string name="flycast_opt_vmu4_screen_opacity_choice_v100">100%</string>
+    <string name="vmu_cards_count">بطاقات الذاكرة: %1$d</string>
+    <string name="vmu_port_slot">المنفذ %1$s · الفتحة %2$s</string>
+    <string name="vmu_system_memory">ذاكرة النظام</string>
 </resources>

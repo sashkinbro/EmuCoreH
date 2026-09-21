@@ -8,7 +8,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-data class VmuFile(val name: String, val bytes: Long)
+data class VmuFile(val name: String, val bytes: Long, val modifiedAt: Long)
 
 /**
  * Flycast stores Visual Memory Units as 128 KiB `*.bin` images. With the
@@ -26,7 +26,7 @@ class VmuRepository(private val context: Context) {
 
     fun vmus(): List<VmuFile> = saveDirectory.listFiles().orEmpty()
         .filter { it.isFile && it.name.endsWith(".bin", ignoreCase = true) }
-        .map { file -> VmuFile(file.name, file.length()) }
+        .map { file -> VmuFile(file.name, file.length(), file.lastModified()) }
         .sortedBy { it.name.lowercase() }
 
     /** Creates the eight shared VMU images (A1/A2/B1/B2/C1/C2/D1/D2). */
