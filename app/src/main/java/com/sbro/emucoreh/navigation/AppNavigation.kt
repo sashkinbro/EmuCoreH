@@ -367,6 +367,11 @@ fun AppNavigation(
     val launchGamePickerAction: () -> Unit = {
         launchGamePicker.launch(arrayOf("*/*"))
     }
+    val launchBiosAction: () -> Unit = {
+        navController.navigate(EmulationRoute(bootBios = true)) {
+            launchSingleTop = true
+        }
+    }
     val resetAllSettingsAndOpenOnboarding: () -> Unit = {
         scope.launch {
             preferences.resetAllSettings()
@@ -450,11 +455,7 @@ fun AppNavigation(
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
                     onLaunchGame = launchGamePickerAction,
-                    onLaunchBios = {
-                        navController.navigate(EmulationRoute(bootBios = true)) {
-                            launchSingleTop = true
-                        }
-                    }
+                    onLaunchBios = launchBiosAction
                 ) { openDrawer ->
                     HomeScreen(
                         onGameClick = { game ->
@@ -550,7 +551,8 @@ fun AppNavigation(
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
                     onBackClick = { navController.popBackStack() },
-                    onLaunchGame = launchGamePickerAction
+                    onLaunchGame = launchGamePickerAction,
+                    onLaunchBios = launchBiosAction
                 ) {
                     CatalogSearchScreen(
                         onGameClick = { igdbId ->
@@ -621,12 +623,8 @@ fun AppNavigation(
                         onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
                         onBackClick = { navController.popBackStack() },
-                        onLaunchGame = launchGamePickerAction,
-                        onLaunchBios = {
-                            navController.navigate(EmulationRoute(bootBios = true)) {
-                                launchSingleTop = true
-                            }
-                        }
+                    onLaunchGame = launchGamePickerAction,
+                    onLaunchBios = launchBiosAction
                     ) {
                         HubScreen(
                             onBackClick = { navController.popBackStack() },
@@ -722,7 +720,8 @@ fun AppNavigation(
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
                     onBackClick = { navController.popBackStack() },
-                    onLaunchGame = launchGamePickerAction
+                    onLaunchGame = launchGamePickerAction,
+                    onLaunchBios = launchBiosAction
                 ) {
                     SupportedFormatsScreen(
                         onBackClick = { navController.popBackStack() }
@@ -759,7 +758,8 @@ fun AppNavigation(
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
                     onBackClick = { navController.popBackStack() },
-                    onLaunchGame = launchGamePickerAction
+                    onLaunchGame = launchGamePickerAction,
+                    onLaunchBios = launchBiosAction
                 ) {
                     DiscordScreen(onBackClick = { navController.popBackStack() })
                 }
@@ -802,7 +802,8 @@ fun AppNavigation(
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
                     onBackClick = { navController.popBackStack() },
-                    onLaunchGame = launchGamePickerAction
+                    onLaunchGame = launchGamePickerAction,
+                    onLaunchBios = launchBiosAction
                 ) {
                     SettingsScreen(
                         initialTab = route.tab,
@@ -964,7 +965,8 @@ fun AppNavigation(
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
                     onBackClick = { navController.popBackStack() },
-                    onLaunchGame = launchGamePickerAction
+                    onLaunchGame = launchGamePickerAction,
+                    onLaunchBios = launchBiosAction
                 ) {
                     FeedbackScreen(onBackClick = { navController.popBackStack() })
                 }
