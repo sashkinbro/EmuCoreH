@@ -13,6 +13,7 @@ import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.GameMetadataReader
 import com.sbro.emucoreh.data.catalog.TitleIndexRepository
 import java.io.File
+import java.util.Locale
 
 data class GameItem(
     val title: String,
@@ -21,7 +22,9 @@ data class GameItem(
     val fileSize: Long,
     val lastModified: Long,
     val coverArtPath: String? = null,
-    val serial: String? = null
+    val serial: String? = null,
+    /** Total size of every track a multi-file disc image references. */
+    val discSize: Long? = null
 )
 
 class GameRepository {
@@ -33,6 +36,8 @@ class GameRepository {
         private val COVER_DIRECTORY_NAMES = setOf("covers", "cover", "art", "artwork", "boxart", "box art")
         private const val MAX_DOCUMENT_SCAN_DEPTH = 32
         private const val MAX_DOCUMENT_SCAN_ENTRIES = 20_000
+        // CUE/GDI/M3U descriptors are a few kilobytes at most.
+        private const val MAX_CONTAINER_BYTES = 1L * 1024L * 1024L
         internal fun libraryIdentity(path: String): String {
             if (!path.startsWith("content://")) {
                 return runCatching { File(path).canonicalPath }
@@ -155,6 +160,9 @@ class GameRepository {
     ): List<GameItem> {
         val items = mutableListOf<GameItem>()
         val children = dir.listFiles().orEmpty()
+        val siblingsByName = children
+            .filter { it.isFile }
+            .associateBy { it.name.lowercase(Locale.US) }
         val coverCandidates = buildLocalCoverCandidates(children)
         val coverRepository = CoverArtRepository(context)
         val customCoverRepository = CustomGameCoverRepository(context)
@@ -213,6 +221,15 @@ class GameRepository {
                         path = file.absolutePath,
                         fileName = file.name,
                         fileSize = entrySize,
+                        discSize = DiscSizeResolver.resolve(
+                            entryName = file.name,
+                            sizeOf = { name -> siblingsByName[name.lowercase(Locale.US)]?.length() },
+                            readText = { name ->
+                                siblingsByName[name.lowercase(Locale.US)]
+                                    ?.takeIf { it.length() <= MAX_CONTAINER_BYTES }
+                                    ?.let { runCatching { it.readText() }.getOrNull() }
+                            }
+                        ),
                         lastModified = file.lastModified(),
                         coverArtPath = customCoverRepository.findCustomCoverPath(file.absolutePath)
                             ?: coverRepository.findCachedCoverPath(serial)
@@ -242,6 +259,11 @@ class GameRepository {
         }
         val items = mutableListOf<GameItem>()
         val children = runCatching { docFile.listFiles() }.getOrDefault(emptyArray())
+        val siblingsByName = lazy {
+            children.mapNotNull { child ->
+                documentDisplayName(context, child)?.lowercase(Locale.US)?.let { it to child }
+            }.toMap()
+        }
         val coverCandidates = buildDocumentCoverCandidates(children)
         val coverRepository = CoverArtRepository(context)
         val customCoverRepository = CustomGameCoverRepository(context)
@@ -312,6 +334,25 @@ class GameRepository {
                         path = uriPath,
                         fileName = name,
                         fileSize = entrySize,
+                        discSize = DiscSizeResolver.resolve(
+                            entryName = name,
+                            sizeOf = { siblingName ->
+                                siblingsByName.value[siblingName.lowercase(Locale.US)]
+                                    ?.let { runCatching { it.length() }.getOrNull() }
+                                    ?.takeIf { it > 0L }
+                            },
+                            readText = { siblingName ->
+                                siblingsByName.value[siblingName.lowercase(Locale.US)]
+                                    ?.takeIf { runCatching { it.length() }.getOrDefault(0L) <= MAX_CONTAINER_BYTES }
+                                    ?.let { sibling ->
+                                        runCatching {
+                                            context.contentResolver.openInputStream(sibling.uri)?.use { stream ->
+                                                stream.bufferedReader().readText()
+                                            }
+                                        }.getOrNull()
+                                    }
+                            }
+                        ),
                         lastModified = lastModified,
                         coverArtPath = customCoverRepository.findCustomCoverPath(uriPath)
                             ?: coverRepository.findCachedCoverUri(serial)

@@ -1550,7 +1550,7 @@ private fun GameListCard(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = formatCompactFileSize(game.fileSize),
+                    text = formatCompactFileSize(game.discSize ?: game.fileSize),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.align(Alignment.End)

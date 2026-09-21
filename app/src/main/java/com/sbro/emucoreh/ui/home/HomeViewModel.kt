@@ -643,11 +643,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     .thenBy { normalizeSortToken(it.title) }
             )
             HomeSortOption.SIZE_DESC -> filtered.sortedWith(
-                compareByDescending<GameItem> { it.fileSize }
+                compareByDescending<GameItem> { it.discSize ?: it.fileSize }
                     .thenBy { normalizeSortToken(it.title) }
             )
             HomeSortOption.SIZE_ASC -> filtered.sortedWith(
-                compareBy<GameItem> { it.fileSize }
+                compareBy<GameItem> { it.discSize ?: it.fileSize }
                     .thenBy { normalizeSortToken(it.title) }
             )
         }
