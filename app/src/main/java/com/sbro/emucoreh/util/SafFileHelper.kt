@@ -39,6 +39,6 @@ object SafFileHelper {
 
     fun isValidDiscUri(context: Context, uri: Uri): Boolean {
         val name = getDisplayName(context, uri) ?: return false
-        return com.sbro.emucoreh.core.GameFormats.isSupportedName(name)
+        return com.sbro.emucoreh.core.GameFormats.isLaunchableName(name)
     }
 }

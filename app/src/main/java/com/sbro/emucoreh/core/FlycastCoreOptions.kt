@@ -535,18 +535,10 @@ object FlycastCoreOptions {
             ),
             defaultValue = "enabled",
         ),
-        // performance
-        Option(
-            key = "reicast_threaded_rendering",
-            labelRes = R.string.flycast_opt_threaded_rendering_label,
-            descriptionRes = R.string.flycast_opt_threaded_rendering_info,
-            category = "performance",
-            choices = listOf(
-                Choice("disabled", R.string.flycast_choice_disabled),
-                Choice("enabled", R.string.flycast_choice_enabled),
-            ),
-            defaultValue = "disabled",
-        ),
+        // Threaded rendering stays out of the settings: this core build bypasses
+        // the vblank pacing with it, which doubles the speed of 30 fps scenes
+        // (boot logos, cutscenes). The single-threaded renderer paced by the
+        // audio push-back keeps every game at real time.
         // performance
         Option(
             key = "reicast_auto_skip_frame",

@@ -1044,5 +1044,5 @@ fun AppNavigation(
 }
 
 private fun isSupportedGameImage(fileName: String): Boolean {
-    return com.sbro.emucoreh.core.GameFormats.isSupportedName(fileName)
+    return com.sbro.emucoreh.core.GameFormats.isLaunchableName(fileName)
 }
