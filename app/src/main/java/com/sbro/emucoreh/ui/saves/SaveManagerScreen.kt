@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -673,18 +674,20 @@ private fun SaveEntryCard(
             ) {
                 Surface(
                     modifier = Modifier
-                        .width(152.dp),
+                        .width(152.dp)
+                        .aspectRatio(4f / 3f),
                     shape = neonShape(4.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
                     tonalElevation = 0.dp,
                     shadowElevation = 0.dp
                 ) {
+                    // The core writes the console frame into a wider canvas with
+                    // black bars on the sides, so crop them away.
                     GameCoverArt(
                         coverPath = previewPath,
                         fallbackTitle = entry.gameTitle,
-                        modifier = Modifier.fillMaxWidth(),
-                        contentScale = ContentScale.Fit,
-                        matchImageAspectRatio = true
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
                 }
 
