@@ -112,7 +112,6 @@ object GamepadManager {
     const val ACTION_QUICK_SAVE = "quick_save"
     const val ACTION_QUICK_LOAD = "quick_load"
     const val ACTION_FAST_FORWARD = "fast_forward"
-    const val ACTION_REWIND = "rewind"
     private val FINGERPRINT_UINPUT_DEVICE_TOKENS = setOf(
         "uinput-fpc",
         "uinput-goodix",
@@ -270,7 +269,6 @@ object GamepadManager {
         const val Pressure = 124
         const val AnalogToggle = 125
         const val FastForward = 126
-        const val Rewind = 127
     }
 
     private val mappableActions = listOf(
@@ -285,12 +283,16 @@ object GamepadManager {
         MappableButtonAction("l3", PadKey.L3, listOf(KeyEvent.KEYCODE_BUTTON_THUMBL)),
         MappableButtonAction("r3", PadKey.R3, listOf(KeyEvent.KEYCODE_BUTTON_THUMBR)),
         MappableButtonAction("select", PadKey.Select, listOf(KeyEvent.KEYCODE_BUTTON_SELECT, KeyEvent.KEYCODE_BUTTON_9)),
+        // Arcade service switches (Naomi/Atomiswave). They share the pad keys
+        // of Select, L3 and R3 so a bound gamepad button reaches the core.
+        MappableButtonAction("coin", PadKey.Select, listOf(KeyEvent.KEYCODE_BUTTON_SELECT, KeyEvent.KEYCODE_BUTTON_9)),
+        MappableButtonAction("test", PadKey.L3, listOf(KeyEvent.KEYCODE_BUTTON_THUMBL)),
+        MappableButtonAction("service", PadKey.R3, listOf(KeyEvent.KEYCODE_BUTTON_THUMBR)),
         MappableButtonAction("start", PadKey.Start, listOf(KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_BUTTON_10)),
         MappableButtonAction("left_input_toggle", PadKey.AnalogToggle, emptyList()),
         MappableButtonAction(ACTION_QUICK_SAVE, null, emptyList()),
         MappableButtonAction(ACTION_QUICK_LOAD, null, emptyList()),
         MappableButtonAction(ACTION_FAST_FORWARD, PadKey.FastForward, listOf(KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_BUTTON_10)),
-        MappableButtonAction(ACTION_REWIND, PadKey.Rewind, listOf(KeyEvent.KEYCODE_BUTTON_SELECT, KeyEvent.KEYCODE_BUTTON_9)),
         MappableButtonAction("dpad_up", PadKey.Up, listOf(KeyEvent.KEYCODE_DPAD_UP)),
         MappableButtonAction("dpad_down", PadKey.Down, listOf(KeyEvent.KEYCODE_DPAD_DOWN)),
         MappableButtonAction("dpad_left", PadKey.Left, listOf(KeyEvent.KEYCODE_DPAD_LEFT)),

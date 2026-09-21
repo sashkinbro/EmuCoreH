@@ -415,8 +415,8 @@ fun buildOverlayCanvasLayout(
     val startWidth = wideCenterW * (startLayout.scale / 100f)
     val coreCenterItems = buildList {
         if (selectLayout.visible) add("select" to selectWidth)
-        if (toggleLayout.visible) add("left_input_toggle" to toggleSize)
         if (startLayout.visible) add("start" to startWidth)
+        if (toggleLayout.visible) add("left_input_toggle" to toggleSize)
     }
     val coreCenterWidths = coreCenterItems.map { it.second }
 
@@ -426,10 +426,11 @@ fun buildOverlayCanvasLayout(
         else -> 0.dp
     }
 
-    fun centerNudgeY(id: String): Dp = if (id == "left_input_toggle") {
-        OverlayCenterToggleOpticalNudgeY
-    } else {
-        0.dp
+    fun centerNudgeY(id: String): Dp = when (id) {
+        "left_input_toggle" -> OverlayCenterToggleOpticalNudgeY
+        // Arcade service switches sit on a row directly above Start.
+        "coin", "test", "service" -> -(centerH + centerInlineGap)
+        else -> 0.dp
     }
 
     fun coreCenterBaseX(id: String): Dp? {
@@ -441,13 +442,16 @@ fun buildOverlayCanvasLayout(
         }
     }
 
-    val fallbackCoreWidths = listOf(selectWidth, toggleSize, startWidth)
+    val fallbackCoreWidths = listOf(selectWidth, startWidth, toggleSize)
 
     fun fallbackCenterX(id: String): Dp {
         return when (id) {
             "select" -> centerAnchorX + overlayInlineGroupOffset(fallbackCoreWidths, centerInlineGap, 0) + OverlayCenterSelectOpticalNudgeX
-            "left_input_toggle" -> centerAnchorX + overlayInlineGroupOffset(fallbackCoreWidths, centerInlineGap, 1)
-            "start" -> centerAnchorX + overlayInlineGroupOffset(fallbackCoreWidths, centerInlineGap, 2) + OverlayCenterStartOpticalNudgeX
+            "start" -> centerAnchorX + overlayInlineGroupOffset(fallbackCoreWidths, centerInlineGap, 1) + OverlayCenterStartOpticalNudgeX
+            "left_input_toggle" -> centerAnchorX + overlayInlineGroupOffset(fallbackCoreWidths, centerInlineGap, 2)
+            "coin" -> centerAnchorX - (centerInlineGap + wideCenterW)
+            "test" -> centerAnchorX
+            "service" -> centerAnchorX + (centerInlineGap + wideCenterW)
             else -> centerAnchorX
         }
     }
@@ -483,6 +487,27 @@ fun buildOverlayCanvasLayout(
             width = selectWidth,
             height = centerH * (selectLayout.scale / 100f),
             visible = previewMode || selectLayout.visible,
+            shape = RoundedCornerShape(8.dp)
+        ),
+        centerButtonSpec(
+            id = "coin",
+            width = wideCenterW * (layoutFor("coin").scale / 100f),
+            height = centerH * (layoutFor("coin").scale / 100f),
+            visible = previewMode || layoutFor("coin").visible,
+            shape = RoundedCornerShape(8.dp)
+        ),
+        centerButtonSpec(
+            id = "test",
+            width = wideCenterW * (layoutFor("test").scale / 100f),
+            height = centerH * (layoutFor("test").scale / 100f),
+            visible = previewMode || layoutFor("test").visible,
+            shape = RoundedCornerShape(8.dp)
+        ),
+        centerButtonSpec(
+            id = "service",
+            width = wideCenterW * (layoutFor("service").scale / 100f),
+            height = centerH * (layoutFor("service").scale / 100f),
+            visible = previewMode || layoutFor("service").visible,
             shape = RoundedCornerShape(8.dp)
         ),
         centerButtonSpec(

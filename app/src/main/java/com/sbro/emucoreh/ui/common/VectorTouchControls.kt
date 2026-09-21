@@ -125,6 +125,11 @@ fun overlayDrawableForControl(controlId: String): Int? = when (controlId) {
     "start" -> R.drawable.ic_controller_start_button
     "l3" -> R.drawable.ic_controller_l3_button
     "r3" -> R.drawable.ic_controller_r3_button
+    // Arcade service switches. They stay hidden until the user enables them in
+    // the controls editor.
+    "coin" -> R.drawable.ic_controller_select_button
+    "test" -> R.drawable.ic_controller_l3_button
+    "service" -> R.drawable.ic_controller_r3_button
     "left_input_toggle" -> R.drawable.ic_controller_analog_button
     "pressure" -> R.drawable.ic_controller_pressure_modifier
     else -> null

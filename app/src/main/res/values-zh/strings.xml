@@ -266,6 +266,9 @@
     <string name="settings_gamepad_action_l3">L3</string>
     <string name="settings_gamepad_action_r3">R3</string>
     <string name="settings_gamepad_action_select">Select</string>
+    <string name="settings_gamepad_action_coin">硬币</string>
+    <string name="settings_gamepad_action_test">测试</string>
+    <string name="settings_gamepad_action_service">服务</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_dpad_up">方向鍵 上</string>
     <string name="settings_gamepad_action_dpad_down">方向鍵 下</string>

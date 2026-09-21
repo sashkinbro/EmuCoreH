@@ -1165,6 +1165,10 @@ int16_t RetroInputState(unsigned port, unsigned device, unsigned index, unsigned
         // fallback.
         if (pressed(8)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_L2;
         if (pressed(9)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_R2;
+        // Arcade (Naomi/Atomiswave) service switches: the core maps L3 to Test
+        // and R3 to Service, SELECT to Coin and L to Insert Card.
+        if (pressed(1)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_L3;
+        if (pressed(2)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_R3;
         if (pressed(3)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_START;
         if (pressed(0)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_SELECT;
         if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return static_cast<int16_t>(active);

@@ -633,6 +633,9 @@
     <string name="settings_gamepad_action_l3">L3</string>
     <string name="settings_gamepad_action_r3">R3</string>
     <string name="settings_gamepad_action_select">Select</string>
+    <string name="settings_gamepad_action_coin">Moneta</string>
+    <string name="settings_gamepad_action_test">Test</string>
+    <string name="settings_gamepad_action_service">Serwis</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">Przełącznik podwójnego sterowania (Left Toggle)</string>
     <string name="settings_gamepad_action_pressure">Modyfikator stopnia wciśnięcia / nacisku w grach dla przycisków (Pressure Modifier)</string>
