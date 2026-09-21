@@ -137,9 +137,7 @@ struct FrontendState {
 
     std::string system_dir;
     std::string save_dir;
-    // The unmodified frontend save directory. Flycast derives its memstick
-    // texture path as <save_dir>/PSP/TEXTURES, so the Kotlin side passes that
-    // final texture directory and we retain the corresponding memstick root.
+    // Save directory used when no data root override is configured.
     std::string default_save_dir;
     std::string core_assets_dir;
     std::string native_library_dir;
@@ -209,23 +207,6 @@ struct FrontendState {
 };
 
 FrontendState g_frontend;
-
-std::string MemStickRootFromTextureDirectory(std::string texture_directory) {
-    while (!texture_directory.empty() &&
-           (texture_directory.back() == '/' || texture_directory.back() == '\\')) {
-        texture_directory.pop_back();
-    }
-    constexpr char kTextureSuffix[] = "/PSP/TEXTURES";
-    if (texture_directory.size() < sizeof(kTextureSuffix) - 1) return texture_directory;
-
-    const size_t suffix_start = texture_directory.size() - (sizeof(kTextureSuffix) - 1);
-    for (size_t i = 0; i < sizeof(kTextureSuffix) - 1; ++i) {
-        const auto actual = static_cast<unsigned char>(texture_directory[suffix_start + i]);
-        const auto expected = static_cast<unsigned char>(kTextureSuffix[i]);
-        if (std::tolower(actual) != std::tolower(expected)) return texture_directory;
-    }
-    return texture_directory.substr(0, suffix_start);
-}
 
 // ---------------------------------------------------------------------------
 // OpenGL ES hardware renderer state. Created and used exclusively on the frame
@@ -1551,15 +1532,11 @@ JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_setMemoryCardPath(JNIEnv*, jobject, jint, jstring) {}
 
 JNIEXPORT void JNICALL
-Java_com_sbro_emucoreh_core_NativeCoreBridge_setTextureReplacementsPathOverride(JNIEnv* env, jobject,
-                                                                                 jstring path) {
-    const std::string texture_directory = ToString(env, path);
+Java_com_sbro_emucoreh_core_NativeCoreBridge_setDataRootOverride(JNIEnv* env, jobject,
+                                                                  jstring path) {
+    const std::string data_root = ToString(env, path);
     std::lock_guard<std::mutex> lock(g_frontend.mutex);
-    g_frontend.save_dir = texture_directory.empty()
-        ? g_frontend.default_save_dir
-        : MemStickRootFromTextureDirectory(texture_directory);
-    LOGI("Texture replacement root=%s, Flycast memstick=%s", texture_directory.c_str(),
-         g_frontend.save_dir.c_str());
+    g_frontend.save_dir = data_root.empty() ? g_frontend.default_save_dir : data_root;
 }
 
 // Turns one "ADDRESS VALUE" line into the eight-hex-digit groups the core's

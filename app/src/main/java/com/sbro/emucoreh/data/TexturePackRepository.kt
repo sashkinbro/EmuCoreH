@@ -36,13 +36,12 @@ data class TextureImportResult(
 )
 
 /**
- * Installs and manages PPSSPP replacement texture packs.
+ * Installs and manages Flycast replacement texture packs.
  *
- * Packs live under `<emulator data root>/PSP/TEXTURES/<DISC_ID>/`, where the
- * directory uses PPSSPP's compact disc ID form (for example `ULJS00167`).
- * Every installed pack contains a `textures.ini` plus its referenced image
- * assets. The native bridge points PPSSPP's memstick directory at this same
- * data root, so the manager and the emulator use one directory tree.
+ * Packs live under `<system>/dc/textures/<GAME_ID>/`, the directory Flycast
+ * itself resolves custom textures from. The game id is the disc product code
+ * from the IP.BIN (for example `MK-51035`), so the emulator picks the pack up
+ * without any extra configuration.
  */
 class TexturePackRepository(
     private val context: Context,
@@ -51,7 +50,7 @@ class TexturePackRepository(
     private val textureExtensions = setOf(
         "png", "jpg", "jpeg", "tga", "bmp", "dds", "ktx2", "webp", "zim"
     )
-    private val serialPattern = Regex("[A-Z]{4}[-_ ]?\\d{5}", RegexOption.IGNORE_CASE)
+    private val serialPattern = Regex("\\b[A-Z0-9]{1,4}[-_ ][0-9]{3,5}[A-Z]?\\b", RegexOption.IGNORE_CASE)
     private val libraryCacheRepository = GameLibraryCacheRepository(context.applicationContext)
 
     suspend fun listPacks(): TexturePackSummary {
@@ -303,7 +302,7 @@ class TexturePackRepository(
     }
 
     private fun texturesRoot(): File {
-        return EmulatorStorage.texturesDir(context, preferences.getEmulatorDataPathSync())
+        return EmulatorStorage.texturesDir(context)
     }
 
     private fun gameDir(serial: String): File {
@@ -316,7 +315,8 @@ class TexturePackRepository(
         return target.takeIf { it.parentFile == root }
     }
 
-    private fun gameDirectoryName(serial: String): String = serial.replace("-", "")
+    /** Flycast trims the product code and turns spaces into underscores. */
+    private fun gameDirectoryName(serial: String): String = serial.trim().replace(' ', '_')
 
     private fun textureFiles(root: File): List<File> {
         if (!root.exists()) return emptyList()
@@ -367,11 +367,15 @@ class TexturePackRepository(
         return normalizeSerial(match.value)
     }
 
+    /**
+     * Canonical Dreamcast product code. Flycast uses the raw IP.BIN value with
+     * trailing whitespace removed and spaces replaced by underscores, so the
+     * separator is preserved instead of being reformatted.
+     */
     private fun normalizeSerial(raw: String): String? {
-        val compact = raw.trim().uppercase(Locale.US).replace('_', '-').replace(' ', '-')
-        val match = serialPattern.find(compact) ?: return null
-        val value = match.value.replace('_', '-').replace(' ', '-')
-        return if ('-' in value) value else "${value.take(4)}-${value.drop(4)}"
+        val candidate = raw.trim().uppercase(Locale.US).replace(' ', '_')
+        val match = serialPattern.find(candidate) ?: return null
+        return match.value.replace(' ', '_')
     }
 
     private fun safeChild(root: File, relativeParts: List<String>): File? {

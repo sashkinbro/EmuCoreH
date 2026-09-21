@@ -40,8 +40,14 @@ class ContentLibraryRepository(context: Context) {
     }
 }
 
+/**
+ * Dreamcast product codes come from the disc IP.BIN (for example `MK-51035` or
+ * `T-9701N`). Flycast trims trailing whitespace and turns spaces into
+ * underscores when it builds the game id, so the canonical form keeps the
+ * separator untouched.
+ */
 private fun String.normalizeGameSerial(): String? {
-    val compact = trim().uppercase(Locale.US).replace(Regex("[-_ ]"), "")
-    if (!compact.matches(Regex("[A-Z]{4}[0-9]{5}"))) return null
-    return "${compact.take(4)}-${compact.drop(4)}"
+    val candidate = trim().uppercase(Locale.US).replace(' ', '_')
+    val match = Regex("\\b[A-Z0-9]{1,4}[-_][0-9]{3,5}[A-Z]?\\b").find(candidate) ?: return null
+    return match.value
 }

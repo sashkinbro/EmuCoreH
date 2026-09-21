@@ -252,8 +252,7 @@ object NativeApp {
     @JvmStatic fun loadCheats(path: String) = CoreRuntime.loadCheats(path)
     @JvmStatic fun clearCheats() = CoreRuntime.clearCheats()
     @JvmStatic fun setMemoryCardPath(slot: Int, path: String?) = CoreRuntime.setMemoryCardPath(slot, path)
-    @JvmStatic fun setTextureReplacementsPathOverride(path: String?) =
-        CoreRuntime.setTextureReplacementsPathOverride(path)
+    @JvmStatic fun setDataRootOverride(path: String?) = CoreRuntime.setDataRootOverride(path)
     @JvmStatic fun hasDiscMedia(): Boolean = CoreRuntime.hasDiscMedia()
 
     // RetroAchievements: every call degrades to a no-op when the bundled core

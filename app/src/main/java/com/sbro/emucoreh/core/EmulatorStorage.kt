@@ -14,6 +14,7 @@ object EmulatorStorage {
     private val verifiedCustomRoots = ConcurrentHashMap.newKeySet<String>()
 
     data class RuntimeDirectories(
+        val root: File,
         val saveStates: File,
         val memoryCards: File,
         val textures: File,
@@ -30,7 +31,6 @@ object EmulatorStorage {
     private val runtimeSubdirectories = listOf(
         "sstates",
         "memcards",
-        "PSP/TEXTURES",
         "cheats",
         "patches",
         "logs"
@@ -107,12 +107,20 @@ object EmulatorStorage {
     fun memoryCardsDir(context: Context, customRootPath: String? = null): File =
         File(root(context, customRootPath), "memcards").apply { mkdirs() }
 
-    /** PPSSPP's directory-backed PSP Memory Stick save data. */
-    fun pspSaveDataDir(context: Context, customRootPath: String? = null): File =
-        File(root(context, customRootPath), "PSP/SAVEDATA")
+    /** Flycast keeps its BIOS, VMU and runtime data under the system directory. */
+    fun flycastSystemDir(context: Context): File =
+        File(context.filesDir, "flycast/system").apply { mkdirs() }
 
-    fun texturesDir(context: Context, customRootPath: String? = null): File =
-        File(root(context, customRootPath), "PSP/TEXTURES").apply { mkdirs() }
+    /** Default Flycast save directory used when no data root override is set. */
+    fun flycastSaveDir(context: Context): File =
+        File(context.filesDir, "flycast/save").apply { mkdirs() }
+
+    /**
+     * Flycast resolves replacement textures from `<system>/dc/textures/<game id>`,
+     * where the game id is the disc product code (for example `MK-51035`).
+     */
+    fun texturesDir(context: Context): File =
+        File(flycastSystemDir(context), "dc/textures").apply { mkdirs() }
 
     fun cheatsDir(context: Context, customRootPath: String? = null): File =
         File(root(context, customRootPath), "cheats").apply { mkdirs() }
@@ -127,9 +135,10 @@ object EmulatorStorage {
         val root = root(context, customRootPath)
         fun directory(name: String): File = File(root, name).apply { mkdirs() }
         return RuntimeDirectories(
+            root = root,
             saveStates = directory("sstates"),
             memoryCards = directory("memcards"),
-            textures = directory("PSP/TEXTURES"),
+            textures = texturesDir(context),
             cheats = directory("cheats"),
             patches = directory("patches"),
             logs = directory("logs")

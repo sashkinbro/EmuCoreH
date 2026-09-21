@@ -591,9 +591,9 @@ internal object CoreRuntime {
         runCatching { bridge.setMemoryCardPath(slot, path) }
     }
 
-    fun setTextureReplacementsPathOverride(path: String?) {
-        runCatching { bridge.setTextureReplacementsPathOverride(path?.takeIf(String::isNotBlank)) }
-            .onFailure { Log.w(TAG, "Unable to set texture replacements path", it) }
+    fun setDataRootOverride(path: String?) {
+        runCatching { bridge.setDataRootOverride(path?.takeIf(String::isNotBlank)) }
+            .onFailure { Log.w(TAG, "Unable to set the Flycast data root", it) }
     }
 
     fun setPadButtons(port: Int, buttons: Int): Boolean {
@@ -974,7 +974,7 @@ internal object CoreRuntime {
         val name = if (path.startsWith("content://")) {
             context?.let { DocumentPathResolver.getDisplayName(it, path) } ?: return false
         } else path
-        return GameFormats.isSupportedName(name)
+        return GameFormats.isLaunchableName(name)
     }
 
     private fun fitRect(containerWidth: Int, containerHeight: Int, contentWidth: Int, contentHeight: Int): Rect {
