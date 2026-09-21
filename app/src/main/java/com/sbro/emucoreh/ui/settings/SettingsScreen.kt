@@ -5268,10 +5268,12 @@ private fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
 
 @Composable
 private fun gamepadActionLabel(actionId: String): String = when (actionId) {
-    "cross" -> "\u2715"
-    "circle" -> "\u25cb"
-    "square" -> "\u25a1"
-    "triangle" -> "\u25b3"
+    // Dreamcast face button names; the ids keep their legacy PlayStation
+    // values for compatibility with existing mappings and layouts.
+    "cross" -> "A"
+    "circle" -> "B"
+    "square" -> "X"
+    "triangle" -> "Y"
     "pressure" -> stringResource(R.string.settings_gamepad_action_pressure)
     else -> stringResource(gamepadActionLabelRes(actionId))
 }

@@ -2071,16 +2071,25 @@ private fun OnScreenControls(
             touchL2Pressed = pressed
             dispatchTouchL2()
         }
-        "l1" -> { pressed -> onPadInput(PadKey.L1, 0, pressed) }
+        // Dreamcast L/R are analog triggers: the core reads them from the
+        // libretro L2/R2 ids, so the shoulder buttons send those.
+        "l1" -> { pressed -> onPadInput(PadKey.L2, 0, pressed) }
         "r2" -> { pressed ->
             touchR2Pressed = pressed
             dispatchTouchR2()
         }
-        "r1" -> { pressed -> onPadInput(PadKey.R1, 0, pressed) }
+        "r1" -> { pressed -> onPadInput(PadKey.R2, 0, pressed) }
         "dpad_up", "up" -> { pressed -> onPadInput(PadKey.UP, 0, pressed) }
         "dpad_down", "down" -> { pressed -> onPadInput(PadKey.DOWN, 0, pressed) }
         "dpad_left", "left" -> { pressed -> onPadInput(PadKey.LEFT, 0, pressed) }
         "dpad_right", "right" -> { pressed -> onPadInput(PadKey.RIGHT, 0, pressed) }
+        // Dreamcast face buttons. Each id is routed through the legacy key that
+        // the native bridge already translates to the matching libretro id, so
+        // A lands on DC A, B on DC B, X on DC X and Y on DC Y.
+        "a" -> { pressed -> onPadInput(PadKey.CROSS, 0, pressed) }
+        "b" -> { pressed -> onPadInput(PadKey.CIRCLE, 0, pressed) }
+        "x" -> { pressed -> onPadInput(PadKey.SQUARE, 0, pressed) }
+        "y" -> { pressed -> onPadInput(PadKey.TRIANGLE, 0, pressed) }
         "triangle" -> { pressed -> onPadInput(PadKey.TRIANGLE, 0, pressed) }
         "cross" -> { pressed -> onPadInput(PadKey.CROSS, 0, pressed) }
         "square" -> { pressed -> onPadInput(PadKey.SQUARE, 0, pressed) }
@@ -2097,6 +2106,7 @@ private fun OnScreenControls(
 
     fun isRacingTapToHoldButton(id: String): Boolean = id in setOf(
         "l2", "l1", "r2", "r1",
+        "a", "b", "x", "y",
         "triangle", "cross", "square", "circle"
     )
 
@@ -4297,10 +4307,12 @@ private fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
 
 @Composable
 private fun gamepadActionLabel(actionId: String): String = when (actionId) {
-    "cross" -> "\u2715"
-    "circle" -> "\u25cb"
-    "square" -> "\u25a1"
-    "triangle" -> "\u25b3"
+    // Dreamcast face button names; the ids keep their legacy PlayStation
+    // values for compatibility with existing mappings and layouts.
+    "cross" -> "A"
+    "circle" -> "B"
+    "square" -> "X"
+    "triangle" -> "Y"
     else -> stringResource(gamepadActionLabelRes(actionId))
 }
 

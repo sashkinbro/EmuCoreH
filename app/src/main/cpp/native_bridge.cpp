@@ -1155,6 +1155,11 @@ int16_t RetroInputState(unsigned port, unsigned device, unsigned index, unsigned
         if (pressed(15)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_Y;  // Square
         if (pressed(10)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_L;
         if (pressed(11)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_R;
+        // The Dreamcast pad's analog L/R triggers are read from the libretro
+        // L2/R2 ids by the core (get_analog_trigger), with the digital mask as
+        // fallback.
+        if (pressed(8)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_L2;
+        if (pressed(9)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_R2;
         if (pressed(3)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_START;
         if (pressed(0)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_SELECT;
         if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return static_cast<int16_t>(active);
