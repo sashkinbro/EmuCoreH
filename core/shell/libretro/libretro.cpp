@@ -2637,10 +2637,14 @@ void retro_get_system_av_info(retro_system_av_info *info)
 		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
 	}
 
-	framebufferWidth = config::RenderResolution * 16 / 9;
-	framebufferHeight = config::RenderResolution;
-	maxFramebufferWidth = std::max(maxFramebufferWidth, framebufferWidth);
-	maxFramebufferHeight = std::max(maxFramebufferHeight, framebufferHeight);
+	// Report the widescreen-capable size as the maximum the frontend must
+	// allocate for. The live framebuffer size is owned by the renderer
+	// (retro_resize_renderer) and must not be overwritten here: assigning it
+	// makes every following SET_GEOMETRY look like a size change and traps the
+	// frontend in a per-frame get_system_av_info -> SET_GEOMETRY loop, which
+	// presents stray 16:9-sized frames into a 4:3 output and flickers.
+	maxFramebufferWidth = std::max(maxFramebufferWidth, (int)config::RenderResolution * 16 / 9);
+	maxFramebufferHeight = std::max(maxFramebufferHeight, (int)config::RenderResolution);
 	setAVInfo(*info);
 }
 
