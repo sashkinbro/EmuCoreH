@@ -803,7 +803,14 @@ internal object CoreRuntime {
                         coreFrameRate
                     }
                     activeFrameRate = frameRate
-                    bridge.setAudioPlaybackRate(frameRate / coreFrameRate)
+                    // The core lowers its reported frame rate when it notifies the
+                    // frontend about a locked 30/20 fps scene (vsync swap
+                    // interval): each call then advances several console frames
+                    // and carries their audio, so the stream is still real time.
+                    // Only a manual target rate may change the audio speed.
+                    val audioPlaybackRate =
+                        if (manualTargetFps in 20..120) manualTargetFps / coreFrameRate else 1.0
+                    bridge.setAudioPlaybackRate(audioPlaybackRate)
                     if (frameRate > 1.0) {
                         val pacedRate = when (timeMode) {
                             1 -> frameRate * 3.0
