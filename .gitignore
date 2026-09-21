@@ -36,6 +36,8 @@ core/build/
 /firebase.json
 /firestore.rules
 /firestore.indexes.json
+/.firebase/
+firebase-debug.log*
 /y/
 
 /.idea/vcs.xml
