@@ -157,18 +157,21 @@ class TexturePackRepository(
             }
 
             val layout = resolveTexturePackLayout(sourceFiles)
-            val textureIniPath = layout.entries.single { it.value == "textures.ini" }.key
-            val textureIni = File(sourceRoot, textureIniPath)
+            val textureIniEntry = layout.entries.singleOrNull { it.value == "textures.ini" }
+            val archiveRoot = sourceFiles.first().substringBefore('/')
             require(layout.values.any { isTextureFile(it.substringAfterLast('/')) }) {
-                "PPSSPP texture pack contains no texture assets"
+                "Texture pack contains no texture assets"
             }
             val serials = linkedSetOf<String>().apply {
                 normalizedTargetSerial?.let(::add)
-                if (isEmpty()) addAll(readSerialsFromTexturesIni(textureIni))
-                if (isEmpty()) serialFromParts(textureIniPath.split('/').dropLast(1))?.let(::add)
+                if (isEmpty() && textureIniEntry != null) {
+                    addAll(readSerialsFromTexturesIni(File(sourceRoot, textureIniEntry.key)))
+                }
+                if (isEmpty() && textureIniEntry == null) normalizeSerial(archiveRoot)?.let(::add)
+                if (isEmpty()) serialFromParts(archiveRoot.split('/'))?.let(::add)
                 if (isEmpty()) fallbackSerial?.let(::add)
             }
-            require(serials.isNotEmpty()) { "Could not determine a PSP disc ID" }
+            require(serials.isNotEmpty()) { "Could not determine a game serial" }
 
             serials.forEach { serial ->
                 val stagedSerialRoot = File(canonicalStagingRoot, gameDirectoryName(serial))
