@@ -68,22 +68,31 @@ private:
 bool CustomTextureSource::loadMap()
 {
 	texture_map.clear();
-	hostfs::DirectoryTree tree(textures_path);
-	for (const hostfs::FileInfo& item : tree)
+	try
 	{
-		std::string extension = get_file_extension(item.name);
-		if (extension != "jpg" && extension != "jpeg" && extension != "png")
-			continue;
-		std::string::size_type dotpos = item.name.find_last_of('.');
-		std::string basename = item.name.substr(0, dotpos);
-		char *endptr;
-		u32 hash = (u32)strtoll(basename.c_str(), &endptr, 16);
-		if (endptr - basename.c_str() < (ptrdiff_t)basename.length())
+		hostfs::DirectoryTree tree(textures_path);
+		for (const hostfs::FileInfo& item : tree)
 		{
-			INFO_LOG(RENDERER, "Invalid hash %s", basename.c_str());
-			continue;
+			std::string extension = get_file_extension(item.name);
+			if (extension != "jpg" && extension != "jpeg" && extension != "png")
+				continue;
+			std::string::size_type dotpos = item.name.find_last_of('.');
+			std::string basename = item.name.substr(0, dotpos);
+			char *endptr;
+			u32 hash = (u32)strtoll(basename.c_str(), &endptr, 16);
+			if (endptr - basename.c_str() < (ptrdiff_t)basename.length())
+			{
+				INFO_LOG(RENDERER, "Invalid hash %s", basename.c_str());
+				continue;
+			}
+			texture_map[hash] = item.path;
 		}
-		texture_map[hash] = item.path;
+	}
+	catch (const std::exception& e)
+	{
+		// A broken or unreadable texture folder must never take the emulator
+		// down: skip the pack and carry on without replacements.
+		WARN_LOG(RENDERER, "Cannot scan texture directory '%s': %s", textures_path.c_str(), e.what());
 	}
 	return !texture_map.empty();
 }

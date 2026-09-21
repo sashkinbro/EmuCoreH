@@ -129,7 +129,14 @@ retro_vfs_dir_handle *Opendir(const char *path, bool hidden) {
         for (jsize i = 0; i < count; ++i) {
             auto item = static_cast<jstring>(j.env->GetObjectArrayElement(result, i));
             const char *text = j.env->GetStringUTFChars(item, nullptr);
-            if (text && text[0] && (hidden || text[1] != '.')) directory->entries.emplace_back(text + 1, text[0] == 'd');
+            if (text && text[0]) {
+                const char *name = text + 1;
+                // "." and ".." must never reach the core: directory walkers
+                // recurse into them until the path overflows and throw.
+                const bool dotted = name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'));
+                if (!dotted && (hidden || name[0] != '.'))
+                    directory->entries.emplace_back(name, text[0] == 'd');
+            }
             if (text) j.env->ReleaseStringUTFChars(item, text);
             j.env->DeleteLocalRef(item);
         }
@@ -139,6 +146,12 @@ retro_vfs_dir_handle *Opendir(const char *path, bool hidden) {
         DIR *dir = opendir(path);
         if (!dir) { delete directory; return nullptr; }
         while (dirent *entry = readdir(dir)) {
+            // "." and ".." are never listed: the core's directory tree would
+            // recurse through them forever. Other dot files stay hidden unless
+            // the frontend asked for hidden entries.
+            const bool dotted = entry->d_name[0] == '.' && (entry->d_name[1] == '\0'
+                || (entry->d_name[1] == '.' && entry->d_name[2] == '\0'));
+            if (dotted) continue;
             if (!hidden && entry->d_name[0] == '.') continue;
             struct stat st{};
             std::string full = std::string(path) + "/" + entry->d_name;
