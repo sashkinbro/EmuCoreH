@@ -271,6 +271,10 @@
     <string name="settings_gamepad_action_dpad_down">Steuerkreuz Unten</string>
     <string name="settings_gamepad_action_dpad_left">Steuerkreuz Links</string>
     <string name="settings_gamepad_action_dpad_right">Steuerkreuz Rechts</string>
+<string name="settings_gamepad_action_dc_a">A</string>
+<string name="settings_gamepad_action_dc_b">B</string>
+<string name="settings_gamepad_action_dc_x">X</string>
+<string name="settings_gamepad_action_dc_y">Y</string>
 
     <string name="gamepad_connected">Controller verbunden</string>
     <string name="emulation_hud_fps_label">FPS</string>

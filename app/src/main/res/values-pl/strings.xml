@@ -640,6 +640,10 @@
     <string name="settings_gamepad_action_dpad_down">Krzyżak Dół</string>
     <string name="settings_gamepad_action_dpad_left">Krzyżak Lewo</string>
     <string name="settings_gamepad_action_dpad_right">Krzyżak Prawo</string>
+<string name="settings_gamepad_action_dc_a">A</string>
+<string name="settings_gamepad_action_dc_b">B</string>
+<string name="settings_gamepad_action_dc_x">X</string>
+<string name="settings_gamepad_action_dc_y">Y</string>
 
     <!-- Gamepad -->
     <string name="gamepad_connected">Kontroler połączony</string>
