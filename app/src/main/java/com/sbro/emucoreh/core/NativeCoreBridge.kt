@@ -106,11 +106,11 @@ class NativeCoreBridge {
     external fun setMemoryCardPath(slot: Int, path: String?)
 
     /**
-     * Sets the PPSSPP texture directory. The native bridge maps its
-     * `<data-root>/PSP/TEXTURES` value back to the core memstick root (null or
-     * blank restores the core default).
+     * Overrides the data root Flycast writes its save data to (null or blank
+     * restores the core default). Replacement textures are resolved by the core
+     * from its own system directory, not from this root.
      */
-    external fun setTextureReplacementsPathOverride(path: String?)
+    external fun setDataRootOverride(path: String?)
 
     // ---------------------------------------------------------------------
     // RetroAchievements (rcheevos). The client lives in native code; Kotlin

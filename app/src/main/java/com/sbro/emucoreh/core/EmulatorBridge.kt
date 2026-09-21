@@ -358,9 +358,8 @@ object EmulatorBridge {
         // saves and memory cards previously ignored the configured location.
         NativeApp.reloadDataRoot(emulatorDataPath ?: "")
         val runtimeDirectories = EmulatorStorage.runtimeDirectories(context, emulatorDataPath)
-        // The native bridge maps the custom texture directory back to the
-        // configured data root, so the manager and emulator share one tree.
-        NativeApp.setTextureReplacementsPathOverride(runtimeDirectories.textures.absolutePath)
+        // Flycast keeps saves and memory cards under the configured data root.
+        NativeApp.setDataRootOverride(runtimeDirectories.root.absolutePath)
 
         val normalizedGpuHardwareProfile = GpuHardwareProfiles.normalize(gpuHardwareProfile)
         val gpuHardwareProfileOverride = GpuHardwareProfiles.coreOverrideFor(normalizedGpuHardwareProfile)
