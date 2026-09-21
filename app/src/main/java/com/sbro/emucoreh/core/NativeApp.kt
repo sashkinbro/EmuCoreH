@@ -292,6 +292,11 @@ object NativeApp {
         currentGamePath = path
         return CoreRuntime.start(path, biosOnly = path.isBlank())
     }
+    /** Disc product code reported by the core after the current game booted. */
+    @JvmStatic fun currentGameSerial(): String? = runCatching {
+        CoreRuntime.bridge.nativeGameSerial()
+    }.getOrNull()?.trim()?.takeIf { it.isNotBlank() }
+
     @JvmStatic fun restartRenderer(renderer: Int): Boolean = CoreRuntime.restartWithRenderer(renderer)
     @JvmStatic fun changeDisc(path: String): Boolean = CoreRuntime.changeDisc(path)
     @JvmStatic fun runBootSmokeProbe(path: String, steps: Int): Int = 0

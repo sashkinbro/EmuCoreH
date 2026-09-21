@@ -15,7 +15,7 @@ internal object RetroAchievementsCatalog {
 
     fun titleKey(value: String): String {
         var name = value.trim().lowercase(Locale.ROOT)
-        val extension = Regex("\\.(gdi|cue|chd|cdi|dat|m3u|lst|elf|bin|zip|7z)$")
+        val extension = Regex("\\.(gdi|cue|chd|cdi|iso|dat|m3u|lst|elf|bin|zip|7z)$")
         if (extension.containsMatchIn(name)) {
             name = name.replace(extension, "")
                 .replace(Regex("(\\s*\\([^)]*\\)|\\s*\\[[^]]*\\])+$"), "")

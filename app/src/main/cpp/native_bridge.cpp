@@ -119,6 +119,12 @@ struct CoreApi {
 CoreApi g_core;
 std::mutex g_core_load_mutex;
 
+// Disc product code reported by the core once the bootstrap has been parsed,
+// for example "MK-51035". Read by the frontend to fill library serials that
+// the content scanner cannot read from container formats such as CHD.
+std::mutex g_game_serial_mutex;
+std::string g_game_serial;
+
 // ---------------------------------------------------------------------------
 // Frontend state. The libretro core is a process singleton, so this state is
 // global and only accessed from the emulation thread plus short JNI calls.
@@ -557,12 +563,29 @@ bool EnvironmentCallback(unsigned cmd, void* data) {
 }
 
 void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
+    if (fmt == nullptr) return;
+    char message[1024];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(message, sizeof(message), fmt, args);
+    va_end(args);
+
+    // The core reports the disc product code as "Game ID is [MK-51035]" once
+    // the bootstrap is parsed. Keep it for the library's learned serials.
+    static constexpr char kGameIdMarker[] = "Game ID is [";
+    const char* marker = strstr(message, kGameIdMarker);
+    if (marker != nullptr) {
+        const char* value = marker + sizeof(kGameIdMarker) - 1;
+        const char* end = strchr(value, ']');
+        if (end != nullptr && end > value) {
+            std::lock_guard<std::mutex> lock(g_game_serial_mutex);
+            g_game_serial.assign(value, static_cast<size_t>(end - value));
+        }
+    }
+
 #ifdef NDEBUG
     (void)level;
-    (void)fmt;
-    return;
 #else
-    if (fmt == nullptr) return;
     int priority = ANDROID_LOG_INFO;
     switch (level) {
         case RETRO_LOG_DEBUG: priority = ANDROID_LOG_DEBUG; break;
@@ -570,10 +593,7 @@ void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
         case RETRO_LOG_ERROR: priority = ANDROID_LOG_ERROR; break;
         default: break;
     }
-    va_list args;
-    va_start(args, fmt);
-    __android_log_vprint(priority, CORE_LOG_TAG, fmt, args);
-    va_end(args);
+    __android_log_write(priority, CORE_LOG_TAG, message);
 #endif
 }
 
@@ -1422,6 +1442,10 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_loadDisc(JNIEnv* env, jobject, jlon
     const std::string path_string = ToString(env, path);
     if (path_string.empty()) return -1;
 
+    {
+        std::lock_guard<std::mutex> serial_lock(g_game_serial_mutex);
+        g_game_serial.clear();
+    }
     std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
     if (!LoadCoreLocked() || !g_frontend.core_initialized.load()) return -2;
     if (g_frontend.game_loaded.load()) {
@@ -1690,6 +1714,13 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_getFrameRate(JNIEnv*, jobject, jlon
     retro_system_av_info info{};
     g_core.get_system_av_info(&info);
     return info.timing.fps > 0.0 ? info.timing.fps : 60.0;
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeGameSerial(JNIEnv* env, jobject) {
+    std::lock_guard<std::mutex> lock(g_game_serial_mutex);
+    if (g_game_serial.empty()) return nullptr;
+    return env->NewStringUTF(g_game_serial.c_str());
 }
 
 JNIEXPORT jlongArray JNICALL

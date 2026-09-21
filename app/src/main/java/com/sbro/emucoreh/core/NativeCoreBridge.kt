@@ -86,6 +86,12 @@ class NativeCoreBridge {
     /** Emulated vertical refresh in Hz, used for audio-synced frame pacing. */
     external fun getFrameRate(handle: Long): Double
 
+    /**
+     * Product code the core read from the loaded disc, or null while no disc
+     * bootstrap has been parsed yet.
+     */
+    external fun nativeGameSerial(): String?
+
     /** Human-readable core name/version used by statistics and the About screen. */
     fun coreName(): String? = getSystemInfo().substringBefore(' ').takeIf { it.isNotBlank() } ?: "Flycast"
     fun coreVersion(): String? = getSystemInfo().substringAfter(' ', "").trim()
