@@ -27,7 +27,7 @@
 
 extern "C" void* EmuCoreHGetMemoryData(unsigned id);
 extern "C" size_t EmuCoreHGetMemorySize(unsigned id);
-extern "C" bool EmuCoreHDiscAchievementHash(const char* path, char* hash);
+
 
 #include "rc_api_request.h"
 #include "rc_client.h"
@@ -764,34 +764,18 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_achievementsLoadGame(JNIEnv* env, j
 
   // The core has to be running for SYSTEM_RAM to be readable.
   ReleaseMemoryLocked();
-  if (rc_libretro_memory_init(&g_state.memory_regions, nullptr, GetCoreMemoryInfo, RC_CONSOLE_PSP))
+  if (rc_libretro_memory_init(&g_state.memory_regions, nullptr, GetCoreMemoryInfo, RC_CONSOLE_DREAMCAST))
     g_state.memory_initialized = true;
   g_state.last_error.clear();
   g_state.unsupported_image = false;
   g_state.image_read_error = false;
 
   StartHttpWorkerLocked();
-  std::string extension = game_path.substr(game_path.find_last_of('.') + 1);
-  for (char& ch : extension)
-    ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-  if (extension == "iso" || extension == "cso" || extension == "chd" || extension == "zip")
-  {
-    char hash[33] = {};
-    if (!EmuCoreHDiscAchievementHash(game_path.c_str(), hash))
-    {
-      rc_client_unload_game(g_state.client);
-      g_state.image_read_error = true;
-      g_state.has_game.store(false, std::memory_order_relaxed);
-      LoadGameCallback(RC_INVALID_STATE, "Could not read game image for RetroAchievements", g_state.client, nullptr);
-      return;
-    }
-    rc_client_begin_load_game(g_state.client, hash, LoadGameCallback, nullptr);
-  }
-  else
-  {
-    rc_client_begin_identify_and_load_game(g_state.client, RC_CONSOLE_PSP, game_path.c_str(), nullptr, 0,
-                                         LoadGameCallback, nullptr);
-  }
+  // rcheevos hashes Dreamcast gdi/cue/chd/cdi (and m3u playlists) through the
+  // custom filereader installed above, which resolves SAF paths and their
+  // sibling track files via the frontend VFS.
+  rc_client_begin_identify_and_load_game(g_state.client, RC_CONSOLE_DREAMCAST, game_path.c_str(), nullptr, 0,
+                                       LoadGameCallback, nullptr);
   g_state.has_game.store(true, std::memory_order_relaxed);
   PumpHttpResponsesLocked();
 }

@@ -550,8 +550,8 @@ class RetroAchievementsRepository private constructor(context: Context) {
             "r" to "allprogress",
             "u" to storedUsername.orEmpty(),
             "t" to storedToken.orEmpty(),
-            "c" to RetroAchievementsCatalog.PSP_CONSOLE_ID.toString()
-        ) ?: error("Could not load PSP achievement catalog")
+            "c" to RetroAchievementsCatalog.DREAMCAST_CONSOLE_ID.toString()
+        ) ?: error("Could not load Dreamcast achievement catalog")
         val parsed = json.parseAccountProgress()
         cachedAccountProgress = parsed
         cachedAccountProgressAt = now

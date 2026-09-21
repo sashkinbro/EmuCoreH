@@ -4,7 +4,8 @@ import java.util.Locale
 import org.json.JSONObject
 
 internal object RetroAchievementsCatalog {
-    const val PSP_CONSOLE_ID = 41
+    /** RetroAchievements console id for the Dreamcast. */
+    const val DREAMCAST_CONSOLE_ID = 40
 
     fun titleKeys(value: String): Set<String> {
         val name = value.replace(Regex("^(disney[ /-]*pixar|disney(?:’s|'s)?)[ :/-]+", RegexOption.IGNORE_CASE), "")
@@ -14,7 +15,7 @@ internal object RetroAchievementsCatalog {
 
     fun titleKey(value: String): String {
         var name = value.trim().lowercase(Locale.ROOT)
-        val extension = Regex("\\.(iso|cso|chd|pbp|elf|prx|plf|zip)$")
+        val extension = Regex("\\.(gdi|cue|chd|cdi|dat|m3u|lst|elf|bin|zip|7z)$")
         if (extension.containsMatchIn(name)) {
             name = name.replace(extension, "")
                 .replace(Regex("(\\s*\\([^)]*\\)|\\s*\\[[^]]*\\])+$"), "")

@@ -1217,10 +1217,6 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM*, void*) {
     EmuCoreHAchievementsShutdown();
 }
 
-bool EmuCoreHDiscAchievementHash(const char* path, char* hash) {
-    return g_core.disc_achievement_hash && g_core.disc_achievement_hash(path, hash);
-}
-
 void* EmuCoreHGetMemoryData(unsigned id) {
     return g_core.get_memory_data != nullptr ? g_core.get_memory_data(id) : nullptr;
 }
