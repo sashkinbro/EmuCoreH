@@ -266,6 +266,9 @@
     <string name="settings_gamepad_action_l3">L3</string>
     <string name="settings_gamepad_action_r3">R3</string>
     <string name="settings_gamepad_action_select">Select</string>
+    <string name="settings_gamepad_action_coin">Moeda</string>
+    <string name="settings_gamepad_action_test">Teste</string>
+    <string name="settings_gamepad_action_service">Serviço</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_dpad_up">D-Pad Cima</string>
     <string name="settings_gamepad_action_dpad_down">D-Pad Baixo</string>

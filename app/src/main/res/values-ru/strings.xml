@@ -267,6 +267,9 @@
     <string name="settings_gamepad_action_l3">L3</string>
     <string name="settings_gamepad_action_r3">R3</string>
     <string name="settings_gamepad_action_select">Select</string>
+    <string name="settings_gamepad_action_coin">Монета</string>
+    <string name="settings_gamepad_action_test">Тест</string>
+    <string name="settings_gamepad_action_service">Сервис</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_dpad_up">Крестовина вверх</string>
     <string name="settings_gamepad_action_dpad_down">Крестовина вниз</string>

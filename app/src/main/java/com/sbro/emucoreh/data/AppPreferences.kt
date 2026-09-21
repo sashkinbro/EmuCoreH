@@ -299,10 +299,14 @@ class AppPreferences(private val context: Context) {
             // The Dreamcast pad has no Select button; the id stays available for
             // custom controls and older layouts.
             "select" to OverlayControlLayout(scale = 80, visible = false),
+            // Arcade service switches (Naomi/Atomiswave). Hidden by default;
+            // the controls editor can show them like any other button.
+            "coin" to OverlayControlLayout(scale = 80, visible = false),
+            "test" to OverlayControlLayout(scale = 80, visible = false),
+            "service" to OverlayControlLayout(scale = 80, visible = false),
             "left_input_toggle" to OverlayControlLayout(scale = 80, visible = false),
             "start" to OverlayControlLayout(scale = 80),
-            "fast_forward" to OverlayControlLayout(scale = 80, visible = false),
-            "rewind" to OverlayControlLayout(scale = 80, visible = false)
+            "fast_forward" to OverlayControlLayout(scale = 80, visible = false)
         )
 
         private val THEME_MODE = intPreferencesKey("theme_mode")

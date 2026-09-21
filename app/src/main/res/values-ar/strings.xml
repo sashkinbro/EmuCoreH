@@ -424,6 +424,9 @@
     <string name="settings_gamepad_action_l3">L3</string>
     <string name="settings_gamepad_action_r3">R3</string>
     <string name="settings_gamepad_action_select">Select</string>
+    <string name="settings_gamepad_action_coin">عملة</string>
+    <string name="settings_gamepad_action_test">اختبار</string>
+    <string name="settings_gamepad_action_service">خدمة</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">تبديل الإدخال الأيسر</string>
     <string name="settings_gamepad_action_dpad_up">D-Pad أعلى</string>

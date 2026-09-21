@@ -2098,9 +2098,12 @@ private fun OnScreenControls(
         "square" -> { pressed -> onPadInput(PadKey.SQUARE, 0, pressed) }
         "circle" -> { pressed -> onPadInput(PadKey.CIRCLE, 0, pressed) }
         "select" -> { pressed -> onPadInput(PadKey.SELECT, 0, pressed) }
+        // Arcade service switches: Coin, Test and Service.
+        "coin" -> { pressed -> onPadInput(PadKey.SELECT, 0, pressed) }
+        "test" -> { pressed -> onPadInput(PadKey.L3, 0, pressed) }
+        "service" -> { pressed -> onPadInput(PadKey.R3, 0, pressed) }
         "start" -> { pressed -> onPadInput(PadKey.START, 0, pressed) }
         "fast_forward" -> { pressed -> onPadInput(126, 0, pressed) }
-        "rewind" -> { pressed -> onPadInput(127, 0, pressed) }
         "pressure" -> { pressed -> onPadInput(PadKey.PRESSURE, 0, pressed) }
         "l3" -> { pressed -> onPadInput(PadKey.L3, 0, pressed) }
         "r3" -> { pressed -> onPadInput(PadKey.R3, 0, pressed) }
@@ -4295,12 +4298,14 @@ private fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
     "l3" -> R.string.settings_gamepad_action_l3
     "r3" -> R.string.settings_gamepad_action_r3
     "select" -> R.string.settings_gamepad_action_select
+    "coin" -> R.string.settings_gamepad_action_coin
+    "test" -> R.string.settings_gamepad_action_test
+    "service" -> R.string.settings_gamepad_action_service
     "start" -> R.string.settings_gamepad_action_start
     "left_input_toggle" -> R.string.settings_gamepad_action_left_input_toggle
     GamepadManager.ACTION_QUICK_SAVE -> R.string.emulation_quick_save
     GamepadManager.ACTION_QUICK_LOAD -> R.string.emulation_quick_load
     GamepadManager.ACTION_FAST_FORWARD -> R.string.emulation_fast_forward
-    GamepadManager.ACTION_REWIND -> R.string.emulation_rewind
     "dpad_up" -> R.string.settings_gamepad_action_dpad_up
     "dpad_down" -> R.string.settings_gamepad_action_dpad_down
     "dpad_left" -> R.string.settings_gamepad_action_dpad_left

@@ -1568,9 +1568,11 @@ fun actionLabel(actionId: String): String = stringResource(when (actionId) {
     "l3" -> R.string.settings_gamepad_action_l3
     "r3" -> R.string.settings_gamepad_action_r3
     "select" -> R.string.settings_gamepad_action_select
+    "coin" -> R.string.settings_gamepad_action_coin
+    "test" -> R.string.settings_gamepad_action_test
+    "service" -> R.string.settings_gamepad_action_service
     "start" -> R.string.settings_gamepad_action_start
     "fast_forward" -> R.string.emulation_fast_forward
-    "rewind" -> R.string.emulation_rewind
     else -> R.string.settings_gamepad_section
 })
 

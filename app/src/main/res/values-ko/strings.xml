@@ -424,6 +424,9 @@
     <string name="settings_gamepad_action_l3">L3</string>
     <string name="settings_gamepad_action_r3">R3</string>
     <string name="settings_gamepad_action_select">Select</string>
+    <string name="settings_gamepad_action_coin">코인</string>
+    <string name="settings_gamepad_action_test">테스트</string>
+    <string name="settings_gamepad_action_service">서비스</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">왼쪽 입력 전환</string>
     <string name="settings_gamepad_action_dpad_up">D-Pad 위</string>

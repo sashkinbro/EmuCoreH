@@ -121,7 +121,9 @@ data class CustomTouchControl(
             "a", "b", "x", "y",
             "triangle", "cross", "square", "circle",
             "l1", "l2", "r1", "r2", "l3", "r3",
-            "select", "start", "fast_forward", "rewind"
+            "select", "start", "fast_forward",
+            // Arcade service switches (Naomi/Atomiswave).
+            "coin", "test", "service"
         )
 
         fun defaultLabelFor(actionId: String): String = when (actionId) {
@@ -139,9 +141,11 @@ data class CustomTouchControl(
             "circle" -> "○"
             "l1", "l2", "r1", "r2", "l3", "r3" -> actionId.uppercase()
             "select" -> "SEL"
+            "coin" -> "COIN"
+            "test" -> "TEST"
+            "service" -> "SRV"
             "start" -> "START"
             "fast_forward" -> "≫"
-            "rewind" -> "≪"
             else -> "X"
         }
     }

@@ -160,8 +160,7 @@ object NativeApp {
             handleTimeControlHold(padIndex, index, pressed)
             return
         }
-        if (index == PAD_SELECT) return
-        if (index == PAD_ANALOG_TOGGLE) {
+            if (index == PAD_ANALOG_TOGGLE) {
             if (pressed) {
                 val analog = CoreRuntime.togglePadAnalogMode(padIndex)
                 if (analog != null) {
@@ -639,7 +638,6 @@ object NativeApp {
     private const val BIOS_SIZE_BYTES = 512L * 1024L
     private const val PAD_ANALOG_TOGGLE = 125
     private const val PAD_FAST_FORWARD = 126
-    private const val PAD_REWIND = 127
     private const val PAD_START = 108
     private const val PAD_SELECT = 109
     private const val TIME_CONTROL_HOLD_MS = 450L
