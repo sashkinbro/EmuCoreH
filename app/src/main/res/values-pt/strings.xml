@@ -530,7 +530,7 @@
     <string name="settings_bios_picker_current">Arquivo de BIOS atual</string>
     <string name="settings_bios_picker_action">Selecionar arquivo</string>
     <string name="settings_help_bios_path">Aponta o EmuCoreH para os arquivos de BIOS do Dreamcast (dc_boot.bin e dc_flash.bin) do seu próprio console.</string>
-    <string name="onboarding_bios_desc">Escolha uma pasta com seus arquivos de BIOS do Dreamcast (dc_boot.bin e dc_flash.bin).</string>
+    <string name="onboarding_bios_desc">Selecione o dump da BIOS do Dreamcast: dc_boot.bin (2 MiB) ou dc_flash.bin (128 KiB).</string>
     <string name="emulation_quick_save_confirm_title">Salvar estado?</string>
     <string name="emulation_quick_save_confirm_desc">Isso substituirá o slot %1$d pelo estado atual do jogo.</string>
     <string name="emulation_quick_load_confirm_title">Carregar estado?</string>

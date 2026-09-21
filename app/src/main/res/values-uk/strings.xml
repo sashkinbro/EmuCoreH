@@ -304,7 +304,7 @@
     <string name="onboarding_title">Готуйтеся до гри</string>
     <string name="onboarding_subtitle">Виберіть папки з іграми Dreamcast і надайте доступ до файлів.</string>
     <string name="onboarding_bios_title">Виберіть файл BIOS</string>
-    <string name="onboarding_bios_desc">Виберіть папку з файлами BIOS Dreamcast (dc_boot.bin і dc_flash.bin).</string>
+    <string name="onboarding_bios_desc">Виберіть дамп BIOS Dreamcast: dc_boot.bin (2 МіБ) або dc_flash.bin (128 КіБ).</string>
     <string name="onboarding_games_title">Виберіть папку з іграми</string>
     <string name="onboarding_games_desc">Виберіть папку, яка містить ваші ігри.</string>
     <string name="onboarding_status_required">Обов\'язково</string>

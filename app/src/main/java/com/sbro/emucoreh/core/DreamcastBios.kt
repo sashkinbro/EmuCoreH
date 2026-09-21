@@ -34,6 +34,11 @@ object DreamcastBios {
      * is derived from the file size: 2 MiB is the boot ROM, 128 KiB the flash
      * ROM. Returns the installed file, or null when the size is unknown.
      */
+    fun install(context: Context, uri: Uri, systemDir: String): Boolean {
+        import(context, uri, systemDir) ?: return false
+        return hasBootRom(systemDir) || findFlashRom(systemDir) != null
+    }
+
     fun import(context: Context, uri: Uri, systemDir: String): File? {
         val size = context.contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: -1L
         val targetName = when (size) {

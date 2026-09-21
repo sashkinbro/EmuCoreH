@@ -458,7 +458,7 @@
     <string name="onboarding_title">استعد للعب</string>
     <string name="onboarding_subtitle">اختر مجلدات ألعاب Dreamcast وامنح الوصول إلى الملفات.</string>
     <string name="onboarding_bios_title">اختر ملف BIOS</string>
-    <string name="onboarding_bios_desc">اختر مجلدًا يحتوي على ملفات BIOS الخاصة بـ Dreamcast (‏dc_boot.bin وdc_flash.bin).</string>
+    <string name="onboarding_bios_desc">اختر نسخة BIOS الخاصة بـ Dreamcast: dc_boot.bin (2 MiB) أو dc_flash.bin (128 KiB).</string>
     <string name="onboarding_games_title">اختر مجلد الألعاب</string>
     <string name="onboarding_games_desc">حدد المجلد الذي يحتوي على ألعابك.</string>
     <string name="onboarding_status_required">مطلوب</string>

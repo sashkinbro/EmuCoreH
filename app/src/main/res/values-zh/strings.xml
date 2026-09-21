@@ -530,7 +530,7 @@
     <string name="settings_bios_picker_current">当前 BIOS 文件</string>
     <string name="settings_bios_picker_action">选择文件</string>
     <string name="settings_help_bios_path">将 EmuCoreH 指向来自您自己主机的 Dreamcast BIOS 文件（dc_boot.bin 和 dc_flash.bin）。</string>
-    <string name="onboarding_bios_desc">选择包含 Dreamcast BIOS 文件（dc_boot.bin 和 dc_flash.bin）的文件夹。</string>
+    <string name="onboarding_bios_desc">选择 Dreamcast BIOS 转储：dc_boot.bin（2 MiB）或 dc_flash.bin（128 KiB）。</string>
     <string name="emulation_quick_save_confirm_title">保存状态？</string>
     <string name="emulation_quick_save_confirm_desc">这将使用当前游戏状态覆盖插槽 %1$d。</string>
     <string name="emulation_quick_load_confirm_title">加载状态？</string>

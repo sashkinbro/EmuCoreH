@@ -692,7 +692,7 @@
     <string name="onboarding_title">Get ready to play</string>
     <string name="onboarding_subtitle">Choose your Dreamcast game folders and grant file access.</string>
     <string name="onboarding_bios_title">Choose BIOS File</string>
-    <string name="onboarding_bios_desc">Select a folder containing your Dreamcast BIOS files (dc_boot.bin and dc_flash.bin).</string>
+    <string name="onboarding_bios_desc">Select your Dreamcast BIOS dump: dc_boot.bin (2 MiB) or dc_flash.bin (128 KiB).</string>
     <string name="onboarding_games_title">Add game folders</string>
     <string name="onboarding_games_desc">Add one or more folders that contain your games.</string>
     <string name="onboarding_games_selected_count">%1$d folders selected. Tap to add another.</string>

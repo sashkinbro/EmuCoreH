@@ -245,6 +245,17 @@ fun OnboardingScreen(
             else gamePicker.launch(null)
         }
     )
+    val biosPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let(viewModel::setBiosPath)
+    }
+    val launchBiosPicker = rememberDebouncedClick(
+        onClick = {
+            if (tvUiEnabled) tvStorageRequest = TvStorageRequest.BIOS_FILE
+            else biosPicker.launch(arrayOf("*/*"))
+        }
+    )
     val openEmulatorDataLocationDialog = rememberDebouncedClick(
         onClick = {
             viewModel.refreshEmulatorDataLocations()
@@ -468,7 +479,10 @@ fun OnboardingScreen(
                                             emulatorDataPath = uiState.emulatorDataPath,
                                             sdCardDataPath = uiState.sdCardDataPath,
                                             gamePathValid = uiState.gamePathValid,
+                                            biosPath = uiState.biosPath,
+                                            biosValid = uiState.biosValid,
                                             launchGamePicker = launchGamePicker,
+                                            launchBiosPicker = launchBiosPicker,
                                             onRemoveGamePath = viewModel::removeGamePath,
                                             openEmulatorDataLocationDialog = openEmulatorDataLocationDialog,
                                             endInset = 0.dp,
@@ -579,7 +593,10 @@ fun OnboardingScreen(
                                     emulatorDataPath = uiState.emulatorDataPath,
                                     sdCardDataPath = uiState.sdCardDataPath,
                                     gamePathValid = uiState.gamePathValid,
+                                    biosPath = uiState.biosPath,
+                                    biosValid = uiState.biosValid,
                                     launchGamePicker = launchGamePicker,
+                                    launchBiosPicker = launchBiosPicker,
                                     onRemoveGamePath = viewModel::removeGamePath,
                                     openEmulatorDataLocationDialog = openEmulatorDataLocationDialog,
                                     endInset = 0.dp,
@@ -1102,7 +1119,10 @@ private fun OnboardingSetupContent(
     emulatorDataPath: String?,
     sdCardDataPath: String?,
     gamePathValid: Boolean,
+    biosPath: String?,
+    biosValid: Boolean,
     launchGamePicker: () -> Unit,
+    launchBiosPicker: () -> Unit,
     onRemoveGamePath: (String) -> Unit,
     openEmulatorDataLocationDialog: () -> Unit,
     endInset: androidx.compose.ui.unit.Dp,
@@ -1180,6 +1200,29 @@ private fun OnboardingSetupContent(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SetupCard(
+                icon = Icons.Rounded.Memory,
+                title = stringResource(R.string.settings_bios_path),
+                description = when {
+                    biosValid -> stringResource(R.string.onboarding_status_ready)
+                    !biosPath.isNullOrBlank() -> DocumentPathResolver.getFallbackDisplayName(biosPath)
+                    else -> stringResource(R.string.onboarding_bios_desc)
+                },
+                status = if (biosValid) {
+                    stringResource(R.string.onboarding_status_ready)
+                } else {
+                    stringResource(R.string.onboarding_status_invalid_bios)
+                },
+                statusColor = if (biosValid) {
+                    Color(0xFF1B8A5A)
+                } else {
+                    MaterialTheme.colorScheme.tertiary
+                },
+                onClick = launchBiosPicker
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 

@@ -458,7 +458,7 @@
     <string name="onboarding_title">플레이할 준비를 하세요</string>
     <string name="onboarding_subtitle">Dreamcast 게임 폴더를 선택하고 파일 접근을 허용하세요.</string>
     <string name="onboarding_bios_title">BIOS 파일 선택</string>
-    <string name="onboarding_bios_desc">Dreamcast BIOS 파일(dc_boot.bin 및 dc_flash.bin)이 들어 있는 폴더를 선택하세요.</string>
+    <string name="onboarding_bios_desc">Dreamcast BIOS 덤프 선택: dc_boot.bin (2 MiB) 또는 dc_flash.bin (128 KiB).</string>
     <string name="onboarding_games_title">게임 폴더 선택</string>
     <string name="onboarding_games_desc">게임이 포함된 폴더를 선택하세요.</string>
     <string name="onboarding_status_required">필요함</string>

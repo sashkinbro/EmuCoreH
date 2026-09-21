@@ -690,7 +690,7 @@
     <string name="onboarding_title">Připravte se hrát</string>
     <string name="onboarding_subtitle">Vyberte složky s hrami Dreamcast a udělte přístup k souborům.</string>
     <string name="onboarding_bios_title">Vyberte soubor BIOS</string>
-    <string name="onboarding_bios_desc">Vyberte složku se soubory BIOS Dreamcast (dc_boot.bin a dc_flash.bin).</string>
+    <string name="onboarding_bios_desc">Vyberte dump BIOS Dreamcast: dc_boot.bin (2 MiB) nebo dc_flash.bin (128 KiB).</string>
     <string name="onboarding_games_title">Přidat složky s hrami</string>
     <string name="onboarding_games_desc">Přidejte jednu nebo více složek obsahujících vaše hry.</string>
     <string name="onboarding_games_selected_count">Vybrané složky: %1$d. Klepnutím přidáte další.</string>

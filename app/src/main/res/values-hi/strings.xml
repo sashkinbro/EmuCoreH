@@ -418,7 +418,7 @@
     <string name="onboarding_title">खेलने के लिए तैयार हो जाएं</string>
     <string name="onboarding_subtitle">अपने Dreamcast गेम फ़ोल्डर चुनें और फ़ाइल एक्सेस दें।</string>
     <string name="onboarding_bios_title">BIOS फ़ाइल चुनें</string>
-    <string name="onboarding_bios_desc">Dreamcast के BIOS फ़ाइलों (dc_boot.bin और dc_flash.bin) वाला फ़ोल्डर चुनें।</string>
+    <string name="onboarding_bios_desc">अपना Dreamcast BIOS डंप चुनें: dc_boot.bin (2 MiB) या dc_flash.bin (128 KiB).</string>
     <string name="onboarding_games_title">गेम्स फ़ोल्डर चुनें</string>
     <string name="onboarding_games_desc">वह फ़ोल्डर चुनें जिसमें आपके गेम्स हैं।</string>
     <string name="onboarding_status_required">आवश्यक</string>
