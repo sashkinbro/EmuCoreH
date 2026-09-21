@@ -14,17 +14,26 @@ object GameFormats {
      */
     val romExtensions = setOf("dat", "lst", "zip", "7z")
 
-    val extensions = discExtensions + romExtensions
+    /** Multi-disc playlists: the core reads the entries and exposes the discs. */
+    val playlistExtensions = setOf("m3u")
+
+    /** Standalone executables (homebrew) supported by the core. */
+    val executableExtensions = setOf("elf")
+
+    val extensions = discExtensions + romExtensions + playlistExtensions + executableExtensions
 
     val archives = setOf("zip", "7z")
 
-    fun isSupportedName(name: String): Boolean {
-        val fileName = name.substringAfterLast('/').lowercase(Locale.ROOT)
-        return fileName.substringAfterLast('.', "") in extensions
-    }
+    fun isSupportedName(name: String): Boolean = extensionOf(name) in extensions
 
-    fun isArchiveName(name: String): Boolean {
-        val fileName = name.substringAfterLast('/').lowercase(Locale.ROOT)
-        return fileName.substringAfterLast('.', "") in archives
-    }
+    /**
+     * The library hides raw tracks, but a file picked for a direct launch may
+     * be any content the core accepts, including a lone `.bin`.
+     */
+    fun isLaunchableName(name: String): Boolean = isSupportedName(name) || extensionOf(name) == "bin"
+
+    fun isArchiveName(name: String): Boolean = extensionOf(name) in archives
+
+    private fun extensionOf(name: String): String =
+        name.substringAfterLast('/').lowercase(Locale.ROOT).substringAfterLast('.', "")
 }
