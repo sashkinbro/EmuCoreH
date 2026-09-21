@@ -46,8 +46,4 @@ class ContentLibraryRepository(context: Context) {
  * underscores when it builds the game id, so the canonical form keeps the
  * separator untouched.
  */
-private fun String.normalizeGameSerial(): String? {
-    val candidate = trim().uppercase(Locale.US).replace(' ', '_')
-    val match = Regex("\\b[A-Z0-9]{1,4}[-_][0-9]{3,5}[A-Z]?\\b").find(candidate) ?: return null
-    return match.value
-}
+private fun String.normalizeGameSerial(): String? = DiscSerial.normalize(this)
