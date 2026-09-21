@@ -617,11 +617,18 @@ object NativeApp {
     }
 
     private fun extractPspSerial(value: String): String? {
-        val embedded = contextRef?.get()?.let { context ->
-            runCatching { GameMetadataReader.read(context, value)?.serial }.getOrNull()
+        // Reading game metadata opens the disc image, which is far too heavy
+        // for the save-state paths that are computed for every game and slot.
+        // Only pay for it when the name can actually carry such a serial.
+        val embedded = if (pspSerialCandidate.containsMatchIn(value)) {
+            contextRef?.get()?.let { context ->
+                runCatching { GameMetadataReader.read(context, value)?.serial }.getOrNull()
+            }
+        } else {
+            null
         }
         val normalized = (embedded ?: value).uppercase(java.util.Locale.ROOT)
-        val match = Regex("\\b([A-Z]{4})[-_. ]?(\\d{5})\\b").find(normalized) ?: return null
+        val match = pspSerialPattern.find(normalized) ?: return null
         return "${match.groupValues[1]}-${match.groupValues[2]}"
     }
 
@@ -638,6 +645,8 @@ object NativeApp {
     private const val TIME_CONTROL_HOLD_MS = 450L
     private const val TIME_CONTROL_TAP_MS = 60L
     private const val VMU_SIZE_BYTES = 128L * 1024L
+    private val pspSerialCandidate = Regex("\\b[A-Z]{4}[-_. ]?\\d{5}\\b", RegexOption.IGNORE_CASE)
+    private val pspSerialPattern = Regex("\\b([A-Z]{4})[-_. ]?(\\d{5})\\b")
 }
 
 data class NativeMemoryCardInfo(
