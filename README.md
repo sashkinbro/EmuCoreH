@@ -28,6 +28,10 @@ The project is under active development. Use your own legally obtained games. Fl
 | --- | --- |
 | ![Library](docs/screenshots/library.jpg) | ![Gameplay](docs/screenshots/gameplay.jpg) |
 
+| In-game menu | Touch controls |
+| --- | --- |
+| ![In-game menu](docs/screenshots/game-menu.jpg) | ![Touch controls](docs/screenshots/touch-controls.jpg) |
+
 | Texture packs | Cheat packs | Memory cards |
 | --- | --- | --- |
 | ![Texture packs](docs/screenshots/texture-packs.jpg) | ![Cheat packs](docs/screenshots/cheat-packs.jpg) | ![Memory cards](docs/screenshots/memory-cards.jpg) |
