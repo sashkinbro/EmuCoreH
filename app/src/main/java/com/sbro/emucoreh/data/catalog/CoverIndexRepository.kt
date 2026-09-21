@@ -93,11 +93,33 @@ class CoverIndexRepository(private val context: Context) {
     private fun load(): JSONObject? = cached ?: synchronized(lock) {
         cached ?: runCatching {
             context.assets.open("catalog/dreamcast_covers.json").bufferedReader().use { JSONObject(it.readText()) }
+                .also(::normalizeArcadeKeys)
         }.getOrNull()?.also { cached = it }
     }
 
+    /**
+     * Older index snapshots key the arcade maps by the raw romset name, while
+     * romsets are looked up by their normalized archive name. Normalizing the
+     * keys on load keeps every snapshot resolvable.
+     */
+    private fun normalizeArcadeKeys(index: JSONObject) {
+        for (section in arrayOf("arcade", "arcadeFallback")) {
+            val source = index.optJSONObject(section) ?: continue
+            val normalized = JSONObject()
+            val keys = source.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val normalizedKey = key.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "")
+                if (normalizedKey.isNotEmpty() && !normalized.has(normalizedKey)) {
+                    normalized.put(normalizedKey, source.get(key))
+                }
+            }
+            index.put(section, normalized)
+        }
+    }
+
     companion object {
-        private const val BASE_URL = "https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/183c7701c36f8f40fb558e00718cbb8a6230c692"
+        private const val BASE_URL = "https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/15caa0598ce7b3ddc04f79c8517c5c74d7497a95"
         private val lock = Any()
         @Volatile private var cached: JSONObject? = null
 
