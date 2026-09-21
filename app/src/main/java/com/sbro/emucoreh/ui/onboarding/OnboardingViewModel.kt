@@ -8,6 +8,7 @@ import com.sbro.emucoreh.core.DreamcastBios
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.EmulatorDataLocation
 import com.sbro.emucoreh.core.EmulatorStorage
+import com.sbro.emucoreh.core.FlycastCoreOptions
 import com.sbro.emucoreh.core.GpuHardwareProfiles
 import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.core.SetupValidator
@@ -88,6 +89,9 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
                 if (previousPath != uri.toString()) {
                     StorageAccess.releasePersistedPermission(application, previousPath)
                 }
+                // Adding a dump must not silently switch the core to the real
+                // BIOS path; keep HLE BIOS enabled so boot behaviour is stable.
+                NativeApp.setCoreOption(FlycastCoreOptions.HLE_BIOS_KEY, "enabled")
             }
             updateState(
                 biosPath = if (installed) uri.toString() else previousPath,

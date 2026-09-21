@@ -1599,11 +1599,25 @@ object FlycastCoreOptions {
 
     private val optionsByKey: Map<String, Option> by lazy { optionList.associateBy { it.key } }
 
+    /**
+     * Core option that backs the app's image-quality setting. The settings UI
+     * edits it through [com.sbro.emucoreh.core.UpscaleConfig] instead of
+     * listing it as a standalone core option.
+     */
+    const val INTERNAL_RESOLUTION_KEY = "reicast_internal_resolution"
+
+    /**
+     * HLE BIOS toggle. The app enables it when a BIOS dump is installed so the
+     * core keeps booting through its built-in BIOS instead of silently
+     * switching to the dump.
+     */
+    const val HLE_BIOS_KEY = "reicast_hle_bios"
+
     private val managedKeys: Set<String> = setOf(
         "reicast_custom_textures",
         "reicast_dump_replaced_textures",
         "reicast_dump_textures",
-        "reicast_internal_resolution",
+        INTERNAL_RESOLUTION_KEY,
         "reicast_preload_custom_textures",
     )
 
@@ -1620,15 +1634,23 @@ object FlycastCoreOptions {
     fun categoryLabel(categoryKey: String): String =
         categoryList.firstOrNull { it.key == categoryKey }?.key ?: categoryKey
 
-    fun systemOptions(): List<Option> = forCategory("system")
+    /** System options without the network ones, which live in the Network tab. */
+    fun systemOptions(): List<Option> = forCategory("system").filterNot { it.key in networkKeys }
 
-    fun videoOptions(): List<Option> = forCategory("video")
+    /**
+     * Video options for the settings UI. The internal resolution is owned by
+     * the app's image-quality setting (see [com.sbro.emucoreh.core.UpscaleConfig]),
+     * which drives this same core option, so it must not be edited here.
+     */
+    fun videoOptions(): List<Option> =
+        forCategory("video").filterNot { it.key == INTERNAL_RESOLUTION_KEY }
 
     fun performanceOptions(): List<Option> = forCategory("performance")
 
     fun hacksOptions(): List<Option> = forCategory("hacks")
 
-    fun inputOptions(): List<Option> = forCategory("input")
+    /** Input options without the network ones, which live in the Network tab. */
+    fun inputOptions(): List<Option> = forCategory("input").filterNot { it.key in networkKeys }
 
     fun expansionsOptions(): List<Option> = forCategory("expansions")
 
