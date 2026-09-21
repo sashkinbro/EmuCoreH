@@ -65,6 +65,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -86,7 +87,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import com.sbro.emucoreh.R
+import com.sbro.emucoreh.core.DreamcastBios
+import com.sbro.emucoreh.core.EmulatorStorage
 import com.sbro.emucoreh.core.GamepadManager
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
 import com.sbro.emucoreh.core.TvUiMetrics
@@ -98,8 +102,10 @@ import com.sbro.emucoreh.ui.common.rememberDebouncedClick
 import com.sbro.emucoreh.ui.common.appStatusBarTopPadding
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 import com.sbro.emucoreh.ui.theme.neon.neonShapeCorners
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.milliseconds
 
 enum class PrimaryDestination {
@@ -604,8 +610,26 @@ private fun SideNavigation(
             closeDrawerThen(it)
         }
     }
-    val showExecutables =
+    val launchBios = onLaunchBios?.let {
+        rememberDebouncedClick {
+            closeDrawerThen(it)
+        }
+    }
+    val context = LocalContext.current
+    val biosInstalled by produceState(initialValue = false, context) {
+        val systemDir = EmulatorStorage.flycastSystemDir(context).absolutePath
+        while (true) {
+            value = withContext(Dispatchers.IO) {
+                runCatching { DreamcastBios.hasBootRom(systemDir) }.getOrDefault(false)
+            }
+            delay(2000)
+        }
+    }
+    val showGameLaunch =
         launchGame != null && DrawerItemId.LAUNCH_GAME !in hiddenDrawerItems
+    val showBiosLaunch =
+        launchBios != null && DrawerItemId.LAUNCH_BIOS !in hiddenDrawerItems && biosInstalled
+    val showExecutables = showGameLaunch || showBiosLaunch
     val showAppActions =
         (navigateGameSettingsManager != null && DrawerItemId.GAME_SETTINGS !in hiddenDrawerItems) ||
             (navigateDataTransfer != null && DrawerItemId.DATA_TRANSFER !in hiddenDrawerItems) ||
@@ -722,11 +746,18 @@ private fun SideNavigation(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
-                if (launchGame != null && DrawerItemId.LAUNCH_GAME !in hiddenDrawerItems) {
+                if (showGameLaunch) {
                     ShellAction(
                         icon = Icons.Rounded.PlayArrow,
                         label = stringResource(R.string.shell_launch_game),
-                        onClick = launchGame
+                        onClick = launchGame!!
+                    )
+                }
+                if (showBiosLaunch) {
+                    ShellAction(
+                        icon = Icons.Rounded.Memory,
+                        label = stringResource(R.string.shell_launch_bios),
+                        onClick = launchBios!!
                     )
                 }
             }
