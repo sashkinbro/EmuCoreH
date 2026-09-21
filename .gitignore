@@ -31,4 +31,11 @@ core/build/
 *.jks
 *.keystore
 
+# Local Firebase configuration and hosting content
+/.firebaserc
+/firebase.json
+/firestore.rules
+/firestore.indexes.json
+/y/
+
 /.idea/vcs.xml
