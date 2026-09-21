@@ -7,8 +7,8 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class RetroAchievementsCatalogTest {
-    @Test fun requestsPspInsteadOfPlayStation() {
-        assertEquals(41, RetroAchievementsCatalog.PSP_CONSOLE_ID)
+    @Test fun requestsDreamcastConsole() {
+        assertEquals(40, RetroAchievementsCatalog.DREAMCAST_CONSOLE_ID)
     }
 
     @Test fun parsesEntireCatalogIncludingUnplayedGames() {

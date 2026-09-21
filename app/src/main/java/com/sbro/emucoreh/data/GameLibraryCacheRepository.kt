@@ -25,6 +25,7 @@ class GameLibraryCacheRepository(context: Context) {
 
     private val appContext = context.applicationContext
     private val cacheFile = File(appContext.filesDir, "library/game_library_cache.json")
+    private val learnedSerials = LearnedSerialRepository.forContext(appContext)
     private val lock = Any()
 
     fun load(rootPath: String): List<GameItem> {
@@ -52,12 +53,14 @@ class GameLibraryCacheRepository(context: Context) {
                 }
 
                 val games = libraryObject.optJSONArray("games") ?: JSONArray()
+                val learned = learnedSerials.all()
                 val parsedGames = buildList {
                     for (index in 0 until games.length()) {
                         val game = games.optJSONObject(index) ?: continue
-                        val serial = game.optString("serial").takeIf { it.isNotBlank() }
                         val path = game.optString("path")
                         val fileName = sanitizeCachedFileName(path, game.optString("file_name"))
+                        val serial = game.optString("serial").takeIf { it.isNotBlank() }
+                            ?: learned[LearnedSerialRepository.key(fileName)]
                         val title = sanitizeCachedTitle(
                             path = path,
                             rawTitle = game.optString("title", fileName),

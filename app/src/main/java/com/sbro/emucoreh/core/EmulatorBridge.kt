@@ -11,6 +11,7 @@ import android.view.PixelCopy
 import android.view.Surface
 import com.sbro.emucoreh.data.AppPreferences
 import com.sbro.emucoreh.data.DisplayCrop
+import com.sbro.emucoreh.data.LearnedSerialRepository
 import com.sbro.emucoreh.ui.common.invalidateCoverImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -551,9 +552,33 @@ object EmulatorBridge {
             if (!isVmActive) {
                 DocumentPathResolver.releasePreparedLaunchHandles()
             }
+            if (result && !bootSmokeProbe && !allowBiosBoot && !isElf && !isIrx && !isExeExecutable &&
+                !path.isBlank()
+            ) {
+                recordLearnedGameSerial(path)
+            }
             NativeApp.logCrashBreadcrumb("startEmulation finished result=$result")
             Log.i(TAG, "startEmulation finished result=$result")
             result
+        }
+    }
+
+    /**
+     * CHD and similar containers hide the disc product code from the library
+     * scanner, so the serial the core reported while playing is stored for the
+     * cheat and texture catalogs.
+     */
+    private fun recordLearnedGameSerial(path: String) {
+        val serial = NativeApp.currentGameSerial() ?: return
+        val context = getContext() ?: return
+        val fileName = if (path.startsWith("content://")) {
+            DocumentPathResolver.getDisplayName(context, path)
+        } else {
+            File(path).name
+        }
+        runCatching {
+            LearnedSerialRepository.forContext(context).record(fileName, serial)
+            Log.i(TAG, "Learned serial $serial for $fileName")
         }
     }
 

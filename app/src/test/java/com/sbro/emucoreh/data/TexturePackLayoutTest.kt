@@ -19,10 +19,17 @@ class TexturePackLayoutTest {
         assertEquals(mapOf("Pack/Textures.INI" to "textures.ini", "Pack/A.png" to "A.png"),
             resolveTexturePackLayout(setOf("Pack/Textures.INI", "Pack/A.png")))
     }
-    @Test(expected = IllegalStateException::class) fun ambiguousPacksAreRejected() {
+    @Test fun dreamcastPacksDropTheGameFolder() {
+        assertEquals(mapOf("MK-51035/a.png" to "a.png", "MK-51035/tex/b.png" to "tex/b.png"),
+            resolveTexturePackLayout(setOf("MK-51035/a.png", "MK-51035/tex/b.png")))
+    }
+    @Test(expected = IllegalArgumentException::class) fun ambiguousPacksAreRejected() {
         resolveTexturePackLayout(setOf("A/textures.ini", "B/textures.ini"))
     }
-    @Test(expected = IllegalStateException::class) fun missingIniIsRejected() {
+    @Test(expected = IllegalArgumentException::class) fun mixedGameFoldersAreRejected() {
+        resolveTexturePackLayout(setOf("A/one.png", "B/two.png"))
+    }
+    @Test(expected = IllegalArgumentException::class) fun looseImagesAreRejected() {
         resolveTexturePackLayout(setOf("A.png"))
     }
 }
