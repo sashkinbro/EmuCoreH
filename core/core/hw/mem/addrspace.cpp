@@ -210,14 +210,14 @@ void DYNACALL write64(u32 Address,u64 data) { writet<u64>(Address,data); }
 template<typename T>
 static T DYNACALL readMemNotMapped(u32 addresss)
 {
-	INFO_LOG(MEMORY, "[sh4]read%d from %08x, not mapped (default handler)", (int)sizeof(T), addresss);
+	DEBUG_LOG(MEMORY, "[sh4]read%d from %08x, not mapped (default handler)", (int)sizeof(T), addresss);
 	return (T)MEM_ERROR_RETURN_VALUE;
 }
 //default write hander
 template<typename T>
 static void DYNACALL writeMemNotMapped(u32 addresss, T data)
 {
-	INFO_LOG(MEMORY, "[sh4]Write%d to %08x = %x, not mapped (default handler)", (int)sizeof(T), addresss, data);
+	DEBUG_LOG(MEMORY, "[sh4]Write%d to %08x = %x, not mapped (default handler)", (int)sizeof(T), addresss, data);
 }
 
 //code to register handlers

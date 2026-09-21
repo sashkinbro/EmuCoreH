@@ -222,7 +222,7 @@ void DYNACALL pvr_write32p(u32 addr, T data)
 {
 	if constexpr (!Internal && sizeof(T) == 1)
 	{
-		INFO_LOG(MEMORY, "%08x: 8-bit VRAM writes are not possible", addr);
+		DEBUG_LOG(MEMORY, "%08x: 8-bit VRAM writes are not possible", addr);
 		return;
 	}
 	addr &= ~(sizeof(T) - 1);

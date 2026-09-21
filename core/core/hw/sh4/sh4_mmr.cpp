@@ -188,7 +188,7 @@ T DYNACALL ReadMem_P4(u32 addr)
 	case 0xE1:
 	case 0xE2:
 	case 0xE3:
-		INFO_LOG(SH4, "Unhandled p4 read [Store queue] 0x%x", addr);
+		DEBUG_LOG(SH4, "Unhandled p4 read [Store queue] 0x%x", addr);
 		return 0;
 
 	case 0xF0:
@@ -247,11 +247,11 @@ T DYNACALL ReadMem_P4(u32 addr)
 		}
 
 	case 0xFF:
-		INFO_LOG(SH4, "Unhandled p4 read [area7] 0x%x", addr);
+		DEBUG_LOG(SH4, "Unhandled p4 read [area7] 0x%x", addr);
 		break;
 
 	default:
-		INFO_LOG(SH4, "Unhandled p4 read [Reserved] 0x%x", addr);
+		DEBUG_LOG(SH4, "Unhandled p4 read [Reserved] 0x%x", addr);
 		break;
 	}
 
@@ -270,7 +270,7 @@ void DYNACALL WriteMem_P4(u32 addr,T data)
 	case 0xE1:
 	case 0xE2:
 	case 0xE3:
-		INFO_LOG(SH4, "Unhandled p4 Write [Store queue] 0x%x", addr);
+		DEBUG_LOG(SH4, "Unhandled p4 Write [Store queue] 0x%x", addr);
 		break;
 
 	case 0xF0:
@@ -367,11 +367,11 @@ void DYNACALL WriteMem_P4(u32 addr,T data)
 		return;
 
 	case 0xFF:
-		INFO_LOG(SH4, "Unhandled p4 Write [area7] 0x%x = %x", addr, data);
+		DEBUG_LOG(SH4, "Unhandled p4 Write [area7] 0x%x = %x", addr, data);
 		break;
 
 	default:
-		INFO_LOG(SH4, "Unhandled p4 Write [Reserved] 0x%x", addr);
+		DEBUG_LOG(SH4, "Unhandled p4 Write [Reserved] 0x%x", addr);
 		break;
 	}
 }
@@ -380,7 +380,7 @@ void DYNACALL WriteMem_P4(u32 addr,T data)
 //**Area  7**
 //***********
 
-#define OUT_OF_RANGE(reg) INFO_LOG(SH4, "Out of range on register %s index %x", reg, addr)
+#define OUT_OF_RANGE(reg) DEBUG_LOG(SH4, "Out of range on register %s index %x", reg, addr)
 #define A7_REG_HASH(addr) (((addr) >> 16) & 0x1FFF)
 
 //Read P4 memory-mapped registers
@@ -416,11 +416,11 @@ T DYNACALL ReadMem_p4mmr(u32 addr)
 
 	case A7_REG_HASH(BSC_SDMR2_addr):
 		//dram settings 2 / write only
-		INFO_LOG(SH4, "Read from write-only registers [dram settings 2]");
+		DEBUG_LOG(SH4, "Read from write-only registers [dram settings 2]");
 		return 0;
 	case A7_REG_HASH(BSC_SDMR3_addr):
 		//dram settings 3 / write only
-		INFO_LOG(SH4, "Read from write-only registers [dram settings 3]");
+		DEBUG_LOG(SH4, "Read from write-only registers [dram settings 3]");
 		return 0;
 
 	case A7_REG_HASH(DMAC_BASE_addr):
@@ -460,7 +460,7 @@ T DYNACALL ReadMem_p4mmr(u32 addr)
 		break;
 	}
 
-	INFO_LOG(SH4, "Unknown Read from P4 mmr - addr=%x", addr);
+	DEBUG_LOG(SH4, "Unknown Read from P4 mmr - addr=%x", addr);
 	return 0;
 }
 
@@ -549,7 +549,7 @@ void DYNACALL WriteMem_p4mmr(u32 addr, T data)
 		break;
 	}
 
-	INFO_LOG(SH4, "Write to P4 mmr not implemented, addr=%x, data=%x", addr, data);
+	DEBUG_LOG(SH4, "Write to P4 mmr not implemented, addr=%x, data=%x", addr, data);
 }
 
 
@@ -567,7 +567,7 @@ T DYNACALL ReadMem_area7_OCR(u32 addr)
 	if (CCN_CCR.ORA == 1)
 		return *(T *)&OnChipRAM[onChipRamOffset(addr)];
 
-	INFO_LOG(SH4, "On Chip Ram Read, but OCR is disabled. addr %x", addr);
+	DEBUG_LOG(SH4, "On Chip Ram Read, but OCR is disabled. addr %x", addr);
 	return 0;
 }
 
@@ -577,7 +577,7 @@ void DYNACALL WriteMem_area7_OCR(u32 addr, T data)
 	if (CCN_CCR.ORA == 1)
 		*(T *)&OnChipRAM[onChipRamOffset(addr)] = data;
 	else
-		INFO_LOG(SH4, "On Chip Ram Write, but OCR is disabled. addr %x", addr);
+		DEBUG_LOG(SH4, "On Chip Ram Write, but OCR is disabled. addr %x", addr);
 }
 
 //Init/Res/Term
