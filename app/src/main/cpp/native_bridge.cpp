@@ -1433,7 +1433,36 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_loadBios(JNIEnv*, jobject, jlong ha
 
 JNIEXPORT jint JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_loadBiosOnly(JNIEnv*, jobject, jlong handle) {
-    return handle == 0 ? -1 : -3;
+    if (handle == 0) return -1;
+
+    {
+        std::lock_guard<std::mutex> serial_lock(g_game_serial_mutex);
+        g_game_serial.clear();
+    }
+    std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
+    if (!LoadCoreLocked() || !g_frontend.core_initialized.load()) return -2;
+    if (g_frontend.game_loaded.load()) {
+        if (g_core.unload_game != nullptr) g_core.unload_game();
+        g_frontend.game_loaded.store(false);
+    }
+
+    // An empty content path makes the core boot its BIOS without a disc.
+    retro_game_info info{};
+    info.path = "";
+    if (!g_core.load_game(&info)) {
+        LOGE("retro_load_game failed for BIOS-only boot");
+        return -3;
+    }
+    if (g_core.set_controller_port_device != nullptr) {
+        for (unsigned port = 0; port < 4; ++port) {
+            g_core.set_controller_port_device(port, RETRO_DEVICE_JOYPAD);
+        }
+    }
+    g_frontend.game_loaded.store(true);
+    g_frontend.shutdown_requested.store(false);
+    g_frontend.av_info_refresh_pending.store(true);
+    LOGI("Loaded BIOS without content");
+    return 0;
 }
 
 JNIEXPORT jint JNICALL
