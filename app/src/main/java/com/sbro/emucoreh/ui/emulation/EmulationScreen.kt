@@ -394,6 +394,9 @@ fun EmulationScreen(
         initial = AppPreferences.DEFAULT_FLOATING_QUICK_LOAD_POSITION_X to
             AppPreferences.DEFAULT_FLOATING_QUICK_LOAD_POSITION_Y
     )
+    val floatingQuickActionsEnabled by preferences.floatingQuickActionsEnabled.collectAsState(
+        initial = false
+    )
     val orientationLockPreference by preferences.orientationLock.collectAsState(initial = null)
     val emulationAllowsBothOrientations by preferences.emulationAllowsBothOrientations.collectAsState(
         initial = null
@@ -1342,8 +1345,8 @@ fun EmulationScreen(
         }
         }
 
-        // Floating quick save/load buttons stay available in every title.
-        if (!uiState.showMenu && !showControlsEditor) {
+        // Floating quick save/load buttons are opt-in from the settings.
+        if (!uiState.showMenu && !showControlsEditor && floatingQuickActionsEnabled) {
             FloatingQuickActionsLayer(
                 modifier = Modifier
                     .fillMaxSize()

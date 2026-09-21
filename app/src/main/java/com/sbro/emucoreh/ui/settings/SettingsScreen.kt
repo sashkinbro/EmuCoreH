@@ -359,6 +359,10 @@ fun SettingsScreen(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? -> uri?.let(viewModel::setGamePath) }
 
+    val biosPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? -> uri?.let(viewModel::setBiosPath) }
+
     val homeBackgroundPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? -> uri?.let(viewModel::installHomeBackground) }
@@ -379,13 +383,19 @@ fun SettingsScreen(
     TvStoragePickerHost(
         request = tvStorageRequest,
         onDismiss = { tvStorageRequest = null },
-        onBiosSelected = {},
+        onBiosSelected = viewModel::setBiosPath,
         onGameFolderSelected = viewModel::setGamePath
     )
     val launchGamePicker = rememberDebouncedClick(
         onClick = {
             if (tvUiEnabled) tvStorageRequest = TvStorageRequest.GAME_FOLDER
             else gamePicker.launch(null)
+        }
+    )
+    val launchBiosPicker = rememberDebouncedClick(
+        onClick = {
+            if (tvUiEnabled) tvStorageRequest = TvStorageRequest.BIOS_FILE
+            else biosPicker.launch(arrayOf("*/*"))
         }
     )
     val openEmulatorDataLocationDialog = rememberDebouncedClick(
@@ -522,11 +532,12 @@ fun SettingsScreen(
             )
 
             SettingsContent(
-                uiState = uiState,
-                selectedTab = selectedTab,
-                context = context,
-                launchGamePicker = launchGamePicker,
-                openEmulatorDataLocationDialog = openEmulatorDataLocationDialog,
+    uiState = uiState,
+    selectedTab = selectedTab,
+    context = context,
+    launchGamePicker = launchGamePicker,
+    launchBiosPicker = launchBiosPicker,
+    openEmulatorDataLocationDialog = openEmulatorDataLocationDialog,
                 launchHomeBackgroundPicker = {
                     homeBackgroundPicker.launch(arrayOf("image/*", "video/*"))
                 },
@@ -1004,6 +1015,7 @@ private fun SettingsContent(
     searchQuery: String,
     context: android.content.Context,
     launchGamePicker: () -> Unit,
+    launchBiosPicker: () -> Unit,
     openEmulatorDataLocationDialog: () -> Unit,
     launchHomeBackgroundPicker: () -> Unit,
     launchSideArtworkPicker: () -> Unit,
@@ -1157,6 +1169,15 @@ private fun SettingsContent(
                             onCheckedChange = viewModel::setConfirmSaveLoadActions,
                             helpText = stringResource(R.string.settings_help_confirm_save_load_actions),
                             onResetToDefault = { viewModel.setConfirmSaveLoadActions(defaults.confirmSaveLoadActions) }
+                        )
+                        ToggleItem(
+                            icon = Icons.Rounded.Save,
+                            title = stringResource(R.string.settings_floating_quick_actions),
+                            subtitle = stringResource(R.string.settings_floating_quick_actions_desc),
+                            checked = uiState.floatingQuickActionsEnabled,
+                            onCheckedChange = viewModel::setFloatingQuickActionsEnabled,
+                            helpText = stringResource(R.string.settings_help_floating_quick_actions),
+                            onResetToDefault = { viewModel.setFloatingQuickActionsEnabled(false) }
                         )
                         ToggleItem(
                             icon = Icons.Rounded.Visibility,
@@ -1755,6 +1776,17 @@ private fun SettingsContent(
                             value = emulatorDataDisplayName,
                             onClick = openEmulatorDataLocationDialog,
                             helpText = stringResource(R.string.emulator_data_location_description)
+                        )
+                        SettingsItem(
+                            icon = Icons.Rounded.Memory,
+                            label = stringResource(R.string.settings_bios_path),
+                            value = if (uiState.biosValid) {
+                                stringResource(R.string.onboarding_status_ready)
+                            } else {
+                                stringResource(R.string.settings_bios_picker_action)
+                            },
+                            onClick = launchBiosPicker,
+                            helpText = stringResource(R.string.onboarding_bios_desc)
                         )
                     }
 
@@ -3743,6 +3775,7 @@ private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
         entry(SettingsTab.General, R.string.settings_emulation_both_orientations),
         entry(SettingsTab.General, R.string.settings_orientation_lock),
         entry(SettingsTab.General, R.string.settings_confirm_save_load_actions),
+        entry(SettingsTab.General, R.string.settings_floating_quick_actions),
         entry(SettingsTab.General, R.string.settings_show_recent_games),
         entry(SettingsTab.General, R.string.settings_show_home_search),
         entry(SettingsTab.General, R.string.settings_prefer_english_game_titles),
@@ -3780,6 +3813,7 @@ private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
         entry(SettingsTab.Controls, R.string.settings_pad_vibration_fallback),
         entry(SettingsTab.Library, R.string.settings_game_path),
         entry(SettingsTab.Library, R.string.emulator_data_location_title),
+        entry(SettingsTab.Library, R.string.settings_bios_path),
         entry(SettingsTab.Library, R.string.settings_cover_art_style),
         entry(SettingsTab.Library, R.string.settings_cover_download_url),
         entry(SettingsTab.Library, R.string.settings_clear_cover_cache),
