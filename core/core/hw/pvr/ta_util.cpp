@@ -306,7 +306,7 @@ int getTAContextAddresses(u32 *addresses)
 					opbAddr = pvr_read32p<u32>(addr + 20);
 				if (opbAddr & 0x80000000)
 				{
-					INFO_LOG(PVR, "Can't find any non-null OPB for pass %d", count);
+					DEBUG_LOG(PVR, "Can't find any non-null OPB for pass %d", count);
 					break;
 				}
 			}

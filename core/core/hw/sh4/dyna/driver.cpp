@@ -90,7 +90,7 @@ void Sh4Recompiler::Run()
 	getContext()->restoreHostRoundingMode();
 
 	u8 *sh4_dyna_rcb = (u8 *)getContext() + sizeof(Sh4Context);
-	INFO_LOG(DYNAREC, "cntx // fpcb offset: %td // pc offset: %td // pc %08X", (u8*)p_sh4rcb->fpcb - sh4_dyna_rcb,
+	DEBUG_LOG(DYNAREC, "cntx // fpcb offset: %td // pc offset: %td // pc %08X", (u8*)p_sh4rcb->fpcb - sh4_dyna_rcb,
 			(u8*)&getContext()->pc - sh4_dyna_rcb, getContext()->pc);
 	
 	sh4Dynarec->mainloop(sh4_dyna_rcb);

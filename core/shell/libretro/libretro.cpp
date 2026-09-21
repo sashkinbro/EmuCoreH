@@ -2627,7 +2627,7 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(retro_system_av_info *info)
 {
-	INFO_LOG(RENDERER, "retro_get_system_av_info: Res=%d", (int)config::RenderResolution);
+	DEBUG_LOG(RENDERER, "retro_get_system_av_info: Res=%d", (int)config::RenderResolution);
 
 	if (cheatManager.isWidescreen())
 	{
