@@ -5,6 +5,8 @@
 
 EmuCoreH is a Sega Dreamcast, Naomi, Naomi 2, and Atomiswave library, launcher, and emulator frontend for Android. It pairs a purpose-built Compose interface with a vendored [Flycast](https://github.com/flyinghead/flycast) core that is built together with the app, so no separate core download is needed.
 
+Website: [emucoreh.web.app](https://emucoreh.web.app/)
+
 ![Status](https://img.shields.io/badge/Status-Active%20Development-blue)
 
 The project is under active development. Use your own legally obtained games. Flycast emulates the Dreamcast without a BIOS file when no BIOS dump is installed.
@@ -21,20 +23,6 @@ The project is under active development. Use your own legally obtained games. Fl
 - Cheat and texture replacement support for compatible games
 - RetroAchievements and optional Discord integration
 - Localized interface in 18 languages for phones, tablets, and Android TV
-
-## Screenshots
-
-| Library | Gameplay |
-| --- | --- |
-| ![Library](docs/screenshots/library.jpg) | ![Gameplay](docs/screenshots/gameplay.jpg) |
-
-| In-game menu | Touch controls |
-| --- | --- |
-| ![In-game menu](docs/screenshots/game-menu.jpg) | ![Touch controls](docs/screenshots/touch-controls.jpg) |
-
-| Texture packs | Cheat packs | Memory cards |
-| --- | --- | --- |
-| ![Texture packs](docs/screenshots/texture-packs.jpg) | ![Cheat packs](docs/screenshots/cheat-packs.jpg) | ![Memory cards](docs/screenshots/memory-cards.jpg) |
 
 ## What This Repository Contains
 
