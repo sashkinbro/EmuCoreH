@@ -37,7 +37,7 @@ class NativeCoreBridge {
     // Content.
     // ---------------------------------------------------------------------
     external fun loadBios(handle: Long, path: String): Int
-    /** Boots the core with no content into the PlayStation BIOS. */
+    /** Boots the core with no content into the Dreamcast BIOS. */
     external fun loadBiosOnly(handle: Long): Int
     external fun loadDisc(handle: Long, path: String): Int
     external fun reset(handle: Long): Int
