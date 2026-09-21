@@ -1,0 +1,64 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace "com.prefabulated.bouncyball"
+    compileSdk 31
+    ndkVersion "23.1.7779620"
+
+    defaultConfig {
+        applicationId "com.prefabulated.swappy"
+        minSdk      21
+        targetSdk   35
+        versionCode 4
+        versionName "1.1.2"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_shared'
+            }
+        }
+    }
+    buildTypes {
+        debug {
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    lintOptions {
+        abortOnError false
+    }
+    buildFeatures {
+        prefab true
+    }
+}
+
+allprojects {
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xlint:deprecation"
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.3.1'
+    implementation 'androidx.preference:preference:1.1.1'
+
+    // Uncomment the line below (implementation fileTree..)
+    // and comment out "implementation project(":games-frame-pacing")"
+    // to use a locally built .aar
+    // See ../settings.gradle as well
+    //implementation fileTree(dir: '../../../', include: ['games-frame-pacing-release.aar'])
+    implementation project(':games-frame-pacing')
+}

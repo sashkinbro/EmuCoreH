@@ -1,0 +1,6 @@
+include ':app'
+rootProject.name='SwappyTesting'
+include ':games-frame-pacing:extras'
+include ':games-frame-pacing'
+project(':games-frame-pacing').projectDir           = file('../../../games-frame-pacing')
+project(':games-frame-pacing:extras').projectDir    = file('../../../games-frame-pacing/extras')

@@ -1,0 +1,10 @@
+TUNINGFORK {
+    global:
+        *JNI_OnLoad*;
+        *TuningFork_*;
+        *Unity_*;
+        *tuningfork*;
+        *histogram_test*;
+    local:
+        *;
+};

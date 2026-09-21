@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/button_list"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <Button
+        android:id="@+id/button_crash"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:onClick="OnClick_Crash"
+        android:text="Force Crash" />
+
+    <Button
+        android:id="@+id/set_params_button"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:onClick="OnClick_SetFidelityParameters"
+        android:text="Set Fidelity Params" />
+
+</LinearLayout>

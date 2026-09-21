@@ -1,0 +1,186 @@
+RELEASE NOTES
+
+
+Version 2022.3.0
+================
+-All libraries
+    -Decreased number of library permutations built for each library
+-GameActivity
+    -Add the missing historical axis values from the MotionEvent java class to GameActivityMotionEvent
+
+Version 2022.2.0
+================
+- GameActivity
+    -Fix issues with missing .aar in maven artifact for release 1.2.0
+- Memory Advice Library
+    -Added getTotalMemory to the memory advice native API
+
+
+Version 2022.1.0
+================
+This release adds new features to the GameActivity library and the AGDK Tunnel sample. It also
+ includes bug fixes for GameActivity, Tuning Fork and Swappy Libraries.
+- GameActivity
+    -Allow derived classes of GameActivity to handle native library loading.
+    -Always load the native library in GameActivity.onCreate.
+    -Fallback to loading library with name "main" if no other library found.
+- Android Performance Tuner (Tuning Fork)
+    -Fixed getpid returning 0 while trying to get memory telemetry.
+    -Stopped StopLoadingGroup from executing without an active loading group.
+- Android Frame Pacing Library (Swappy)
+    -Fix for swappy not building with ndk <23 and >17.
+    -Exposed API to retrieve the refresh rates supported by the display.
+- AGDK Tunnel sample app
+    -Added Memory Advice library support
+    -Added PGS v2 cloud save to AGDK Tunnel
+    -Integrate PGS sign-in with AGDK Tunnel
+    -Fixed storage error in AGDK Tunnel
+
+Version 2022.0.0
+================
+This major release includes the memory advice library and several fixes for other libraries.
+- GameActivity
+  - Added handling of insets for positioning of game UI around the IME and cutouts.
+  - Bug fixes to avoid input event losses and prevent consuming all input events.
+  - Add key and motion event filters.
+- Android Performance Tuner (Tuning Fork)
+  - Fix corrupted API key bug
+  - Memory reporting is now as time-series rather than histograms.
+  - Allow programmatically setting upload interval.
+- Android Frame Pacing Library (Swappy)
+ - Improvements to auto-mode
+ - Add 'uninjectTracer' functions.
+- Memory Advice Library
+ - Initial version. See the header at include/memory_advice/memory_advice.h for more
+   details.
+
+Version 2021.1.0
+================
+This major release includes several new libraries, a rebranding and minor bug fixes in the Android
+Frame Pacing and Android Performance Tuner libraries.
+- GameActivity is a new component that replaces and improves upon the NDK's NativeActivity.
+- GameTextInput is a new component that improves interaction with the Android soft keyboard.
+- GameController is a new component that allows easier interaction with and management of external
+  controllers.
+- Where we used to refer to this product as the Android Game SDK, it is now referred to as
+  the Android Game Development Kit.
+- See the individual libraries and the source code at
+  https://android.googlesource.com/platform/frameworks/opt/gamesdk for details of changes.
+
+For full documentation, see https://developer.android.com/games/agdk.
+
+Version 1.2.4
+=============
+This release is a bugfix release for APT.
+- Fix loading time and duration recording on devices with inconsistent CLOCK_BOOTTIME.
+
+Version 1.2.3
+=============
+This release adds Oboe to the Game SDK. There are no changes to Android Frame Pacing and
+Android Performance Tuner libraries.
+- Oboe is an open-source C++ library for high-performance audio on Android. Oboe provides
+  a single native API that works in Android 4.1 (API level 16) and higher.
+
+For more information, see https://developer.android.com/games/sdk/oboe/.
+
+Version 1.2.2
+=============
+This release adds new features to APT. There are no new features to Swappy.
+- Android Performance Tuner (Tuning Fork) v 1.3.3
+ - Battery reporting. APT now uploads battery level information as part of its telemetry.
+ - Low memory event reporting. APT records if a previous crash was caused by a low memory (LMK) event.
+ - Loading time groups
+  - New functions TuningFork_startLoadingGroup and TuningFork_stopLoadingGroup enable bracketing
+    of several loading events into a group, e.g. those associated with game initialization or with
+    a certain level loading. Only one group can be active at a time.
+ - Abandoned loading. Loading that is occuring when a player backgrounds the game is logged for
+   special treatment by the backend.
+
+Version 1.2.1
+=============
+This release is an internal feature release for APT (v 1.1.7)
+When a player backgrounds a game during loading, an event is sent for later analysis of loading
+abandonment.
+There are no new features to Swappy.
+ 
+For more information, see https://developer.android.com/games/sdk/.
+
+Version 1.2.0
+=============
+This release includes several bug fixes for Swappy and new features for APT.
+- Android Frame Pacing (Swappy) v 1.7
+ - Auto-mode refresh rate switching support.
+   **Note that for support of multiple refresh rates in Android 11, whether using auto-mode or not,
+   SwappyGL_setWindow or SwappyVk_setWindow should be called.**
+ - Auto-mode bug fixes.
+ - Vulkan bug fixes.
+- Android Performance Tuner (Tuning Fork) v 1.1
+ - Loading time 
+   - New functions: TuningFork_recordLoadingTime, TuningFork_startRecordingLoadingTime,
+     TuningFork_stopRecordingLoadingTime should be called to record annotated loading time events.
+     Time from app startup to TuningFork_init and the first tick recorded by TuningFork are
+     automatically recorded.
+   - The previous method of setting a loading time annotation will no longer work.
+ - Memory metrics. More memory metrics are now recorded when TuningFork_enableMemoryRecording(true)
+   is called.
+ - Lifecycle events. TuningFork_reportLifecycleEvent should be called upon the appropriate Java
+   onCreate, etc. being called. This enables detailed crash reporting from within Tuning Fork.
+ - Memory model change: the maximum number of metrics of each type is now specified at start-up,
+   rather than allocating space for all possible annotation combinations.
+   See TuningFork_MetricLimits in tuningfork.h.
+
+Version 1.1.0
+=============
+- This version features the Android Performance Tuner (AKA Tuning Fork)  metric reporting and
+  quality tuning library.
+- Features of Android Performance Tuner
+ - Integration with the Android Frame Pacing Library to automatically record frame times and other
+   rendering metrics.
+ - Frame timing information is recorded in histograms and uploaded periodically.
+ - Annotation of timing data with the current game state.
+ - Device characteristics, annotations and quality settings are uploaded with the timing data to
+   allow cross-sectional analysis.
+ - Special treatment of annotations that signify level-loading time. Frame tick data is not recorded
+   during loading, but the duration of each loading period is.
+ - Ability to record custom timing information (startTrace/endTrace).
+ - In expert mode, quality settings are remotely setable using the Play console.
+- A Unity plugin incorporating the Tuning Fork library is available separately.
+- Known Issues:
+ - Incorrect frame pacing on Android 11 w/ multiple refresh rates. Fixed in version 1.2.0
+
+Version 1.0.2
+=============
+This release includes bug fixes and changes in the behaviour of auto-mode.
+- Bug fixes for swappy destruction and re-initialization.
+- Pipelining is now *on* by default. If auto-pipelining is on, Swappy can still decide to switch
+  it off when the workload is very low.
+- When auto-mode is enabled, Swappy will decide to switch swap interval only after 15% of frames
+  within a 2 second window are either faster or slower than expected.
+  Note that Swappy will never swap slower than the user-specified swap interval.
+
+Version 1.0.1
+=============
+- This is primarily a bug fix release.
+- Bugs fixed
+ - Clean up resources at exit in Swappy Vulkan on the SwappyFallback code path.
+ - SwappyVk_destroySwapchain now doesn't destroy device resources if there is more than one
+   swapchain.
+ - The Swappy version is now printed in logcat.
+ - Fixes to crashing and deadlocking in Swappy_destroy for API<=24
+- New features
+ - Support for custom thread managers (Swappy_setThreadFunctions)
+ - Support for hooking of Vulkan functions (SwappyVk_setFunctionProvider)
+
+Version 1.0.0
+=============
+- This initial version of the Android Game SDK features the Android Frame Pacing library.
+- Features
+ - Display buffer synchronization.
+ - Auto refresh rate mode and pipelining support.
+ - Collection of frame rendering statistics.
+ - Graceful selection of behavior at runtime, depending on the presence of the Android, OpenGL,
+   and Vulkan features needed by Swappy.
+ - Static and dynamic linking of the library.
+ - Support for devices with multiple refresh rates.
+
+For more information, see https://developer.android.com/games/sdk/.

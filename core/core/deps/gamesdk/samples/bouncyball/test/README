@@ -1,0 +1,6 @@
+Scripts to run bouncyball on a locally-connected phone.
+Note that you'll need a python3 environment set up with matplotlib.
+It's easiest to do this with virtualenv.
+Install bouncyball and then run:
+./run_and_analyse.sh
+The test script is set in script.json.

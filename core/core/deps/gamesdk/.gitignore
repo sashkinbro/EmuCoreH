@@ -1,0 +1,27 @@
+.DS_Store
+
+# Gradle outputs or settings:
+**/.gradle
+
+**/local.properties
+**/captures
+**/build
+
+.temp
+.externalNativeBuild
+.cxx
+.project
+.settings
+.vscode
+
+# IntelliJ/Android Studio outputs or settings:
+**/.idea
+**/*.iml
+**/out
+
+# Third party libraries:
+src/oboe
+include/oboe
+
+#Visual Code history
+.history

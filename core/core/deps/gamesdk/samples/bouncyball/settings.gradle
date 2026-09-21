@@ -1,0 +1,7 @@
+include ':app'
+// Comment all the lines below to use a locally built .aar
+// See app/build.gradle as well
+include ':games-frame-pacing'
+project(":games-frame-pacing").projectDir = file("../../games-frame-pacing")
+include ':games-frame-pacing:extras'
+project(":games-frame-pacing:extras").projectDir = file("../../games-frame-pacing/extras")

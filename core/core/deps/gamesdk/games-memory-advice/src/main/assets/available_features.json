@@ -1,0 +1,6 @@
+[
+  "/baseline/constant/MemoryInfo/totalMem",
+  "/baseline/meminfo/SwapTotalNorm",
+  "/sample/MemoryInfo/availMemNorm",
+  "/sample/proc/oom_score"
+]

@@ -1,0 +1,9 @@
+*.iml
+.DS_Store
+.cxx
+.gradle
+build
+caches
+codeStyles
+libraries
+local.properties

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ListPreference
+        android:key="@string/swap_interval_key"
+        android:title="@string/swap_interval_title" />
+
+    <SwitchPreference
+        android:key="use_auto_swap_interval"
+        android:defaultValue="true"
+        android:title="@string/use_auto_swap_interval_title"
+        android:summary="@string/use_auto_swap_interval_summary"/>
+
+    <SwitchPreference
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:defaultValue="true"
+        android:key="use_auto_pipeline"
+        android:summary="@string/use_auto_pipeline_summary"
+        android:title="@string/use_auto_pipeline_title" />
+    <SwitchPreference
+        android:key="use_affinity"
+        android:title="@string/use_affinity_title"
+        android:summary="@string/use_affinity_summary"/>
+
+    <SwitchPreference
+        android:key="hot_pocket"
+        android:title="@string/hot_pocket_title"
+        android:summary="@string/hot_pocket_summary"/>
+
+    <SeekBarPreference
+        android:key="workload"
+        android:title="@string/workload_title"
+        android:summary="@string/workload_summary"
+        android:defaultValue="0" />
+    <SeekBarPreference
+        android:id="@+id/seekBarPreference"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:defaultValue="1"
+        android:key="buffer_stuffing_fix"
+        android:max="5"
+        android:summary="@string/buffer_stuffing_fix_summary"
+        android:title="@string/buffer_stuffing_fix_title" />
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="@string/swappy_enable"
+        android:title="@string/swappy_enable_title" />
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="frame_pacing_enabled"
+        android:title="@string/frame_pacing_enabled_title"
+        android:summary="@string/frame_pacing_enabled_summary" />
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="blocking_wait_enabled"
+        android:title="@string/blocking_wait_enabled_title"
+        android:summary="@string/blocking_wait_enabled_summary" />
+
+
+</PreferenceScreen>

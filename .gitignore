@@ -1,22 +1,32 @@
-build/
-artifact/
-
-# macOS
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
 .DS_Store
-shell/apple/emulator-ios/OpenMP/OpenMP.xcframework
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
 
-# Visual Studio
-.vs/
-.vscode/
-out/
+# Build outputs
+build/
+app/release/
+app/.cxx/
+core-android/.cxx/
+core/build/
+.kotlin/
 
-# JetBrains IDES
-.idea/
-cmake-build-*/
+# Local-only tooling and private data (IGDB credentials, catalog builds, scripts)
+/IGDB
+/public
+/tools
 
-# Dependencies from .gitmodules
-core/deps/breakpad/
-core/deps/glslang/
-.cache/
-compile_commands.json
-CMakeUserPresets.json
+# Signing material
+*.jks
+*.keystore

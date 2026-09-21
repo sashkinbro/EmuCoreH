@@ -1,0 +1,2 @@
+aggregation_strategy: {method: TIME_BASED, intervalms_or_count: 10000, max_instrumentation_keys: 5, annotation_enum_size: [4]}
+api_key: "enter-your-api-key-here-"

@@ -1,0 +1,26 @@
+apply plugin: 'com.android.application'
+
+
+buildDir="./out"
+
+android {
+    namespace 'com.google.androidgamesdk.swappy.extras'
+    compileSdk 31
+    defaultConfig {
+        minSdk 21
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles 'lib-proguard-rules.txt'
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    lintOptions {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}

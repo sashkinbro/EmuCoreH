@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- SDL ships as source for the native core. Its own Android sample project is
+         outside EmuCoreA ownership and must not make the app lint task fail. -->
+    <issue id="ApplySharedPref"><ignore regexp=".*PCSX2.*" /></issue>
+    <issue id="DefaultLocale"><ignore regexp=".*PCSX2.*" /></issue>
+    <issue id="GestureBackNavigation"><ignore regexp=".*PCSX2.*" /></issue>
+    <issue id="InlinedApi"><ignore regexp=".*PCSX2.*" /></issue>
+    <issue id="MissingPermission"><ignore regexp=".*PCSX2.*" /></issue>
+    <issue id="NewApi"><ignore regexp=".*PCSX2.*" /></issue>
+    <issue id="ObsoleteSdkInt"><ignore regexp=".*PCSX2.*" /></issue>
+    <issue id="StaticFieldLeak"><ignore regexp=".*PCSX2.*" /></issue>
+    <issue id="UnspecifiedRegisterReceiverFlag"><ignore regexp=".*PCSX2.*" /></issue>
+
+    <!-- Keep untranslated English copy visible in Android Studio, but do not
+         block debug/release builds while the locale files are updated later. -->
+    <issue id="MissingTranslation" severity="warning" />
+</lint>

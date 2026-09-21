@@ -1,0 +1,9 @@
+include ':app'
+// Comment all the lines below to use a locally built .aar
+// See app/build.gradle as well
+include ':games-performance-tuner'
+include ':games-frame-pacing:extras'
+include ':games-frame-pacing'
+project(':games-performance-tuner').projectDir      = file('../../../games-performance-tuner')
+project(':games-frame-pacing').projectDir           = file('../../../games-frame-pacing')
+project(':games-frame-pacing:extras').projectDir    = file('../../../games-frame-pacing/extras')

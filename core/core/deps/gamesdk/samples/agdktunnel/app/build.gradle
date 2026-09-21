@@ -1,0 +1,203 @@
+/*
+ * Copyright 2021 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.gradle.internal.os.OperatingSystem;
+
+apply plugin: 'com.android.application'
+
+// See README for details on enabling APT and PAD
+def useApt = APTEnabled
+def usePad = PADEnabled
+
+// Define a path to the extracted Play Core SDK files.
+// If using a relative path, wrap it with file() since CMake requires absolute paths.
+def playcoreDir = file('libs/play-core-native-sdk')
+
+android {
+    namespace 'com.google.sample.agdktunnel'
+    compileSdk 31
+    ndkVersion '23.1.7779620'
+
+    defaultConfig {
+        applicationId 'com.google.sample.agdktunnel'
+        minSdk          24
+        targetSdk       35
+        versionCode     1
+        versionName    '1.0.3'
+
+        externalNativeBuild {
+            cmake {
+                // Define the PLAYCORE_LOCATION directive.
+                arguments "-DANDROID_STL=c++_static",
+                        "-DPLAYCORE_LOCATION=$playcoreDir"
+            }
+        }
+        ndk {
+            // Skip deprecated ABIs. Only required when using NDK 16 or earlier.
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                    'proguard-rules.pro',
+                    '$playcoreDir/proguard/common.pgcfg',
+                    '$playcoreDir/proguard/per-feature-proguard-files'
+            externalNativeBuild {
+                cmake {
+                    arguments "-DANDROID_STL=c++_shared",
+                              "-DUSE_ASSET_PACKS=$usePad",
+                              "-DUSE_APT=$useApt"
+                }
+            }
+        }
+        debug {
+            externalNativeBuild {
+                minifyEnabled = false
+                proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                        'proguard-rules.pro'
+                cmake {
+                    arguments "-DANDROID_STL=c++_shared",
+                              "-DUSE_ASSET_PACKS=$usePad",
+                              "-DUSE_APT=$useApt"
+                }
+            }
+            multiDexEnabled true
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+        }
+    }
+    buildFeatures {
+        prefab true
+    }
+    assetPacks = [":install_time_assets", ":on_demand_assets"]
+    // Enable the splitting of your asset packs per textures
+    bundle {
+        texture {
+            enableSplit true
+        }
+    }
+}
+
+dependencies {
+    implementation "androidx.lifecycle:lifecycle-viewmodel:2.2.0"
+    implementation "androidx.lifecycle:lifecycle-livedata:2.2.0"
+    implementation "androidx.lifecycle:lifecycle-runtime:2.2.0"
+    implementation "androidx.core:core:1.5.0"
+    implementation "androidx.constraintlayout:constraintlayout:2.0.4"
+    implementation 'androidx.fragment:fragment:1.2.5'
+    implementation 'com.google.oboe:oboe:1.5.0'
+
+    // Each AGDK library can either be sourced from a local build in app/libs
+    // or from Maven.
+    // See the gamesdk README for information on generating a local build.
+    // Be aware that when using libraries from Maven, the versions here may target
+    // a future release that does not exist yet, which is why a locally built
+    // library is used when agdktunnel depends on the latest features.
+    // Uncomment to use maven artifacts instead of local code
+//    implementation "androidx.games:games-frame-pacing:1.9.0"
+//    implementation "androidx.games:games-performance-tuner:1.5.0-beta01"
+//    implementation "androidx.games:games-controller:1.0.0"
+//    implementation "androidx.games:games-activity:1.1.0"
+//    implementation "androidx.games:games-memory-advice:1.0.0-beta01"
+    // Uncomment the line below (implementation fileTree...)
+    // and comment out "implementation project(":*")" lines
+    // to use a locally built .aar
+    // See ../settings.gradle as well.
+    //implementation fileTree(dir: '../../../', include: [
+    //        'game-activity-release.aar',
+    //        'games-performance-tuner-release.aar',
+    //        'games-frame-pacing-release.aar',
+    //        'games-controller-release.aar',
+    //])
+    implementation project(':game-activity')
+    implementation project(':games-performance-tuner')
+    implementation project(':games-frame-pacing')
+    implementation project(':games-controller')
+    implementation project(':games-memory-advice')
+
+    // Google Play Games dependencies
+    implementation "com.google.android.gms:play-services-games-v2:17.0.0"
+    implementation 'com.google.android.libraries.play.games:inputmapping:1.1.0-beta'
+    // Use the Play Core AAR included with the SDK.
+    if(PADEnabled.toBoolean()) {
+        implementation files("$playcoreDir/playcore.aar")
+    }
+}
+
+android.lintOptions {
+        abortOnError  = false
+}
+
+// Android Performance Tuner validation setup and protoc compile tasks
+task createJar(type: GradleBuild) {
+    buildFile = GameSDKPath + '/games-performance-tuner/tools/validation/build.gradle'
+    tasks = ['createJar']
+}
+
+def getProtocPath() {
+    String platformName
+    if (OperatingSystem.current().isLinux()) platformName = "linux-x86/bin/protoc"
+    if (OperatingSystem.current().isMacOsX()) platformName = "mac/bin/protoc"
+    if (OperatingSystem.current().isWindows()) platformName = "win/bin/protoc"
+    return GameSDKPath + "/third_party/protoc-3.21.7/"  + platformName
+}
+
+task buildTuningForkBinFiles(type: JavaExec) {
+    dependsOn createJar
+    main "-jar"
+    args   (GameSDKPath + "/games-performance-tuner/tools/validation/build/libs/TuningforkApkValidationTool.jar",
+            "--tuningforkPath",
+            "src/main/assets/tuningfork",
+            "--protoCompiler",
+            getProtocPath())
+}
+
+if (APTEnabled.toBoolean()) {
+    tasks.preBuild.dependsOn("buildTuningForkBinFiles")
+}
+
+task copyTexturesToAssets(type: Copy) {
+    def assetsDir = new File(projectDir, 'src/main/assets/no_asset_packs_textures')
+    from (rootProject.file('install_time_assets/src/main/assets/textures')) {
+        include('*.ktx')
+    }
+    into assetsDir
+    from (rootProject.file('on_demand_assets/src/main/assets/textures')) {
+        include('*.ktx')
+    }
+    into assetsDir
+}
+
+task deleteAssets(type: Delete) {
+    def assetsDir = new File(projectDir, 'src/main/assets/no_asset_packs_textures')
+    delete assetsDir
+}
+
+tasks.whenTaskAdded { task ->
+    if (!PADEnabled.toBoolean()) {
+        // Copy the ETC2 textures into directory
+        // src/main/assets/no_asset_packs_textures/
+        task.dependsOn copyTexturesToAssets
+    } else {
+        // Delete the src/main/assets/no_asset_packs_textures if using asset packs
+        task.dependsOn deleteAssets
+    }
+}

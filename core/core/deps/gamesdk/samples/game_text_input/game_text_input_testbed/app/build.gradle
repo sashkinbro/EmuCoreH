@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace "com.gametextinput.testbed"
+    compileSdk 31
+    ndkVersion "23.1.7779620"
+
+    defaultConfig {
+        applicationId "com.gametextinput.testbed"
+        minSdk 21
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    externalNativeBuild {
+        cmake {
+            path file('CMakeLists.txt')
+        }
+    }
+    buildFeatures {
+        prefab true
+    }
+    namespace 'com.gametextinput.testbed'
+}
+
+dependencies {
+    implementation "androidx.core:core:1.5.0"
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.3.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+
+//    implementation 'androidx.games:games-text-input:4.0.0'
+    implementation project(":game-text-input")
+}
