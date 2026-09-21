@@ -21,7 +21,10 @@
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
+#include <algorithm>
+#include <map>
 #include <mutex>
+#include <utility>
 
 #ifdef __SWITCH__
 #include <stdlib.h>
@@ -2203,6 +2206,8 @@ static bool set_dx11_hw_render()
 }
 
 // Loading/unloading games
+static void ReapplyLibretroCheats();
+
 bool retro_load_game(const struct retro_game_info *game)
 {
 #if defined(IOS)
@@ -2412,6 +2417,10 @@ bool retro_load_game(const struct retro_game_info *game)
 	if (!loadGame())
 		return false;
 
+	// Loading the game resets the cheat manager, so cheats the frontend sent
+	// before the disc was loaded have to be registered again here.
+	ReapplyLibretroCheats();
+
 	rotate_game = config::Rotate90;
 	if (rotate_game)
 		config::Widescreen.override(false);
@@ -2537,13 +2546,62 @@ bool retro_unserialize(const void * data, size_t size)
 }
 
 // Cheats
+// Cheats added through the libretro API, keyed by the index the frontend used.
+// Each entry remembers the range of parsed Flycast cheats it created so the
+// frontend can toggle or drop them later, plus the original code string so
+// the set can be registered again after the game finishes loading.
+static std::map<unsigned, std::pair<size_t, size_t>> libretro_cheat_ranges;
+static std::map<unsigned, std::string> libretro_cheat_codes;
+
+static void ReapplyLibretroCheats();
+
 void retro_cheat_reset()
 {
-   // Nothing to do here
+	if (libretro_cheat_ranges.empty())
+		return;
+	size_t first = SIZE_MAX;
+	for (const auto& entry : libretro_cheat_ranges)
+		first = std::min(first, entry.second.first);
+	cheatManager.removeCheatsFrom(first);
+	libretro_cheat_ranges.clear();
+	libretro_cheat_codes.clear();
 }
-void retro_cheat_set(unsigned unused, bool unused1, const char* unused2)
+
+void retro_cheat_set(unsigned index, bool enabled, const char* code)
 {
-   // Nothing to do here
+	if (code == nullptr)
+		return;
+
+	auto entry = libretro_cheat_ranges.find(index);
+	if (entry == libretro_cheat_ranges.end())
+	{
+		if (!enabled)
+			return;
+		const size_t first = cheatManager.cheatCount();
+		try {
+			cheatManager.addGameSharkCheat("Cheat " + std::to_string(index + 1), code);
+		} catch (const std::exception& e) {
+			WARN_LOG(COMMON, "Rejected cheat %u: %s", index, e.what());
+			return;
+		}
+		const size_t count = cheatManager.cheatCount() - first;
+		if (count == 0)
+			return;
+		libretro_cheat_codes[index] = code;
+		entry = libretro_cheat_ranges.emplace(index, std::make_pair(first, count)).first;
+	}
+
+	const size_t last = std::min(entry->second.first + entry->second.second, cheatManager.cheatCount());
+	for (size_t i = entry->second.first; i < last; i++)
+		cheatManager.enableCheat(i, enabled);
+}
+
+static void ReapplyLibretroCheats()
+{
+	libretro_cheat_ranges.clear();
+	const std::map<unsigned, std::string> codes = libretro_cheat_codes;
+	for (const auto& entry : codes)
+		retro_cheat_set(entry.first, true, entry.second.c_str());
 }
 
 
