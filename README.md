@@ -2,11 +2,8 @@
 
 [![Support EmuCoreH on Patreon](https://img.shields.io/badge/Patreon-Support%20EmuCoreH-ff424d?logo=patreon&logoColor=white)](https://www.patreon.com/c/emucore/membership)
 [![Join the EmuCoreH Discord](https://img.shields.io/badge/Discord-Join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.com/invite/c5EBeNRpz2)
-[![Website](https://img.shields.io/badge/Website-emucorea.web.app-1f6feb?logo=googlechrome&logoColor=white)](https://emucorea.web.app/)
 
 EmuCoreH is a Sega Dreamcast, Naomi, Naomi 2, and Atomiswave library, launcher, and emulator frontend for Android. It pairs a purpose-built Compose interface with a vendored [Flycast](https://github.com/flyinghead/flycast) core that is built together with the app, so no separate core download is needed.
-
-Official website: [https://emucorea.web.app/](https://emucorea.web.app/)
 
 ![Status](https://img.shields.io/badge/Status-Active%20Development-blue)
 
@@ -106,7 +103,6 @@ EmuCoreH is independent of Sega, Flycast, IGDB, Discord, and RetroAchievements. 
 
 If you want to support ongoing development:
 
-- Website: [https://emucorea.web.app/](https://emucorea.web.app/)
 - Patreon: [https://www.patreon.com/c/emucore/membership](https://www.patreon.com/c/emucore/membership)
 - Discord: [https://discord.com/invite/c5EBeNRpz2](https://discord.com/invite/c5EBeNRpz2)
 - More apps by the author: [Google Play developer page](https://play.google.com/store/apps/dev?id=7136622298887775989)
