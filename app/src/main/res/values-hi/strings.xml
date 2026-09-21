@@ -390,6 +390,10 @@
     <string name="settings_gamepad_action_dpad_down">D-Pad Down</string>
     <string name="settings_gamepad_action_dpad_left">D-Pad Left</string>
     <string name="settings_gamepad_action_dpad_right">D-Pad Right</string>
+<string name="settings_gamepad_action_dc_a">A</string>
+<string name="settings_gamepad_action_dc_b">B</string>
+<string name="settings_gamepad_action_dc_x">X</string>
+<string name="settings_gamepad_action_dc_y">Y</string>
 
     <string name="gamepad_connected">नियंत्रक कनेक्ट हो गया</string>
     <string name="emulation_hud_fps_label">FPS</string>
