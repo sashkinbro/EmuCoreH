@@ -56,7 +56,7 @@ T DYNACALL ReadMem_area0(u32 paddr)
 		{
 			if constexpr (Mirror)
 			{
-				INFO_LOG(MEMORY, "Read from area0 BIOS mirror [Unassigned], addr=%x", addr);
+				DEBUG_LOG(MEMORY, "Read from area0 BIOS mirror [Unassigned], addr=%x", addr);
 				return 0;
 			}
 			return nvmem::readBios(addr, sz);
@@ -69,7 +69,7 @@ T DYNACALL ReadMem_area0(u32 paddr)
 			{
 				if constexpr (Mirror)
 				{
-					INFO_LOG(MEMORY, "Read from area0 Flash mirror [Unassigned], addr=%x", addr);
+					DEBUG_LOG(MEMORY, "Read from area0 Flash mirror [Unassigned], addr=%x", addr);
 					return 0;
 				}
 				return nvmem::readFlash(addr, sz);
@@ -140,7 +140,7 @@ T DYNACALL ReadMem_area0(u32 paddr)
 				return (T)0;
 		}
 	}
-	INFO_LOG(MEMORY, "Read from area0<%d> not implemented [Unassigned], addr=%x", sz, addr);
+	DEBUG_LOG(MEMORY, "Read from area0<%d> not implemented [Unassigned], addr=%x", sz, addr);
 	return 0;
 }
 
@@ -170,7 +170,7 @@ void DYNACALL WriteMem_area0(u32 paddr, T data)
 			{
 				if (addr < 0x200000)
 				{
-					INFO_LOG(MEMORY, "Write to [Boot ROM] is not possible, addr=%x, data=%x, size=%d", addr, data, sz);
+					DEBUG_LOG(MEMORY, "Write to [Boot ROM] is not possible, addr=%x, data=%x, size=%d", addr, data, sz);
 					return;
 				}
 			}
@@ -258,7 +258,7 @@ void DYNACALL WriteMem_area0(u32 paddr, T data)
 		}
 		return;
 	}
-	INFO_LOG(MEMORY, "Write to area0_32 not implemented [Unassigned], addr=%x,data=%x,size=%d", addr, data, sz);
+	DEBUG_LOG(MEMORY, "Write to area0_32 not implemented [Unassigned], addr=%x,data=%x,size=%d", addr, data, sz);
 }
 
 //Init/Res/Term

@@ -104,12 +104,12 @@ public:
 
 	template<typename T>
 	static T invalidRead(u32 addr) {
-		INFO_LOG(MEMORY, "Invalid register read<%d> %x", (int)sizeof(T), addr);
+		DEBUG_LOG(MEMORY, "Invalid register read<%d> %x", (int)sizeof(T), addr);
 		return 0;
 	}
 	template<typename T>
 	static void invalidWrite(u32 addr, T value) {
-		INFO_LOG(MEMORY, "Invalid register write<%d> %x = %x", (int)sizeof(T), addr, (int)value);
+		DEBUG_LOG(MEMORY, "Invalid register write<%d> %x = %x", (int)sizeof(T), addr, (int)value);
 	}
 
 private:
@@ -255,12 +255,12 @@ public:
 		size_t index = getRegIndex(addr);
 		if (index >= Size)
 		{
-			INFO_LOG(MEMORY, "Out of bound read @ %x", addr);
+			DEBUG_LOG(MEMORY, "Out of bound read @ %x", addr);
 			return 0;
 		}
 		if (addr & 3)
 		{
-			INFO_LOG(MEMORY, "Unaligned register read @ %x", addr);
+			DEBUG_LOG(MEMORY, "Unaligned register read @ %x", addr);
 			return 0;
 		}
 		return registers[index].template read<T>(addr);
@@ -272,9 +272,9 @@ public:
 	{
 		size_t index = getRegIndex(addr);
 		if (index >= Size)
-			INFO_LOG(MEMORY, "Out of bound write @ %x = %x", addr, (int)data);
+			DEBUG_LOG(MEMORY, "Out of bound write @ %x = %x", addr, (int)data);
 		else if (addr & 3)
-			INFO_LOG(MEMORY, "Unaligned register write @ %x = %x", addr, (int)data);
+			DEBUG_LOG(MEMORY, "Unaligned register write @ %x = %x", addr, (int)data);
 		else
 			registers[index].write(addr, data);
 	}
