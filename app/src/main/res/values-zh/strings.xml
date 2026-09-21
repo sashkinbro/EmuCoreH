@@ -2613,4 +2613,7 @@
     <string name="flycast_opt_vmu4_screen_opacity_choice_v80">80%</string>
     <string name="flycast_opt_vmu4_screen_opacity_choice_v90">90%</string>
     <string name="flycast_opt_vmu4_screen_opacity_choice_v100">100%</string>
+    <string name="vmu_cards_count">记忆卡：%1$d</string>
+    <string name="vmu_port_slot">端口 %1$s · 插槽 %2$s</string>
+    <string name="vmu_system_memory">系统内存</string>
 </resources>

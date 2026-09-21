@@ -36,6 +36,8 @@ import com.sbro.emucoreh.ui.theme.neon.neonShape
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -54,6 +56,13 @@ fun VmuManagerScreen(onBackClick: () -> Unit) {
     val createSuccess = stringResource(R.string.psp_memstick_create_success)
     val createFailure = stringResource(R.string.psp_memstick_create_failure)
     val neonThemeActive = LocalNeonTheme.current
+
+    val cards = remember(vmus) {
+        vmus.filter { it.name.startsWith("vmu_save_", ignoreCase = true) }
+    }
+    val systemFiles = remember(vmus) {
+        vmus.filterNot { it.name.startsWith("vmu_save_", ignoreCase = true) }
+    }
 
     fun refresh() {
         scope.launch {
@@ -155,7 +164,7 @@ fun VmuManagerScreen(onBackClick: () -> Unit) {
                     }
                 }
             }
-            if (!isLoading && vmus.isNotEmpty()) item {
+            if (!isLoading && cards.isNotEmpty()) item {
                 Surface(modifier = Modifier.fillMaxWidth(), shape = neonShape(20.dp),
                     tonalElevation = 1.dp, shadowElevation = 3.dp,
                     color = MaterialTheme.colorScheme.surface,
@@ -172,11 +181,11 @@ fun VmuManagerScreen(onBackClick: () -> Unit) {
                             }
                             Column(Modifier.padding(start = 14.dp),
                                 verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(stringResource(R.string.psp_memstick_title),
+                                Text(stringResource(R.string.shell_memory_cards),
                                     style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.SemiBold),
                                     color = MaterialTheme.colorScheme.onSurface)
-                                Text(stringResource(R.string.psp_memstick_saves_count, vmus.size),
+                                Text(stringResource(R.string.vmu_cards_count, cards.size),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary)
                             }
@@ -199,29 +208,111 @@ fun VmuManagerScreen(onBackClick: () -> Unit) {
                     }
                 }
             }
-            if (!isLoading && vmus.isNotEmpty()) {
+            if (!isLoading && cards.isNotEmpty()) {
                 item {
-                    Text(stringResource(R.string.psp_memstick_saves),
+                    Text(stringResource(R.string.shell_memory_cards),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(top = 10.dp))
                 }
-                items(vmus, key = { it.name }) { vmu ->
-                    Surface(shape = neonShape(16.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.fillMaxWidth()) {
-                        Row(Modifier.fillMaxWidth().padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Text(vmu.name, Modifier.weight(1f),
-                                maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                color = MaterialTheme.colorScheme.onSurface)
-                            Text("${vmu.bytes / 1024} KiB",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
+                items(cards, key = { it.name }) { vmu ->
+                    VmuRow(vmu = vmu, title = vmuCardTitle(vmu.name))
+                }
+            }
+            if (!isLoading && systemFiles.isNotEmpty()) {
+                item {
+                    Text(stringResource(R.string.vmu_system_memory),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(top = 10.dp))
+                }
+                items(systemFiles, key = { it.name }) { vmu ->
+                    VmuRow(vmu = vmu, title = vmu.name)
                 }
             }
         }
     }
+}
+
+private val vmuCardPattern = Regex("^vmu_save_([A-D])([12])\\.bin$", RegexOption.IGNORE_CASE)
+
+@Composable
+private fun vmuCardTitle(name: String): String {
+    val match = vmuCardPattern.find(name) ?: return name
+    return stringResource(
+        R.string.vmu_port_slot,
+        match.groupValues[1].uppercase(Locale.US),
+        match.groupValues[2]
+    )
+}
+
+@Composable
+private fun VmuRow(vmu: VmuFile, title: String) {
+    val context = LocalContext.current
+    val meta = stringResource(
+        R.string.memory_card_meta,
+        vmu.name,
+        formatTimestamp(context, vmu.modifiedAt)
+    )
+    Surface(
+        shape = neonShape(18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxWidth(),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                Modifier.size(42.dp).background(
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                    neonShape(12.dp)
+                ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Rounded.Memory,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Column(
+                Modifier.weight(1f).padding(start = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    meta,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Text(
+                formatVmuSize(vmu.bytes),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+private fun formatVmuSize(bytes: Long): String =
+    if (bytes >= 1024L) "${bytes / 1024L} KiB" else "$bytes B"
+
+private fun formatTimestamp(context: android.content.Context, millis: Long): String {
+    if (millis <= 0L) return "-"
+    val moment = Date(millis)
+    val date = android.text.format.DateFormat.getDateFormat(context).format(moment)
+    val time = android.text.format.DateFormat.getTimeFormat(context).format(moment)
+    return "$date $time"
 }
