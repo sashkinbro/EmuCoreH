@@ -586,9 +586,13 @@ void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
 #ifdef NDEBUG
     (void)level;
 #else
+    // Flycast runs its LogManager at debug verbosity and traces every MMIO
+    // access and dynarec bookkeeping entry. Forwarding that to logcat floods
+    // the ring buffer and evicts the frontend's own logs, so debug output
+    // stays out of logcat and only notices, warnings and errors are kept.
+    if (level == RETRO_LOG_DEBUG) return;
     int priority = ANDROID_LOG_INFO;
     switch (level) {
-        case RETRO_LOG_DEBUG: priority = ANDROID_LOG_DEBUG; break;
         case RETRO_LOG_WARN: priority = ANDROID_LOG_WARN; break;
         case RETRO_LOG_ERROR: priority = ANDROID_LOG_ERROR; break;
         default: break;
