@@ -1,0 +1,145 @@
+package com.sbro.emucoreh.ui.emulation
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.sbro.emucoreh.R
+import com.sbro.emucoreh.data.CheatBlock
+import com.sbro.emucoreh.ui.cheats.CheatCategory
+import com.sbro.emucoreh.ui.cheats.groupCheatBlocks
+import com.sbro.emucoreh.ui.theme.neon.neonShape
+
+/**
+ * In-game cheat list, grouped the same way as the cheat manager. Every cheat is
+ * its own card (long titles wrap instead of being clipped) and every group ends
+ * with a master card that toggles the whole group. Toggles persist through the
+ * shared [com.sbro.emucoreh.data.CheatRepository], so the manager stays in sync.
+ */
+@Composable
+internal fun EmulationCheatsSection(
+    blocks: List<CheatBlock>,
+    onCheatToggle: (String, Boolean) -> Unit,
+    onGroupToggle: (List<String>, Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (blocks.isEmpty()) {
+        Surface(
+            modifier = modifier.fillMaxWidth(),
+            shape = neonShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+        ) {
+            Text(
+                text = stringResource(R.string.emulation_cheats_empty),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        return
+    }
+
+    val groups = remember(blocks) { groupCheatBlocks(blocks) }
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        groups.forEach { (category, categoryBlocks) ->
+            CheatGroupSection(
+                category = category,
+                blocks = categoryBlocks,
+                onCheatToggle = onCheatToggle,
+                onGroupToggle = onGroupToggle
+            )
+        }
+    }
+}
+
+@Composable
+private fun CheatGroupSection(
+    category: CheatCategory,
+    blocks: List<CheatBlock>,
+    onCheatToggle: (String, Boolean) -> Unit,
+    onGroupToggle: (List<String>, Boolean) -> Unit
+) {
+    val allEnabled = blocks.all { it.enabled }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(category.titleRes),
+            modifier = Modifier.padding(start = 4.dp),
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
+            color = MaterialTheme.colorScheme.primary
+        )
+        blocks.forEach { block ->
+            CheatOptionCard(
+                title = block.title,
+                subtitle = block.author,
+                checked = block.enabled,
+                onCheckedChange = { enabled -> onCheatToggle(block.id, enabled) }
+            )
+        }
+        CheatOptionCard(
+            title = stringResource(R.string.emulation_cheats_group_enable),
+            subtitle = null,
+            checked = allEnabled,
+            onCheckedChange = { enabled -> onGroupToggle(blocks.map { it.id }, enabled) }
+        )
+    }
+}
+
+@Composable
+private fun CheatOptionCard(
+    title: String,
+    subtitle: String?,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = neonShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                subtitle?.takeIf { it.isNotBlank() }?.let { author ->
+                    Text(
+                        text = author,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange
+            )
+        }
+    }
+}

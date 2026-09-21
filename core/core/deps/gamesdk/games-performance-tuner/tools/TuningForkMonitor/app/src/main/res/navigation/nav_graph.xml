@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/app_choice_fragment">
+
+    <fragment
+        android:id="@+id/app_choice_fragment"
+        android:name="com.google.tfmonitor.AppChoiceFragment"
+        android:label="fragment_app_choice"
+        tools:layout="@layout/fragment_app_choice" >
+        <action
+            android:id="@+id/action_app_choice_fragment_to_app_detail_fragment"
+            app:destination="@id/app_detail_fragment" />
+        <action
+            android:id="@+id/action_app_choice_fragment_to_log_fragment"
+            app:destination="@id/log_fragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/log_fragment"
+        android:name="com.google.tfmonitor.LogFragment"
+        android:label="fragment_log"
+        tools:layout="@layout/fragment_log" >
+    </fragment>
+
+    <fragment
+        android:id="@+id/app_detail_fragment"
+        android:name="com.google.tfmonitor.AppDetailFragment"
+        android:label="fragment_app_detail_fragment"
+        tools:layout="@layout/fragment_app_detail" />
+</navigation>

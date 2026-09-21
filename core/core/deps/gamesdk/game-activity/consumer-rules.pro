@@ -1,0 +1,3 @@
+-keep class androidx.core.graphics.Insets** { *; }
+-keep class androidx.core.view.WindowInsetsCompat** { *; }
+-keep class com.google.android.games.paddleboat.** { *; }

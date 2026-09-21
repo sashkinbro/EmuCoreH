@@ -1,0 +1,5 @@
+<paths>
+  <files-path
+      path="../databases/"
+      name="@string/database_name"/>
+</paths>

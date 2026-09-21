@@ -1,0 +1,81 @@
+plugins {
+    id 'com.android.library'
+}
+
+buildDir = "../../out_game_activity"
+
+android {
+    namespace "com.google.androidgamesdk.gameactivity"
+    compileSdk 31
+    ndkVersion "23.1.7779620"
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 35
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+        externalNativeBuild {
+            cmake {
+                if (project.hasProperty("stl")) {
+                    arguments '-DANDROID_STL='+ project.stl
+                } else {
+                    arguments '-DANDROID_STL=c++_shared'
+                }
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+            version "3.18.0+"
+        }
+    }
+    buildFeatures {
+        prefabPublishing true
+    }
+    prefab {
+        gameactivity {
+            name "game-activity"
+            headers "prefab-src/modules/game-activity/include/"
+        }
+        gameactivity_static {
+            name "game-activity_static"
+            headers "prefab-src/modules/game-activity/include/"
+        }
+    }
+
+    // If we don't include this line the created .aar contains the c++ std lib
+    // at <.aar_file>/jni/<abi>/libc++_shared.so. When we have multiple
+    // libraries containing libc++_shared.so the linker complains because it
+    // can't choose between them. Because we use prefab we don't need to
+    // contents of the <.aar_file>/jni/* folder so we can just exclude it here
+    // to prevent the jni folder from being created.
+    packagingOptions {
+        exclude("**.so")
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'androidx.core:core:1.5.0'
+    implementation 'com.google.android.material:material:1.2.1'
+}
+
+repositories {
+    mavenCentral()
+}

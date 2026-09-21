@@ -1,0 +1,337 @@
+//-----------------------------------------------------------------------------
+// Device Information required by Game SDK.
+// go/android_game_sdk_device_info_phonesky_doc
+//-----------------------------------------------------------------------------
+
+syntax = "proto2";
+
+package androidgamesdk_deviceinfo;
+
+option java_package = "com.google.androidgamesdk";
+option java_outer_classname = "GameSdkDeviceInfoProto";
+
+//-----------------------------------------------------------------------------
+// This message is all data we collect, except the errors encountered
+// while gathering the data.
+// All data is read from the native side and sent to java over JNI.
+//-----------------------------------------------------------------------------
+message GameSdkDeviceInfo {
+  // For each cpu core, read from:
+  // /sys/devices/system/cpu/cpu<index>/cpufreq/cpuinfo_max_freq
+  message CpuCore {
+    optional int64 frequency_max = 1;
+  }
+
+  // Populated by creating an OpenGL context and calling glGet methods.
+  // Open Graphics Library (OpenGL) is a cross-language, cross-platform
+  // application programming interface (API) for rendering 2D and 3D
+  // vector graphics.
+  message OpenGl {
+    // Result of glGetString(GL_RENDERER).
+    optional string renderer = 1;
+
+    // Result of glGetString(GL_VENDOR).
+    optional string vendor = 2;
+
+    // Result of glGetString(GL_VERSION).
+    optional string version = 3;
+
+    // Result of glGetIntegerv(GL_MAJOR_VERSION).
+    optional int32 version_major = 4;
+
+    // Result of glGetIntegerv(GL_MINOR_VERSION).
+    optional int32 version_minor = 5;
+
+    // Result of glGetString(GL_SHADING_LANGUAGE_VERSION).
+    optional string shading_language_version = 6;
+
+    // If OpenGL ES major version is at least 3, we use:
+    // - glGetIntegerv(GL_NUM_EXTENSIONS, ...)
+    // - glGetStringi(GL_EXTENSIONS, ...).
+    // For earlier versions:
+    // - glGetString(GL_EXTENSIONS, ...).
+    // - Split by space char
+    repeated string extension = 7;
+
+    // Below members starting with "gl_" are the names of OpenGL ES constants.
+    // The values are read by the appropriate glGet...() functions.
+
+    // Opengl constants that can be collected via our minimum
+    // OpenGL ES version: 2.0
+    repeated float gl_aliased_line_width_range = 8;
+    repeated float gl_aliased_point_size_range = 9;
+    optional int32 gl_max_combined_texture_image_units = 10;
+    optional int32 gl_max_cube_map_texture_size = 11;
+    optional int32 gl_max_fragment_uniform_vectors = 12;
+    optional int32 gl_max_renderbuffer_size = 13;
+    optional int32 gl_max_texture_image_units = 14;
+    optional int32 gl_max_texture_size = 15;
+    optional int32 gl_max_varying_vectors = 16;
+    optional int32 gl_max_vertex_attribs = 17;
+    optional int32 gl_max_vertex_texture_image_units = 18;
+    optional int32 gl_max_vertex_uniform_vectors = 19;
+    repeated int32 gl_max_viewport_dims = 20;
+    optional bool gl_shader_compiler = 21;
+    optional int32 gl_subpixel_bits = 22;
+
+    optional int32 gl_num_compressed_texture_formats = 23;
+    repeated int32 gl_compressed_texture_formats = 24;
+    optional int32 gl_num_shader_binary_formats = 25;
+    repeated int32 gl_shader_binary_formats = 26;
+
+    // Results of glGetShaderPrecisionFormat() calls.
+
+    // The range value returned by
+    // glGetShaderPrecisionFormat(GL_VERTEX_SHADER, GL_LOW_FLOAT, ...)
+    optional int32 spf_vertex_float_low_range_min = 27;
+    optional int32 spf_vertex_float_low_range_max = 183;
+
+    // The precision value returned by
+    // glGetShaderPrecisionFormat(GL_VERTEX_SHADER, GL_LOW_FLOAT, ...)
+    optional int32 spf_vertex_float_low_prec = 28;
+
+    // Same pattern applies below.
+    optional int32 spf_vertex_float_med_range_min = 29;
+    optional int32 spf_vertex_float_med_range_max = 184;
+    optional int32 spf_vertex_float_med_prec = 30;
+    optional int32 spf_vertex_float_hig_range_min = 31;
+    optional int32 spf_vertex_float_hig_range_max = 185;
+    optional int32 spf_vertex_float_hig_prec = 32;
+    optional int32 spf_vertex_int_low_range_min = 33;
+    optional int32 spf_vertex_int_low_range_max = 186;
+    optional int32 spf_vertex_int_low_prec = 34;
+    optional int32 spf_vertex_int_med_range_min = 35;
+    optional int32 spf_vertex_int_med_range_max = 187;
+    optional int32 spf_vertex_int_med_prec = 36;
+    optional int32 spf_vertex_int_hig_range_min = 37;
+    optional int32 spf_vertex_int_hig_range_max = 188;
+    optional int32 spf_vertex_int_hig_prec = 38;
+    optional int32 spf_fragment_float_low_range_min = 39;
+    optional int32 spf_fragment_float_low_range_max = 189;
+    optional int32 spf_fragment_float_low_prec = 40;
+    optional int32 spf_fragment_float_med_range_min = 41;
+    optional int32 spf_fragment_float_med_range_max = 190;
+    optional int32 spf_fragment_float_med_prec = 42;
+    optional int32 spf_fragment_float_hig_range_min = 43;
+    optional int32 spf_fragment_float_hig_range_max = 191;
+    optional int32 spf_fragment_float_hig_prec = 44;
+    optional int32 spf_fragment_int_low_range_min = 45;
+    optional int32 spf_fragment_int_low_range_max = 192;
+    optional int32 spf_fragment_int_low_prec = 46;
+    optional int32 spf_fragment_int_med_range_min = 47;
+    optional int32 spf_fragment_int_med_range_max = 193;
+    optional int32 spf_fragment_int_med_prec = 48;
+    optional int32 spf_fragment_int_hig_range_min = 49;
+    optional int32 spf_fragment_int_hig_range_max = 194;
+    optional int32 spf_fragment_int_hig_prec = 50;
+
+    // Opengl constants that require
+    // OpenGL ES version: 3.0
+    optional int32 gl_max_3d_texture_size = 51;
+    optional int32 gl_max_array_texture_layers = 52;
+    optional int32 gl_max_color_attachments = 53;
+    optional int64 gl_max_combined_fragment_uniform_components = 54;
+    optional int32 gl_max_combined_uniform_blocks = 55;
+    optional int64 gl_max_combined_vertex_uniform_components = 56;
+    optional int32 gl_max_draw_buffers = 57;
+    optional int32 gl_max_elements_indices = 58;
+    optional int32 gl_max_elements_vertices = 59;
+    optional int64 gl_max_element_index = 60;
+    optional int32 gl_max_fragment_input_components = 61;
+    optional int32 gl_max_fragment_uniform_blocks = 62;
+    optional int32 gl_max_fragment_uniform_components = 63;
+    optional int32 gl_max_program_texel_offset = 64;
+    optional int64 gl_max_server_wait_timeout = 65;
+    optional float gl_max_texture_lod_bias = 66;
+    optional int32 gl_max_transform_feedback_interleaved_components = 67;
+    optional int32 gl_max_transform_feedback_separate_attribs = 68;
+    optional int32 gl_max_transform_feedback_separate_components = 69;
+    optional int64 gl_max_uniform_block_size = 70;
+    optional int32 gl_max_uniform_buffer_bindings = 71;
+    optional int32 gl_max_varying_components = 72;
+    optional int32 gl_max_vertex_output_components = 73;
+    optional int32 gl_max_vertex_uniform_blocks = 74;
+    optional int32 gl_max_vertex_uniform_components = 75;
+    optional int32 gl_min_program_texel_offset = 76;
+    optional int32 gl_uniform_buffer_offset_alignment = 77;
+    optional int32 gl_max_samples = 78;
+
+    optional int32 gl_num_program_binary_formats = 79;
+    repeated int32 gl_program_binary_formats = 80;
+
+    // Opengl constants that require
+    // OpenGL ES version: 3.1
+    optional int32 gl_max_atomic_counter_buffer_bindings = 81;
+    optional int32 gl_max_atomic_counter_buffer_size = 82;
+    optional int32 gl_max_color_texture_samples = 83;
+    optional int32 gl_max_combined_atomic_counters = 84;
+    optional int32 gl_max_combined_atomic_counter_buffers = 85;
+    optional int32 gl_max_combined_compute_uniform_components = 86;
+    optional int32 gl_max_combined_image_uniforms = 87;
+    optional int32 gl_max_combined_shader_output_resources = 88;
+    optional int32 gl_max_combined_shader_storage_blocks = 89;
+    optional int32 gl_max_compute_atomic_counters = 90;
+    optional int32 gl_max_compute_atomic_counter_buffers = 91;
+    optional int32 gl_max_compute_image_uniforms = 92;
+    optional int32 gl_max_compute_shader_storage_blocks = 93;
+    optional int32 gl_max_compute_shared_memory_size = 94;
+    optional int32 gl_max_compute_texture_image_units = 95;
+    optional int32 gl_max_compute_uniform_blocks = 96;
+    optional int32 gl_max_compute_uniform_components = 97;
+    optional int32 gl_max_compute_work_group_count_0 = 98;
+    optional int32 gl_max_compute_work_group_count_1 = 99;
+    optional int32 gl_max_compute_work_group_count_2 = 100;
+    optional int32 gl_max_compute_work_group_invocations = 101;
+    optional int32 gl_max_compute_work_group_size_0 = 102;
+    optional int32 gl_max_compute_work_group_size_1 = 103;
+    optional int32 gl_max_compute_work_group_size_2 = 104;
+    optional int32 gl_max_depth_texture_samples = 105;
+    optional int32 gl_max_fragment_atomic_counters = 106;
+    optional int32 gl_max_fragment_atomic_counter_buffers = 107;
+    optional int32 gl_max_fragment_image_uniforms = 108;
+    optional int32 gl_max_fragment_shader_storage_blocks = 109;
+    optional int32 gl_max_framebuffer_height = 110;
+    optional int32 gl_max_framebuffer_samples = 111;
+    optional int32 gl_max_framebuffer_width = 112;
+    optional int32 gl_max_image_units = 113;
+    optional int32 gl_max_integer_samples = 114;
+    optional int32 gl_max_program_texture_gather_offset = 115;
+    optional int32 gl_max_sample_mask_words = 116;
+    optional int64 gl_max_shader_storage_block_size = 117;
+    optional int32 gl_max_shader_storage_buffer_bindings = 118;
+    optional int32 gl_max_uniform_locations = 119;
+    optional int32 gl_max_vertex_atomic_counters = 120;
+    optional int32 gl_max_vertex_atomic_counter_buffers = 121;
+    optional int32 gl_max_vertex_attrib_bindings = 122;
+    optional int32 gl_max_vertex_attrib_relative_offset = 123;
+    optional int32 gl_max_vertex_attrib_stride = 124;
+    optional int32 gl_max_vertex_image_uniforms = 125;
+    optional int32 gl_max_vertex_shader_storage_blocks = 126;
+    optional int32 gl_min_program_texture_gather_offset = 127;
+    optional int32 gl_shader_storage_buffer_offset_alignment = 128;
+
+    // Opengl constants that require
+    // OpenGL ES version: 3.2
+    optional int32 gl_context_flags = 129;
+    optional int32 gl_fragment_interpolation_offset_bits = 130;
+    optional int32 gl_layer_provoking_vertex = 131;
+    optional int32 gl_max_combined_geometry_uniform_components = 132;
+    optional int32 gl_max_combined_tess_control_uniform_components = 133;
+    optional int32 gl_max_combined_tess_evaluation_uniform_components = 134;
+    optional int32 gl_max_debug_group_stack_depth = 135;
+    optional int32 gl_max_debug_logged_messages = 136;
+    optional int32 gl_max_debug_message_length = 137;
+    optional float gl_max_fragment_interpolation_offset = 138;
+    optional int32 gl_max_framebuffer_layers = 139;
+    optional int32 gl_max_geometry_atomic_counters = 140;
+    optional int32 gl_max_geometry_atomic_counter_buffers = 141;
+    optional int32 gl_max_geometry_image_uniforms = 142;
+    optional int32 gl_max_geometry_input_components = 143;
+    optional int32 gl_max_geometry_output_components = 144;
+    optional int32 gl_max_geometry_output_vertices = 145;
+    optional int32 gl_max_geometry_shader_invocations = 146;
+    optional int32 gl_max_geometry_shader_storage_blocks = 147;
+    optional int32 gl_max_geometry_texture_image_units = 148;
+    optional int32 gl_max_geometry_total_output_components = 149;
+    optional int32 gl_max_geometry_uniform_blocks = 150;
+    optional int32 gl_max_geometry_uniform_components = 151;
+    optional int32 gl_max_label_length = 152;
+    optional int32 gl_max_patch_vertices = 153;
+    optional int32 gl_max_tess_control_atomic_counters = 154;
+    optional int32 gl_max_tess_control_atomic_counter_buffers = 155;
+    optional int32 gl_max_tess_control_image_uniforms = 156;
+    optional int32 gl_max_tess_control_input_components = 157;
+    optional int32 gl_max_tess_control_output_components = 158;
+    optional int32 gl_max_tess_control_shader_storage_blocks = 159;
+    optional int32 gl_max_tess_control_texture_image_units = 160;
+    optional int32 gl_max_tess_control_total_output_components = 161;
+    optional int32 gl_max_tess_control_uniform_blocks = 162;
+    optional int32 gl_max_tess_control_uniform_components = 163;
+    optional int32 gl_max_tess_evaluation_atomic_counters = 164;
+    optional int32 gl_max_tess_evaluation_atomic_counter_buffers = 165;
+    optional int32 gl_max_tess_evaluation_image_uniforms = 166;
+    optional int32 gl_max_tess_evaluation_input_components = 167;
+    optional int32 gl_max_tess_evaluation_output_components = 168;
+    optional int32 gl_max_tess_evaluation_shader_storage_blocks = 169;
+    optional int32 gl_max_tess_evaluation_texture_image_units = 170;
+    optional int32 gl_max_tess_evaluation_uniform_blocks = 171;
+    optional int32 gl_max_tess_evaluation_uniform_components = 172;
+    optional int32 gl_max_tess_gen_level = 173;
+    optional int32 gl_max_tess_patch_components = 174;
+    optional int32 gl_max_texture_buffer_size = 175;
+    optional float gl_min_fragment_interpolation_offset = 176;
+    optional float gl_multisample_line_width_granularity = 177;
+    repeated float gl_multisample_line_width_range = 178;
+    optional bool gl_primitive_restart_for_patches_supported = 179;
+    optional int32 gl_texture_buffer_offset_alignment = 180;
+    optional int32 gl_reset_notification_strategy = 181;
+
+    // Offscreen rendering of dummy texture is done according to
+    // supported formats (see gl_compressed_texture_formats), and
+    // stored in this message (true indicates a successful rendering
+    // for the given format, false is error or no test run).
+    // Members are the GL constants lowercased to avoid conflicts in the
+    // C++ code.
+    message RenderedCompressedTextureFormats {
+      optional bool gl_compressed_rgba_astc_4x4_khr = 1;
+      optional bool gl_compressed_rgba_astc_6x6_khr = 2;
+      optional bool gl_compressed_rgba_astc_8x8_khr = 3;
+
+      optional bool gl_compressed_rgb_pvrtc_2bppv1_img = 4;
+      optional bool gl_compressed_rgba_pvrtc_2bppv1_img = 5;
+      optional bool gl_compressed_rgb_pvrtc_4bppv1_img = 6;
+      optional bool gl_compressed_rgba_pvrtc_4bppv1_img = 7;
+
+      optional bool gl_compressed_rgba_s3tc_dxt1_ext = 8;
+      optional bool gl_compressed_rgba_s3tc_dxt5_ext = 9;
+
+      optional bool gl_compressed_rgb8_etc2 = 10;
+
+      optional bool gl_etc1_rgb8_oes = 11;
+    }
+
+    optional RenderedCompressedTextureFormats
+        rendered_compressed_texture_formats = 182;
+  }
+
+  // Read from: /sys/devices/system/cpu/kernel_max
+  optional int32 cpu_max_index = 1;
+
+  // One element per cpu core.
+  repeated CpuCore cpu_core = 2;
+
+  // Read from: /sys/devices/system/cpu/present
+  optional string cpu_present = 3;
+
+  // Read from: /sys/devices/system/cpu/possible
+  optional string cpu_possible = 4;
+
+  // Parsed from: /proc/cpuinfo
+  // Lines that begin with "Hardware".
+  repeated string hardware = 5;
+
+  // Parsed from: /proc/cpuinfo
+  // Lines that begin with "Features".
+  repeated string cpu_extension = 6;
+
+  // Results of __system_property_get()
+  optional string ro_build_version_sdk = 7;
+  optional string ro_build_fingerprint = 8;
+
+  // Open Graphics Library data.
+  optional OpenGl open_gl = 9;
+}
+
+//-----------------------------------------------------------------------------
+// The reason why errors are separated from info is that we would like to be
+// able to store info separately from errors.
+//-----------------------------------------------------------------------------
+message GameSdkDeviceInfoWithErrors {
+  // All data we managed to collect.
+  optional GameSdkDeviceInfo info = 1;
+
+  // Error messages with tags at the beginning.
+  // Describes the errors encountered while collecting data.
+  // E.g: file read errors.
+  repeated string error = 2;
+}

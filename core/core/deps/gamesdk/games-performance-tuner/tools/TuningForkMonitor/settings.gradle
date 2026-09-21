@@ -1,0 +1,8 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+
+include ':app'
+rootProject.name='Tuning Fork Monitor'

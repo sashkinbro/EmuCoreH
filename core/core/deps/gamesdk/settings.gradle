@@ -1,0 +1,8 @@
+rootProject.name = 'androidgamesdk'
+include ':game-activity'
+include ':game-text-input'
+include ':games-controller'
+include ':games-performance-tuner'
+include ':games-frame-pacing'
+include ':games-frame-pacing:extras'
+include ':games-memory-advice'

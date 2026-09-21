@@ -1,0 +1,61 @@
+apply plugin: 'java-library'
+apply plugin: 'com.google.protobuf'
+
+repositories {
+    mavenCentral()
+    google()
+}
+
+sourceSets {
+    main {
+        proto {
+            include '../../proto/tuningfork.proto'
+        }
+    }
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.19'
+    }
+}
+
+dependencies {
+    implementation 'com.google.guava:guava:26.0-jre'
+    implementation 'com.google.protobuf:protobuf-java:3.0.0'
+    implementation 'com.google.flogger:flogger:0.3.1'
+    implementation 'com.google.flogger:flogger-system-backend:0.3.1'
+    implementation 'com.beust:jcommander:1.7'
+
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'com.google.truth:truth:0.43'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.4.1'
+
+    protobuf files('../../proto/tuningfork.proto')
+    protobuf files('src/test/resources/testdata/dev_tuningfork.proto') //for tests
+}
+
+protobuf {
+    protoc {
+        //Download from repo
+        artifact = 'com.google.protobuf:protoc:3.0.0'
+    }
+}
+
+task createJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'Gradle Jar',
+            'Implementation-Version': 1.0,
+            'Main-Class': 'com.google.tuningfork.validation.TuningforkApkValidationTool'
+    }
+    archiveBaseName = 'TuningforkApkValidationTool'
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory()? it:zipTree(it)
+        }
+    }
+    with jar
+}

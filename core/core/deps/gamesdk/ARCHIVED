@@ -1,0 +1,13 @@
+The following folders/projects are removed from repo, the ChangeIDs are collected here for historical purposes.
+
+* samples/cube : I39e2b5a4ca3627b4728ffc516531ad778b71be39
+* bender : I39e2b5a4ca3627b4728ffc516531ad778b71be39
+* cert : I39e2b5a4ca3627b4728ffc516531ad778b71be39
+* samples/device_info_app : I39e2b5a4ca3627b4728ffc516531ad778b71be39
+* samples/device_info_exe : I39e2b5a4ca3627b4728ffc516531ad778b71be39
+* samples/unitypackaging : I39e2b5a4ca3627b4728ffc516531ad778b71be39
+* test/JNITestApp : I39e2b5a4ca3627b4728ffc516531ad778b71be39
+* test/device_info : I39e2b5a4ca3627b4728ffc516531ad778b71be39
+* test/devicefarm : I39e2b5a4ca3627b4728ffc516531ad778b71be39
+* test/grabber : I39e2b5a4ca3627b4728ffc516531ad778b71be39
+* test/unitymemory : I39e2b5a4ca3627b4728ffc516531ad778b71be39

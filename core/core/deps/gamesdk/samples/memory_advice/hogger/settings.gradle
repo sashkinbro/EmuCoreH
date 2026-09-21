@@ -1,0 +1,4 @@
+include ':app'
+rootProject.name = "Hogger"
+include ':games-memory-advice'
+project(":games-memory-advice").projectDir = file("../../../games-memory-advice")

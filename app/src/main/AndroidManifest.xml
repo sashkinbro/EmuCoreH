@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Discord Social SDK: permissions added by the SDK AAR are not needed. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" tools:node="remove" />
+    <uses-permission android:name="android.permission.BLUETOOTH" tools:node="remove" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" tools:node="remove" />
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.faketouch" android:required="false" />
+
+    <!-- Package visibility for the TV storage picker: AnExplorer is the common
+         document provider on TVs without a system file picker, and the intent
+         query keeps any tree-capable picker resolvable on API 30+. -->
+    <queries>
+        <package android:name="dev.dworks.apps.anexplorer" />
+        <intent>
+            <action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".EmuCoreHApp"
+        android:allowBackup="true"
+        android:appCategory="game"
+        android:banner="@drawable/tv_banner"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:isGame="true"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.EmuCoreH"
+        tools:ignore="UnusedAttribute">
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true"
+            android:theme="@style/Theme.EmuCoreH.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.sbro.emucoreh.action.LAUNCH_GAME" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="emucoreh" android:host="launch" />
+            </intent-filter>
+
+            <!-- Launcher frontends (Beacon, Daijisho, DIG, ES-DE, LaunchBox
+                 custom emulators, ...) open disc images with a plain VIEW
+                 intent, by file path or by content URI. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" android:pathPattern=".*\\.iso" />
+                <data android:scheme="file" android:pathPattern=".*\\.ISO" />
+                <data android:scheme="file" android:pathPattern=".*\\.cso" />
+                <data android:scheme="file" android:pathPattern=".*\\.CSO" />
+                <data android:scheme="file" android:pathPattern=".*\\.chd" />
+                <data android:scheme="file" android:pathPattern=".*\\.CHD" />
+                <data android:scheme="file" android:pathPattern=".*\\.pbp" />
+                <data android:scheme="file" android:pathPattern=".*\\.PBP" />
+                <data android:scheme="file" android:pathPattern=".*\\.elf" />
+                <data android:scheme="file" android:pathPattern=".*\\.ELF" />
+                <data android:scheme="file" android:pathPattern=".*\\.prx" />
+                <data android:scheme="file" android:pathPattern=".*\\.PRX" />
+                <data android:scheme="file" android:pathPattern=".*\\.plf" />
+                <data android:scheme="file" android:pathPattern=".*\\.PLF" />
+                <data android:scheme="file" android:pathPattern=".*\\.zip" />
+                <data android:scheme="file" android:pathPattern=".*\\.ZIP" />
+                <data android:scheme="file" android:pathPattern=".*\\.bin" />
+                <data android:scheme="file" android:pathPattern=".*\\.BIN" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" android:mimeType="application/octet-stream" />
+                <data android:scheme="file" android:mimeType="application/octet-stream" />
+                <data android:scheme="content" android:mimeType="application/x-cue" />
+                <data android:scheme="content" android:mimeType="application/x-iso9660-image" />
+                <data android:scheme="content" android:mimeType="application/x-cd-image" />
+                <data android:scheme="content" android:mimeType="application/x-raw-disk-image" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".TvActivity"
+            android:banner="@drawable/tv_banner"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.EmuCoreH.Splash"
+            tools:ignore="DiscouragedApi">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <receiver
+            android:name=".data.TextureDownloadActionReceiver"
+            android:exported="false" />
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
+
+        <!-- Discord Social SDK: permissions added by the SDK AAR are not needed. -->
+        <activity
+            android:name="com.discord.socialsdk.AuthenticationActivity"
+            android:process=":discord"
+            android:enabled="${discordSdkAvailable}"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:launchMode="singleTask"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="discord-1536775623287115786" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".discord.DiscordAuthActivity"
+            android:process=":discord"
+            android:enabled="${discordSdkAvailable}"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
+        <service
+            android:name=".discord.DiscordService"
+            android:process=":discord"
+            android:enabled="${discordSdkAvailable}"
+            android:exported="false" />
+
+        <service
+            android:name="com.discord.socialsdk.ForegroundService"
+            tools:node="remove" />
+    </application>
+
+</manifest>

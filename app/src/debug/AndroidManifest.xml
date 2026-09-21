@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-FileCopyrightText: 2026 SBRO -->
+<!-- SPDX-License-Identifier: LicenseRef-EmuCoreH-Proprietary -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name=".RuntimeTestActivity"
+            android:exported="false"
+            android:theme="@style/Theme.EmuCoreH" />
+        <activity
+            android:name=".DebugJitSelfTestActivity"
+            android:exported="true"
+            android:theme="@style/Theme.EmuCoreH" />
+        <activity
+            android:name=".DebugAllTestsActivity"
+            android:exported="true"
+            android:theme="@style/Theme.EmuCoreH" />
+        <activity
+            android:name=".DebugGamesBootActivity"
+            android:exported="true"
+            android:theme="@style/Theme.EmuCoreH" />
+    </application>
+</manifest>

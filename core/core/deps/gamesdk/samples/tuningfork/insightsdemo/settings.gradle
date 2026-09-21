@@ -1,0 +1,7 @@
+include ':app'
+include ':games-performance-tuner'
+include ':games-frame-pacing:extras'
+include ':games-frame-pacing'
+project(':games-performance-tuner').projectDir      = file('../../../games-performance-tuner')
+project(':games-frame-pacing').projectDir           = file('../../../games-frame-pacing')
+project(':games-frame-pacing:extras').projectDir    = file('../../../games-frame-pacing/extras')

@@ -1,0 +1,605 @@
+/*
+ * Copyright (C) 2019 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License
+ */
+
+syntax = "proto3";
+
+package google.android.performanceparameters.v1;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_package = "com.google.android.performanceparameters.v1";
+option java_outer_classname = "PerformanceParameters";
+
+// Assigns parameters to apks using the Android Game SDK and enables telemetry
+// upstreaming with annotated contexts.
+service ParametersService {
+  // If no device specification is provided, the API will return an empty
+  // tuning configuration.
+  rpc GenerateTuningParameters(GenerateTuningParametersRequest)
+      returns (GenerateTuningParametersResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=applications/*/apks/*}:generateTuningParameters"
+      body: "*"
+    };
+  }
+
+  // Uploads telemetry data associated with one/many gameplay/usage sessions.
+  // The uploaded data is expected to be aware of the current tuning
+  // configuration on the requester.
+  rpc UploadTelemetry(UploadTelemetryRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/{name=applications/*/apks/*}:uploadTelemetry"
+      body: "*"
+    };
+  }
+}
+
+// Request message of 'UploadTelemetry'.
+message UploadTelemetryRequest {
+  // Resource name for the tuning parameters of an apk, identified by package
+  // name and version code.
+  string name = 1;
+
+  // Context that do not change as a game session progresses.
+  SessionContext session_context = 2;
+
+  // Series of telemetry to be logged.
+  // Each member of this list is associated with a different telemetry context.
+  repeated Telemetry telemetry = 3;
+}
+
+// Request message of 'GetTuningParameters'.
+message GenerateTuningParametersRequest {
+  // Resource name for the tuning parameters of an apk, identified by package
+  // name and version code.
+  string name = 1;
+
+  // The specs for the device requesting tuning parameters.
+  // This field is used by Play to determine which set of parameters should be
+  // returned.
+  // If not provided, the response will always be the default set of
+  // parameters configured in the Play Console for the apk.
+  // If there are no defaults configured, the return message will be empty.
+  DeviceSpec device_spec = 2;
+
+  // Fidelity parameters uploaded when in training mode.
+  // These are the game-generated fidelity parameters that would be used
+  //  on this device without any Tuning Fork intervention.
+  bytes serialized_training_tuning_parameters = 3;
+}
+
+// Response message of 'GetTuningParameters'.
+message GenerateTuningParametersResponse {
+  // The parameters assigned to the request by Play based on the request.
+  // Will be empty if there are no tuning parameters available for the apk.
+  TuningParameters parameters = 1;
+}
+
+// Message defining tunable parameters returned to the caller.
+message TuningParameters {
+  // The Play Console experiment id from which this set of parameters belongs
+  // to.
+  // Required.
+  string experiment_id = 1;
+
+  // The serialized protocol buffer representing the parameters requested.
+  // The format for this data is defined in APK upload time by 'FidelityParams'
+  // message found in the following location in the APK:
+  //   * assets/tuningfork/dev_tuningfork.proto.
+  // Serialization should be done either through the Protocol Buffer method
+  // "toBytes()" or through the procol buffer compiler (protoc).
+  // See: https://developers.google.com/protocol-buffers/docs/encoding
+  // Required.
+  bytes serialized_fidelity_parameters = 2;
+}
+
+// All context coming from the requesting device that is immutable during a
+// gameplay session.
+message SessionContext {
+  // The specs of the device doing the request.
+  // Required.
+  DeviceSpec device = 1;
+
+  // Details specific to the Android Game SDK.
+  // Required.
+  GameSdkInfo game_sdk_info = 2;
+
+  // The period of time of this collection.
+  // Required.
+  TimePeriod time_period = 3;
+
+  // The list of crashes that happened during the last session.
+  repeated CrashReport crash_reports = 4;
+}
+
+// Telemetry report, containing a context and the associated metrics.
+message Telemetry {
+  // The context of the device at the time of this telemetry collection.
+  // Required.
+  TelemetryContext context = 1;
+
+  // The collection of telemetry data for this capture.
+  // Required.
+  TelemetryReport report = 2;
+}
+
+// Metrics collected from a gameplay/usage session in a particular context.
+message TelemetryReport {
+  // Render time data collected in the time period of the report.
+  RenderingReport rendering = 4;
+  // Information on scene loading times.
+  LoadingReport loading = 5;
+  // Information on memory usage.
+  MemoryReport memory = 6;
+  // Loading events that may have been abandoned.
+  PartialLoadingReport partial_loading = 7;
+  // Information on battery usage.
+  BatteryReport battery = 8;
+  // Information on device thermal state.
+  ThermalReport thermal = 9;
+}
+
+// Self reported context from a device requesting telemetry logging.
+message TelemetryContext {
+  // Serialized protocol buffer including metadata associated with the capture
+  // time.
+  // Required.
+  bytes annotations = 1;
+
+  // The tuning parameters in use at the time of the capture.
+  // Required.
+  TuningParameters tuning_parameters = 2;
+
+  // The total time spent on this context during the collection. Can represent
+  // disjoint period of time. For example, if the context was active in between
+  // [10, 100] ms and [200, 220] ms, the duration would be 110ms.
+  google.protobuf.Duration duration = 3;
+}
+
+// A message representing performance characteristics of a requesting device.
+message DeviceSpec {
+  // Public build fingerprint of the device making this request.
+  // See:
+  // https://developer.android.com/reference/android/os/Build.html#FINGERPRINT
+  // Required.
+  string fingerprint = 1;
+
+  // The total accessible memory in bytes.
+  // API >=16 devices can look at
+  // http://developer.android.com/reference/android/app/ActivityManager.MemoryInfo.html#totalMem
+  // Required.
+  int64 total_memory_bytes = 2;
+
+  // Value of build property "ro.build.version.codename".
+  // The current development codename, or the string "REL" if this is a
+  // release build.
+  // See: https://developer.android.com/reference/android/os/Build.VERSION
+  // Required.
+  string build_version = 3;
+
+  // The GLES version on the device.
+  // Required.
+  GlesVersion gles_version = 4;
+
+  // The maximum clock speed of all the CPUs cores on the device, in Hz.
+  // Read from: /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
+  // Example: [ 1400, 3600 ]
+  repeated int64 cpu_core_freqs_hz = 5;
+
+  // Public model of the device making this request.
+  // See:
+  // https://developer.android.com/reference/android/os/Build.html#MODEL
+  string model = 6;
+
+  // Public brand of the device making this request.
+  // See:
+  // https://developer.android.com/reference/android/os/Build.html#BRAND
+  string brand = 7;
+
+  // Public product of the device making this request.
+  // See:
+  // https://developer.android.com/reference/android/os/Build.html#PRODUCT
+  string product = 8;
+
+  // See:
+  // https://developer.android.com/reference/android/os/Build.html#DEVICE
+  string device = 9;
+
+  // The model name of the device's primary system-on-chip.
+  // See:
+  // https://developer.android.com/reference/android/os/Build#SOC_MODEL
+  string soc_model = 10;
+
+  // The manufacturer of the device's primary system-on-chip.
+  // See:
+  // https://developer.android.com/reference/android/os/Build#SOC_MANUFACTURER
+  string soc_manufacturer = 11;
+
+  // Total swap memory of the device, in bytes, read from /proc/meminfo
+  int64 swap_total_bytes = 12;
+}
+
+// Message representing a version of OpenGL ES.
+// For further information on OpenGL ES and Android
+// See: https://developer.android.com/guide/topics/graphics/opengl
+message GlesVersion {
+  // The major GL ES version.
+  // For example, for GL ES 3.1, this field would be 3.
+  // Required.
+  int32 major = 1;
+
+  // The minor GL ES version.
+  // For example, for GL ES 3.1, this field would be 1.
+  // Required.
+  int32 minor = 2;
+}
+
+// Log info specific to the Android Game SDK.
+// See more at:
+// https://android.googlesource.com/platform/frameworks/opt/gamesdk/
+message GameSdkInfo {
+  // The version of the Game SDK from include/tuningfork/tuningfork.h.
+  // Major.Minor format, e.g. 1.2
+  // Required.
+  string version = 1;
+
+  // A unique id generated by the Game SDK during a gameplay session.
+  // Required.
+  string session_id = 2;
+
+  // The version of Swappy, if it was passed at runtime.
+  // Major.Minor format, e.g. 1.2
+  string swappy_version = 3;
+}
+
+// A report of the rendering for a period of gameplay/usage.
+message RenderingReport {
+  // Distribution of render times, distributed into buckets.
+  repeated RenderTimeHistogram render_time_histogram = 1;
+}
+
+// Representation of a histogram with pre-defined buckets, representing render
+// time.
+message RenderTimeHistogram {
+  // ID of the frame capture point of the frame, if this is coming from the
+  // Android Game SDK. The capture point refers to the point in the rendering
+  // pipeline the frame is recorded.
+  // Required.
+  int32 instrument_id = 1;
+
+  // Bucket counts.
+  // Assumes the buckets are defined elsewhere per apk;
+  // only the counts are logged. Buckets correspond to render time (ms).
+  repeated int32 counts = 2 [packed = true];
+}
+
+// A report of loading times, a set of events.
+// App start-up times for different app state changes can be recorded as well as
+// inter-level times.
+// For inter-level times, Tuning Fork records the time between the 'loading'
+// annotation changing from LOADING to NOT_LOADING and this is then stored as
+// an event associated with the annotation.
+message LoadingReport {
+  // Actual loading data
+  repeated LoadingTimeEvents loading_events = 1;
+}
+
+// A report of loading times for active loading events when an app lifecycle
+// event occurred. Currently it is only app start and stop events that trigger
+// these reports.
+message PartialLoadingReport {
+  // Lifecycle event that caused a partial loading report.
+  enum LifecycleEventType {
+    // Unspecified.
+    LIFECYCLE_EVENT_TYPE_UNSPECIFIED = 0;
+    // App start event received (i.e. app was foregrounded).
+    START = 1;
+    // App stop event received (i.e. app was backgrounded).
+    STOP = 2;
+  }
+
+  // Lifecycle event that caused this partial loading report.
+  LifecycleEventType event_type = 1;
+
+  // A loading report with the loading events that were active when the
+  // lifecycle event happened.
+  LoadingReport report = 2;
+}
+
+// Representation of a set of loading times.
+// Where developers use start+stop functions to record loading time events (the
+// enouraged behaviour), they are recorded in 'intervals'. 'times_ms' will
+// contain events that are recorded as durations.
+message LoadingTimeEvents {
+  // Times in milliseconds
+  repeated int32 times_ms = 1 [packed = true, deprecated = true];
+
+  // Metadata recorded with these loading events.
+  LoadingTimeMetadata loading_metadata = 2;
+
+  // Events recorded with both start and end times.
+  // Times are durations from the app process' start time.
+  repeated ProcessTimePeriod intervals = 3;
+}
+
+// A message describing a period of time, with times represented as durations
+// since the app process started.
+message ProcessTimePeriod {
+  // Duration from process start to the start of the period.
+  google.protobuf.Duration start = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Duration from process start to the end of the period.
+  google.protobuf.Duration end = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// A message describing a period of time.
+message TimePeriod {
+  // Time at the start of the period.
+  // Required.
+  google.protobuf.Timestamp start_time = 5;
+
+  // Time at the end of the period.
+  // Required.
+  google.protobuf.Timestamp end_time = 6;
+}
+
+// Metadata recorded with loading times.
+message LoadingTimeMetadata {
+  // The state of the game for which the events are recorded.
+  enum LoadingState {
+    // Unspecified.
+    LOADING_STATE_UNSPECIFIED = 0;
+    // The first run of the game after installation.
+    FIRST_RUN = 1;
+    // The game process is new.
+    COLD_START = 2;
+    // The game has come to foreground.
+    WARM_START = 3;
+    // The game becomes the top Activity.
+    HOT_START = 4;
+    // A loading time associated with starting a new level.
+    INTER_LEVEL = 5;
+  }
+
+  // The state of the game for which the events are recorded.
+  LoadingState state = 1;
+
+  // The source of the events.
+  enum LoadingSource {
+    // Unspecified.
+    LOADING_SOURCE_UNSPECIFIED = 0;
+    // Uncompressing data.
+    MEMORY = 1;
+    // Reading assets from APK bundle.
+    APK = 2;
+    // Reading assets from device storage.
+    DEVICE_STORAGE = 3;
+    // Reading assets from external storage, e.g. SD card.
+    EXTERNAL_STORAGE = 4;
+    // Loading assets from the network.
+    NETWORK = 5;
+    // Shader compilation.
+    SHADER_COMPILATION = 6;
+    // Time spent between process starting and onCreate.
+    PRE_ACTIVITY = 7;
+    // Total time spent between process starting and first render frame.
+    FIRST_TOUCH_TO_FIRST_FRAME = 8;
+    // Total time spent in an event group.
+    TOTAL_USER_WAIT_FOR_GROUP = 9;
+  }
+
+  // The source of the event, e.g. memory, network, etc.
+  LoadingSource source = 2;
+
+  // Compression level: 0 = no compression, 100 = maximum.
+  int32 compression_level = 3;
+
+  // Network information associated with download events.
+  NetworkInfo network_info = 4;
+
+  // Loading event group ID. Uniquely generated by the APT client library when
+  // the game calls TuningFork_startLoadingGroup.
+  string group_id = 5;
+}
+
+// Information about network conditions.
+message NetworkInfo {
+  // Wifi, mobile, etc.
+  enum NetworkConnectivity {
+    // Unspecified.
+    NETWORK_CONNECTIVITY_UNSPECIFIED = 0;
+    // Wifi.
+    WIFI = 1;
+    // Cellular/ mobile network.
+    CELLULAR_NETWORK = 2;
+  }
+
+  // Wifi, mobile, etc.
+  NetworkConnectivity connectivity = 1;
+
+  // Bandwidth in bits per second.
+  int64 bandwidth_bps = 2;
+
+  // Latency in nanoseconds.
+  google.protobuf.Duration latency = 3;
+}
+
+// A report of the memory usage of a device while a game is playing.
+message MemoryReport {
+  // Distribution of memory usage
+  repeated MemoryHistogram memory_histogram = 1;
+  // Memory usage reported as timed events. Upper limit for the size
+  // of this array is 120 events. Results exceeding this limit will be
+  // truncated.
+  repeated MemoryEvent memory_event = 2;
+}
+
+// An event describing current memory state of the device.
+message MemoryEvent {
+  // Duration from process start to the time the event is collected.
+  google.protobuf.Duration event_time = 1;
+  // The memory used by the app, in bytes, except the shared memory
+  // is proportionally calculated. Read from android.os.Debug#getPss
+  int64 proportional_set_size = 2;
+  // The available memory on the device, in bytes, read from
+  // ActivityManager#MemoryInfo
+  int64 avail_mem = 3;
+  // OOM score of the app, read from /proc/<pid>/oom_score
+  int64 oom_score = 4;
+}
+
+// A histogram describing memory usage.
+message MemoryHistogram {
+  // Enum describing how the memory records were obtained.
+  enum MemoryRecordType {
+    INVALID = 0;
+    // From calls to android.os.Debug.getNativeHeapAllocatedSize
+    ANDROID_DEBUG_NATIVE_HEAP = 1;
+    // From /proc/<PID>/oom_score file
+    ANDROID_OOM_SCORE = 2;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_ACTIVE = 3;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_ACTIVEANON = 4;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_ACTIVEFILE = 5;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_ANONPAGES = 6;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_COMMITLIMIT = 7;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_HIGHTOTAL = 8;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_LOWTOTAL = 9;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_MEMAVAILABLE = 10;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_MEMFREE = 11;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_MEMTOTAL = 12;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_VMDATA = 13;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_VMRSS = 14;
+    // From /proc/meminfo and /proc/<PID>/status files
+    ANDROID_MEMINFO_VMSIZE = 15;
+  }
+
+  // The type of memory record.
+  MemoryRecordType type = 1;
+
+  // How often a memory record was taken in milliseconds.
+  int32 period_ms = 2;
+
+  MemoryHistogramConfig histogram_config = 3;
+
+  // Bucket counts.
+  // Note that the first bucket is for memory records < bucket_min_kB and
+  // the last bucket is for memory records > bucket_min_kB so there must
+  // be at least 2 buckets.
+  repeated int32 counts = 4 [packed = true];
+}
+
+message MemoryHistogramConfig {
+  // The range of the buckets in bytes.
+  int64 bucket_min_bytes = 1;
+  int64 bucket_max_bytes = 2;
+}
+
+// A report containing a single crash report
+message CrashReport {
+  // Enum listing possible crash reasons for the app.
+  enum CrashReason {
+    // Unspecified.
+    CRASH_REASON_UNSPECIFIED = 0;
+    // Process was killed by the system low memory killer.
+    LOW_MEMORY = 1;
+    // Process was killed because of a memory access violation.
+    SEGMENTATION_FAULT = 2;
+    // Process tried to access an invalid memory address.
+    BUS_ERROR = 3;
+    // Process was killed because of an illegal arithmetic operation.
+    FLOATING_POINT_ERROR = 4;
+  }
+
+  // The reason for why the crash occurred.
+  CrashReason crash_reason = 1;
+
+  // The session during which the crash occurred (e.g. previous session).
+  string session_id = 2;
+}
+
+// A report of battery usage
+message BatteryReport {
+  // A series of collected battery events.
+  repeated BatteryEvent battery_event = 1;
+}
+
+// A single battery event describing battery information.
+message BatteryEvent {
+  // Duration from process start to the time the event is collected.
+  google.protobuf.Duration event_time = 1;
+  // The remaining battery percentage (out of 100) at the time of collection.
+  int32 percentage = 2;
+  // The remaining battery charge (in micro-amp hour) at the time of collection.
+  int32 current_charge_microampere_hours = 3;
+  // Whether the battery is currently charging.
+  bool charging = 4;
+  // Whether the app is on foreground at the time of collection.
+  bool app_on_foreground = 5;
+  // Whether the device is in power save mode at the time of collection.
+  bool power_save_mode = 6;
+}
+
+// A report of device thermal status.
+message ThermalReport {
+  // A series of collected thermal events.
+  repeated ThermalEvent thermal_event = 1;
+}
+
+// A single thermal event describing the thermal state of the device.
+message ThermalEvent {
+  // Enum listing the thermal state, and the effects of it on the device.
+  enum ThermalState {
+    // Device had no thermal state data, due to low api level.
+    THERMAL_STATE_UNSPECIFIED = 0;
+    // No thermal problems.
+    THERMAL_STATE_NONE = 1;
+    // Light throttling where UX is not impacted.
+    THERMAL_STATE_LIGHT = 2;
+    // Moderate throttling where UX is not largely impacted.
+    THERMAL_STATE_MODERATE = 3;
+    // Severe throttling where UX is largely impacted.
+    THERMAL_STATE_SEVERE = 4;
+    // Platform has done everything to reduce power.
+    THERMAL_STATE_CRITICAL = 5;
+    // Key components in platform are shutting down due to thermal condition.
+    // Device functionalities are limited.
+    THERMAL_STATE_EMERGENCY = 6;
+    // Indicates that the device needs shutdown immediately.
+    THERMAL_STATE_SHUTDOWN = 7;
+  }
+
+  // Duration from process start to the time the event is collected.
+  google.protobuf.Duration event_time = 1;
+
+  // Thermal status of the device at the time of collection.
+  ThermalState thermal_state = 2;
+}

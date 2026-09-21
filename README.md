@@ -1,107 +1,112 @@
-# Flycast
+# EmuCoreH
 
-[![Android CI](https://github.com/flyinghead/flycast/actions/workflows/android.yml/badge.svg)](https://github.com/flyinghead/flycast/actions/workflows/android.yml)
-[![C/C++ CI](https://github.com/flyinghead/flycast/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/flyinghead/flycast/actions/workflows/c-cpp.yml)
-[![Nintendo Switch CI](https://github.com/flyinghead/flycast/actions/workflows/switch.yml/badge.svg)](https://github.com/flyinghead/flycast/actions/workflows/switch.yml)
-[![Windows UWP CI](https://github.com/flyinghead/flycast/actions/workflows/uwp.yml/badge.svg)](https://github.com/flyinghead/flycast/actions/workflows/uwp.yml)
-[![BSD CI](https://github.com/flyinghead/flycast/actions/workflows/bsd.yml/badge.svg)](https://github.com/flyinghead/flycast/actions/workflows/bsd.yml)
+[![Support EmuCoreH on Patreon](https://img.shields.io/badge/Patreon-Support%20EmuCoreH-ff424d?logo=patreon&logoColor=white)](https://www.patreon.com/c/emucore/membership)
+[![Join the EmuCoreH Discord](https://img.shields.io/badge/Discord-Join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.com/invite/c5EBeNRpz2)
+[![Website](https://img.shields.io/badge/Website-emucorea.web.app-1f6feb?logo=googlechrome&logoColor=white)](https://emucorea.web.app/)
 
-<img src="shell/linux/flycast.png" alt="flycast logo" width="150"/>
+EmuCoreH is a Sega Dreamcast, Naomi, Naomi 2, and Atomiswave library, launcher, and emulator frontend for Android. It pairs a purpose-built Compose interface with a vendored [Flycast](https://github.com/flyinghead/flycast) core that is built together with the app, so no separate core download is needed.
 
-**Flycast** is a multi-platform Sega Dreamcast, Naomi, Naomi 2, and Atomiswave emulator derived from [**reicast**](https://github.com/skmp/reicast-emulator).
+Official website: [https://emucorea.web.app/](https://emucorea.web.app/)
 
-Information about configuration and supported features can be found on [**TheArcadeStriker's flycast wiki**](https://github.com/TheArcadeStriker/flycast-wiki/wiki).
+![Status](https://img.shields.io/badge/Status-Active%20Development-blue)
 
-Join us on our [**Discord server**](https://discord.gg/X8YWP8w) for a chat.
+The project is under active development. Use your own legally obtained games. Flycast emulates the Dreamcast without a BIOS file when no BIOS dump is installed.
 
-## Downloads ![android](https://flyinghead.github.io/flycast-builds/android.jpg) ![windows](https://flyinghead.github.io/flycast-builds/windows.png) ![linux](https://flyinghead.github.io/flycast-builds/ubuntu.png) ![apple](https://flyinghead.github.io/flycast-builds/apple.png) ![switch](https://flyinghead.github.io/flycast-builds/switch.png) ![xbox](https://flyinghead.github.io/flycast-builds/xbox.png)
+## Highlights
 
-Get builds for your system from the [**builds page**](https://flyinghead.github.io/flycast-builds/) or [**GitHub Releases**](https://github.com/flyinghead/flycast/releases).
+- Flycast-based emulation core built together with the app for ARM64 devices
+- Vulkan, OpenGL ES, and software rendering with internal resolution controls
+- Game library with Dreamcast and arcade title detection, cover art, search, and per-game settings
+- Home hub with shelves, recently played titles, and quick resume
+- In-game overlay with rendering, speed, and save state controls, opened with the Back gesture
+- Touch controls with a layout editor, plus physical gamepad support
+- Save states, VMU and memory card management
+- Cheat and texture replacement support for compatible games
+- RetroAchievements and optional Discord integration
+- Localized interface in 18 languages for phones, tablets, and Android TV
 
-- **Latest master builds:** regular builds from the `master` branch with recent fixes and updates.
-- **Nightly dev builds:** experimental builds with the latest features and changes.
-- **Stable tagged releases:** versioned release builds published on GitHub Releases.
+## What This Repository Contains
 
-Automated test results are available from the builds page as well.
+This repository contains the Android application, its Kotlin UI, the JNI frontend, the vendored Flycast sources, and the Gradle module that builds the emulation core for Android. No games, BIOS files, save data, or account credentials are included.
 
-## Install
+## Tech Stack
 
-### Android ![android](https://flyinghead.github.io/flycast-builds/android.jpg)
+- Kotlin + Jetpack Compose
+- Android DataStore and Room
+- JNI bridge to native C++ built with CMake and the Android NDK
+- Vendored Flycast core built as a libretro library and driven by the app's own frontend
+- Vulkan and OpenGL ES rendering paths with a shader chain runtime
+- RetroAchievements integration through rcheevos
+- Optional Discord Social SDK integration
 
-&emsp;Install Flycast from [**Google Play**](https://play.google.com/store/apps/details?id=com.flycast.emulator).
+## Current App Scope
 
-### Flatpak (Linux ![ubuntu logo](https://flyinghead.github.io/flycast-builds/ubuntu.png))
+EmuCoreH version `0.0.1` currently targets Android with:
 
-1. [Set up Flatpak](https://www.flatpak.org/setup/).
+- `minSdk 26` (Android 8.0)
+- `targetSdk 37`
+- package id `com.sbro.emucoreh`
+- version `0.0.1`
+- ARM64 devices only
 
-2. Install Flycast from [Flathub](https://flathub.org/apps/details/org.flycast.Flycast):
+## Building Locally
 
-&emsp;`flatpak install -y org.flycast.Flycast`
+### Requirements
 
-3. Run Flycast:
+- Android Studio with Android SDK and NDK configured
+- JDK 17
+- Android SDK 37 and Android NDK `29.0.14206865`
+- CMake `3.30.5`
 
-&emsp;`flatpak run org.flycast.Flycast`
+### Debug Build
 
-### Homebrew (macOS ![apple logo](https://flyinghead.github.io/flycast-builds/apple.png))
-
-1. [Set up Homebrew](https://brew.sh) or run `brew update` if already installed.
-
-2. Choose one channel:
-
-| Channel              | Install command                                         |
-| -------------------- | ------------------------------------------------------- |
-| Master (recommended) | `brew install --cask flyinghead/flycast/flycast@master` |
-| Stable               | `brew install --cask flyinghead/flycast/flycast`        |
-| Nightly dev          | `brew install --cask flyinghead/flycast/flycast@dev`    |
-
-3. Run Flycast from your Application folder
-
-&emsp;See the <a href="https://github.com/flyinghead/homebrew-flycast#readme">Flycast tap</a> for updating, uninstalling, and switching channels.
-
-### iOS
-
-&emsp;Due to persistent harassment from an iOS user, support for this platform has been dropped.
-
-### Xbox One/Series ![xbox logo](https://flyinghead.github.io/flycast-builds/xbox.png)
-
-&emsp;Grab the latest build from [**the builds page**](https://flyinghead.github.io/flycast-builds/), or the [**GitHub Actions**](https://github.com/flyinghead/flycast/actions/workflows/uwp.yml). Then install it using the **Xbox Device Portal**.
-
-## Build from source
-
-### macOS
-
-&emsp;Right-click the bootstrap script and choose **Open**:
-
-&emsp;`shell/apple/generate_xcode_project.command`
-
-### Windows
-
-&emsp;Double-click the bootstrap script:
-
-&emsp;`shell\windows\generate_vs_project.bat`
-
-### Linux
-
-#### Dependencies
-
-- **C/C++ compiler toolchain** (e.g. `gcc`/`g++`)
-- **CMake**
-- **make**
-- **libcurl** (development headers)
-- **libudev** (development headers)
-- **SDL2** (development headers)
-- **Graphics API**: Vulkan, OpenGL
-
-#### Build
-
-```
-$ git clone --recursive https://github.com/flyinghead/flycast.git
-$ cd flycast
-$ mkdir build && cd build
-$ cmake ..
-$ make
+```powershell
+.\gradlew :app:assembleDebug
 ```
 
-## Packaging status
+### Release Build
 
-[![Packaging status](https://repology.org/badge/vertical-allrepos/flycast.svg)](https://repology.org/project/flycast/versions)
+```powershell
+.\gradlew :app:assembleRelease
+```
+
+Install `app/build/outputs/apk/debug/app-debug.apk` on an ARM64 Android device.
+
+### Optional Discord SDK
+
+Discord support is built when a compatible Discord Social SDK directory is supplied through `emucorex.discord.sdkDir` in `local.properties`, a Gradle property with the same name, or `DISCORD_SDK_DIR`. The directory must contain `include/discordpp.h`, `arm64-v8a/libdiscord_partner_sdk.so`, and `discord_partner_sdk.aar`. The SDK is not included in this repository.
+
+## Project Structure
+
+- `app/` Android application, Kotlin UI, and JNI frontend sources
+- `app/src/main/cpp` Native bridge and core integration
+- `app/src/main/res` Android resources and translations
+- `core/` Vendored Flycast sources
+- `core-android/` Gradle module that builds the Flycast core for Android
+- `tools/` Local release, catalog, and cover tooling (not part of the app build)
+
+## Supported Content
+
+CHD, CDI, GDI, and CUE/BIN images are the main game formats. LST, DAT, ZIP, 7Z, and M3U are supported as well. Arcade content for Naomi, Naomi 2, and Atomiswave runs from ROM sets. Dreamcast BIOS files are optional: without one the core boots through its HLE BIOS. No games, BIOS files, save data, or account credentials are included here.
+
+## Notes
+
+- Game images, BIOS files, save data, and account credentials are not distributed with this project.
+- Compatibility, performance, and graphics behavior vary by game, device, renderer, and driver stack.
+
+## Credits and license
+
+EmuCoreH builds on Flycast. The root [LICENSE](LICENSE) is an exact copy of Flycast's upstream license file (GPL-2.0). The vendored core and its dependencies retain their copyright and license notices in `core/`.
+
+Thanks to the Flycast contributors and to the RetroAchievements team for rcheevos.
+
+EmuCoreH is independent of Sega, Flycast, IGDB, Discord, and RetroAchievements. Dreamcast, Naomi, Naomi 2, and Atomiswave are trademarks of Sega. Game artwork and game data belong to their respective owners.
+
+## Support
+
+If you want to support ongoing development:
+
+- Website: [https://emucorea.web.app/](https://emucorea.web.app/)
+- Patreon: [https://www.patreon.com/c/emucore/membership](https://www.patreon.com/c/emucore/membership)
+- Discord: [https://discord.com/invite/c5EBeNRpz2](https://discord.com/invite/c5EBeNRpz2)
+- More apps by the author: [Google Play developer page](https://play.google.com/store/apps/dev?id=7136622298887775989)

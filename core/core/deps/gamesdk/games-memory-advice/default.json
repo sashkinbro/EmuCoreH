@@ -1,0 +1,55 @@
+{
+  "heuristics": {
+    "canaryProcessTester": true,
+    "formulas": {
+      "yellow": [
+        "predictedAvailable < 0.20"
+      ],
+      "red": [
+        "predictedAvailable < 0.15"
+      ]
+    }
+  },
+  "metrics": {
+    "constant": {
+      "MemoryInfo": {
+        "totalMem": true,
+        "threshold": true
+      },
+      "ActivityManager": {
+        "MemoryClass": true,
+        "LargeMemoryClass": true,
+        "LowRamDevice": true
+      },
+      "meminfo": {
+        "CommitLimit": true,
+        "HighTotal": true,
+        "LowTotal": true,
+        "MemTotal": true
+      }
+    },
+    "baseline": {
+      "ActivityManager": true,
+      "DebugMemoryInfo": true,
+      "MemoryInfo": true,
+      "debug": true,
+      "meminfo": true,
+      "proc": true,
+      "smaps_rollup": true,
+      "status": true,
+      "summary": true,
+      "timings": true
+    },
+    "variable": {
+      "proc": true,
+      "canaryProcessTester": {
+        "memory": "256M"
+      },
+      "MemoryInfo": {
+        "availMem": true
+      },
+      "predictRealtime": true,
+      "availableRealtime": true
+    }
+  }
+}

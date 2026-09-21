@@ -1,0 +1,12 @@
+# Build artifacts:
+/build
+
+# Auto-generated files:
+src/main/assets/tuningfork/dev_tuningfork.descriptor
+src/main/assets/tuningfork/dev_tuningfork_fidelityparams_1.bin
+src/main/assets/tuningfork/dev_tuningfork_fidelityparams_2.bin
+src/main/assets/tuningfork/dev_tuningfork_fidelityparams_3.bin
+src/main/assets/tuningfork/dev_tuningfork_fidelityparams_4.bin
+src/main/assets/tuningfork/dev_tuningfork_fidelityparams_5.bin
+src/main/assets/tuningfork/dev_tuningfork_fidelityparams_6.bin
+src/main/assets/tuningfork/tuningfork_settings.bin

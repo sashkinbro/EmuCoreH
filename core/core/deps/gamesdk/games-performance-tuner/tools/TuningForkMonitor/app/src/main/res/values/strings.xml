@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Tuning Fork Monitor</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_export">Export</string>
+    <string name="initial_log_message">Log messages will appear here</string>
+    <string name="action_view_log">Log</string>
+    <string name="database_name">tuningfork_monitor</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>

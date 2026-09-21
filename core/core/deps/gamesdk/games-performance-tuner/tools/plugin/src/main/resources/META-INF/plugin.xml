@@ -1,0 +1,29 @@
+<idea-plugin>
+  <name>Android Performance Tuner</name>
+  <vendor>Google LLC</vendor>
+
+  <description><![CDATA[Android Performance Tuner plugin for Android Studio
+    ]]></description>
+
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+       on how to target different products -->
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.modules.cidr.lang</depends>
+  <depends>com.intellij.modules.androidstudio</depends>
+  <extensions defaultExtensionNs="com.intellij">
+  </extensions>
+
+  <actions>
+    <action id="Action.OpenPluginAction" class="Action.OpenPluginAction"
+      text="Android Performance Tuner"
+      description="Open APT Plugin">
+      <add-to-group group-id="ToolsMenu" anchor="first"/>
+    </action>
+    <action id="Editor.AutoGenerate"
+      class="Action.GenerateAnnotationAction"
+      text="Generate Annotation/Fidelity Methods"
+      description="Generate Annotation methods">
+      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+    </action>
+  </actions>
+</idea-plugin>

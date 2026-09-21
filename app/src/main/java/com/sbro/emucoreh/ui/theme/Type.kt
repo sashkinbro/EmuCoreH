@@ -1,0 +1,148 @@
+package com.sbro.emucoreh.ui.theme
+
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.sp
+import com.sbro.emucoreh.R
+import com.sbro.emucoreh.data.AppFontChoice
+import java.io.File
+
+private val RubikFontFamily = FontFamily(
+    Font(R.font.rubik_variable, FontWeight.Normal),
+    Font(R.font.rubik_variable, FontWeight.Medium),
+    Font(R.font.rubik_variable, FontWeight.SemiBold),
+    Font(R.font.rubik_variable, FontWeight.Bold)
+)
+
+private val Exo2FontFamily = FontFamily(
+    Font(R.font.exo2_variable, FontWeight.Normal),
+    Font(R.font.exo2_variable, FontWeight.Medium),
+    Font(R.font.exo2_variable, FontWeight.SemiBold),
+    Font(R.font.exo2_variable, FontWeight.Bold)
+)
+
+val Typography = Typography(
+    displayLarge = TextStyle(
+        fontWeight = FontWeight.Bold,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
+        letterSpacing = (-0.5).sp
+    ),
+    headlineLarge = TextStyle(
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-0.25).sp
+    ),
+    headlineMedium = TextStyle(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 24.sp,
+        lineHeight = 32.sp
+    ),
+    headlineSmall = TextStyle(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp,
+        lineHeight = 28.sp
+    ),
+    titleLarge = TextStyle(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 18.sp,
+        lineHeight = 26.sp
+    ),
+    titleMedium = TextStyle(
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.15.sp
+    ),
+    titleSmall = TextStyle(
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp
+    ),
+    bodyLarge = TextStyle(
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.15.sp
+    ),
+    bodyMedium = TextStyle(
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.25.sp
+    ),
+    bodySmall = TextStyle(
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.4.sp
+    ),
+    labelLarge = TextStyle(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp
+    ),
+    labelMedium = TextStyle(
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
+    ),
+    labelSmall = TextStyle(
+        fontWeight = FontWeight.Medium,
+        fontSize = 11.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
+    )
+)
+
+fun typographyFor(
+    choice: AppFontChoice,
+    customFontFile: File? = null,
+    fontScale: Float = 1f
+): Typography {
+    val family = when (choice) {
+        AppFontChoice.SYSTEM -> FontFamily.Default
+        AppFontChoice.RUBIK -> RubikFontFamily
+        AppFontChoice.EXO_2 -> Exo2FontFamily
+        AppFontChoice.CUSTOM -> customFontFile
+            ?.takeIf { it.isFile && it.length() > 0L }
+            ?.let { file -> runCatching { FontFamily(android.graphics.Typeface.createFromFile(file)) }.getOrNull() }
+            ?: FontFamily.Default
+    }
+    val safeScale = fontScale.coerceAtLeast(0.01f)
+    return Typography.copy(
+        displayLarge = Typography.displayLarge.withFont(family, safeScale),
+        displayMedium = Typography.displayMedium.withFont(family, safeScale),
+        displaySmall = Typography.displaySmall.withFont(family, safeScale),
+        headlineLarge = Typography.headlineLarge.withFont(family, safeScale),
+        headlineMedium = Typography.headlineMedium.withFont(family, safeScale),
+        headlineSmall = Typography.headlineSmall.withFont(family, safeScale),
+        titleLarge = Typography.titleLarge.withFont(family, safeScale),
+        titleMedium = Typography.titleMedium.withFont(family, safeScale),
+        titleSmall = Typography.titleSmall.withFont(family, safeScale),
+        bodyLarge = Typography.bodyLarge.withFont(family, safeScale),
+        bodyMedium = Typography.bodyMedium.withFont(family, safeScale),
+        bodySmall = Typography.bodySmall.withFont(family, safeScale),
+        labelLarge = Typography.labelLarge.withFont(family, safeScale),
+        labelMedium = Typography.labelMedium.withFont(family, safeScale),
+        labelSmall = Typography.labelSmall.withFont(family, safeScale)
+    )
+}
+
+private fun TextStyle.withFont(family: FontFamily, scale: Float): TextStyle = copy(
+    fontFamily = family,
+    fontSize = fontSize.scaledBy(scale),
+    lineHeight = lineHeight.scaledBy(scale),
+    letterSpacing = letterSpacing.scaledBy(scale)
+)
+
+private fun TextUnit.scaledBy(scale: Float): TextUnit =
+    if (this == TextUnit.Unspecified) this else (value * scale).sp

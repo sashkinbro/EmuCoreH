@@ -1,0 +1,4 @@
+include ':app'
+rootProject.name='TuningForkTesting'
+include ':games-performance-tuner'
+project(':games-performance-tuner').projectDir      = file('../../../games-performance-tuner')

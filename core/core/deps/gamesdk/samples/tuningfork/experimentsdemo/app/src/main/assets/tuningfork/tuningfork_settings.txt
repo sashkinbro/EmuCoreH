@@ -1,0 +1,7 @@
+aggregation_strategy: {method: TIME_BASED, intervalms_or_count: 10000, max_instrumentation_keys: 5, annotation_enum_size: [4]}
+histograms: [{instrument_key: 64000, bucket_min: 0, bucket_max: 60, n_buckets: 100}, {instrument_key: 64001, bucket_min: 0, bucket_max: 60, n_buckets: 100}, {instrument_key: 64002, bucket_min: 0, bucket_max: 60, n_buckets: 100}, {instrument_key: 64003, bucket_min: 0, bucket_max: 60, n_buckets: 100}, {instrument_key: 0, bucket_min: 0, bucket_max: 60, n_buckets: 100}]
+base_uri: "https://performanceparameters.googleapis.com/v1/"
+api_key: "enter-your-api-key-here-"
+default_fidelity_parameters_filename: "dev_tuningfork_fidelityparams_3.bin"
+initial_request_timeout_ms: 1000
+ultimate_request_timeout_ms: 100000

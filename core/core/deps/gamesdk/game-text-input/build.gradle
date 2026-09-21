@@ -1,0 +1,92 @@
+plugins {
+    id 'com.android.library'
+}
+
+buildDir="../../out_game_text_input"
+
+android {
+    namespace "com.google.androidgamesdk.gametextinput"
+    compileSdk 35
+    ndkVersion "23.1.7779620"
+
+    defaultConfig {
+        minSdk 21
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+        externalNativeBuild {
+            cmake {
+                if (project.hasProperty("stl")) {
+                    arguments '-DANDROID_STL='+ project.stl
+                } else {
+                    arguments '-DANDROID_STL=c++_shared'
+                }
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    sourceSets {
+        androidTest {
+            java.srcDirs = ['src/androidTest/java']
+            resources.srcDirs = ['src/androidTest/res']
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+            version "3.18.0+"
+        }
+    }
+    buildFeatures {
+        prefabPublishing true
+    }
+    prefab {
+        gametextinput {
+            name "game-text-input"
+            headers "prefab-src/modules/game-text-input/include/"
+        }
+        gametextinput_static {
+            name "game-text-input_static"
+            headers "prefab-src/modules/game-text-input/include/"
+        }
+    }
+
+    // If we don't include this line the created .aar contains the c++ std lib
+    // at <.aar_file>/jni/<abi>/libc++_shared.so. When we have multiple
+    // libraries containing libc++_shared.so the linker complains because it
+    // can't choose between them. Because we use prefab we don't need to
+    // contents of the <.aar_file>/jni/* folder so we can just exclude it here
+    // to prevent the jni folder from being created.
+    packagingOptions {
+        exclude("**.so")
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.5.0'
+
+    androidTestImplementation 'androidx.appcompat:appcompat:1.7.0'
+    androidTestImplementation 'com.google.android.material:material:1.12.0'
+    androidTestImplementation 'androidx.test.ext:junit-gtest:1.0.0-alpha02'
+    androidTestImplementation 'androidx.activity:activity:1.10.1'
+    androidTestImplementation 'com.android.ndk.thirdparty:googletest:1.11.0-beta-1'
+    androidTestImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+    androidTestImplementation 'com.google.guava:guava:33.4.0-android'
+}

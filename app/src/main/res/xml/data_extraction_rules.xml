@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+   Sample data extraction rules file; uncomment and customize as necessary.
+   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
+   for details.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- A loopback proxy is device-local transient state and must never migrate. -->
+        <exclude domain="sharedpref" path="retroachievements_host_override.xml" />
+        <!-- TODO: Use <include> and <exclude> to control what is backed up.
+        <include .../>
+        <exclude .../>
+        -->
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="retroachievements_host_override.xml" />
+    </device-transfer>
+</data-extraction-rules>
