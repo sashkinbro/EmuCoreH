@@ -217,8 +217,10 @@ private object TvStorageAccess {
     private fun createPickerIntent(request: TvStorageRequest, volume: StorageVolume?): Intent {
         val treeIntent = volume?.let(::createVolumeTreeIntent)
         val intent = when (request) {
-            TvStorageRequest.BIOS_FILE -> treeIntent ?: Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            TvStorageRequest.GAME_FOLDER -> treeIntent ?: Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        TvStorageRequest.BIOS_FILE -> Intent(Intent.ACTION_OPEN_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType("*/*")
+        TvStorageRequest.GAME_FOLDER -> treeIntent ?: Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
         }
         return intent.addFlags(
             Intent.FLAG_GRANT_READ_URI_PERMISSION or

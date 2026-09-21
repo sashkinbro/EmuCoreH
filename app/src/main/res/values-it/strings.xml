@@ -418,7 +418,7 @@
     <string name="onboarding_title">Preparati a giocare</string>
     <string name="onboarding_subtitle">Scegli le cartelle dei tuoi giochi Dreamcast e concedi l\'accesso ai file.</string>
     <string name="onboarding_bios_title">Scegli file BIOS</string>
-    <string name="onboarding_bios_desc">Scegli una cartella contenente i tuoi file BIOS Dreamcast (dc_boot.bin e dc_flash.bin).</string>
+    <string name="onboarding_bios_desc">Seleziona il dump del BIOS Dreamcast: dc_boot.bin (2 MiB) o dc_flash.bin (128 KiB).</string>
     <string name="onboarding_games_title">Scegli cartella giochi</string>
     <string name="onboarding_games_desc">Seleziona la cartella che contiene i tuoi giochi.</string>
     <string name="onboarding_status_required">Richiesto</string>

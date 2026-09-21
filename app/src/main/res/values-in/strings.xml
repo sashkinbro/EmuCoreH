@@ -667,7 +667,7 @@
     <string name="onboarding_title">Bersiaplah untuk bermain</string>
     <string name="onboarding_subtitle">Pilih folder game Dreamcast Anda dan berikan akses file.</string>
     <string name="onboarding_bios_title">Pilih File BIOS</string>
-    <string name="onboarding_bios_desc">Pilih folder yang berisi file BIOS Dreamcast Anda (dc_boot.bin dan dc_flash.bin).</string>
+    <string name="onboarding_bios_desc">Pilih dump BIOS Dreamcast: dc_boot.bin (2 MiB) atau dc_flash.bin (128 KiB).</string>
     <string name="onboarding_games_title">Pilih folder game</string>
     <string name="onboarding_games_desc">Pilih folder yang berisi game Anda.</string>
     <string name="onboarding_status_required">Wajib</string>

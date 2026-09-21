@@ -667,7 +667,7 @@
     <string name="onboarding_title">برای بازی آماده شوید</string>
     <string name="onboarding_subtitle">پوشه‌های بازی دریم‌کست خود را انتخاب کنید و دسترسی به فایل‌ها را بدهید.</string>
     <string name="onboarding_bios_title">انتخاب فایل BIOS</string>
-    <string name="onboarding_bios_desc">پوشه‌ای انتخاب کنید که شامل فایل‌های BIOS دریم‌کست (dc_boot.bin و dc_flash.bin) باشد.</string>
+    <string name="onboarding_bios_desc">دامپ BIOS دریمکست را انتخاب کنید: dc_boot.bin (2 MiB) یا dc_flash.bin (128 KiB).</string>
     <string name="onboarding_games_title">انتخاب پوشه بازی‌ها</string>
     <string name="onboarding_games_desc">پوشه‌ای را که حاوی بازی‌های شماست انتخاب کنید.</string>
     <string name="onboarding_status_required">الزامی است</string>

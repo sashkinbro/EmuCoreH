@@ -4,7 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.sbro.emucoreh.core.BiosValidator
+import com.sbro.emucoreh.core.DreamcastBios
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.EmulatorDataLocation
 import com.sbro.emucoreh.core.EmulatorStorage
@@ -47,7 +47,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             launch {
                 preferences.biosPath.distinctUntilChanged().collect { path ->
                     val biosValid = withContext(Dispatchers.IO) {
-                        BiosValidator.hasUsableBiosFiles(getApplication(), path)
+                        DreamcastBios.hasBootRom(flycastSystemDir())
                     }
                     updateState(
                         biosPath = path,
@@ -81,10 +81,18 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch(Dispatchers.IO) {
             val previousPath = preferences.biosPath.first()
             StorageAccess.takePersistableReadPermission(application, uri)
-            preferences.setBiosPath(uri.toString())
-            if (previousPath != uri.toString()) {
-                StorageAccess.releasePersistedPermission(application, previousPath)
+            val systemDir = flycastSystemDir()
+            val installed = DreamcastBios.install(application, uri, systemDir)
+            if (installed) {
+                preferences.setBiosPath(uri.toString())
+                if (previousPath != uri.toString()) {
+                    StorageAccess.releasePersistedPermission(application, previousPath)
+                }
             }
+            updateState(
+                biosPath = if (installed) uri.toString() else previousPath,
+                biosValid = DreamcastBios.hasBootRom(systemDir)
+            )
             val audioSettings = preferences.settingsSnapshot.first()
             EmulatorBridge.applyRuntimeConfig(
                 biosPath = uri.toString(),
@@ -162,6 +170,9 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             onFinished()
         }
     }
+
+    private fun flycastSystemDir(): String =
+        EmulatorStorage.flycastSystemDir(getApplication()).absolutePath
 
     private fun updateState(
         biosPath: String? = _uiState.value.biosPath,

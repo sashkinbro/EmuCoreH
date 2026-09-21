@@ -5,7 +5,9 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sbro.emucoreh.core.BiosValidator
+import com.sbro.emucoreh.core.DreamcastBios
 import com.sbro.emucoreh.core.EmulatorBridge
+import com.sbro.emucoreh.core.EmulatorStorage
 import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.StorageAccess
 import com.sbro.emucoreh.data.AppPreferences
@@ -203,12 +205,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             preferences.biosPath.distinctUntilChanged().collect { path ->
-                val biosValid = withContext(Dispatchers.IO) {
-                    BiosValidator.hasUsableBiosFiles(getApplication(), path)
+                val bios = withContext(Dispatchers.IO) {
+                    val systemDir = EmulatorStorage.flycastSystemDir(getApplication()).absolutePath
+                    val bootRom = DreamcastBios.findBootRom(systemDir) != null
+                    val flashRom = DreamcastBios.findFlashRom(systemDir) != null
+                    Triple(bootRom || flashRom || path != null, bootRom, flashRom)
                 }
                 _uiState.value = _uiState.value.copy(
-                    biosConfigured = path != null,
-                    biosValid = biosValid
+                    biosConfigured = bios.first,
+                    biosValid = bios.second
                 )
                 biosInitialized = true
                 updateBootstrapState()
@@ -312,10 +317,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             val previousPath = preferences.biosPath.first()
             StorageAccess.takePersistableReadPermission(context, uri)
-            preferences.setBiosPath(uri.toString())
-            if (previousPath != uri.toString()) {
-                StorageAccess.releasePersistedPermission(context, previousPath)
+            val systemDir = EmulatorStorage.flycastSystemDir(context).absolutePath
+            if (DreamcastBios.install(context, uri, systemDir)) {
+                preferences.setBiosPath(uri.toString())
+                if (previousPath != uri.toString()) {
+                    StorageAccess.releasePersistedPermission(context, previousPath)
+                }
             }
+            val biosValid = DreamcastBios.hasBootRom(systemDir)
+            _uiState.value = _uiState.value.copy(
+                biosConfigured = DreamcastBios.findBootRom(systemDir) != null ||
+                    DreamcastBios.findFlashRom(systemDir) != null,
+                biosValid = biosValid
+            )
+            updateBootstrapState()
         }
     }
 

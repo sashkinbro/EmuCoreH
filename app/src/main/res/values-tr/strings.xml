@@ -458,7 +458,7 @@
     <string name="onboarding_title">Oynamak için hazırlanın</string>
     <string name="onboarding_subtitle">Dreamcast oyun klasörlerinizi seçin ve dosya erişimi verin.</string>
     <string name="onboarding_bios_title">BIOS Dosyası Seç</string>
-    <string name="onboarding_bios_desc">Dreamcast BIOS dosyalarınızı (dc_boot.bin ve dc_flash.bin) içeren bir klasör seçin.</string>
+    <string name="onboarding_bios_desc">Dreamcast BIOS dökümünü seçin: dc_boot.bin (2 MiB) veya dc_flash.bin (128 KiB).</string>
     <string name="onboarding_games_title">Oyun klasörünü seç</string>
     <string name="onboarding_games_desc">Oyunlarınızı içeren klasörü seçin.</string>
     <string name="onboarding_status_required">Gerekli</string>
