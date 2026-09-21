@@ -50,6 +50,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.DocumentPathResolver
+import com.sbro.emucoreh.core.GameFormats
 import com.sbro.emucoreh.core.GameLaunchShortcut
 import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.StorageAccess
@@ -364,7 +365,7 @@ fun AppNavigation(
         }
     }
     val launchGamePickerAction: () -> Unit = {
-        launchGamePicker.launch(arrayOf("*/*"))
+        launchGamePicker.launch(GameFormats.launchMimeTypes)
     }
     val launchBiosAction: () -> Unit = {
         navController.navigate(EmulationRoute(bootBios = true)) {

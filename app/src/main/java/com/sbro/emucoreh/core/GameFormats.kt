@@ -24,6 +24,25 @@ object GameFormats {
 
     val archives = setOf("zip", "7z")
 
+    /**
+     * MIME filter for the system file picker. Providers report unknown
+     * extensions such as `.gdi` or `.chd` as `application/octet-stream`, so
+     * that entry keeps them selectable while unrelated media stays hidden.
+     */
+    val launchMimeTypes = arrayOf(
+        "application/octet-stream",
+        "application/x-iso9660-image",
+        "application/x-cd-image",
+        "application/x-chd",
+        "application/x-cdi",
+        "application/x-gdi",
+        "application/x-cue",
+        "application/x-7z-compressed",
+        "application/zip",
+        "audio/x-mpegurl",
+        "application/x-elf"
+    )
+
     fun isSupportedName(name: String): Boolean = extensionOf(name) in extensions
 
     /**
