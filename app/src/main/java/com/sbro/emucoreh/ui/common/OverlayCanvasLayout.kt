@@ -364,9 +364,11 @@ fun buildOverlayCanvasLayout(
 
     val actionClusterLeft = canvasWidth - edgePadEnd - actionClusterExtent + actionAdjustment.first
     val actionClusterTop = primaryTop + (primaryExtent - actionClusterExtent) / 2f + actionAdjustment.second
+    // Dreamcast face button diamond: X on top, Y on the right, A at the
+    // bottom and B on the left.
     val actionButtons = listOf(
         buttonSpec(
-            id = "triangle",
+            id = "x",
             width = actionButtonSize,
             height = actionButtonSize,
             baseX = actionClusterLeft + actionCenterOffset,
@@ -375,7 +377,7 @@ fun buildOverlayCanvasLayout(
             visible = true
         ),
         buttonSpec(
-            id = "cross",
+            id = "a",
             width = actionButtonSize,
             height = actionButtonSize,
             baseX = actionClusterLeft + actionCenterOffset,
@@ -384,7 +386,7 @@ fun buildOverlayCanvasLayout(
             visible = true
         ),
         buttonSpec(
-            id = "square",
+            id = "b",
             width = actionButtonSize,
             height = actionButtonSize,
             baseX = actionClusterLeft,
@@ -393,7 +395,7 @@ fun buildOverlayCanvasLayout(
             visible = true
         ),
         buttonSpec(
-            id = "circle",
+            id = "y",
             width = actionButtonSize,
             height = actionButtonSize,
             baseX = actionClusterLeft + actionStep,

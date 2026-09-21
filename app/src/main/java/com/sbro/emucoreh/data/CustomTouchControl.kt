@@ -118,6 +118,7 @@ data class CustomTouchControl(
 
         val ALLOWED_ACTION_IDS = setOf(
             "up", "down", "left", "right",
+            "a", "b", "x", "y",
             "triangle", "cross", "square", "circle",
             "l1", "l2", "r1", "r2", "l3", "r3",
             "select", "start", "fast_forward", "rewind"
@@ -128,6 +129,10 @@ data class CustomTouchControl(
             "down" -> "↓"
             "left" -> "←"
             "right" -> "→"
+            "a" -> "A"
+            "b" -> "B"
+            "x" -> "X"
+            "y" -> "Y"
             "triangle" -> "△"
             "cross" -> "×"
             "square" -> "□"

@@ -1553,6 +1553,10 @@ fun actionLabel(actionId: String): String = stringResource(when (actionId) {
     "down" -> R.string.settings_gamepad_action_dpad_down
     "left" -> R.string.settings_gamepad_action_dpad_left
     "right" -> R.string.settings_gamepad_action_dpad_right
+    "a" -> R.string.settings_gamepad_action_dc_a
+    "b" -> R.string.settings_gamepad_action_dc_b
+    "x" -> R.string.settings_gamepad_action_dc_x
+    "y" -> R.string.settings_gamepad_action_dc_y
     "triangle" -> R.string.settings_gamepad_action_triangle
     "cross" -> R.string.settings_gamepad_action_cross
     "square" -> R.string.settings_gamepad_action_square

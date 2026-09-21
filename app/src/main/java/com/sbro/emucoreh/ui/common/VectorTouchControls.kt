@@ -103,6 +103,12 @@ enum class OverlayDpadDirection {
 
 @DrawableRes
 fun overlayDrawableForControl(controlId: String): Int? = when (controlId) {
+    // Dreamcast face buttons. The PlayStation names are kept for layouts saved
+    // by older versions of the app.
+    "a" -> R.drawable.ic_controller_a_button
+    "b" -> R.drawable.ic_controller_b_button
+    "x" -> R.drawable.ic_controller_x_button
+    "y" -> R.drawable.ic_controller_y_button
     "triangle" -> R.drawable.ic_controller_triangle_button
     "cross" -> R.drawable.ic_controller_cross_button
     "square" -> R.drawable.ic_controller_square_button
@@ -177,7 +183,11 @@ fun VectorOverlayButton(
     val isFaceButton = drawableRes == R.drawable.ic_controller_triangle_button ||
         drawableRes == R.drawable.ic_controller_cross_button ||
         drawableRes == R.drawable.ic_controller_square_button ||
-        drawableRes == R.drawable.ic_controller_circle_button
+        drawableRes == R.drawable.ic_controller_circle_button ||
+        drawableRes == R.drawable.ic_controller_a_button ||
+        drawableRes == R.drawable.ic_controller_b_button ||
+        drawableRes == R.drawable.ic_controller_x_button ||
+        drawableRes == R.drawable.ic_controller_y_button
     val isShoulderButton = drawableRes == R.drawable.ic_controller_l1_button ||
         drawableRes == R.drawable.ic_controller_l2_button ||
         drawableRes == R.drawable.ic_controller_r1_button ||
@@ -338,6 +348,10 @@ private fun AlternativeControlGlyph(
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.94f)
     }
     val text = when (drawableRes) {
+        R.drawable.ic_controller_a_button -> "A"
+        R.drawable.ic_controller_b_button -> "B"
+        R.drawable.ic_controller_x_button -> "X"
+        R.drawable.ic_controller_y_button -> "Y"
         R.drawable.ic_controller_l1_button -> "L"
         R.drawable.ic_controller_l2_button -> "L2"
         R.drawable.ic_controller_r1_button -> "R"
