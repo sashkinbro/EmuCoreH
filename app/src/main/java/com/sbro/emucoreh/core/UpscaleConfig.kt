@@ -5,8 +5,8 @@ import kotlin.math.roundToInt
 const val UPSCALE_MIN = 1.0f
 // Fresh installs start at the console's native resolution.
 const val UPSCALE_DEFAULT = 1.0f
-// The bundled upscale option table tops out at 10x.
-const val UPSCALE_MAX = 10.0f
+// The bundled upscale option table tops out at 20x (12800x9600).
+const val UPSCALE_MAX = 20.0f
 
 private const val UPSCALE_STEP = 1.0f
 private const val UPSCALE_NATIVE_MULTIPLIER = 1.0f
