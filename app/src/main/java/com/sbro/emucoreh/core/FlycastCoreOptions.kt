@@ -470,7 +470,7 @@ object FlycastCoreOptions {
                 Choice("disabled", R.string.flycast_choice_disabled),
                 Choice("enabled", R.string.flycast_choice_enabled),
             ),
-            defaultValue = "enabled",
+            defaultValue = "disabled",
         ),
         // video
         Option(
@@ -545,7 +545,7 @@ object FlycastCoreOptions {
                 Choice("disabled", R.string.flycast_choice_disabled),
                 Choice("enabled", R.string.flycast_choice_enabled),
             ),
-            defaultValue = "enabled",
+            defaultValue = "disabled",
         ),
         // performance
         Option(

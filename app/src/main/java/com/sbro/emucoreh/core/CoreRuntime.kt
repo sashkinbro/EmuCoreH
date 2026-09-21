@@ -817,6 +817,11 @@ internal object CoreRuntime {
                             2 -> 2.0
                             else -> frameRate
                         }
+                        // The console speed is anchored to the sound card by the
+                        // native audio push back pressure (standalone Flycast
+                        // blocks in push() the same way). This deadline only
+                        // keeps the loop from spinning while the core has
+                        // nothing to present, e.g. during silent loading.
                         while (running && !paused) {
                             drainFrameTasks()
                             val remainingNanos = framePacer.remainingNanos(System.nanoTime(), pacedRate)

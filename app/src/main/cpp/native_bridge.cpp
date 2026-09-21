@@ -37,6 +37,7 @@
 #include <fstream>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -76,6 +77,8 @@ namespace {
 
 constexpr size_t kAudioRingCapacityFrames = 48000;  // ~1s at 48 kHz stereo.
 constexpr int32_t kAudioDeclickFrames = 48;
+// Safety valve: never hold the emulation on the audio ring for longer than this.
+constexpr int32_t kAudioBackPressureTimeoutMs = 250;
 
 // ---------------------------------------------------------------------------
 // Core loader.
@@ -180,6 +183,10 @@ struct FrontendState {
     std::atomic<int> audio_output_latency_ms{30};
     std::atomic<bool> audio_low_latency{false};
     std::atomic<float> audio_gain{1.0f};
+    // Audio push back pressure: while the ring holds more frames than this
+    // the core's audio push blocks, exactly like standalone Flycast. Zero
+    // disables the limiter (output closed, paused or unavailable).
+    std::atomic<int32_t> audio_pacing_high_water{0};
 
     std::atomic<int> frame_skip{0};
 
@@ -621,9 +628,37 @@ void AudioRingEnsureCapacity(size_t additional_frames) {
     g_frontend.audio_declick_frames.store(kAudioDeclickFrames);
 }
 
+// Standalone Flycast blocks inside AudioBackend::push() while the output ring
+// is full, which is what pins the console to the sound card's rate there. The
+// libretro core cannot block in its own frontend callback, so the same back
+// pressure is applied here: the push waits for the ring to fall back to the
+// pacing watermark before accepting more samples. The bound keeps a stalled
+// output from freezing the emulation.
+void BlockOnAudioRingHighWater() {
+    // Fast forward and rewind must run unthrottled; their audio is allowed to
+    // overrun the ring (the oldest frames are dropped) like standalone does
+    // by muting the AICA during fast forward.
+    if (g_frontend.time_control.load() != 0) return;
+    const int32_t highWater = g_frontend.audio_pacing_high_water.load();
+    if (highWater <= 0) return;
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(kAudioBackPressureTimeoutMs);
+    for (;;) {
+        size_t queued;
+        {
+            std::lock_guard<std::mutex> lock(g_frontend.audio_mutex);
+            const size_t capacity = kAudioRingCapacityFrames;
+            queued = (g_frontend.audio_write_frame + capacity - g_frontend.audio_read_frame) % capacity;
+        }
+        if (queued <= static_cast<size_t>(highWater)) return;
+        if (std::chrono::steady_clock::now() >= deadline) return;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+}
+
 void RetroAudioSampleBatch(const int16_t* data, size_t frames) {
     if (data == nullptr || frames == 0) return;
     if (g_frontend.time_control.load() == 2) return;
+    BlockOnAudioRingHighWater();
     std::lock_guard<std::mutex> lock(g_frontend.audio_mutex);
     AudioRingEnsureCapacity(frames);
     const size_t capacity = kAudioRingCapacityFrames;
@@ -1811,12 +1846,14 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_createAudioOutput(JNIEnv*, jobject)
     output->pacing_high_water_frames = std::min(device_buffer * 4, 6144);
     LOGI("AAudio output created: %d Hz, buffer %d frames, high water %d", output->sample_rate,
          output->device_buffer_frames, output->pacing_high_water_frames);
+    g_frontend.audio_pacing_high_water.store(output->pacing_high_water_frames);
     return reinterpret_cast<jlong>(output);
 }
 
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_destroyAudioOutput(JNIEnv*, jobject, jlong handle) {
     if (handle == 0) return;
+    g_frontend.audio_pacing_high_water.store(0);
     auto* output = reinterpret_cast<AudioOutput*>(handle);
     std::unique_lock<std::mutex> lock(output->mutex);
     if (output->stream != nullptr) {
@@ -1840,6 +1877,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_startAudioOutput(JNIEnv*, jobject, 
     }
     output->started.store(true);
     output->state.store(1);
+    g_frontend.audio_pacing_high_water.store(output->pacing_high_water_frames);
     return 0;
 }
 
@@ -1855,6 +1893,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_pauseAudioOutput(JNIEnv*, jobject, 
     }
     output->started.store(false);
     output->state.store(2);
+    g_frontend.audio_pacing_high_water.store(0);
     return 0;
 }
 
