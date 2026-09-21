@@ -22,6 +22,16 @@ The project is under active development. Use your own legally obtained games. Fl
 - RetroAchievements and optional Discord integration
 - Localized interface in 18 languages for phones, tablets, and Android TV
 
+## Screenshots
+
+| Library | Gameplay |
+| --- | --- |
+| ![Library](docs/screenshots/library.jpg) | ![Gameplay](docs/screenshots/gameplay.jpg) |
+
+| Texture packs | Cheat packs | Memory cards |
+| --- | --- | --- |
+| ![Texture packs](docs/screenshots/texture-packs.jpg) | ![Cheat packs](docs/screenshots/cheat-packs.jpg) | ![Memory cards](docs/screenshots/memory-cards.jpg) |
+
 ## What This Repository Contains
 
 This repository contains the Android application, its Kotlin UI, the JNI frontend, the vendored Flycast sources, and the Gradle module that builds the emulation core for Android. No games, BIOS files, save data, or account credentials are included.
