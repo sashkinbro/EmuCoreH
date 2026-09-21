@@ -79,6 +79,7 @@ data class SettingsSnapshot(
     val padVibrationStrength: Int = AppPreferences.DEFAULT_PAD_VIBRATION_STRENGTH,
     val padVibrationFallback: Boolean = true,
     val showFps: Boolean = false,
+    val floatingQuickActionsEnabled: Boolean = false,
     val fpsOverlayMode: Int = AppPreferences.FPS_OVERLAY_MODE_DETAILED,
     val fpsOverlayCorner: Int = AppPreferences.FPS_OVERLAY_CORNER_TOP_RIGHT,
     val fpsOverlayScale: Int = AppPreferences.DEFAULT_FPS_OVERLAY_SCALE,
@@ -1344,6 +1345,7 @@ class AppPreferences(private val context: Context) {
                 mediatekAngleOpenGl = prefs[MEDIATEK_ANGLE_OPENGL] ?: false,
                 customDriverPath = prefs[CUSTOM_DRIVER_PATH],
                 frameLimitEnabled = prefs[FRAME_LIMIT_ENABLED] ?: true,
+                floatingQuickActionsEnabled = prefs[FLOATING_QUICK_ACTIONS_ENABLED] ?: false,
                 vSyncEnabled = prefs[VSYNC_ENABLED] ?: false,
                 fastForwardSpeed = sanitizeFastForwardSpeed(prefs[FAST_FORWARD_SPEED]),
                 targetFps = prefs[TARGET_FPS] ?: 0,
@@ -2019,7 +2021,7 @@ class AppPreferences(private val context: Context) {
 
     // Floating quick save/load buttons
     val floatingQuickActionsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[FLOATING_QUICK_ACTIONS_ENABLED] ?: true
+        prefs[FLOATING_QUICK_ACTIONS_ENABLED] ?: false
     }
 
     suspend fun setFloatingQuickActionsEnabled(enabled: Boolean) {
@@ -2636,7 +2638,7 @@ class AppPreferences(private val context: Context) {
             put("textureDumpingEnabled", prefs[TEXTURE_DUMPING_ENABLED] ?: false)
             put("enableAutoGamepad", prefs[ENABLE_AUTO_GAMEPAD] ?: true)
             put("hideOverlayOnGamepad", prefs[HIDE_OVERLAY_ON_GAMEPAD] ?: true)
-            put("floatingQuickActionsEnabled", prefs[FLOATING_QUICK_ACTIONS_ENABLED] ?: true)
+            put("floatingQuickActionsEnabled", prefs[FLOATING_QUICK_ACTIONS_ENABLED] ?: false)
             put("floatingQuickSavePosition", prefs[FLOATING_QUICK_SAVE_POSITION])
             put("floatingQuickLoadPosition", prefs[FLOATING_QUICK_LOAD_POSITION])
             put("orientationLock", normalizeOrientationLock(prefs[ORIENTATION_LOCK]))
@@ -2884,7 +2886,7 @@ class AppPreferences(private val context: Context) {
             prefs[TEXTURE_DUMPING_ENABLED] = json.optBoolean("textureDumpingEnabled", false)
             prefs[ENABLE_AUTO_GAMEPAD] = json.optBoolean("enableAutoGamepad", true)
             prefs[HIDE_OVERLAY_ON_GAMEPAD] = json.optBoolean("hideOverlayOnGamepad", true)
-            prefs[FLOATING_QUICK_ACTIONS_ENABLED] = json.optBoolean("floatingQuickActionsEnabled", true)
+            prefs[FLOATING_QUICK_ACTIONS_ENABLED] = json.optBoolean("floatingQuickActionsEnabled", false)
             json.optString("floatingQuickSavePosition").takeIf { it.isNotBlank() }?.let { prefs[FLOATING_QUICK_SAVE_POSITION] = it } ?: prefs.remove(FLOATING_QUICK_SAVE_POSITION)
             json.optString("floatingQuickLoadPosition").takeIf { it.isNotBlank() }?.let { prefs[FLOATING_QUICK_LOAD_POSITION] = it } ?: prefs.remove(FLOATING_QUICK_LOAD_POSITION)
             prefs[ORIENTATION_LOCK] = normalizeOrientationLock(json.optInt("orientationLock", ORIENTATION_LOCK_AUTO))

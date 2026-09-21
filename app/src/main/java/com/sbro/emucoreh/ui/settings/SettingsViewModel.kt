@@ -11,6 +11,7 @@ import com.sbro.emucoreh.core.AppUpdateRelease
 import com.sbro.emucoreh.core.AppUpdateRepository
 import com.sbro.emucoreh.core.BiosValidator
 import com.sbro.emucoreh.core.DocumentPathResolver
+import com.sbro.emucoreh.core.DreamcastBios
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.EmulatorDataLocation
 import com.sbro.emucoreh.core.EmulatorStorage
@@ -185,6 +186,7 @@ data class SettingsUiState(
     val customDriverPath: String? = null,
     val appUpdate: AppUpdateUiState = AppUpdateUiState(),
     val frameLimitEnabled: Boolean = true,
+    val floatingQuickActionsEnabled: Boolean = false,
     val vSyncEnabled: Boolean = false,
     val fastForwardSpeed: Float = AppPreferences.DEFAULT_FAST_FORWARD_SPEED,
     val targetFps: Int = 0,
@@ -223,9 +225,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
         viewModelScope.launch {
-            preferences.biosPath.distinctUntilChanged().collect { path ->
+            preferences.biosPath.distinctUntilChanged().collect {
                 val biosValid = withContext(Dispatchers.IO) {
-                    BiosValidator.hasUsableBiosFiles(getApplication(), path)
+                    DreamcastBios.hasBootRom(flycastSystemDir())
                 }
                 _uiState.value = _uiState.value.copy(biosValid = biosValid)
             }
@@ -346,6 +348,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             mediatekAngleOpenGl = snapshot.mediatekAngleOpenGl,
             customDriverPath = snapshot.customDriverPath,
             frameLimitEnabled = snapshot.frameLimitEnabled,
+            floatingQuickActionsEnabled = snapshot.floatingQuickActionsEnabled,
             vSyncEnabled = snapshot.vSyncEnabled,
             fastForwardSpeed = snapshot.fastForwardSpeed,
             targetFps = snapshot.targetFps,
@@ -941,6 +944,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun setFloatingQuickActionsEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferences.setFloatingQuickActionsEnabled(enabled) }
+    }
+
     fun setVSyncEnabled(enabled: Boolean) {
         viewModelScope.launch {
             preferences.setVSyncEnabled(enabled)
@@ -1012,10 +1019,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             val previousPath = preferences.biosPath.first()
             StorageAccess.takePersistableReadPermission(application, uri)
-            preferences.setBiosPath(uri.toString())
-            if (previousPath != uri.toString()) {
-                StorageAccess.releasePersistedPermission(application, previousPath)
+            val installed = DreamcastBios.install(application, uri, flycastSystemDir())
+            if (installed) {
+                preferences.setBiosPath(uri.toString())
+                if (previousPath != uri.toString()) {
+                    StorageAccess.releasePersistedPermission(application, previousPath)
+                }
             }
+            _uiState.value = _uiState.value.copy(
+                biosPath = if (installed) uri.toString() else previousPath,
+                biosValid = DreamcastBios.hasBootRom(flycastSystemDir())
+            )
             EmulatorBridge.applyRuntimeConfig(
                 biosPath = uri.toString(),
                 emulatorDataPath = _uiState.value.emulatorDataPath,
@@ -1085,6 +1099,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
+
+    private fun flycastSystemDir(): String =
+        EmulatorStorage.flycastSystemDir(getApplication()).absolutePath
 
     fun setCoverDownloadBaseUrl(url: String?) {
         viewModelScope.launch {
