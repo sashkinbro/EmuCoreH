@@ -372,11 +372,7 @@ class TexturePackRepository(
      * trailing whitespace removed and spaces replaced by underscores, so the
      * separator is preserved instead of being reformatted.
      */
-    private fun normalizeSerial(raw: String): String? {
-        val candidate = raw.trim().uppercase(Locale.US).replace(' ', '_')
-        val match = serialPattern.find(candidate) ?: return null
-        return match.value.replace(' ', '_')
-    }
+    private fun normalizeSerial(raw: String): String? = DiscSerial.normalize(raw)
 
     private fun safeChild(root: File, relativeParts: List<String>): File? {
         val rootCanonical = root.canonicalFile

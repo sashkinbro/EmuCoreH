@@ -445,8 +445,4 @@ private fun JsonObject.stringList(name: String): List<String> =
 private fun String.requireHttps(): String = trim().also { require(it.isHttpsUrl()) }
 private fun String.isHttpsUrl(): Boolean = startsWith("https://", ignoreCase = true)
 
-private fun normalizeSerial(value: String): String? {
-    val compact = value.trim().uppercase(Locale.US).replace(Regex("[-_ ]"), "")
-    if (!compact.matches(Regex("[A-Z]{4}[0-9]{5}"))) return null
-    return "${compact.take(4)}-${compact.drop(4)}"
-}
+private fun normalizeSerial(value: String): String? = DiscSerial.normalize(value)
