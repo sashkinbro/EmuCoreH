@@ -597,6 +597,7 @@
     <string name="emulation_save_slot_empty">Этот слот пуст.</string>
     <string name="emulation_auto_save_title">Автосохранение</string>
     <string name="emulation_auto_save_empty">Пока нет автосохранений.</string>
+    <string name="emulation_auto_save_restore_title">Восстановить автосохранение</string>
     <string name="emulation_auto_save_interval_label">Каждые</string>
     <string name="emulation_auto_save_interval_suffix">мин</string>
     <string name="emulation_play_time_badge">Время в игре %1$s</string>

@@ -597,6 +597,7 @@
     <string name="emulation_save_slot_empty">此存档位为空。</string>
     <string name="emulation_auto_save_title">自动保存</string>
     <string name="emulation_auto_save_empty">暂无自动保存。</string>
+    <string name="emulation_auto_save_restore_title">恢复自动保存</string>
     <string name="emulation_auto_save_interval_label">每</string>
     <string name="emulation_auto_save_interval_suffix">分钟</string>
     <string name="emulation_play_time_badge">游戏时长 %1$s</string>
