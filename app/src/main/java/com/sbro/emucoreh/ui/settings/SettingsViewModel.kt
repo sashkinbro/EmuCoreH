@@ -228,7 +228,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             preferences.biosPath.distinctUntilChanged().collect {
                 val biosValid = withContext(Dispatchers.IO) {
-                    DreamcastBios.hasBootRom(flycastSystemDir())
+                    DreamcastBios.hasAnyBios(flycastSystemDir())
                 }
                 _uiState.value = _uiState.value.copy(biosValid = biosValid)
             }
@@ -1020,7 +1020,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             val previousPath = preferences.biosPath.first()
             StorageAccess.takePersistableReadPermission(application, uri)
-            val installed = DreamcastBios.install(application, uri, flycastSystemDir())
+            val installed = DreamcastBios.installSelection(application, uri, flycastSystemDir())
             if (installed) {
                 preferences.setBiosPath(uri.toString())
                 if (previousPath != uri.toString()) {
@@ -1032,7 +1032,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
             _uiState.value = _uiState.value.copy(
                 biosPath = if (installed) uri.toString() else previousPath,
-                biosValid = DreamcastBios.hasBootRom(flycastSystemDir())
+                biosValid = DreamcastBios.hasAnyBios(flycastSystemDir())
             )
             EmulatorBridge.applyRuntimeConfig(
                 biosPath = uri.toString(),

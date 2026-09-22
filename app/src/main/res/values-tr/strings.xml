@@ -184,11 +184,11 @@
     <string name="settings_aspect_ratio_169">16:9</string>
     <string name="settings_aspect_ratio_107">10:7</string>
     <string name="settings_paths">Dosyalar</string>
-    <string name="settings_bios_path">BIOS Dosyası</string>
-    <string name="settings_bios_picker_title">BIOS Dosyası Seç</string>
-    <string name="settings_bios_picker_desc">Dreamcast BIOS dosyalarınızı (dc_boot.bin ve dc_flash.bin) içeren bir klasör seçin.</string>
+    <string name="settings_bios_path">BIOS Klasörü</string>
+    <string name="settings_bios_picker_title">BIOS klasörü seç</string>
+    <string name="settings_bios_picker_desc">Dreamcast BIOS dosyalarınızı (dc_boot.bin, dc_flash.bin) ve arcade BIOS setlerini (naomi.zip, naomi2.zip, awbios.zip) içeren bir klasör seçin.</string>
     <string name="settings_bios_picker_current">Mevcut BIOS dosyası</string>
-    <string name="settings_bios_picker_action">Dosya Seç</string>
+    <string name="settings_bios_picker_action">Klasör seç</string>
     <string name="settings_game_path">Oyun Klasörü</string>
     <string name="settings_cover_download_url">Kapak İndirme URL\'si</string>
     <string name="settings_cover_art_style">Kapak Stili</string>
@@ -252,7 +252,7 @@
     <string name="settings_help_recent_games">En son oynadığınız oyunlar için hızlı erişim satırı gösterir. Birkaç oyun arasında sık sık geçiş yapıyorsanız iyidir; daha temiz bir ana ekran istiyorsanız kapatın.</string>
     <string name="settings_help_home_search">Kütüphane arama çubuğunu doğrudan ana ekranda gösterir. Büyük kütüphaneler için açık bırakın; daha temiz bir düzen tercih ediyorsanız ve isme göre nadiren arama yapıyorsanız kapatın.</string>
     <string name="settings_help_prefer_english_game_titles">Japonca veya diğer bölgesel isimlerle gönderilen oyunlar için EmuCoreH\'nin GameIndex veritabanındaki İngilizce isimleri kullanır. Bu, öncelikle ithal sürümlerin kütüphanede daha okunaklı olmasına yardımcı olurken, İngilizce veritabanı ismi olmayan oyunlar normal isimlerini korur.</string>
-    <string name="settings_help_bios_path">EmuCoreH\'i kendi konsolunuzdan alınan Dreamcast BIOS dosyalarına (dc_boot.bin ve dc_flash.bin) yönlendirir.</string>
+    <string name="settings_help_bios_path">EmuCoreH\'i kendi konsolunuzdan alınan Dreamcast BIOS dosyalarına (dc_boot.bin ve dc_flash.bin) ve arcade BIOS setlerine (naomi.zip, naomi2.zip, awbios.zip) yönlendirir.</string>
     <string name="settings_help_game_path">Oyun kütüphanesine klasör ekler. EmuCoreH seçilen her klasörü özyinelemeli olarak tarar ve sonuçları yinelenen dosya yolları olmadan birleştirir. Kaldırmak için listedeki bir klasöre dokunun. Geçerli çekirdek GDI, CHD, CDI ve CUE/BIN disk görüntülerini destekler.</string>
     <string name="settings_help_cover_art_style">Kapak resimleri indirilirken kullanılan varsayılan kapak türünü seçer. Düz (Flat) kapaklar klasik ön kutu görünümüne uyarken, 3D Kutu (3D Box), kaynak sağladığında açılı kutu görselleri kullanır. 3D kapaklar daha dramatik görünebilir, ancak bulunabilirlik düz kapaklardan biraz daha kötü olabilir.</string>
     <string name="settings_help_cover_download_url">Otomatik indirmeler için kullanılan yerleşik kapak kaynağını geçersiz kılar. URL, oyun seri numarasıyla (örneğin SLUS-20312.jpg) adlandırılmış JPG kapakları içeren bir klasöre doğrudan işaret etmelidir. Bunu yalnızca kendi yansınızı (mirror) barındırıyorsanız veya farklı uyumlu bir kapak kütüphanesi kullanmak istiyorsanız değiştirin.</string>
@@ -461,8 +461,8 @@
     <string name="onboarding_profile_fast_desc">Ekstra hıza ihtiyaç duyan daha zayıf cihazlar için. Bazı oyunlar daha fazla hata gösterebilir veya daha az kararlı hale gelebilir.</string>
     <string name="onboarding_title">Oynamak için hazırlanın</string>
     <string name="onboarding_subtitle">Dreamcast oyun klasörlerinizi seçin ve dosya erişimi verin.</string>
-    <string name="onboarding_bios_title">BIOS Dosyası Seç</string>
-    <string name="onboarding_bios_desc">Dreamcast BIOS dökümünü seçin: dc_boot.bin (2 MiB) veya dc_flash.bin (128 KiB).</string>
+    <string name="onboarding_bios_title">BIOS klasörü seç</string>
+    <string name="onboarding_bios_desc">Dreamcast BIOS dosyalarınızı (dc_boot.bin, dc_flash.bin) veya arcade BIOS setlerini (naomi.zip, naomi2.zip, awbios.zip) içeren bir klasör seçin.</string>
     <string name="onboarding_games_title">Oyun klasörünü seç</string>
     <string name="onboarding_games_desc">Oyunlarınızı içeren klasörü seçin.</string>
     <string name="onboarding_status_required">Gerekli</string>
