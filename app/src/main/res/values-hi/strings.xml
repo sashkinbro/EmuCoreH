@@ -595,6 +595,7 @@
     <string name="emulation_save_slot_empty">यह स्लॉट खाली है।</string>
     <string name="emulation_auto_save_title">ऑटो सेव</string>
     <string name="emulation_auto_save_empty">अभी तक कोई ऑटो सेव नहीं है।</string>
+    <string name="emulation_auto_save_restore_title">ऑटो सेव पुनर्स्थापित करें</string>
     <string name="emulation_auto_save_interval_label">हर</string>
     <string name="emulation_auto_save_interval_suffix">मिनट</string>
     <string name="emulation_play_time_badge">खेलने का समय %1$s</string>

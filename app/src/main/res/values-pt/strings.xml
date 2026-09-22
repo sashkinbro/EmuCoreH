@@ -597,6 +597,7 @@
     <string name="emulation_save_slot_empty">Este espaço está vazio.</string>
     <string name="emulation_auto_save_title">Salvamento automático</string>
     <string name="emulation_auto_save_empty">Nenhum salvamento automático ainda.</string>
+    <string name="emulation_auto_save_restore_title">Restaurar salvamento automático</string>
     <string name="emulation_auto_save_interval_label">A cada</string>
     <string name="emulation_auto_save_interval_suffix">min</string>
     <string name="emulation_play_time_badge">Tempo de jogo %1$s</string>
