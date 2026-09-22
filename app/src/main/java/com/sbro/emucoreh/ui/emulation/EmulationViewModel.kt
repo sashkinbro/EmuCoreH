@@ -74,6 +74,8 @@ import java.io.File
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 
+private const val BIOS_SESSION_TITLE = "Dreamcast BIOS"
+
 private val PER_GAME_GPU_DRIVER_KEYS = setOf(
     "gpuDriverType",
     "customDriverPath",
@@ -931,7 +933,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 finalLaunchPath = launchPath
                 Log.i(TAG, "Prepared launch path=$launchPath originalPath=$path bootBios=$bootToBios")
                 if (bootToBios) {
-                    currentGameTitle = "PlayStation BIOS"
+                    currentGameTitle = BIOS_SESSION_TITLE
                     currentGamePath = null
                     currentGameSerial = ""
                     currentGameRegionLabel = ""
@@ -2068,8 +2070,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun resolvePerGameTitle(state: EmulationUiState): String {
         return state.currentGameTitle
-            .takeIf { it.isNotBlank() && it != "PlayStation BIOS" }
-            ?: currentGameTitle.takeIf { it.isNotBlank() && it != "PlayStation BIOS" }
+            .takeIf { it.isNotBlank() && it != BIOS_SESSION_TITLE }
+            ?: currentGameTitle.takeIf { it.isNotBlank() && it != BIOS_SESSION_TITLE }
             ?: activePerGameKey()?.let { DocumentPathResolver.getDisplayName(getApplication(), it).substringBeforeLast('.') }
             ?: "Unknown Game"
     }
