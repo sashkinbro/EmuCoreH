@@ -282,11 +282,11 @@
     <string name="settings_aspect_ratio_169">16:9</string>
     <string name="settings_aspect_ratio_107">10:7</string>
     <string name="settings_paths">Pliki</string>
-    <string name="settings_bios_path">Plik BIOS</string>
-    <string name="settings_bios_picker_title">Wybierz plik BIOS</string>
-    <string name="settings_bios_picker_desc">Wybierz folder z plikami BIOS Dreamcast (dc_boot.bin i dc_flash.bin).</string>
+    <string name="settings_bios_path">Folder BIOS</string>
+    <string name="settings_bios_picker_title">Wybierz folder BIOS</string>
+    <string name="settings_bios_picker_desc">Wybierz folder z plikami BIOS Dreamcast (dc_boot.bin, dc_flash.bin) i zestawami BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="settings_bios_picker_current">Bieżący plik BIOS</string>
-    <string name="settings_bios_picker_action">Wybierz plik</string>
+    <string name="settings_bios_picker_action">Wybierz folder</string>
     <string name="settings_game_path">Foldery z grami</string>
     <string name="settings_game_folders_count">Wybrano %1$d folderów</string>
     <string name="game_folders_remove">Usuń folder</string>
@@ -387,7 +387,7 @@
     <string name="settings_help_recent_games">Pokazuje pasek szybkiego dostępu do ostatnio ogrywanych tytułów. Przydatne, jeśli często skaczesz między kilkoma grami; wyłącz, jeśli wolisz bardziej minimalistyczny ekran główny.</string>
     <string name="settings_help_home_search">Wyświetla pasek wyszukiwania w bibliotece bezpośrednio na ekranie głównym. Zostaw to włączone dla dużych kolekcji; wyłącz, jeśli wolisz czystszy układ i rzadko szukasz po nazwie.</string>
     <string name="settings_help_prefer_english_game_titles">Używa angielskich tytułów z bazy GameIndex EmuCoreH dla gier wydanych z japońskimi lub innymi regionalnymi nazwami. Pomaga to zachować czytelność biblioteki przy imporcie. Gry bez angielskiego tytułu w bazie zachowają swoją oryginalną nazwę.</string>
-    <string name="settings_help_bios_path">Wskazuje EmuCoreH pliki BIOS Dreamcast (dc_boot.bin i dc_flash.bin) z Twojej konsoli.</string>
+    <string name="settings_help_bios_path">Wskazuje EmuCoreH pliki BIOS Dreamcast (dc_boot.bin i dc_flash.bin) oraz zestawy BIOS arcade (naomi.zip, naomi2.zip, awbios.zip) z Twojej konsoli.</string>
     <string name="settings_help_game_path">Dodaje foldery do biblioteki gier. EmuCoreH skanuje każdy wybrany folder rekurencyjnie i scala wyniki bez duplikowania ścieżek. Dotknij folderu na liście, aby go usunąć. Obecne jądro obsługuje obrazy płyt GDI, CHD, CDI i CUE/BIN.</string>
     <string name="settings_help_cover_art_style">Wybiera domyślny typ okładek używany podczas pobierania grafik. Płaskie okładki przypominają klasyczny przedni przód pudełka, natomiast 3D Box używa renderów 3D pod kątem (jeśli źródło je udostępnia). Okładki 3D mogą wyglądać bardziej dramatycznie, ale ich dostępność może być nieco mniejsza niż płaskich.</string>
     <string name="settings_help_cover_download_url">Zastępuje wbudowane źródło okładek używane do automatycznego pobierania. URL powinien prowadzić bezpośrednio do folderu zawierającego okładki JPG nazwane według numeru seryjnego gry, na przykład SLUS-20312.jpg. Zmień to tylko wtedy, gdy hostujesz własny mirror lub chcesz użyć innej kompatybilnej bazy.</string>
@@ -690,8 +690,8 @@
     <string name="onboarding_title">Przygotuj się do gry</string>
 
     <string name="onboarding_subtitle">Wybierz foldery z grami Dreamcast i przyznaj dostęp do plików.</string>
-    <string name="onboarding_bios_title">Wybierz plik BIOS</string>
-    <string name="onboarding_bios_desc">Wybierz zrzut BIOS Dreamcast: dc_boot.bin (2 MiB) lub dc_flash.bin (128 KiB).</string>
+    <string name="onboarding_bios_title">Wybierz folder BIOS</string>
+    <string name="onboarding_bios_desc">Wybierz folder z plikami BIOS Dreamcast (dc_boot.bin, dc_flash.bin) lub zestawami BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="onboarding_games_title">Dodaj foldery z grami</string>
     <string name="onboarding_games_desc">Dodaj jeden lub więcej folderów zawierających Twoje gry.</string>
     <string name="onboarding_games_selected_count">Wybrano folderów: %1$d. Dotknij, aby dodać kolejny.</string>

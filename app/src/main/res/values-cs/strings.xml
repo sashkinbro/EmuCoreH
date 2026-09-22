@@ -284,11 +284,11 @@
     <string name="settings_aspect_ratio_169">16:9</string>
     <string name="settings_aspect_ratio_107">10:7</string>
     <string name="settings_paths">Soubory</string>
-    <string name="settings_bios_path">Soubor BIOS</string>
-    <string name="settings_bios_picker_title">Vyberte soubor BIOS</string>
-    <string name="settings_bios_picker_desc">Vyberte složku s vlastními soubory BIOS Dreamcast (dc_boot.bin a dc_flash.bin).</string>
+    <string name="settings_bios_path">Slozka BIOS</string>
+    <string name="settings_bios_picker_title">Vyberte slozku BIOS</string>
+    <string name="settings_bios_picker_desc">Vyberte slozku s vlastnimi soubory BIOS Dreamcast (dc_boot.bin, dc_flash.bin) a sadami BIOS pro arkady (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="settings_bios_picker_current">Aktuální soubor BIOS</string>
-    <string name="settings_bios_picker_action">Vybrat soubor</string>
+    <string name="settings_bios_picker_action">Vybrat slozku</string>
     <string name="settings_game_path">Složky s hrami</string>
     <string name="settings_game_folders_count">%1$d vybraných složek</string>
     <string name="game_folders_remove">Odstranit složku</string>
@@ -390,7 +390,7 @@
     <string name="settings_help_recent_games">Zobrazí řádek pro rychlý přístup k naposledy hraným hrám. Užitečné, pokud často střídáte několik titulů; vypněte, pokud chcete mít čistší domovskou obrazovku.</string>
     <string name="settings_help_home_search">Zobrazí vyhledávací pole knihovny přímo na domovské obrazovce. Ponechte zapnuté pro velké knihovny; vypněte, pokud preferujete čistší vzhled a zřídka vyhledáváte podle jména.</string>
     <string name="settings_help_prefer_english_game_titles">Používá anglické názvy z databáze GameIndex emulátoru EmuCoreH pro hry, které mají výchozí japonské nebo jiné regionální názvy. To pomáhá hlavně k tomu, aby se dovezené vydání v knihovně četla jasněji. Hry bez anglického názvu v databázi si zachovají své normální jméno.</string>
-    <string name="settings_help_bios_path">Nasměruje EmuCoreH na soubory BIOS Dreamcast (dc_boot.bin a dc_flash.bin) z vaší vlastní konzole.</string>
+    <string name="settings_help_bios_path">Nasmeruje EmuCoreH na soubory BIOS Dreamcast (dc_boot.bin a dc_flash.bin) a sady BIOS pro arkady (naomi.zip, naomi2.zip, awbios.zip) z vasi vlastni konzole.</string>
     <string name="settings_help_game_path">Přidává složky do herní knihovny. EmuCoreH rekurzivně prohledá každou vybranou složku a sloučí výsledky bez duplicitních cest. Klepnutím na uvedenou složku ji odeberete. Aktuální jádro podporuje obrazy disků GDI, CHD, CDI a CUE/BIN.</string>
     <string name="settings_help_cover_art_style">Vybírá výchozí typ přebalu používaný při stahování grafiky. Možnost "Plochý" (Flat) odpovídá klasickému vzhledu přední strany krabičky, zatímco "3D Box" používá úhlové rendery krabičky, pokud je zdroj poskytuje. 3D přebaly mohou vypadat dramatičtěji, ale jejich dostupnost může být o něco horší než u ploché grafiky.</string>
     <string name="settings_help_cover_download_url">Přepíše vestavěný zdroj přebalů používaný pro automatické stahování. Adresa URL by měla ukazovat přímo na složku, která obsahuje JPG přebaly pojmenované podle sériového čísla hry, například SLUS-20312.jpg. Změňte to pouze tehdy, pokud hostujete svůj vlastní zrcadlový server nebo chcete použít jinou kompatibilní knihovnu přebalů.</string>
@@ -693,8 +693,8 @@
     <string name="settings_mediatek_notice_message">Podpora pro MediaTek je stále experimentální. Během naší práce na vylepšení kompatibility a výkonu může docházet k pádům, vizuálním chybám a nestabilnímu chování.\n\nPokud zaznamenáte grafické problémy, zkuste OpenGL se zapnutým ANGLE. Pokud problémy přetrvávají, použijte softwarový vykreslovač.</string>
     <string name="onboarding_title">Připravte se hrát</string>
     <string name="onboarding_subtitle">Vyberte složky s hrami Dreamcast a udělte přístup k souborům.</string>
-    <string name="onboarding_bios_title">Vyberte soubor BIOS</string>
-    <string name="onboarding_bios_desc">Vyberte dump BIOS Dreamcast: dc_boot.bin (2 MiB) nebo dc_flash.bin (128 KiB).</string>
+    <string name="onboarding_bios_title">Vyberte slozku BIOS</string>
+    <string name="onboarding_bios_desc">Vyberte slozku s vlastnimi soubory BIOS Dreamcast (dc_boot.bin, dc_flash.bin) nebo sadami BIOS pro arkady (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="onboarding_games_title">Přidat složky s hrami</string>
     <string name="onboarding_games_desc">Přidejte jednu nebo více složek obsahujících vaše hry.</string>
     <string name="onboarding_games_selected_count">Vybrané složky: %1$d. Klepnutím přidáte další.</string>

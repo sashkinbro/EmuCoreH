@@ -153,11 +153,11 @@
     <string name="settings_aspect_ratio_169">16:9</string>
     <string name="settings_aspect_ratio_107">10:7</string>
     <string name="settings_paths">File</string>
-    <string name="settings_bios_path">File BIOS</string>
-    <string name="settings_bios_picker_title">Scegli file BIOS</string>
-    <string name="settings_bios_picker_desc">Scegli una cartella contenente i tuoi file BIOS Dreamcast (dc_boot.bin e dc_flash.bin).</string>
+    <string name="settings_bios_path">Cartella BIOS</string>
+    <string name="settings_bios_picker_title">Scegli cartella BIOS</string>
+    <string name="settings_bios_picker_desc">Scegli una cartella con i tuoi file BIOS Dreamcast (dc_boot.bin, dc_flash.bin) e i set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="settings_bios_picker_current">File BIOS attuale</string>
-    <string name="settings_bios_picker_action">Seleziona file</string>
+    <string name="settings_bios_picker_action">Scegli cartella</string>
     <string name="settings_game_path">Cartella giochi</string>
     <string name="settings_cover_download_url">URL download copertine</string>
     <string name="settings_cover_art_style">Stile copertina</string>
@@ -212,7 +212,7 @@
     <string name="settings_help_recent_games">Mostra una riga ad accesso rapido per i giochi a cui hai giocato di recente. Ottimo se passi spesso tra pochi titoli; disattivalo se vuoi una schermata principale più pulita.</string>
     <string name="settings_help_home_search">Mostra la barra di ricerca della libreria direttamente nella schermata principale. Lascialo attivo per librerie grandi; disattivalo se preferisci un layout più pulito e raramente cerchi per nome.</string>
     <string name="settings_help_prefer_english_game_titles">Utilizza i titoli in inglese dal database GameIndex di EmuCoreH per i giochi che escono con nomi giapponesi o di altre regioni. Questo aiuta principalmente a leggere in modo più chiaro le versioni d\'importazione nella libreria, mentre i giochi senza un titolo nel database inglese mantengono il loro nome normale.</string>
-    <string name="settings_help_bios_path">Indica a EmuCoreH i file BIOS Dreamcast (dc_boot.bin e dc_flash.bin) della tua console.</string>
+    <string name="settings_help_bios_path">Indica a EmuCoreH i file BIOS Dreamcast (dc_boot.bin e dc_flash.bin) e i set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip) della tua console.</string>
     <string name="settings_help_game_path">Aggiunge cartelle alla libreria di giochi. EmuCoreH analizza ogni cartella selezionata in modo ricorsivo e unisce i risultati senza duplicare i percorsi. Tocca una cartella nell\'elenco per rimuoverla. Il core attuale supporta immagini disco GDI, CHD, CDI e CUE/BIN.</string>
     <string name="settings_help_cover_art_style">Sceglie il tipo di copertina predefinito utilizzato durante il download delle immagini. Le copertine piatte (Flat) si abbinano al classico aspetto della confezione frontale, mentre "Scatola 3D" usa render angolati quando la fonte li fornisce. Le copertine 3D possono apparire più scenografiche, ma la disponibilità potrebbe essere leggermente inferiore rispetto all\'arte piatta.</string>
     <string name="settings_help_cover_download_url">Sostituisce la fonte di copertine integrata utilizzata per i download automatici. L\'URL dovrebbe puntare direttamente a una cartella che contiene copertine JPG nominate in base al seriale del gioco, ad esempio SLUS-20312.jpg. Modificalo solo se ospiti un tuo mirror o vuoi utilizzare una libreria di copertine compatibile diversa.</string>
@@ -420,8 +420,8 @@
     <string name="onboarding_profile_fast_desc">Per i dispositivi più deboli che necessitano di velocità extra. Alcuni giochi potrebbero mostrare più glitch o diventare meno stabili.</string>
     <string name="onboarding_title">Preparati a giocare</string>
     <string name="onboarding_subtitle">Scegli le cartelle dei tuoi giochi Dreamcast e concedi l\'accesso ai file.</string>
-    <string name="onboarding_bios_title">Scegli file BIOS</string>
-    <string name="onboarding_bios_desc">Seleziona il dump del BIOS Dreamcast: dc_boot.bin (2 MiB) o dc_flash.bin (128 KiB).</string>
+    <string name="onboarding_bios_title">Scegli cartella BIOS</string>
+    <string name="onboarding_bios_desc">Seleziona una cartella con i tuoi file BIOS Dreamcast (dc_boot.bin, dc_flash.bin) o i set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="onboarding_games_title">Scegli cartella giochi</string>
     <string name="onboarding_games_desc">Seleziona la cartella che contiene i tuoi giochi.</string>
     <string name="onboarding_status_required">Richiesto</string>

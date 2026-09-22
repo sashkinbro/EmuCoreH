@@ -184,11 +184,11 @@
     <string name="settings_aspect_ratio_169">16:9</string>
     <string name="settings_aspect_ratio_107">10:7</string>
     <string name="settings_paths">الملفات</string>
-    <string name="settings_bios_path">ملف BIOS</string>
-    <string name="settings_bios_picker_title">اختر ملف BIOS</string>
-    <string name="settings_bios_picker_desc">اختر مجلدًا يحتوي على ملفات BIOS الخاصة بـ Dreamcast (‏dc_boot.bin وdc_flash.bin).</string>
+    <string name="settings_bios_path">مجلد BIOS</string>
+    <string name="settings_bios_picker_title">اختر مجلد BIOS</string>
+    <string name="settings_bios_picker_desc">اختر مجلدًا يحتوي على ملفات BIOS الخاصة بـ Dreamcast (dc_boot.bin وdc_flash.bin) ومجموعات BIOS للأركيد (naomi.zip وnaomi2.zip وawbios.zip).</string>
     <string name="settings_bios_picker_current">ملف BIOS الحالي</string>
-    <string name="settings_bios_picker_action">اختر الملف</string>
+    <string name="settings_bios_picker_action">اختيار مجلد</string>
     <string name="settings_game_path">مجلد الألعاب</string>
     <string name="settings_cover_download_url">رابط تنزيل الأغلفة</string>
     <string name="settings_cover_art_style">نمط الغلاف</string>
@@ -252,7 +252,7 @@
     <string name="settings_help_recent_games">يعرض صف وصول سريع للألعاب التي لعبتها مؤخرًا. جيد إذا كنت تتنقل بين بعض العناوين كثيرًا؛ أوقفه إذا كنت ترغب في شاشة رئيسية أنظف.</string>
     <string name="settings_help_home_search">يعرض شريط البحث في المكتبة مباشرة على الشاشة الرئيسية. اتركه قيد التشغيل للمكتبات الكبيرة؛ أوقفه إذا كنت تفضل تخطيطًا أنظف ونادرًا ما تبحث بالاسم.</string>
     <string name="settings_help_prefer_english_game_titles">يستخدم العناوين الإنجليزية من قاعدة بيانات GameIndex الخاصة بـ EmuCoreH للألعاب التي تُشحن بأسماء يابانية أو إقليمية أخرى. يساعد هذا بشكل أساسي الإصدارات المستوردة على القراءة بوضوح أكبر في المكتبة، بينما الألعاب التي ليس لها عنوان إنجليزي في قاعدة البيانات تحتفظ باسمها العادي.</string>
-    <string name="settings_help_bios_path">يوجه EmuCoreH إلى ملفات BIOS الخاصة بـ Dreamcast (‏dc_boot.bin وdc_flash.bin) من جهازك.</string>
+    <string name="settings_help_bios_path">يوجه EmuCoreH إلى ملفات BIOS الخاصة بـ Dreamcast (dc_boot.bin وdc_flash.bin) ومجموعات BIOS للأركيد (naomi.zip وnaomi2.zip وawbios.zip) من جهازك.</string>
     <string name="settings_help_game_path">يضيف مجلدات إلى مكتبة الألعاب. يفحص EmuCoreH كل مجلد محدد بشكل متكرر ويدمج النتائج دون مسارات ملفات مكررة. اضغط على مجلد في القائمة لإزالته. تدعم النواة الحالية صور أقراص GDI وCHD وCDI وCUE/BIN.</string>
     <string name="settings_help_cover_art_style">يختار نوع الغلاف الافتراضي المستخدم عند تنزيل العمل الفني. تتطابق الأغلفة المسطحة مع المظهر الكلاسيكي للعلبة الأمامية، بينما يستخدم الصندوق 3D تصيير الصندوق المائل عندما يوفرها المصدر. يمكن أن تبدو الأغلفة ثلاثية الأبعاد أكثر إثارة، ولكن قد يكون التوفر أسوأ قليلاً من الفن المسطح.</string>
     <string name="settings_help_cover_download_url">يتجاوز مصدر الأغلفة المدمج المستخدم للتنزيلات التلقائية. يجب أن يشير عنوان URL مباشرة إلى مجلد يحتوي على أغلفة JPG المسماة حسب السيريال، على سبيل المثال SLUS-20312.jpg. قم بتغيير هذا فقط إذا كنت تستضيف مرآتك الخاصة أو ترغب في استخدام مكتبة أغلفة متوافقة مختلفة.</string>
@@ -461,8 +461,8 @@
     <string name="onboarding_profile_fast_desc">للأجهزة الأضعف التي تحتاج إلى سرعة إضافية. قد تظهر بعض الألعاب المزيد من الأخطاء أو تصبح أقل استقرارًا.</string>
     <string name="onboarding_title">استعد للعب</string>
     <string name="onboarding_subtitle">اختر مجلدات ألعاب Dreamcast وامنح الوصول إلى الملفات.</string>
-    <string name="onboarding_bios_title">اختر ملف BIOS</string>
-    <string name="onboarding_bios_desc">اختر نسخة BIOS الخاصة بـ Dreamcast: dc_boot.bin (2 MiB) أو dc_flash.bin (128 KiB).</string>
+    <string name="onboarding_bios_title">اختر مجلد BIOS</string>
+    <string name="onboarding_bios_desc">اختر مجلدًا يحتوي على ملفات BIOS الخاصة بـ Dreamcast (dc_boot.bin وdc_flash.bin) أو مجموعات BIOS للأركيد (naomi.zip وnaomi2.zip وawbios.zip).</string>
     <string name="onboarding_games_title">اختر مجلد الألعاب</string>
     <string name="onboarding_games_desc">حدد المجلد الذي يحتوي على ألعابك.</string>
     <string name="onboarding_status_required">مطلوب</string>

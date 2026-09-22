@@ -278,11 +278,11 @@
     <string name="settings_aspect_ratio_169">16:9</string>
     <string name="settings_aspect_ratio_107">10:7</string>
     <string name="settings_paths">File</string>
-    <string name="settings_bios_path">File BIOS</string>
-    <string name="settings_bios_picker_title">Pilih File BIOS</string>
-    <string name="settings_bios_picker_desc">Pilih folder yang berisi file BIOS Dreamcast Anda (dc_boot.bin dan dc_flash.bin).</string>
+    <string name="settings_bios_path">Folder BIOS</string>
+    <string name="settings_bios_picker_title">Pilih folder BIOS</string>
+    <string name="settings_bios_picker_desc">Pilih folder berisi file BIOS Dreamcast (dc_boot.bin, dc_flash.bin) dan set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="settings_bios_picker_current">File BIOS saat ini</string>
-    <string name="settings_bios_picker_action">Pilih File</string>
+    <string name="settings_bios_picker_action">Pilih folder</string>
     <string name="settings_game_path">Folder Game</string>
     <string name="settings_emulator_data_path">Folder Emulator</string>
     <string name="settings_cover_download_url">URL Unduhan Sampul</string>
@@ -381,7 +381,7 @@
     <string name="settings_help_recent_games">Menampilkan baris akses cepat untuk game yang terakhir Anda mainkan. Bagus jika Anda sering berpindah-pindah di antara beberapa judul; matikan jika Anda menginginkan layar beranda yang lebih bersih.</string>
     <string name="settings_help_home_search">Menampilkan bilah pencarian pustaka secara langsung di layar beranda. Biarkan aktif untuk pustaka berukuran besar; matikan jika Anda lebih suka tata letak yang lebih bersih dan jarang mencari berdasarkan nama.</string>
     <string name="settings_help_prefer_english_game_titles">Menggunakan judul berbahasa Inggris dari basis data GameIndex EmuCoreH untuk game yang dikirimkan dengan bahasa Jepang atau nama regional lainnya. Ini utamanya membantu rilis impor dibaca lebih jelas di perpustakaan, sementara game tanpa judul bahasa Inggris pada basis data mempertahankan nama normalnya.</string>
-    <string name="settings_help_bios_path">Mengarahkan EmuCoreH ke file BIOS Dreamcast (dc_boot.bin dan dc_flash.bin) dari konsol Anda sendiri.</string>
+    <string name="settings_help_bios_path">Mengarahkan EmuCoreH ke file BIOS Dreamcast (dc_boot.bin dan dc_flash.bin) serta set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip) dari konsol Anda sendiri.</string>
     <string name="settings_help_game_path">Menambahkan folder ke pustaka game. EmuCoreH memindai setiap folder yang dipilih secara rekursif dan menggabungkan hasilnya tanpa jalur file duplikat. Ketuk folder dalam daftar untuk menghapusnya. Core saat ini mendukung image disk GDI, CHD, CDI, dan CUE/BIN.</string>
     <string name="settings_help_cover_art_style">Memilih jenis sampul default yang digunakan saat mengunduh karya seni (art). Sampul datar cocok dengan tampilan depan kotak klasik, sedangkan Kotak 3D menggunakan render kotak bersudut saat sumbernya menyediakannya. Sampul 3D dapat terlihat lebih dramatis, namun ketersediaannya mungkin sedikit lebih buruk daripada seni datar.</string>
     <string name="settings_help_cover_download_url">Menimpa sumber sampul bawaan yang digunakan untuk unduhan otomatis. URL harus mengarah langsung ke folder yang berisi sampul JPG yang dinamai berdasarkan serial game, misalnya SLUS-20312.jpg. Ubah ini hanya jika Anda menghosting mirror Anda sendiri atau ingin menggunakan perpustakaan sampul yang kompatibel lainnya.</string>
@@ -670,8 +670,8 @@
     <string name="settings_mediatek_notice_message">Dukungan MediaTek masih bersifat eksperimental. Crash, artefak grafis, dan perilaku tidak stabil dapat terjadi sementara kami terus meningkatkan kompatibilitas dan performa.\n\nJika mengalami masalah grafis, coba OpenGL dengan ANGLE diaktifkan. Jika masalah berlanjut, gunakan perender Perangkat Lunak.</string>
     <string name="onboarding_title">Bersiaplah untuk bermain</string>
     <string name="onboarding_subtitle">Pilih folder game Dreamcast Anda dan berikan akses file.</string>
-    <string name="onboarding_bios_title">Pilih File BIOS</string>
-    <string name="onboarding_bios_desc">Pilih dump BIOS Dreamcast: dc_boot.bin (2 MiB) atau dc_flash.bin (128 KiB).</string>
+    <string name="onboarding_bios_title">Pilih folder BIOS</string>
+    <string name="onboarding_bios_desc">Pilih folder berisi file BIOS Dreamcast (dc_boot.bin, dc_flash.bin) atau set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="onboarding_games_title">Pilih folder game</string>
     <string name="onboarding_games_desc">Pilih folder yang berisi game Anda.</string>
     <string name="onboarding_status_required">Wajib</string>

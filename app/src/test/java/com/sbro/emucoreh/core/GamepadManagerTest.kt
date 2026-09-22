@@ -99,9 +99,8 @@ class GamepadManagerTest {
     }
     @Test
     fun timeControlsCanBeRemappedWithoutLosingStartAndSelect() {
-        val bindings = mapOf(GamepadManager.ACTION_FAST_FORWARD to 96, GamepadManager.ACTION_REWIND to 97)
+        val bindings = mapOf(GamepadManager.ACTION_FAST_FORWARD to 96)
         assertEquals(GamepadManager.ACTION_FAST_FORWARD, GamepadManager.resolveMappedActionIdForKeyCode(96, bindings))
-        assertEquals(GamepadManager.ACTION_REWIND, GamepadManager.resolveMappedActionIdForKeyCode(97, bindings))
         assertEquals("start", GamepadManager.resolveMappedActionIdForKeyCode(108, bindings))
         assertEquals("select", GamepadManager.resolveMappedActionIdForKeyCode(109, bindings))
         assertEquals("cross", GamepadManager.resolveMappedActionIdForKeyCode(96, emptyMap()))

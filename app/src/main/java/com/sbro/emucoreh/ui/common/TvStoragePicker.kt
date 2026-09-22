@@ -44,7 +44,7 @@ import com.sbro.emucoreh.ui.theme.neon.neonShape
 import com.sbro.emucoreh.ui.theme.neon.neonButtonShape
 
 enum class TvStorageRequest {
-    BIOS_FILE,
+    BIOS_FOLDER,
     GAME_FOLDER
 }
 
@@ -93,7 +93,7 @@ fun TvStoragePickerHost(
         }
         val launched = runCatching {
             when (request) {
-                TvStorageRequest.BIOS_FILE -> biosLauncher.launch(intent)
+                TvStorageRequest.BIOS_FOLDER -> biosLauncher.launch(intent)
                 TvStorageRequest.GAME_FOLDER -> folderLauncher.launch(intent)
             }
         }.isSuccess
@@ -128,7 +128,7 @@ fun TvStoragePickerHost(
             ) {
                 Text(
                     stringResource(
-                        if (request == TvStorageRequest.BIOS_FILE) {
+                        if (request == TvStorageRequest.BIOS_FOLDER) {
                             R.string.onboarding_bios_desc
                         } else {
                             R.string.onboarding_games_desc
@@ -205,7 +205,7 @@ private object TvStorageAccess {
         // Some TV variants of AnExplorer implement folder selection but accidentally omit the
         // OPEN_DOCUMENT_TREE manifest filter. Reuse its exported document activity explicitly
         // only when Android has no real tree picker of its own.
-        if (request == TvStorageRequest.GAME_FOLDER || request == TvStorageRequest.BIOS_FILE) {
+        if (request == TvStorageRequest.GAME_FOLDER || request == TvStorageRequest.BIOS_FOLDER) {
             val anExplorerActivity = findAnExplorerDocumentActivity(context)
             if (anExplorerActivity != null) {
                 return Intent(intent).setComponent(anExplorerActivity)
@@ -217,9 +217,7 @@ private object TvStorageAccess {
     private fun createPickerIntent(request: TvStorageRequest, volume: StorageVolume?): Intent {
         val treeIntent = volume?.let(::createVolumeTreeIntent)
         val intent = when (request) {
-        TvStorageRequest.BIOS_FILE -> Intent(Intent.ACTION_OPEN_DOCUMENT)
-            .addCategory(Intent.CATEGORY_OPENABLE)
-            .setType("*/*")
+        TvStorageRequest.BIOS_FOLDER -> treeIntent ?: Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
         TvStorageRequest.GAME_FOLDER -> treeIntent ?: Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
         }
         return intent.addFlags(

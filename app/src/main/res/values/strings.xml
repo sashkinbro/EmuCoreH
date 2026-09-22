@@ -287,11 +287,11 @@
     <string name="settings_aspect_ratio_169">16:9</string>
     <string name="settings_aspect_ratio_107">10:7</string>
     <string name="settings_paths">Files</string>
-    <string name="settings_bios_path">BIOS File</string>
-    <string name="settings_bios_picker_title">Choose BIOS File</string>
-    <string name="settings_bios_picker_desc">Choose a folder containing your Dreamcast BIOS files (dc_boot.bin and dc_flash.bin).</string>
+    <string name="settings_bios_path">BIOS Folder</string>
+    <string name="settings_bios_picker_title">Choose BIOS Folder</string>
+    <string name="settings_bios_picker_desc">Choose a folder with your Dreamcast BIOS (dc_boot.bin, dc_flash.bin) and arcade BIOS sets (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="settings_bios_picker_current">Current BIOS file</string>
-    <string name="settings_bios_picker_action">Select File</string>
+    <string name="settings_bios_picker_action">Select Folder</string>
     <string name="settings_game_path">Game folders</string>
     <string name="settings_game_folders_count">%1$d folders selected</string>
     <string name="game_folders_remove">Remove folder</string>
@@ -392,7 +392,7 @@
     <string name="settings_help_recent_games">Shows a quick-access row for the games you played last. Good if you bounce between a few titles often; turn it off if you want a cleaner home screen.</string>
     <string name="settings_help_home_search">Shows the library search bar directly on the home screen. Leave it on for big libraries; turn it off if you prefer a cleaner layout and rarely search by name.</string>
     <string name="settings_help_prefer_english_game_titles">Uses English titles from EmuCoreH\'s GameIndex database for games that ship with Japanese or other regional names. This mainly helps imported releases read more clearly in the library, while games without an English database title keep their normal name.</string>
-    <string name="settings_help_bios_path">Points EmuCoreH to the Dreamcast BIOS files (dc_boot.bin and dc_flash.bin) from your own console.</string>
+    <string name="settings_help_bios_path">Points EmuCoreH to the Dreamcast BIOS files (dc_boot.bin and dc_flash.bin) and arcade BIOS sets (naomi.zip, naomi2.zip, awbios.zip) from your own console.</string>
     <string name="settings_help_game_path">Adds folders to the game library. EmuCoreH scans every selected folder recursively and merges the results without duplicate file paths. Tap a listed folder to remove it. The current core supports GDI, CHD, CDI and CUE/BIN disc images.</string>
     <string name="settings_help_cover_art_style">Chooses the default cover type used when downloading artwork. Flat covers match the classic front-box look, while 3D Box uses angled box renders when the source provides them. 3D covers can look more dramatic, but availability may be slightly worse than flat art.</string>
     <string name="settings_help_cover_download_url">Overrides the built-in cover source used for automatic downloads. The URL should point directly to a folder that contains JPG covers named by game serial, for example SLUS-20312.jpg. Change this only if you host your own mirror or want to use a different compatible cover library.</string>
@@ -695,8 +695,8 @@
     <string name="settings_mediatek_notice_message">MediaTek support is still experimental. Crashes, visual artifacts, and unstable behavior may occur while we continue improving compatibility and performance.\n\nIf you experience graphics issues, try OpenGL with ANGLE enabled. If the issues persist, use the Software renderer.</string>
     <string name="onboarding_title">Get ready to play</string>
     <string name="onboarding_subtitle">Choose your Dreamcast game folders and grant file access.</string>
-    <string name="onboarding_bios_title">Choose BIOS File</string>
-    <string name="onboarding_bios_desc">Select your Dreamcast BIOS dump: dc_boot.bin (2 MiB) or dc_flash.bin (128 KiB).</string>
+    <string name="onboarding_bios_title">Choose BIOS Folder</string>
+    <string name="onboarding_bios_desc">Select a folder with your Dreamcast BIOS (dc_boot.bin, dc_flash.bin) or arcade BIOS sets (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="onboarding_games_title">Add game folders</string>
     <string name="onboarding_games_desc">Add one or more folders that contain your games.</string>
     <string name="onboarding_games_selected_count">%1$d folders selected. Tap to add another.</string>

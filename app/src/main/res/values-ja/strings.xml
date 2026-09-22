@@ -184,11 +184,11 @@
     <string name="settings_aspect_ratio_169">16:9</string>
     <string name="settings_aspect_ratio_107">10:7</string>
     <string name="settings_paths">ファイル</string>
-    <string name="settings_bios_path">BIOSファイル</string>
-    <string name="settings_bios_picker_title">BIOSファイルの選択</string>
-    <string name="settings_bios_picker_desc">DreamcastのBIOSファイル（dc_boot.binとdc_flash.bin）が入ったフォルダを選択してください。</string>
+    <string name="settings_bios_path">BIOSフォルダ</string>
+    <string name="settings_bios_picker_title">BIOSフォルダを選択</string>
+    <string name="settings_bios_picker_desc">Dreamcast BIOS（dc_boot.bin、dc_flash.bin）とアーケードBIOSセット（naomi.zip、naomi2.zip、awbios.zip）を含むフォルダを選択してください。</string>
     <string name="settings_bios_picker_current">現在のBIOSファイル</string>
-    <string name="settings_bios_picker_action">ファイルを選択</string>
+    <string name="settings_bios_picker_action">フォルダを選択</string>
     <string name="settings_game_path">ゲームフォルダ</string>
     <string name="settings_cover_download_url">カバーダウンロードURL</string>
     <string name="settings_cover_art_style">カバースタイル</string>
@@ -252,7 +252,7 @@
     <string name="settings_help_recent_games">最後にプレイしたゲームのクイックアクセス行を表示します。いくつかのタイトルを頻繁に行き来する場合に便利です。ホーム画面をすっきりさせたい場合はオフにしてください。</string>
     <string name="settings_help_home_search">ホーム画面にライブラリの検索バーを直接表示します。大規模なライブラリの場合はオンのままにしてください。すっきりしたレイアウトが好みで、名前で検索することがめったにない場合はオフにしてください。</string>
     <string name="settings_help_prefer_english_game_titles">日本語または他の地域名でリリースされたゲームに、EmuCoreHのGameIndexデータベースの英語タイトルを使用します。これにより、主にインポートされたリリースがライブラリで明確に読み取れるようになります。一方、英語のデータベースタイトルがないゲームは通常の名前のままになります。</string>
-    <string name="settings_help_bios_path">お使いの本体から取得したDreamcastのBIOSファイル（dc_boot.binとdc_flash.bin）をEmuCoreHに指定します。</string>
+    <string name="settings_help_bios_path">所有機から抽出したDreamcast BIOS（dc_boot.bin、dc_flash.bin）とアーケードBIOSセット（naomi.zip、naomi2.zip、awbios.zip）をEmuCoreHに指定します。</string>
     <string name="settings_help_game_path">ゲームライブラリにフォルダを追加します。EmuCoreHは選択した各フォルダを再帰的にスキャンし、重複するファイルパスなしで結果を統合します。一覧のフォルダをタップすると削除できます。現在のコアはGDI、CHD、CDI、CUE/BINのディスクイメージに対応しています。</string>
     <string name="settings_help_cover_art_style">アートワークをダウンロードするときに使用されるデフォルトのカバータイプを選択します。フラットカバーはクラシックなフロントボックスの外観に一致し、3Dボックスはソースが提供する場合に角度の付いたボックスレンダーを使用します。3Dカバーはよりドラマチックに見える場合がありますが、可用性はフラットアートよりもわずかに劣る可能性があります。</string>
     <string name="settings_help_cover_download_url">自動ダウンロードに使用される組み込みのカバーソースを上書きします。URLは、ゲームシリアル（例: SLUS-20312.jpg）で名前が付けられたJPGカバーを含むフォルダを直接指している必要があります。独自のミラーをホストする場合、または互換性のある別のカバーライブラリを使用する場合にのみ、これを変更してください。</string>
@@ -461,8 +461,8 @@
     <string name="onboarding_profile_fast_desc">追加の速度が必要な弱いデバイス向けです。一部のゲームでは、より多くのグリッチが表示されたり、安定性が低下したりする可能性があります。</string>
     <string name="onboarding_title">プレイの準備をしましょう</string>
     <string name="onboarding_subtitle">Dreamcastのゲームフォルダを選択し、ファイルへのアクセスを許可してください。</string>
-    <string name="onboarding_bios_title">BIOSファイルの選択</string>
-    <string name="onboarding_bios_desc">Dreamcast BIOSダンプを選択: dc_boot.bin (2 MiB) または dc_flash.bin (128 KiB)。</string>
+    <string name="onboarding_bios_title">BIOSフォルダを選択</string>
+    <string name="onboarding_bios_desc">Dreamcast BIOS（dc_boot.bin、dc_flash.bin）またはアーケードBIOSセット（naomi.zip、naomi2.zip、awbios.zip）を含むフォルダを選択してください。</string>
     <string name="onboarding_games_title">ゲームフォルダを選択</string>
     <string name="onboarding_games_desc">ゲームが含まれているフォルダを選択します。</string>
     <string name="onboarding_status_required">必須</string>

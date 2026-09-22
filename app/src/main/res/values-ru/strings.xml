@@ -125,7 +125,7 @@
     <string name="settings_aspect_ratio_43">4:3</string>
     <string name="settings_aspect_ratio_169">16:9</string>
     <string name="settings_paths">Файлы</string>
-    <string name="settings_bios_path">Файл BIOS</string>
+    <string name="settings_bios_path">Папка BIOS</string>
     <string name="settings_game_path">Папка с играми</string>
     <string name="settings_not_set">Не установлено</string>
     <string name="settings_about">О приложении</string>
@@ -296,8 +296,8 @@
     <string name="onboarding_page_4_subtitle">Выберите папки с играми и место хранения данных эмулятора, чтобы начать.</string>
     <string name="onboarding_title">Подготовьтесь к игре</string>
     <string name="onboarding_subtitle">Выберите папки с играми Dreamcast и предоставьте доступ к файлам.</string>
-    <string name="onboarding_bios_title">Выберите файл BIOS</string>
-    <string name="onboarding_bios_desc">Выберите дамп BIOS Dreamcast: dc_boot.bin (2 МиБ) или dc_flash.bin (128 КиБ).</string>
+    <string name="onboarding_bios_title">Выберите папку BIOS</string>
+    <string name="onboarding_bios_desc">Выберите папку с файлами BIOS Dreamcast (dc_boot.bin, dc_flash.bin) или наборами BIOS для аркад (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="onboarding_games_title">Выберите папку с играми</string>
     <string name="onboarding_games_desc">Выберите папку, которая содержит ваши игры.</string>
     <string name="onboarding_status_required">Обязательно</string>
@@ -447,7 +447,7 @@
     <string name="settings_help_show_fps">Отображает живое наложение производительности во время работы игры. Используйте его при настройке параметров или проверке того, происходит ли замедление из-за скорости эмулятора, кадрирования или самой игры.</string>
     <string name="settings_help_fps_overlay_mode">Позволяет выбрать между простым показателем FPS и более подробной панелью статистики. Используйте компактный режим, если вам нужна только быстрая проверка скорости, или расширенный режим, когда вы активно настраиваете производительность.</string>
     <string name="settings_help_fps_overlay_position">Помещает наложение FPS или статистики в один из четырех углов. Отодвиньте его от сенсорных элементов управления, элементов HUD, субтитров или мини-карт, чтобы оно оставалось читаемым и не закрывало важную игровую информацию.</string>
-    <string name="settings_help_bios_path">Указывает EmuCoreH на файлы BIOS Dreamcast (dc_boot.bin и dc_flash.bin) с вашей собственной консоли.</string>
+    <string name="settings_help_bios_path">Указывает EmuCoreH на файлы BIOS Dreamcast (dc_boot.bin и dc_flash.bin) и наборы BIOS для аркад (naomi.zip, naomi2.zip, awbios.zip) с вашей консоли.</string>
     <string name="settings_help_game_path">Добавляет папки в игровую библиотеку. EmuCoreH рекурсивно сканирует каждую выбранную папку и объединяет результаты без дублирования путей. Коснитесь папки в списке, чтобы удалить её. Текущее ядро поддерживает образы дисков GDI, CHD, CDI и CUE/BIN.</string>
     <string name="settings_help_cover_download_url">Переопределяет встроенный источник обложек, используемый для автоматической загрузки. URL-адрес должен указывать прямо на папку, содержащую обложки в формате JPG, названные по серийному номеру игры, например SLUS-20312.jpg. Изменяйте это только в том случае, если вы размещаете собственное зеркало или хотите использовать другую совместимую библиотеку обложек.</string>
     <string name="settings_cover_download_url">URL-адрес загрузки обложек</string>
@@ -473,10 +473,10 @@
     <string name="settings_cover_download_url_example_hint">Нажмите, чтобы вставить оба URL-адреса для примера. Удерживайте, чтобы скопировать их.</string>
     <string name="settings_cover_download_url_copied">Примеры URL-адресов скопированы.</string>
     <string name="settings_help_cover_art_style">Выбирает тип обложки по умолчанию, используемый при загрузке изображений. Плоские обложки соответствуют классическому виду передней части коробки, в то время как 3D-коробка использует угловые рендеры коробок, если источник их предоставляет. 3D-обложки могут выглядеть более эффектно, но их доступность может быть немного хуже, чем у плоских изображений.</string>
-    <string name="settings_bios_picker_title">Выбрать файл BIOS</string>
-    <string name="settings_bios_picker_desc">Выберите папку с файлами BIOS Dreamcast (dc_boot.bin и dc_flash.bin).</string>
+    <string name="settings_bios_picker_title">Выберите папку BIOS</string>
+    <string name="settings_bios_picker_desc">Выберите папку с файлами BIOS Dreamcast (dc_boot.bin, dc_flash.bin) и наборами BIOS для аркад (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="settings_bios_picker_current">Текущий файл BIOS</string>
-    <string name="settings_bios_picker_action">Выбрать файл</string>
+    <string name="settings_bios_picker_action">Выбрать папку</string>
     <string name="detail_igdb_source_note">Описание игры и метаданные на этом экране предоставляются через API IGDB.</string>
     <string name="settings_prefer_english_game_titles">Предпочитать английские названия игр</string>
     <string name="settings_prefer_english_game_titles_desc">Использовать английские названия из базы данных игр EmuCoreH, если они доступны.</string>

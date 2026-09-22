@@ -278,11 +278,11 @@
     <string name="settings_aspect_ratio_169">16:9</string>
     <string name="settings_aspect_ratio_107">10:7</string>
     <string name="settings_paths">فایل‌ها</string>
-    <string name="settings_bios_path">فایل BIOS</string>
-    <string name="settings_bios_picker_title">انتخاب فایل BIOS</string>
-    <string name="settings_bios_picker_desc">پوشه‌ای انتخاب کنید که شامل فایل‌های BIOS دریم‌کست (dc_boot.bin و dc_flash.bin) باشد.</string>
+    <string name="settings_bios_path">پوشه BIOS</string>
+    <string name="settings_bios_picker_title">انتخاب پوشه BIOS</string>
+    <string name="settings_bios_picker_desc">پوشه‌ای با فایل‌های BIOS دریم‌کست (dc_boot.bin، dc_flash.bin) و مجموعه‌های BIOS آرکید (naomi.zip، naomi2.zip، awbios.zip) انتخاب کنید.</string>
     <string name="settings_bios_picker_current">فایل BIOS فعلی</string>
-    <string name="settings_bios_picker_action">انتخاب فایل</string>
+    <string name="settings_bios_picker_action">انتخاب پوشه</string>
     <string name="settings_game_path">پوشه بازی‌ها</string>
     <string name="settings_emulator_data_path">پوشه شبیه‌ساز</string>
     <string name="settings_cover_download_url">آدرس دانلود کاور</string>
@@ -381,7 +381,7 @@
     <string name="settings_help_recent_games">ردیفی با دسترسی سریع برای بازی‌هایی که آخرین بار انجام داده‌اید نشان می‌دهد.</string>
     <string name="settings_help_home_search">نوار جستجوی کتابخانه را مستقیماً در صفحه اصلی نشان می‌دهد.</string>
     <string name="settings_help_prefer_english_game_titles">از عناوین انگلیسی از پایگاه داده GameIndex مربوط به EmuCoreH استفاده می‌کند.</string>
-    <string name="settings_help_bios_path">EmuCoreH را به فایل‌های BIOS دریم‌کست (dc_boot.bin و dc_flash.bin) از کنسول خودتان اشاره می‌دهد.</string>
+    <string name="settings_help_bios_path">EmuCoreH را به فایل‌های BIOS دریم‌کست (dc_boot.bin و dc_flash.bin) و مجموعه‌های BIOS آرکید (naomi.zip، naomi2.zip، awbios.zip) از کنسول خودتان اشاره می‌دهد.</string>
     <string name="settings_help_game_path">پوشه‌هایی به کتابخانه بازی اضافه می‌کند. EmuCoreH هر پوشه انتخاب‌شده را به‌صورت بازگشتی بررسی می‌کند و نتایج را بدون مسیرهای تکراری ادغام می‌کند. برای حذف، روی پوشه فهرست‌شده ضربه بزنید. هسته فعلی از تصاویر دیسک GDI، CHD، CDI و CUE/BIN پشتیبانی می‌کند.</string>
     <string name="settings_help_cover_art_style">نوع کاور پیش‌فرض مورد استفاده در هنگام دانلود آثار هنری را انتخاب می‌کند.</string>
     <string name="settings_help_cover_download_url">منبع کاور داخلی مورد استفاده برای دانلودهای خودکار را لغو می‌کند.</string>
@@ -670,8 +670,8 @@
     <string name="settings_mediatek_notice_message">پشتیبانی از MediaTek هنوز آزمایشی است. تا زمانی که به بهبود سازگاری و عملکرد ادامه می‌دهیم، ممکن است خرابی، اشکالات گرافیکی و عملکرد ناپایدار رخ دهد.\n\nاگر با مشکل گرافیکی روبه‌رو شدید، OpenGL را با ANGLE فعال امتحان کنید. اگر مشکل ادامه داشت، از رندرکننده نرم‌افزاری استفاده کنید.</string>
     <string name="onboarding_title">برای بازی آماده شوید</string>
     <string name="onboarding_subtitle">پوشه‌های بازی دریم‌کست خود را انتخاب کنید و دسترسی به فایل‌ها را بدهید.</string>
-    <string name="onboarding_bios_title">انتخاب فایل BIOS</string>
-    <string name="onboarding_bios_desc">دامپ BIOS دریمکست را انتخاب کنید: dc_boot.bin (2 MiB) یا dc_flash.bin (128 KiB).</string>
+    <string name="onboarding_bios_title">انتخاب پوشه BIOS</string>
+    <string name="onboarding_bios_desc">پوشه‌ای با فایل‌های BIOS دریم‌کست (dc_boot.bin، dc_flash.bin) یا مجموعه‌های BIOS آرکید (naomi.zip، naomi2.zip، awbios.zip) انتخاب کنید.</string>
     <string name="onboarding_games_title">انتخاب پوشه بازی‌ها</string>
     <string name="onboarding_games_desc">پوشه‌ای را که حاوی بازی‌های شماست انتخاب کنید.</string>
     <string name="onboarding_status_required">الزامی است</string>

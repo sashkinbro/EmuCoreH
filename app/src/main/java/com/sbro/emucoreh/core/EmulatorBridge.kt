@@ -350,11 +350,11 @@ object EmulatorBridge {
 
         val context = getContext() ?: return@withContext
         val resolvedRenderer = normalizeRenderer(renderer)
-        val preparedBios = DocumentPathResolver.prepareBiosSelection(context, biosPath)
-        val resolvedBiosPath = preparedBios?.directoryPath
-            ?: biosPath?.let(DocumentPathResolver::resolveDirectoryPath)
-        val preferredBiosFile = preparedBios?.fileName
-            ?: DocumentPathResolver.findPreferredBiosFileName(resolvedBiosPath)
+        // The core reads its BIOS files from its own system directory, where
+        // [DreamcastBios] installs the user's selection. Folder picks are
+        // imported there directly instead of being staged per content URI.
+        val resolvedBiosPath = biosPath?.let(DocumentPathResolver::resolveDirectoryPath)
+        val preferredBiosFile = DocumentPathResolver.findPreferredBiosFileName(resolvedBiosPath)
         // Keep the native layer on the same data root as the runtime directories;
         // saves and memory cards previously ignored the configured location.
         NativeApp.reloadDataRoot(emulatorDataPath ?: "")

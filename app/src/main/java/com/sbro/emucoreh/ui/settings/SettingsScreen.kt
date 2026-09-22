@@ -360,7 +360,7 @@ fun SettingsScreen(
     ) { uri: Uri? -> uri?.let(viewModel::setGamePath) }
 
     val biosPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? -> uri?.let(viewModel::setBiosPath) }
 
     val homeBackgroundPicker = rememberLauncherForActivityResult(
@@ -394,8 +394,8 @@ fun SettingsScreen(
     )
     val launchBiosPicker = rememberDebouncedClick(
         onClick = {
-            if (tvUiEnabled) tvStorageRequest = TvStorageRequest.BIOS_FILE
-            else biosPicker.launch(arrayOf("*/*"))
+            if (tvUiEnabled) tvStorageRequest = TvStorageRequest.BIOS_FOLDER
+            else biosPicker.launch(null)
         }
     )
     val openEmulatorDataLocationDialog = rememberDebouncedClick(

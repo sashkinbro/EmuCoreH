@@ -207,9 +207,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             preferences.biosPath.distinctUntilChanged().collect { path ->
                 val bios = withContext(Dispatchers.IO) {
                     val systemDir = EmulatorStorage.flycastSystemDir(getApplication()).absolutePath
-                    val bootRom = DreamcastBios.findBootRom(systemDir) != null
-                    val flashRom = DreamcastBios.findFlashRom(systemDir) != null
-                    Triple(bootRom || flashRom || path != null, bootRom, flashRom)
+                    val hasBios = DreamcastBios.hasAnyBios(systemDir)
+                    (hasBios || path != null) to DreamcastBios.hasBootRom(systemDir)
                 }
                 _uiState.value = _uiState.value.copy(
                     biosConfigured = bios.first,
@@ -318,17 +317,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val previousPath = preferences.biosPath.first()
             StorageAccess.takePersistableReadPermission(context, uri)
             val systemDir = EmulatorStorage.flycastSystemDir(context).absolutePath
-            if (DreamcastBios.install(context, uri, systemDir)) {
+            if (DreamcastBios.installSelection(context, uri, systemDir)) {
                 preferences.setBiosPath(uri.toString())
                 if (previousPath != uri.toString()) {
                     StorageAccess.releasePersistedPermission(context, previousPath)
                 }
             }
-            val biosValid = DreamcastBios.hasBootRom(systemDir)
+            val hasBios = DreamcastBios.hasAnyBios(systemDir)
             _uiState.value = _uiState.value.copy(
-                biosConfigured = DreamcastBios.findBootRom(systemDir) != null ||
-                    DreamcastBios.findFlashRom(systemDir) != null,
-                biosValid = biosValid
+                biosConfigured = hasBios,
+                biosValid = DreamcastBios.hasBootRom(systemDir)
             )
             updateBootstrapState()
         }
