@@ -210,6 +210,8 @@ import com.sbro.emucoreh.data.EmulationSideArtworkRepository
 import com.sbro.emucoreh.data.GameMenuLayoutStyle
 import com.sbro.emucoreh.data.GameMenuSectionId
 import com.sbro.emucoreh.data.GameMenuTabId
+import com.sbro.emucoreh.core.ProPurchaseTier
+import com.sbro.emucoreh.core.availableProSupportOffers
 import com.sbro.emucoreh.data.HomeBackgroundPreset
 import com.sbro.emucoreh.data.HomeBackgroundRepository
 import com.sbro.emucoreh.data.HomeBackgroundType
@@ -229,6 +231,7 @@ import com.sbro.emucoreh.ui.common.EmulatorDataLocationDialog
 import com.sbro.emucoreh.ui.common.GameCoverAspectRatio
 import com.sbro.emucoreh.ui.common.NavigationBackButton
 import com.sbro.emucoreh.ui.common.ProvideGamepadShoulderActions
+import com.sbro.emucoreh.ui.common.ProSupportOptionsDialog
 import com.sbro.emucoreh.ui.common.RequestFocusOnResume
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.ScrollableFilterTabRow
@@ -268,7 +271,7 @@ import com.sbro.emucoreh.ui.theme.neon.neonShapeCorners
 import java.util.Locale
 
 private enum class SettingsTab {
-    General, Graphics, Controls, Emulation, Network, Audio, Library, Customization, GameMenu, Updates, About
+    General, Graphics, Controls, Emulation, Network, Audio, Library, Customization, GameMenu, Updates, Pro, About
 }
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -327,6 +330,12 @@ fun SettingsScreen(
     val coverCachePartiallyClearedMessage = stringResource(R.string.settings_clear_cover_cache_partial)
     stringResource(R.string.settings_not_set)
     val settingsScrollState = rememberScrollState()
+    val proPurchaseMessage = uiState.proPurchaseMessageResId?.let { stringResource(it) }
+    LaunchedEffect(proPurchaseMessage) {
+        val message = proPurchaseMessage ?: return@LaunchedEffect
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        viewModel.clearProPurchaseMessage()
+    }
     val customizationMessage = uiState.customizationMessageResId?.let { stringResource(it) }
     LaunchedEffect(customizationMessage) {
         val message = customizationMessage ?: return@LaunchedEffect
@@ -1119,6 +1128,7 @@ private fun SettingsContent(
                         )
                         ThemeSelector(
                             selected = uiState.themeMode,
+                            isProUnlocked = uiState.isProUnlocked,
                             customThemeLibrary = uiState.customThemeLibrary,
                             onSelected = viewModel::setThemeMode,
                             onCustomThemeSelected = { themeId ->
@@ -1126,15 +1136,22 @@ private fun SettingsContent(
                                     uiState.customThemeLibrary.copy(activeThemeId = themeId),
                                     activate = true
                                 )
+                            },
+                            onProLockedSelected = {
+                                (context as? Activity)?.let(viewModel::purchasePro)
                             }
                         )
                         SettingsItem(
                             icon = Icons.Rounded.Palette,
                             label = stringResource(R.string.settings_theme_manager),
-                            value = if (uiState.customTheme.name == CustomThemeConfig.DEFAULT_NAME) {
-                                stringResource(R.string.theme_manager_default_name)
+                            value = if (uiState.isProUnlocked) {
+                                if (uiState.customTheme.name == CustomThemeConfig.DEFAULT_NAME) {
+                                    stringResource(R.string.theme_manager_default_name)
+                                } else {
+                                    uiState.customTheme.name
+                                }
                             } else {
-                                uiState.customTheme.name
+                                stringResource(R.string.settings_theme_manager_locked)
                             },
                             onClick = { onOpenThemeManager?.invoke() },
                             helpText = stringResource(R.string.settings_theme_manager_desc),
@@ -2076,6 +2093,20 @@ private fun SettingsContent(
                     AppUpdateTab(
                         state = uiState.appUpdate,
                         onLoadReleaseHistory = { force -> viewModel.loadAppReleaseHistory(showErrors = true, force = force) }
+                    )
+                }
+
+                SettingsTab.Pro -> {
+                    ProSettingsTab(
+                        uiState = uiState,
+                        onPurchase = { (context as? Activity)?.let(viewModel::purchasePro) },
+                        onPurchaseTier = { tier ->
+                            (context as? Activity)?.let { activity ->
+                                viewModel.purchasePro(activity, tier)
+                            }
+                        },
+                        onRestore = viewModel::restoreProPurchases,
+                        onApplyCrimson = { viewModel.setThemeMode(ThemeMode.PRO) }
                     )
                 }
 
@@ -3217,6 +3248,7 @@ private fun drawerItemIcon(item: DrawerItemId): ImageVector = when (item) {
     DrawerItemId.APP_SETTINGS -> Icons.Rounded.SettingsSuggest
     DrawerItemId.FEEDBACK -> Icons.Rounded.RateReview
     DrawerItemId.DISCORD -> Icons.Rounded.Forum
+    DrawerItemId.PROFILE -> Icons.Rounded.Person
 }
 
 @Composable
@@ -3238,6 +3270,7 @@ private fun drawerItemLabel(item: DrawerItemId): String = when (item) {
     DrawerItemId.SUPPORTED_FORMATS -> stringResource(R.string.shell_supported_formats)
     DrawerItemId.FEEDBACK -> stringResource(R.string.feedback_title)
     DrawerItemId.DISCORD -> stringResource(R.string.discord_title)
+    DrawerItemId.PROFILE -> stringResource(R.string.profile_title)
 }
 
 @Composable
@@ -3346,6 +3379,341 @@ private fun gameMenuSectionLabel(section: GameMenuSectionId): String = when (sec
 }
 
 @Composable
+private fun ProSettingsTab(
+    uiState: SettingsUiState,
+    onPurchase: () -> Unit,
+    onPurchaseTier: (ProPurchaseTier) -> Unit,
+    onRestore: () -> Unit,
+    onApplyCrimson: () -> Unit
+) {
+    var showSupportOptions by rememberSaveable { mutableStateOf(false) }
+    val supportOffers = if (uiState.isProUnlocked && !uiState.isProPurchaseStatusVerified) {
+        emptyList()
+    } else {
+        availableProSupportOffers(
+            offers = uiState.proProducts,
+            ownedProductIds = uiState.ownedProProductIds
+        )
+    }
+
+    if (showSupportOptions) {
+        ProSupportOptionsDialog(
+            offers = supportOffers,
+            purchaseInProgress = uiState.isProPurchaseInProgress,
+            onPurchase = { tier ->
+                showSupportOptions = false
+                onPurchaseTier(tier)
+            },
+            onDismiss = { showSupportOptions = false }
+        )
+    }
+
+    SettingsSection(title = stringResource(R.string.settings_pro_title)) {
+        ProStatusCard(
+            isUnlocked = uiState.isProUnlocked,
+            price = when {
+                uiState.isProUnlocked -> stringResource(R.string.settings_pro_purchased)
+                uiState.proPrice != null -> uiState.proPrice
+                uiState.isProProductLoading -> stringResource(R.string.pro_price_loading)
+                else -> stringResource(R.string.pro_price_unavailable)
+            },
+            purchaseInProgress = uiState.isProPurchaseInProgress,
+            onPurchase = onPurchase,
+            onShowSupportOptions = if (supportOffers.isNotEmpty()) {
+                { showSupportOptions = true }
+            } else {
+                null
+            },
+            onRestore = onRestore,
+            onApplyCrimson = onApplyCrimson
+        )
+        Text(
+            text = stringResource(R.string.settings_pro_included_title),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .padding(top = 4.dp)
+        )
+        ProFeatureRow(
+            title = stringResource(R.string.settings_pro_feature_crimson_title),
+            description = stringResource(R.string.settings_pro_feature_crimson_desc),
+            active = uiState.isProUnlocked
+        )
+        ProFeatureRow(
+            title = stringResource(R.string.settings_pro_feature_theme_manager_title),
+            description = stringResource(R.string.settings_pro_feature_theme_manager_desc),
+            active = uiState.isProUnlocked
+        )
+        ProFeatureRow(
+            title = stringResource(R.string.settings_pro_feature_controls_manager_title),
+            description = stringResource(R.string.settings_pro_feature_controls_manager_desc),
+            active = uiState.isProUnlocked
+        )
+        ProFeatureRow(
+            title = stringResource(R.string.settings_pro_feature_icon_title),
+            description = stringResource(R.string.settings_pro_feature_icon_desc),
+            active = uiState.isProUnlocked
+        )
+        ProFeatureRow(
+            title = stringResource(R.string.settings_pro_feature_profile_title),
+            description = stringResource(R.string.settings_pro_feature_profile_desc),
+            active = uiState.isProUnlocked
+        )
+        ProFeatureRow(
+            title = stringResource(R.string.settings_pro_feature_stats_title),
+            description = stringResource(R.string.settings_pro_feature_stats_desc),
+            active = uiState.isProUnlocked
+        )
+        ProFeatureRow(
+            title = stringResource(R.string.settings_pro_feature_card_title),
+            description = stringResource(R.string.settings_pro_feature_card_desc),
+            active = uiState.isProUnlocked
+        )
+        ProFeatureRow(
+            title = stringResource(R.string.settings_pro_feature_support_title),
+            description = stringResource(R.string.settings_pro_feature_support_desc),
+            active = uiState.isProUnlocked
+        )
+    }
+}
+
+@Composable
+private fun ProStatusCard(
+    isUnlocked: Boolean,
+    price: String,
+    purchaseInProgress: Boolean,
+    onPurchase: () -> Unit,
+    onShowSupportOptions: (() -> Unit)?,
+    onRestore: () -> Unit,
+    onApplyCrimson: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = neonShape(20.dp),
+        color = if (isUnlocked) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f)
+        },
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.68f))
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(neonShape(14.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Star,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(
+                            if (isUnlocked) R.string.settings_pro_unlocked_title
+                            else R.string.settings_pro_locked_title
+                        ),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(
+                            if (isUnlocked) R.string.settings_pro_unlocked_body
+                            else R.string.settings_pro_locked_body
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ProMetaPill(
+                    label = stringResource(R.string.settings_pro_status_label),
+                    value = if (isUnlocked) stringResource(R.string.settings_pro_active) else stringResource(R.string.settings_pro_not_active),
+                    modifier = Modifier.weight(1f)
+                )
+                ProMetaPill(
+                    label = stringResource(
+                        if (isUnlocked) R.string.settings_pro_purchase_label
+                        else R.string.settings_pro_price_label
+                    ),
+                    value = price,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isUnlocked) {
+                    Button(
+                        onClick = onApplyCrimson,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = neonShape(16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_pro_apply_theme),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = onRestore,
+                        modifier = Modifier.weight(1f),
+                        shape = neonShape(16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_pro_restore),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Button(
+                        onClick = onPurchase,
+                        enabled = !purchaseInProgress,
+                        modifier = Modifier.weight(1f),
+                        shape = neonShape(16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(
+                                if (purchaseInProgress) R.string.pro_purchase_busy
+                                else R.string.settings_pro_buy
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+            if (onShowSupportOptions != null) {
+                TextButton(
+                    onClick = onShowSupportOptions,
+                    enabled = !purchaseInProgress,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Star,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.settings_pro_support_more),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProMetaPill(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = neonShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProFeatureRow(
+    title: String,
+    description: String,
+    active: Boolean
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = neonShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.62f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(neonShape(12.dp))
+                    .background(
+                        if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                        else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = null,
+                    tint = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(19.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun AboutNote(
     title: String,
     body: String,
@@ -3414,9 +3782,11 @@ private fun normalizeSettingsSearchToken(value: String): String {
 @Composable
 private fun ThemeSelector(
     selected: ThemeMode,
+    isProUnlocked: Boolean,
     customThemeLibrary: CustomThemeLibrary,
     onSelected: (ThemeMode) -> Unit,
-    onCustomThemeSelected: (String) -> Unit
+    onCustomThemeSelected: (String) -> Unit,
+    onProLockedSelected: () -> Unit
 ) {
     val customThemes = customThemeLibrary.sanitized().themes
     val customThemeOptionStart = 100
@@ -3427,6 +3797,13 @@ private fun ThemeSelector(
         add(1 to stringResource(R.string.settings_theme_light))
         add(2 to stringResource(R.string.settings_theme_dark))
         add(neonThemeOptionValue to stringResource(R.string.settings_theme_neon))
+        add(
+            3 to if (isProUnlocked) {
+                stringResource(R.string.settings_theme_pro)
+            } else {
+                stringResource(R.string.settings_theme_pro_locked)
+            }
+        )
         customThemes.forEachIndexed { index, savedTheme ->
             val name = savedTheme.config.name
                 .takeUnless { it == CustomThemeConfig.DEFAULT_NAME }
@@ -3445,6 +3822,7 @@ private fun ThemeSelector(
             ThemeMode.SYSTEM -> 0
             ThemeMode.LIGHT -> 1
             ThemeMode.DARK -> 2
+            ThemeMode.PRO -> 3
             ThemeMode.NEON -> neonThemeOptionValue
             ThemeMode.CUSTOM -> if (activeCustomThemeIndex >= 0) {
                 customThemeOptionStart + activeCustomThemeIndex
@@ -3458,8 +3836,13 @@ private fun ThemeSelector(
                 1 -> onSelected(ThemeMode.LIGHT)
                 2 -> onSelected(ThemeMode.DARK)
                 neonThemeOptionValue -> onSelected(ThemeMode.NEON)
+                3 -> if (isProUnlocked) onSelected(ThemeMode.PRO) else onProLockedSelected()
                 in customThemeOptionStart until customThemeOptionStart + customThemes.size -> {
-                    onCustomThemeSelected(customThemes[value - customThemeOptionStart].id)
+                    if (isProUnlocked) {
+                        onCustomThemeSelected(customThemes[value - customThemeOptionStart].id)
+                    } else {
+                        onProLockedSelected()
+                    }
                 }
                 else -> onSelected(ThemeMode.SYSTEM)
             }
@@ -3761,6 +4144,7 @@ private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
         entry(SettingsTab.General, R.string.settings_tv_interface),
         entry(SettingsTab.General, R.string.settings_theme),
         entry(SettingsTab.General, R.string.settings_theme_manager),
+        entry(SettingsTab.Pro, R.string.settings_pro_title),
         entry(SettingsTab.Customization, R.string.settings_customization_background),
         entry(SettingsTab.Customization, R.string.settings_customization_grid_size),
         entry(SettingsTab.Customization, R.string.settings_customization_font),
@@ -5695,6 +6079,7 @@ private fun SettingsTab.label(): String {
         SettingsTab.Network -> stringResource(R.string.settings_network_tab)
         SettingsTab.Library -> stringResource(R.string.settings_library_tab)
         SettingsTab.Updates -> stringResource(R.string.settings_updates_tab)
+        SettingsTab.Pro -> stringResource(R.string.settings_pro_tab)
         SettingsTab.About -> stringResource(R.string.settings_about)
     }
 }
@@ -5711,6 +6096,7 @@ private fun SettingsTab.icon(): ImageVector {
         SettingsTab.Network -> Icons.Rounded.Link
         SettingsTab.Library -> Icons.Rounded.FolderOpen
         SettingsTab.Updates -> Icons.Rounded.SystemUpdateAlt
+        SettingsTab.Pro -> Icons.Rounded.Star
         SettingsTab.About -> Icons.Rounded.Info
     }
 }
@@ -5727,6 +6113,7 @@ private fun String.toSettingsTab(): SettingsTab {
         "performance", "emulation" -> SettingsTab.Emulation
         "network", "wlan", "adhoc" -> SettingsTab.Network
         "updates", "update", "app_update", "app-update" -> SettingsTab.Updates
+        "pro", "premium", "crimson", "support" -> SettingsTab.Pro
         "about" -> SettingsTab.About
         else -> SettingsTab.General
     }

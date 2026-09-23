@@ -1,6 +1,7 @@
 package com.sbro.emucoreh.ui.onboarding
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
@@ -113,6 +114,8 @@ import com.sbro.emucoreh.ui.common.GamepadFocusHighlightMode
 import com.sbro.emucoreh.ui.common.TvStoragePickerHost
 import com.sbro.emucoreh.ui.common.TvStorageRequest
 import com.sbro.emucoreh.ui.common.gamepadFocusableCard
+import com.sbro.emucoreh.ui.common.ProSupportOptionsDialog
+import com.sbro.emucoreh.core.availableProSupportOffers
 import com.sbro.emucoreh.ui.common.navigationBarsHorizontalPaddingValues
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import com.sbro.emucoreh.ui.common.rememberDebouncedClick
@@ -120,6 +123,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
+import com.sbro.emucoreh.ui.theme.neon.neonButtonShape
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 
 private enum class DeviceChipsetFamily {
@@ -186,6 +190,20 @@ fun OnboardingScreen(
     val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp && configuration.screenWidthDp >= 600
     var isCompleting by remember { mutableStateOf(false) }
     var showEmulatorDataLocationDialog by remember { mutableStateOf(false) }
+    var showProSupportOptions by remember { mutableStateOf(false) }
+    val supportOffers = if (uiState.isProUnlocked && !uiState.isProPurchaseStatusVerified) {
+        emptyList()
+    } else {
+        availableProSupportOffers(
+            offers = uiState.proProducts,
+            ownedProductIds = uiState.ownedProProductIds
+        )
+    }
+    LaunchedEffect(showProSupportOptions, supportOffers) {
+        if (showProSupportOptions && supportOffers.isEmpty()) {
+            showProSupportOptions = false
+        }
+    }
     val scope = rememberCoroutineScope()
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val horizontalSystemBarPadding = navigationBarsHorizontalPaddingValues()
@@ -275,6 +293,27 @@ fun OnboardingScreen(
                 viewModel.setEmulatorDataLocation(location)
             },
             onDismiss = { showEmulatorDataLocationDialog = false }
+        )
+    }
+
+
+    val proPurchaseMessage = uiState.proPurchaseMessageResId?.let { stringResource(it) }
+    LaunchedEffect(proPurchaseMessage) {
+        val message = proPurchaseMessage ?: return@LaunchedEffect
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        viewModel.clearProPurchaseMessage()
+    }
+    if (showProSupportOptions && supportOffers.isNotEmpty()) {
+        ProSupportOptionsDialog(
+            offers = supportOffers,
+            purchaseInProgress = uiState.isProPurchaseInProgress,
+            onPurchase = { tier ->
+                showProSupportOptions = false
+                (context as? Activity)?.let { activity ->
+                    viewModel.purchasePro(activity, tier)
+                }
+            },
+            onDismiss = { showProSupportOptions = false }
         )
     }
 
@@ -426,6 +465,10 @@ fun OnboardingScreen(
                                     showSubtitle = false,
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
+                                page == 3 -> OnboardingHeroPro(
+                                    showSubtitle = false,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
                                 else -> OnboardingHeroSetup(
                                     showSubtitle = false,
                                     modifier = Modifier.padding(bottom = 8.dp)
@@ -463,6 +506,22 @@ fun OnboardingScreen(
                                         .padding(top = 32.dp)
                                 )
                             } else if (page == 3) {
+                                OnboardingProContent(
+                                    isProUnlocked = uiState.isProUnlocked,
+                                    proPrice = uiState.proPrice,
+                                    isProductLoading = uiState.isProProductLoading,
+                                    isPurchaseInProgress = uiState.isProPurchaseInProgress,
+                                    onPurchase = { (context as? Activity)?.let(viewModel::purchasePro) },
+                                    onShowSupportOptions = if (supportOffers.isNotEmpty()) {
+                                        { showProSupportOptions = true }
+                                    } else {
+                                        null
+                                    },
+                                    requestInitialFocus = tvUiEnabled && pagerState.currentPage == page,
+                                    contentFocusRequester = pageContentFocusRequesters[page],
+                                    modifier = Modifier.padding(horizontal = 24.dp)
+                                )
+                            } else if (page == 4) {
                                 Box(modifier = Modifier.fillMaxSize()) {
                                     Column(
                                         modifier = Modifier
@@ -585,6 +644,24 @@ fun OnboardingScreen(
                         when (page) {
                             0, 1, 2 -> OnboardingHero(page = page)
                             3 -> {
+                                OnboardingHeroPro()
+                                Spacer(modifier = Modifier.height(32.dp))
+                                OnboardingProContent(
+                                    isProUnlocked = uiState.isProUnlocked,
+                                    proPrice = uiState.proPrice,
+                                    isProductLoading = uiState.isProProductLoading,
+                                    isPurchaseInProgress = uiState.isProPurchaseInProgress,
+                                    onPurchase = { (context as? Activity)?.let(viewModel::purchasePro) },
+                                    onShowSupportOptions = if (supportOffers.isNotEmpty()) {
+                                        { showProSupportOptions = true }
+                                    } else {
+                                        null
+                                    },
+                                    requestInitialFocus = tvUiEnabled && pagerState.currentPage == page,
+                                    contentFocusRequester = pageContentFocusRequesters[page]
+                                )
+                            }
+                            4 -> {
                                 OnboardingHeroSetup()
                                 Spacer(modifier = Modifier.height(32.dp))
                                 OnboardingSetupContent(
@@ -734,6 +811,153 @@ private fun OnboardingHero(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun OnboardingHeroPro(
+    modifier: Modifier = Modifier,
+    showSubtitle: Boolean = true
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.widthIn(max = 480.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(112.dp)
+                .clip(neonShape(32.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Star,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(56.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(28.dp))
+        Text(
+            text = stringResource(R.string.onboarding_pro_title),
+            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+        if (showSubtitle) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.onboarding_pro_subtitle),
+                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun OnboardingProContent(
+    isProUnlocked: Boolean,
+    proPrice: String?,
+    isProductLoading: Boolean,
+    isPurchaseInProgress: Boolean,
+    onPurchase: () -> Unit,
+    onShowSupportOptions: (() -> Unit)?,
+    requestInitialFocus: Boolean = false,
+    contentFocusRequester: FocusRequester? = null,
+    modifier: Modifier = Modifier
+) {
+    val tvUiEnabled = LocalTvUiEnvironment.current.enabled
+    val fallbackFocusRequester = remember { FocusRequester() }
+    val purchaseFocusRequester = contentFocusRequester ?: fallbackFocusRequester
+    val purchaseInteractionSource = remember { MutableInteractionSource() }
+    LaunchedEffect(requestInitialFocus, isProUnlocked, isPurchaseInProgress, isProductLoading) {
+        if (requestInitialFocus && !isProUnlocked && !isPurchaseInProgress && !isProductLoading) {
+            delay(100.milliseconds)
+            runCatching { purchaseFocusRequester.requestFocus() }
+        }
+    }
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .widthIn(max = 520.dp),
+        shape = neonShape(24.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+        tonalElevation = 4.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.pro_theme_name),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = stringResource(R.string.pro_feature_theme),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(R.string.pro_feature_support),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = when {
+                    isProUnlocked -> stringResource(R.string.pro_status_active)
+                    proPrice != null -> proPrice
+                    isProductLoading -> stringResource(R.string.pro_price_loading)
+                    else -> stringResource(R.string.pro_price_unavailable)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            if (!isProUnlocked) {
+                Button(
+                    shape = neonButtonShape(),
+                    onClick = onPurchase,
+                    enabled = !isPurchaseInProgress && !isProductLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(purchaseFocusRequester)
+                        .gamepadFocusableCard(
+                            enabled = tvUiEnabled && !isPurchaseInProgress && !isProductLoading,
+                            shape = neonShape(16.dp),
+                            interactionSource = purchaseInteractionSource,
+                            addFocusTarget = false,
+                            focusHighlightMode = GamepadFocusHighlightMode.Always
+                        ),
+                    interactionSource = purchaseInteractionSource
+                ) {
+                    Text(
+                        text = if (isPurchaseInProgress) {
+                            stringResource(R.string.pro_purchase_busy)
+                        } else {
+                            stringResource(R.string.settings_pro_buy)
+                        }
+                    )
+                }
+            }
+            if (onShowSupportOptions != null) {
+                TextButton(
+                    onClick = onShowSupportOptions,
+                    enabled = !isPurchaseInProgress && !isProductLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Star,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.settings_pro_support_more))
+                }
+            }
         }
     }
 }

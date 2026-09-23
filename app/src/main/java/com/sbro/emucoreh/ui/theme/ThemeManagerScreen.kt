@@ -1,4 +1,4 @@
-package com.sbro.emucoreh.ui.theme
+﻿package com.sbro.emucoreh.ui.theme
 
 import android.graphics.Color as AndroidColor
 import androidx.annotation.StringRes
@@ -75,10 +75,10 @@ import com.sbro.emucoreh.data.CustomThemeLibrary
 import com.sbro.emucoreh.data.SavedCustomTheme
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
-import com.sbro.emucoreh.ui.theme.neon.neonButtonShape
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 import java.util.UUID
 import kotlin.math.roundToInt
+import com.sbro.emucoreh.ui.theme.neon.neonButtonShape
 
 @Composable
 private fun managerCardShape() = neonShape(28.dp)
@@ -92,6 +92,8 @@ private fun managerSmallShape() = neonShape(14.dp)
 @Composable
 fun ThemeManagerScreen(
     initialLibrary: CustomThemeLibrary,
+    isProUnlocked: Boolean,
+    onPurchasePro: () -> Unit,
     onSave: (CustomThemeLibrary) -> Unit,
     onApply: (CustomThemeLibrary) -> Unit,
     onBackClick: () -> Unit
@@ -100,6 +102,8 @@ fun ThemeManagerScreen(
     val localizedDefaultTheme = remember(localizedDefaultName) {
         CustomThemeConfig.Default.copy(name = localizedDefaultName)
     }
+    // Fresh installs have no saved canvas: default it to the app theme
+    // (light app -> light canvas, dark app -> dark canvas).
     val appCanvasDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val seedLibrary = remember(initialLibrary, localizedDefaultName) {
         val safeInitial = initialLibrary.sanitized()
@@ -161,6 +165,10 @@ fun ThemeManagerScreen(
     }
 
     fun createTheme(source: CustomThemeConfig? = null) {
+        if (!isProUnlocked) {
+            onPurchasePro()
+            return
+        }
         if (library.themes.size >= CustomThemeLibrary.MAX_THEMES) return
         library = libraryWithDraft()
         val now = System.currentTimeMillis()
@@ -263,13 +271,59 @@ fun ThemeManagerScreen(
                 modifier = Modifier.testTag("theme_manager_top_bar")
             )
         }
+        if (!isProUnlocked) {
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("theme_manager_preview_banner"),
+                    shape = managerControlShape(),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Rounded.Palette, contentDescription = null)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.theme_manager_preview_mode),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    stringResource(R.string.theme_manager_preview_mode_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f)
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = onPurchasePro,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("theme_manager_unlock_button"),
+                            shape = managerSmallShape()
+                        ) {
+                            Text(stringResource(R.string.theme_manager_unlock))
+                        }
+                    }
+                }
+            }
+        }
         item {
             ThemeSection(
                 title = stringResource(R.string.theme_manager_library),
                 trailing = {
                     IconButton(
                         onClick = { createTheme() },
-                        enabled = library.themes.size < CustomThemeLibrary.MAX_THEMES
+                        enabled = isProUnlocked &&
+                            library.themes.size < CustomThemeLibrary.MAX_THEMES
                     ) {
                         Icon(
                             Icons.Rounded.Add,
@@ -315,7 +369,8 @@ fun ThemeManagerScreen(
                 ) {
                     OutlinedButton(
                         onClick = { createTheme(draft.copy(name = "${draft.name} Copy")) },
-                        enabled = library.themes.size < CustomThemeLibrary.MAX_THEMES,
+                        enabled = isProUnlocked &&
+                            library.themes.size < CustomThemeLibrary.MAX_THEMES,
                         shape = managerControlShape(),
                         modifier = Modifier.weight(1f)
                     ) {
@@ -325,7 +380,7 @@ fun ThemeManagerScreen(
                     }
                     OutlinedButton(
                         onClick = { deleteCandidateId = selectedThemeId },
-                        enabled = true,
+                        enabled = isProUnlocked,
                         shape = managerControlShape(),
                         modifier = Modifier
                             .weight(1f)
@@ -345,7 +400,7 @@ fun ThemeManagerScreen(
                     onValueChange = {
                         draft = draft.copy(name = it.take(CustomThemeConfig.MAX_NAME_LENGTH))
                     },
-                    enabled = true,
+                    enabled = isProUnlocked,
                     label = { Text(stringResource(R.string.theme_manager_name)) },
                     singleLine = true,
                     shape = managerControlShape(),
@@ -358,7 +413,7 @@ fun ThemeManagerScreen(
                     FilterChip(
                         selected = !draft.dark,
                         onClick = { draft = draft.withCanvas(dark = false) },
-                        enabled = true,
+                        enabled = isProUnlocked,
                         label = { Text(stringResource(R.string.theme_manager_light_canvas)) },
                         leadingIcon = { Icon(Icons.Rounded.LightMode, contentDescription = null) },
                         shape = managerControlShape(),
@@ -367,7 +422,7 @@ fun ThemeManagerScreen(
                     FilterChip(
                         selected = draft.dark,
                         onClick = { draft = draft.withCanvas(dark = true) },
-                        enabled = true,
+                        enabled = isProUnlocked,
                         label = { Text(stringResource(R.string.theme_manager_dark_canvas)) },
                         leadingIcon = { Icon(Icons.Rounded.DarkMode, contentDescription = null) },
                         shape = managerControlShape(),
@@ -391,7 +446,7 @@ fun ThemeManagerScreen(
                                     draft = config.copy(name = draft.name).withCanvas(draft.dark).sanitized()
                                     expandedRole = null
                             },
-                            enabled = true,
+                            enabled = isProUnlocked,
                             modifier = Modifier.width(154.dp),
                             shape = managerControlShape(),
                             color = config.toColorScheme().surface,
@@ -475,7 +530,7 @@ fun ThemeManagerScreen(
                                 group = group,
                                 value = role.read(draft),
                                 config = draft,
-                                enabled = true,
+                                enabled = isProUnlocked,
                                 expanded = expandedRole == role,
                                 onExpandedChange = {
                                     expandedRole = if (expandedRole == role) null else role
@@ -495,21 +550,21 @@ fun ThemeManagerScreen(
                         title = stringResource(R.string.theme_manager_rounding_small),
                         value = draft.smallCornerDp,
                         max = CustomThemeConfig.MAX_SMALL_CORNER_DP,
-                        enabled = true,
+                        enabled = isProUnlocked,
                         onValueChange = { draft = draft.copy(smallCornerDp = it) }
                     )
                     CornerSlider(
                         title = stringResource(R.string.theme_manager_rounding_medium),
                         value = draft.mediumCornerDp,
                         max = CustomThemeConfig.MAX_MEDIUM_CORNER_DP,
-                        enabled = true,
+                        enabled = isProUnlocked,
                         onValueChange = { draft = draft.copy(mediumCornerDp = it) }
                     )
                     CornerSlider(
                         title = stringResource(R.string.theme_manager_rounding_large),
                         value = draft.largeCornerDp,
                         max = CustomThemeConfig.MAX_LARGE_CORNER_DP,
-                        enabled = true,
+                        enabled = isProUnlocked,
                         onValueChange = { draft = draft.copy(largeCornerDp = it) }
                     )
                 }
@@ -525,7 +580,7 @@ fun ThemeManagerScreen(
                         draft = CustomThemeConfig.Default
                         expandedRole = null
                     },
-                    enabled = true,
+                    enabled = isProUnlocked,
                     shape = managerControlShape(),
                     modifier = Modifier.weight(1f)
                 ) {
@@ -538,7 +593,7 @@ fun ThemeManagerScreen(
                         library = libraryWithDraft()
                         onSave(library)
                     },
-                    enabled = true,
+                    enabled = isProUnlocked,
                     shape = managerControlShape(),
                     modifier = Modifier.weight(1f)
                 ) {
@@ -552,7 +607,7 @@ fun ThemeManagerScreen(
                     library = libraryWithDraft().copy(activeThemeId = selectedThemeId).sanitized()
                     onApply(library)
                 },
-                enabled = true,
+                enabled = isProUnlocked,
                 shape = managerControlShape(),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -845,10 +900,12 @@ private fun ThemePreview() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(shape = neonButtonShape(), onClick = {}, modifier = Modifier.weight(1f)) {
+                Button(
+                    shape = neonButtonShape(),onClick = {}, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.theme_manager_preview_button))
                 }
-                OutlinedButton(shape = neonButtonShape(), onClick = {}, modifier = Modifier.weight(1f)) {
+                OutlinedButton(
+                    shape = neonButtonShape(),onClick = {}, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.theme_manager_preview_secondary_button))
                 }
             }
@@ -1103,7 +1160,8 @@ private fun ThemeGroupPreview(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Button(shape = neonButtonShape(), onClick = {}, modifier = Modifier.weight(1f)) {
+                        Button(
+                            shape = neonButtonShape(),onClick = {}, modifier = Modifier.weight(1f)) {
                             Text(stringResource(R.string.theme_manager_preview_button))
                         }
                         PreviewContainer(

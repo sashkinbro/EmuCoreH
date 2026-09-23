@@ -29,8 +29,9 @@ core/build/
 # Local Firebase configuration and hosting content
 /.firebaserc
 /firebase.json
-/firestore.rules
-/firestore.indexes.json
 /.firebase/
 firebase-debug.log*
 /y/
+
+# Local Firebase app configuration (contains project API keys)
+app/google-services.json

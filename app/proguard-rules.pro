@@ -45,6 +45,13 @@
 # Enqueued work is restored from the database by worker class name.
 -keepnames class * extends androidx.work.ListenableWorker
 
+# --- Firebase / Play services ----------------------------------------------
+# Firebase, Play Billing and AndroidX Credentials ship their own consumer
+# rules; these dontwarn entries keep the release shrink focused when optional
+# integrations are absent from a variant.
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+
 # --- Persisted enums --------------------------------------------------------
 # Enum constant names are written to DataStore/JSON (drawer items, game menu
 # tabs/sections, texture download status) and matched by name on the next

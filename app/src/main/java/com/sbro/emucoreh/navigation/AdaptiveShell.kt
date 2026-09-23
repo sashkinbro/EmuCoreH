@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Newspaper
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Save
@@ -109,7 +110,7 @@ import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.milliseconds
 
 enum class PrimaryDestination {
-    Home, Search, Hub, Formats, Discord, Settings, Feedback
+    Home, Search, Hub, Formats, Discord, Settings, Feedback, Profile
 }
 
 private enum class MobileLeadingAction {
@@ -153,6 +154,7 @@ fun AdaptiveShell(
     onNavigateTextureManager: (() -> Unit)? = null,
     onNavigateCheatManager: (() -> Unit)? = null,
     onNavigateAchievements: (() -> Unit)? = null,
+    onNavigateProfile: (() -> Unit)? = null,
     onBackClick: (() -> Unit)? = null,
     onLaunchGame: (() -> Unit)? = null,
     onLaunchBios: (() -> Unit)? = null,
@@ -190,6 +192,7 @@ fun AdaptiveShell(
             onNavigateTextureManager = onNavigateTextureManager,
             onNavigateCheatManager = onNavigateCheatManager,
             onNavigateAchievements = onNavigateAchievements,
+            onNavigateProfile = onNavigateProfile,
             onLaunchGame = onLaunchGame,
             onLaunchBios = onLaunchBios,
             selectedItemFocusRequester = if (tvUiEnabled) tvNavigationFocusRequester else null,
@@ -268,6 +271,7 @@ fun AdaptiveShell(
             onNavigateTextureManager = onNavigateTextureManager,
             onNavigateCheatManager = onNavigateCheatManager,
             onNavigateAchievements = onNavigateAchievements,
+            onNavigateProfile = onNavigateProfile,
             onBackClick = onBackClick,
             onLaunchGame = onLaunchGame,
             onLaunchBios = onLaunchBios,
@@ -299,6 +303,7 @@ private fun CompactAdaptiveShell(
     onNavigateTextureManager: (() -> Unit)?,
     onNavigateCheatManager: (() -> Unit)?,
     onNavigateAchievements: (() -> Unit)?,
+    onNavigateProfile: (() -> Unit)?,
     onBackClick: (() -> Unit)?,
     onLaunchGame: (() -> Unit)?,
     onLaunchBios: (() -> Unit)?,
@@ -478,6 +483,7 @@ private fun CompactAdaptiveShell(
                     onNavigateTextureManager = onNavigateTextureManager,
                     onNavigateCheatManager = onNavigateCheatManager,
                     onNavigateAchievements = onNavigateAchievements,
+                    onNavigateProfile = onNavigateProfile,
                     onLaunchGame = onLaunchGame,
                     onLaunchBios = onLaunchBios,
                     selectedItemFocusRequester = selectedDrawerItemFocusRequester,
@@ -512,6 +518,7 @@ private fun SideNavigation(
     onNavigateTextureManager: (() -> Unit)?,
     onNavigateCheatManager: (() -> Unit)?,
     onNavigateAchievements: (() -> Unit)?,
+    onNavigateProfile: (() -> Unit)?,
     onLaunchGame: (() -> Unit)?,
     onLaunchBios: (() -> Unit)?,
     selectedItemFocusRequester: FocusRequester? = null,
@@ -591,6 +598,11 @@ private fun SideNavigation(
             closeDrawerThen(it)
         }
     }
+    val navigateProfile = onNavigateProfile?.let {
+        rememberDebouncedClick {
+            closeDrawerThen(it)
+        }
+    }
     val navigateFormats = rememberDebouncedClick {
         closeDrawerThen(onNavigateFormats)
     }
@@ -616,6 +628,8 @@ private fun SideNavigation(
         }
     }
     val context = LocalContext.current
+    val proPreferences = remember(context) { AppPreferences(context) }
+    val isProUnlocked by proPreferences.proUnlocked.collectAsState(initial = false)
     val biosInstalled by produceState(initialValue = false, context) {
         val systemDir = EmulatorStorage.flycastSystemDir(context).absolutePath
         while (true) {
@@ -658,7 +672,9 @@ private fun SideNavigation(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(R.drawable.ic_drawer_app),
+                    painter = painterResource(
+                        if (isProUnlocked) R.drawable.ic_drawer_app_pro else R.drawable.ic_drawer_app
+                    ),
                     contentDescription = null,
                     modifier = Modifier
                         .size(52.dp)
@@ -718,6 +734,17 @@ private fun SideNavigation(
                     label = stringResource(R.string.shell_achievements),
                     selected = false,
                     onClick = navigateAchievements
+                )
+            }
+            if (navigateProfile != null && DrawerItemId.PROFILE !in hiddenDrawerItems) {
+                ShellItem(
+                    icon = Icons.Rounded.Person,
+                    label = stringResource(R.string.profile_title),
+                    selected = selected == PrimaryDestination.Profile,
+                    modifier = if (selected == PrimaryDestination.Profile && selectedItemFocusRequester != null) {
+                        Modifier.focusRequester(selectedItemFocusRequester)
+                    } else Modifier,
+                    onClick = navigateProfile
                 )
             }
             if (navigateDiscord != null && DrawerItemId.DISCORD !in hiddenDrawerItems) {
