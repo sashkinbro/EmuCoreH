@@ -2955,4 +2955,8 @@
     <string name="achievement_shenmue_title">Il viaggio comincia</string>
     <string name="achievement_sonic_adventure_description">Trascorri 2 ore in Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">Emittente clandestina</string>
+
+    <string name="touch_control_creator_preview_mode">Modalità anteprima</string>
+    <string name="touch_control_creator_pro_desc">Esplora ogni opzione gratuitamente. È richiesto PRO per creare, salvare, duplicare o abilitare controlli nei giochi.</string>
+    <string name="touch_control_creator_unlock">Sblocca PRO</string>
 </resources>

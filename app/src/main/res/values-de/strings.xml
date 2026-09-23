@@ -2957,4 +2957,8 @@
     <string name="achievement_shenmue_title">Die Reise beginnt</string>
     <string name="achievement_sonic_adventure_description">Verbringe 2 Stunden in Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">Untergrundsender</string>
+
+    <string name="touch_control_creator_preview_mode">Vorschaumodus</string>
+    <string name="touch_control_creator_pro_desc">Erkunden Sie jede Option kostenlos. PRO ist erforderlich, um benutzerdefinierte Steuerelemente in Spielen zu erstellen, zu speichern, zu duplizieren oder zu aktivieren.</string>
+    <string name="touch_control_creator_unlock">PRO freischalten</string>
 </resources>

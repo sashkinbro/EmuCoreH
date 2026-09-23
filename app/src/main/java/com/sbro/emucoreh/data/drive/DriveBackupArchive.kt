@@ -49,7 +49,7 @@ class DriveBackupArchive(private val context: Context) {
             throw DriveBackupException("storage")
         }
         return linkedMapOf(
-            "memory-cards" to File(com.sbro.emucoreh.core.CoreRuntime.vmuDirPath),
+            "memory-cards" to File(EmulatorStorage.flycastSystemDir(context), "dc").apply { mkdirs() },
             "save-states" to EmulatorStorage.saveStatesDir(context, path),
             "cheat-files" to EmulatorStorage.importedCheatsDir(context),
             "patches" to EmulatorStorage.patchesDir(context, path),

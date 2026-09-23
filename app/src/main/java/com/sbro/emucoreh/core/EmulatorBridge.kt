@@ -512,7 +512,9 @@ object EmulatorBridge {
         NativeApp.logCrashBreadcrumb("startEmulation requested pathType=$pathType vmActive=$isVmActive")
         Log.i(TAG, "startEmulation requested pathType=$pathType bootSmoke=$bootSmokeProbe vmActive=$isVmActive")
 
-        return runSerial {
+        return BackupSessionGate.start(active = { isVmActive }) {
+            getContext()?.let { com.sbro.emucoreh.data.drive.DriveBackupArchive(it).recoverPending() }
+            runSerial {
             isVmActive = true
             shutdownRequested = false
             var result = try {
@@ -560,6 +562,7 @@ object EmulatorBridge {
             NativeApp.logCrashBreadcrumb("startEmulation finished result=$result")
             Log.i(TAG, "startEmulation finished result=$result")
             result
+            }
         }
     }
 
@@ -673,6 +676,11 @@ object EmulatorBridge {
                 // A failed teardown must retain ownership and its descriptors.
                 shutdownRequested = false
             }
+        }
+        // A failed native shutdown must never unlock memory-card backup while the VM still owns it.
+        if (!runCatching { NativeApp.hasValidVm() }.getOrDefault(true)) {
+            BackupSessionGate.stopped()
+            getContext()?.let { com.sbro.emucoreh.data.drive.DriveBackupWork.afterGame(it) }
         }
     }
 

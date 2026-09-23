@@ -2955,4 +2955,8 @@
     <string name="achievement_shenmue_title">Yolculuk başlıyor</string>
     <string name="achievement_sonic_adventure_description">Sonic Adventure\'da 2 saat geçir.</string>
     <string name="achievement_jet_set_radio_title">Yeraltı yayıncısı</string>
+
+    <string name="touch_control_creator_preview_mode">Önizleme modu</string>
+    <string name="touch_control_creator_pro_desc">Her seçeneği ücretsiz keşfedin. Oyunlarda özel kontrolleri oluşturmak, kaydetmek, çoğaltmak veya etkinleştirmek için PRO gereklidir.</string>
+    <string name="touch_control_creator_unlock">PRO Kilidini Aç</string>
 </resources>

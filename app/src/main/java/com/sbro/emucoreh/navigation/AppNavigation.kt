@@ -901,6 +901,10 @@ fun AppNavigation(
                 } else {
                     TouchControlCreatorScreen(
                         initialLibrary = settingsUiState.customTouchControls,
+                        isProUnlocked = settingsUiState.isProUnlocked,
+                        onPurchasePro = {
+                            (context as? android.app.Activity)?.let(settingsViewModel::purchasePro)
+                        },
                         onSave = settingsViewModel::saveCustomTouchControls,
                         onBackClick = { navController.popBackStack() }
                     )

@@ -2980,4 +2980,8 @@
     <string name="achievement_shenmue_title">The journey begins</string>
     <string name="achievement_sonic_adventure_description">Spend 2 hours in Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">Underground broadcaster</string>
+
+    <string name="touch_control_creator_preview_mode">Preview mode</string>
+    <string name="touch_control_creator_pro_desc">Explore every option for free. PRO is required to create, save, duplicate, or enable custom controls in games.</string>
+    <string name="touch_control_creator_unlock">Unlock PRO</string>
 </resources>

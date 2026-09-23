@@ -2959,4 +2959,8 @@
     <string name="achievement_shenmue_title">Путешествие начинается</string>
     <string name="achievement_sonic_adventure_description">Проведите 2 часа в Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">Подпольный вещатель</string>
+
+    <string name="touch_control_creator_preview_mode">Режим предпросмотра</string>
+    <string name="touch_control_creator_pro_desc">Изучайте все настройки бесплатно. PRO требуется для создания, сохранения, дублирования или включения кастомных кнопок в играх.</string>
+    <string name="touch_control_creator_unlock">Разблокировать PRO</string>
 </resources>

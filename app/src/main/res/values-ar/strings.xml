@@ -2963,4 +2963,8 @@
     <string name="achievement_shenmue_title">تبدأ الرحلة</string>
     <string name="achievement_sonic_adventure_description">اقضِ ساعتين في Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">مذيع تحت الأرض</string>
+
+    <string name="touch_control_creator_preview_mode">وضع المعاينة</string>
+    <string name="touch_control_creator_pro_desc">استكشف كل خيار مجانًا. يتطلب إصدار PRO إنشاء أو حفظ أو تكرار أو تمكين عناصر التحكم المخصصة في الألعاب.</string>
+    <string name="touch_control_creator_unlock">فتح PRO</string>
 </resources>

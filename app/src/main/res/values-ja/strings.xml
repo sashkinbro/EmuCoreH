@@ -2954,4 +2954,8 @@
     <string name="achievement_shenmue_title">旅の始まり</string>
     <string name="achievement_sonic_adventure_description">Sonic Adventureで2時間プレイする。</string>
     <string name="achievement_jet_set_radio_title">地下放送局</string>
+
+    <string name="touch_control_creator_preview_mode">プレビューモード</string>
+    <string name="touch_control_creator_pro_desc">すべてのオプションを無料で探索できます。ゲームでカスタムコントロールを作成、保存、複製、または有効にするにはPROが必要です。</string>
+    <string name="touch_control_creator_unlock">PROをロック解除</string>
 </resources>

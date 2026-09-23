@@ -2976,4 +2976,8 @@
     <string name="achievement_shenmue_title">Podróż się zaczyna</string>
     <string name="achievement_sonic_adventure_description">Spędź 2 godziny w Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">Podziemna stacja</string>
+
+    <string name="touch_control_creator_preview_mode">Bezpłatny podgląd narzędzi edytorskich</string>
+    <string name="touch_control_creator_pro_desc">Masz na to ochotę wędrować pod oknach opcji całkowicie darmowo i bez rejestracji? Zapoznaj się z możliwościami, by zapisać utworzoną ramę na przyciskach pod wymarzone pady potrzebna jest funkcja konta płatnego jako wariant z plusem (PRO).</string>
+    <string name="touch_control_creator_unlock">Skorzystaj i zapłać za abonament (PRO)</string>
 </resources>
