@@ -26,11 +26,14 @@ core/build/
 *.jks
 *.keystore
 
-# Local Firebase configuration and hosting content
+# Local Firebase configuration and hosting content (never commit)
 /.firebaserc
 /firebase.json
+/firestore.rules
+/firestore.indexes.json
 /.firebase/
 firebase-debug.log*
+firestore-debug.log*
 /y/
 
 # Local Firebase app configuration (contains project API keys)
