@@ -2955,4 +2955,8 @@
     <string name="achievement_shenmue_title">यात्रा शुरू होती है</string>
     <string name="achievement_sonic_adventure_description">Sonic Adventure में 2 घंटे बिताएं।</string>
     <string name="achievement_jet_set_radio_title">भूमिगत प्रसारक</string>
+
+    <string name="touch_control_creator_preview_mode">पूर्वावलोकन मोड</string>
+    <string name="touch_control_creator_pro_desc">मुफ़्त में हर विकल्प एक्सप्लोर करें। गेम्स में कस्टम नियंत्रण बनाने, सहेजने, डुप्लिकेट करने या सक्षम करने के लिए PRO आवश्यक है।</string>
+    <string name="touch_control_creator_unlock">PRO अनलॉक करें</string>
 </resources>

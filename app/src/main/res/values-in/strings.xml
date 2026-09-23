@@ -2969,4 +2969,8 @@
     <string name="achievement_shenmue_title">Perjalanan dimulai</string>
     <string name="achievement_sonic_adventure_description">Habiskan 2 jam di Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">Penyiar bawah tanah</string>
+
+    <string name="touch_control_creator_preview_mode">Mode pratinjau</string>
+    <string name="touch_control_creator_pro_desc">Jelajahi setiap opsi secara gratis. PRO diperlukan untuk membuat, menyimpan, menduplikasi, atau mengaktifkan kontrol kustom di game.</string>
+    <string name="touch_control_creator_unlock">Buka PRO</string>
 </resources>

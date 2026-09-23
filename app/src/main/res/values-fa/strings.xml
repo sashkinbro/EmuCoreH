@@ -2970,4 +2970,8 @@
     <string name="achievement_shenmue_title">سفر آغاز می‌شود</string>
     <string name="achievement_sonic_adventure_description">۲ ساعت در Sonic Adventure بگذرانید.</string>
     <string name="achievement_jet_set_radio_title">پخش‌کننده زیرزمینی</string>
+
+    <string name="touch_control_creator_preview_mode">حالت پیش‌نمایش</string>
+    <string name="touch_control_creator_pro_desc">رایگان کاوش کنید. برای ساخت، ذخیره، تکثیر یا فعال کردن کنترل‌ها در بازی به PRO نیاز است.</string>
+    <string name="touch_control_creator_unlock">باز کردن PRO</string>
 </resources>

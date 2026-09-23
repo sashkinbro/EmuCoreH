@@ -2957,4 +2957,8 @@
     <string name="achievement_shenmue_title">Le voyage commence</string>
     <string name="achievement_sonic_adventure_description">Passez 2 heures dans Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">Diffuseur clandestin</string>
+
+    <string name="touch_control_creator_preview_mode">Mode aperçu</string>
+    <string name="touch_control_creator_pro_desc">Explorez chaque option gratuitement. PRO est requis pour créer, enregistrer, dupliquer ou activer des contrôles dans les jeux.</string>
+    <string name="touch_control_creator_unlock">Déverrouiller PRO</string>
 </resources>

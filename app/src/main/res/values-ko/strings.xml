@@ -2954,4 +2954,8 @@
     <string name="achievement_shenmue_title">여정의 시작</string>
     <string name="achievement_sonic_adventure_description">Sonic Adventure에서 2시간 플레이하세요.</string>
     <string name="achievement_jet_set_radio_title">지하 방송국</string>
+
+    <string name="touch_control_creator_preview_mode">미리보기 모드</string>
+    <string name="touch_control_creator_pro_desc">모든 옵션을 무료로 탐색하세요. 게임에서 사용자 지정 컨트롤을 만들고, 저장하고, 복제하거나 활성화하려면 PRO가 필요합니다.</string>
+    <string name="touch_control_creator_unlock">PRO 잠금 해제</string>
 </resources>

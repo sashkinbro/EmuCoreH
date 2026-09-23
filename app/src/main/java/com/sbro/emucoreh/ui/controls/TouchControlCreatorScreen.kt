@@ -180,6 +180,8 @@ private enum class ControlStylePreset(val titleRes: Int) {
 @Composable
 fun TouchControlCreatorScreen(
     initialLibrary: CustomTouchControlLibrary,
+    isProUnlocked: Boolean,
+    onPurchasePro: () -> Unit,
     onSave: (CustomTouchControlLibrary) -> Unit,
     onBackClick: () -> Unit
 ) {
@@ -231,7 +233,7 @@ fun TouchControlCreatorScreen(
     }
 
     fun createControl(source: CustomTouchControl? = null) {
-        if (library.controls.size >= CustomTouchControlLibrary.MAX_CONTROLS) return
+        if (!isProUnlocked || library.controls.size >= CustomTouchControlLibrary.MAX_CONTROLS) return
         val now = System.currentTimeMillis()
         val created = (source ?: CustomTouchControl()).copy(
             id = UUID.randomUUID().toString(),
@@ -318,13 +320,63 @@ fun TouchControlCreatorScreen(
                 modifier = Modifier.testTag("touch_control_creator_top_bar")
             )
         }
+        if (!isProUnlocked) {
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("touch_control_creator_preview_banner"),
+                    shape = creatorCardShape(),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    border = BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Rounded.Lock, contentDescription = null)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.touch_control_creator_preview_mode),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    stringResource(R.string.touch_control_creator_pro_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f)
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = onPurchasePro,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("touch_control_creator_unlock_button"),
+                            shape = creatorControlShape()
+                        ) {
+                            Text(stringResource(R.string.touch_control_creator_unlock))
+                        }
+                    }
+                }
+            }
+        }
         item {
             CreatorSection(
                 title = stringResource(R.string.touch_control_creator_library),
                 trailing = {
                     IconButton(
                         onClick = { createControl() },
-                        enabled = library.controls.size < CustomTouchControlLibrary.MAX_CONTROLS
+                        enabled = isProUnlocked &&
+                            library.controls.size < CustomTouchControlLibrary.MAX_CONTROLS
                     ) {
                         Icon(
                             Icons.Rounded.Add,
@@ -384,7 +436,7 @@ fun TouchControlCreatorScreen(
                 ) {
                     OutlinedButton(
                         onClick = { createControl(draft) },
-                        enabled = draft.id != previewSeed.id &&
+                        enabled = isProUnlocked && draft.id != previewSeed.id &&
                             library.controls.size < CustomTouchControlLibrary.MAX_CONTROLS,
                         shape = creatorControlShape(),
                         modifier = Modifier.weight(1f)
@@ -395,7 +447,7 @@ fun TouchControlCreatorScreen(
                     }
                     OutlinedButton(
                         onClick = { deleteCandidate = draft },
-                        enabled = draft.id != previewSeed.id,
+                        enabled = isProUnlocked && draft.id != previewSeed.id,
                         shape = creatorControlShape(),
                         modifier = Modifier
                             .weight(1f)
@@ -412,7 +464,7 @@ fun TouchControlCreatorScreen(
                 ) {
                     OutlinedButton(
                         onClick = { moveSelectedControl(-1) },
-                        enabled = selectedLayerIndex > 0,
+                        enabled = isProUnlocked && selectedLayerIndex > 0,
                         shape = creatorControlShape(),
                         modifier = Modifier.weight(1f)
                     ) {
@@ -422,7 +474,8 @@ fun TouchControlCreatorScreen(
                     }
                     OutlinedButton(
                         onClick = { moveSelectedControl(1) },
-                        enabled = selectedLayerIndex in 0 until library.controls.lastIndex,
+                        enabled = isProUnlocked &&
+                            selectedLayerIndex in 0 until library.controls.lastIndex,
                         shape = creatorControlShape(),
                         modifier = Modifier.weight(1f)
                     ) {
@@ -852,7 +905,7 @@ fun TouchControlCreatorScreen(
                 }
                 Button(
                     onClick = { onSave(library.sanitized()) },
-                    enabled = library.controls.isNotEmpty(),
+                    enabled = isProUnlocked && library.controls.isNotEmpty(),
                     shape = creatorControlShape(),
                     modifier = Modifier
                         .weight(1f)

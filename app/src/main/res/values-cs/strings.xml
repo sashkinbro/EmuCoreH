@@ -2976,4 +2976,8 @@
     <string name="achievement_shenmue_title">Cesta začíná</string>
     <string name="achievement_sonic_adventure_description">Strávte 2 hodiny v Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">Podzemní vysílač</string>
+
+    <string name="touch_control_creator_preview_mode">Režim náhledu</string>
+    <string name="touch_control_creator_pro_desc">Prozkoumejte každou možnost zdarma. Verze PRO je vyžadována k vytvoření, uložení, duplikaci nebo povolení vlastních ovládacích prvků ve hrách.</string>
+    <string name="touch_control_creator_unlock">Odemknout PRO</string>
 </resources>

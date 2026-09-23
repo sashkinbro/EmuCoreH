@@ -2960,4 +2960,8 @@
     <string name="achievement_shenmue_title">Подорож починається</string>
     <string name="achievement_sonic_adventure_description">Проведіть 2 години в Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">Підпільний мовник</string>
+
+    <string name="touch_control_creator_preview_mode">Режим попереднього перегляду</string>
+    <string name="touch_control_creator_pro_desc">Вивчайте всі опції безкоштовно. PRO потрібен для створення, збереження, дублювання або ввімкнення кастомних кнопок в іграх.</string>
+    <string name="touch_control_creator_unlock">Розблокувати PRO</string>
 </resources>

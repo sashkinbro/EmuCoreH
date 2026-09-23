@@ -985,7 +985,7 @@ class PlayerProfileRepository(context: Context) {
         private const val MAX_COVER_PATH_LENGTH = 500
         private const val DEFAULT_DISPLAY_NAME = "Player"
         private const val DEFAULT_GAME_TITLE = "Unknown game"
-        private const val BIOS_TITLE = "PlayStation 2 BIOS"
+        private const val BIOS_TITLE = "Dreamcast BIOS"
 
         private const val FIELD_UID = "uid"
         private const val FIELD_PROFILE_SCHEMA_VERSION = "profileSchemaVersion"

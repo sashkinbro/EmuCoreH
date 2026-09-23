@@ -2957,4 +2957,8 @@
     <string name="achievement_shenmue_title">El viaje comienza</string>
     <string name="achievement_sonic_adventure_description">Pasa 2 horas en Sonic Adventure.</string>
     <string name="achievement_jet_set_radio_title">Locutor clandestino</string>
+
+    <string name="touch_control_creator_preview_mode">Modo vista previa</string>
+    <string name="touch_control_creator_pro_desc">Explora todas las opciones gratis. Se requiere PRO para guardar, duplicar o habilitar controles en los juegos.</string>
+    <string name="touch_control_creator_unlock">Desbloquear PRO</string>
 </resources>

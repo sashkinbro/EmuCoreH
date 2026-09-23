@@ -2956,4 +2956,8 @@
     <string name="achievement_shenmue_title">旅程開始</string>
     <string name="achievement_sonic_adventure_description">在 Sonic Adventure 中度過 2 小時。</string>
     <string name="achievement_jet_set_radio_title">地下廣播電台</string>
+
+    <string name="touch_control_creator_preview_mode">预览模式</string>
+    <string name="touch_control_creator_pro_desc">免费探索每个选项。在游戏中创建、保存、复制或启用自定义按键需要 PRO 版。</string>
+    <string name="touch_control_creator_unlock">解锁 PRO</string>
 </resources>
