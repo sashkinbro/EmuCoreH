@@ -6,6 +6,12 @@
         <item name="postSplashScreenTheme">@style/Theme.EmuCoreH</item>
     </style>
 
+    <style name="Theme.EmuCoreH.Splash.Pro" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_pro</item>
+        <item name="postSplashScreenTheme">@style/Theme.EmuCoreH</item>
+    </style>
+
     <style name="Theme.EmuCoreH" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>

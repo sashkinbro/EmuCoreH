@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -340,6 +341,8 @@ class AppPreferences(private val context: Context) {
         private val MEDIATEK_SETTINGS_NOTICE_SHOWN =
             booleanPreferencesKey("mediatek_settings_notice_shown")
         private val MEMORY_CARDS_INITIALIZED = booleanPreferencesKey("memory_cards_initialized")
+        private val PRO_UNLOCKED = booleanPreferencesKey("pro_unlocked")
+        private val WELCOME_DIALOG_SHOWN = booleanPreferencesKey("welcome_dialog_shown")
         private val IN_APP_REVIEW_QUALIFYING_SESSION_COUNT =
             intPreferencesKey("in_app_review_qualifying_session_count")
         private val IN_APP_REVIEW_TOTAL_ACTIVE_PLAY_TIME_MS =
@@ -468,13 +471,40 @@ class AppPreferences(private val context: Context) {
         private val STICK_SURFACE_MODE = booleanPreferencesKey("stick_surface_mode")
         private val CONTROL_LAYOUTS = stringPreferencesKey("control_layouts")
         private val OVERLAY_LAYOUT_VERSION = intPreferencesKey("overlay_layout_version")
+
+        internal val EMULATOR_CLOUD_KEYS = setOf(
+            "renderer", "mediatekAngleOpenGl", "upscaleMultiplier", "shaderChainEnabled",
+            "shaderChainPreset", "aspectRatio", "displayCropLeft", "displayCropTop",
+            "displayCropRight", "displayCropBottom", "audioVolume", "audioFastForwardVolume",
+            "audioMuted", "audioOutputLatencyMs", "audioMinimalOutputLatency", "padVibration",
+            "padVibrationStrength", "padVibrationFallback", "showFps", "fpsOverlayMode",
+            "fpsOverlayCorner", "fpsOverlayScale", "fpsOverlayMetrics", "confirmSaveLoadActions",
+            "backButtonExitsGame", "compactControls", "keepScreenOn", "overlayScale",
+            "overlayOpacity", "overlayShow", "racingMode", "touchscreenRightStick",
+            "touchscreenRightStickSensitivity", "touchHaptics", "touchHapticsPreset",
+            "touchHapticsStrength", "gyroMode", "gyroSensitivity", "gyroSmoothing",
+            "gyroInvertX", "gyroInvertY", "gamepadStickDeadzone", "gamepadLeftStickSensitivity",
+            "gamepadRightStickSensitivity", "gamepadRightStickUpToR2", "gamepadRightStickDownToL2",
+            "gamepadButtonHaptics", "pressureModifierAmount", "textureReplacementsEnabled",
+            "textureReplacementsAsync", "textureReplacementsPrecache", "textureDumpingEnabled",
+            "enableAutoGamepad", "hideOverlayOnGamepad", "gamepadBindings",
+            "gamepadDeviceAssignments", "gamepadIgnoredDevices", "gpuDriverType", "customDriverPath",
+            "frameLimitEnabled", "vSyncEnabled", "fastForwardSpeed", "targetFps", "ntscFramerate",
+            "palFramerate", "autoSaveEnabled", "autoSaveIntervalMinutes", "overlayLayoutVersion",
+            "dpadOffset", "lstickOffset", "rstickOffset", "actionOffset", "lbtnOffset",
+            "rbtnOffset", "centerOffset", "stickScale", "leftStickSensitivity",
+            "rightStickSensitivity", "invertLeftStick", "invertRightStick",
+            "invertLeftStickHorizontal", "invertRightStickHorizontal", "stickSurfaceMode",
+            "controlLayouts", "customTouchControls", "touchControlVisualStyle",
+            "touchControlPressEffect", "localMultiplayerMode"
+        )
     }
     private fun readThemeMode(prefs: Preferences): ThemeMode {
         return when (prefs[THEME_MODE]) {
             1 -> ThemeMode.LIGHT
             2 -> ThemeMode.DARK
-            3 -> ThemeMode.DARK
-            4 -> ThemeMode.CUSTOM
+            3 -> if (prefs[PRO_UNLOCKED] == true) ThemeMode.PRO else ThemeMode.SYSTEM
+            4 -> if (prefs[PRO_UNLOCKED] == true) ThemeMode.CUSTOM else ThemeMode.SYSTEM
             5 -> ThemeMode.NEON
             else -> ThemeMode.SYSTEM
         }
@@ -604,10 +634,12 @@ class AppPreferences(private val context: Context) {
 
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { prefs ->
+            if (mode in setOf(ThemeMode.PRO, ThemeMode.CUSTOM) && prefs[PRO_UNLOCKED] != true) return@edit
             prefs[THEME_MODE] = when (mode) {
                 ThemeMode.SYSTEM -> 0
                 ThemeMode.LIGHT -> 1
                 ThemeMode.DARK -> 2
+                ThemeMode.PRO -> 3
                 ThemeMode.CUSTOM -> 4
                 ThemeMode.NEON -> 5
             }
@@ -616,6 +648,7 @@ class AppPreferences(private val context: Context) {
 
     suspend fun setCustomTheme(config: CustomThemeConfig) {
         context.dataStore.edit { prefs ->
+            if (prefs[PRO_UNLOCKED] != true) return@edit
             val safeConfig = config.sanitized()
             val current = readCustomThemeLibrary(prefs)
             val activeId = current.activeThemeId ?: CustomThemeLibrary.LEGACY_THEME_ID
@@ -640,6 +673,7 @@ class AppPreferences(private val context: Context) {
 
     suspend fun setCustomThemeLibrary(library: CustomThemeLibrary, activate: Boolean) {
         context.dataStore.edit { prefs ->
+            if (prefs[PRO_UNLOCKED] != true) return@edit
             val safe = library.sanitized()
             prefs[CUSTOM_THEME_LIBRARY_JSON] = safe.encode()
             val activeConfig = safe.activeTheme()?.config
@@ -659,6 +693,7 @@ class AppPreferences(private val context: Context) {
 
     suspend fun setCustomTouchControls(library: CustomTouchControlLibrary) {
         context.dataStore.edit { prefs ->
+            if (prefs[PRO_UNLOCKED] != true) return@edit
             prefs[CUSTOM_TOUCH_CONTROLS_JSON] = library.sanitized().encode()
         }
     }
@@ -800,6 +835,33 @@ class AppPreferences(private val context: Context) {
 
     suspend fun markMediatekSettingsNoticeShown() {
         context.dataStore.edit { prefs -> prefs[MEDIATEK_SETTINGS_NOTICE_SHOWN] = true }
+    }
+
+    val proUnlocked: Flow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[PRO_UNLOCKED] ?: false }
+        .distinctUntilChanged()
+
+    fun getProUnlockedSync(): Boolean {
+        return runBlocking {
+            context.dataStore.data.map { prefs -> prefs[PRO_UNLOCKED] ?: false }.first()
+        }
+    }
+
+    val welcomeDialogShown: Flow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[WELCOME_DIALOG_SHOWN] ?: false }
+        .distinctUntilChanged()
+
+    suspend fun setProUnlocked(unlocked: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PRO_UNLOCKED] = unlocked
+            if (!unlocked && prefs[THEME_MODE] in setOf(3, 4)) {
+                prefs[THEME_MODE] = 0
+            }
+        }
+    }
+
+    suspend fun setWelcomeDialogShown(shown: Boolean) {
+        context.dataStore.edit { prefs -> prefs[WELCOME_DIALOG_SHOWN] = shown }
     }
 
     suspend fun recordInAppReviewSession(activePlayTimeMs: Long) {
@@ -2964,6 +3026,23 @@ class AppPreferences(private val context: Context) {
             json.optString("memoryCardSlot1").takeIf { it.isNotBlank() }?.let { prefs[MEMORY_CARD_SLOT1] = it } ?: prefs.remove(MEMORY_CARD_SLOT1)
             json.optString("memoryCardSlot2").takeIf { it.isNotBlank() }?.let { prefs[MEMORY_CARD_SLOT2] = it } ?: prefs.remove(MEMORY_CARD_SLOT2)
         }
+    }
+
+    suspend fun exportEmulatorCloudJson(): JSONObject {
+        val complete = exportJson()
+        return JSONObject().apply {
+            EMULATOR_CLOUD_KEYS.forEach { key ->
+                if (complete.has(key) && !complete.isNull(key)) put(key, complete.get(key))
+            }
+        }
+    }
+
+    suspend fun importEmulatorCloudJson(cloud: JSONObject) {
+        val merged = exportJson()
+        EMULATOR_CLOUD_KEYS.forEach { key ->
+            if (cloud.has(key) && !cloud.isNull(key)) merged.put(key, cloud.get(key))
+        }
+        importJson(merged)
     }
 
     private fun readUpscale(prefs: Preferences): Float {

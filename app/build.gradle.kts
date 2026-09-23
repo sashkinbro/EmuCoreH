@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.services)
     alias(libs.plugins.ksp)
 }
 
@@ -147,6 +148,10 @@ android {
 
 dependencies {
     implementation(project(":core-android"))
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.google.identity)
+    implementation(libs.google.auth)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -163,6 +168,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.fragment)
+    implementation(libs.google.play.billing)
     implementation(libs.google.play.review)
     implementation(libs.google.play.review.ktx)
     implementation(libs.androidx.work.runtime)
@@ -172,6 +178,10 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.browser)
     implementation(libs.android.youtube.player.core)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
     ksp(libs.androidx.room.compiler)
     discordSdkDirectory?.let { sdkDir ->
         implementation(files(sdkDir.resolve("discord_partner_sdk.aar")))

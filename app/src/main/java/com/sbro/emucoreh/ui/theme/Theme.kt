@@ -51,6 +51,33 @@ private val DarkColorScheme = darkColorScheme(
     scrim = DarkScrim
 )
 
+private val ProColorScheme = darkColorScheme(
+    primary = ProPrimary,
+    onPrimary = OnAccent,
+    primaryContainer = ProPrimaryContainer,
+    onPrimaryContainer = ProOnPrimaryContainer,
+    secondary = ProSecondary,
+    onSecondary = Color(0xFF21181C),
+    secondaryContainer = ProSecondaryContainer,
+    onSecondaryContainer = Color(0xFFE6D8DD),
+    tertiary = ProTertiary,
+    onTertiary = Color(0xFF1A0D00),
+    background = ProBackground,
+    onBackground = ProOnBackground,
+    surface = ProSurface,
+    onSurface = ProOnSurface,
+    surfaceVariant = ProSurfaceVariant,
+    onSurfaceVariant = ProOnSurfaceVariant,
+    outline = ProOutline,
+    outlineVariant = ProOutline,
+    surfaceTint = Color.Transparent,
+    error = ErrorRed,
+    onError = OnAccent,
+    errorContainer = ErrorContainer,
+    onErrorContainer = ErrorRed,
+    scrim = ProScrim
+)
+
 private val LightColorScheme = lightColorScheme(
     primary = AccentPrimaryDark,
     onPrimary = OnAccent,
@@ -78,7 +105,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 enum class ThemeMode {
-    SYSTEM, LIGHT, DARK, CUSTOM, NEON
+    SYSTEM, LIGHT, DARK, PRO, CUSTOM, NEON
 }
 
 @Composable
@@ -96,12 +123,14 @@ fun EmuCoreHTheme(
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
+        ThemeMode.PRO -> true
         ThemeMode.CUSTOM -> customTheme.dark
         ThemeMode.NEON -> true
     }
 
     val safeCustomTheme = remember(customTheme) { customTheme.sanitized() }
     val colorScheme = when (themeMode) {
+        ThemeMode.PRO -> ProColorScheme
         ThemeMode.CUSTOM -> safeCustomTheme.toColorScheme()
         ThemeMode.NEON -> NeonColorScheme
         else -> if (darkTheme) DarkColorScheme else LightColorScheme

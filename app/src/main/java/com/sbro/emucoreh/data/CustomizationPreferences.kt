@@ -142,7 +142,8 @@ enum class DrawerItemId(val required: Boolean = false) {
     APP_SETTINGS(required = true),
     SUPPORTED_FORMATS,
     FEEDBACK,
-    DISCORD
+    DISCORD,
+    PROFILE
 }
 
 enum class GameMenuSectionId(val tab: GameMenuTabId) {

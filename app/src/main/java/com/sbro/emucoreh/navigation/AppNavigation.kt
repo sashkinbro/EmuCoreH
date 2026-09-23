@@ -71,6 +71,7 @@ import com.sbro.emucoreh.ui.home.HomeScreen
 import com.sbro.emucoreh.ui.hub.HubScreen
 import com.sbro.emucoreh.ui.hub.detail.HubDetailScreen
 import com.sbro.emucoreh.ui.memorycards.VmuManagerScreen
+import com.sbro.emucoreh.ui.profile.ProfileScreen
 import com.sbro.emucoreh.ui.onboarding.OnboardingScreen
 import com.sbro.emucoreh.ui.saves.SaveManagerScreen
 import com.sbro.emucoreh.ui.settings.LanguageSettingsScreen
@@ -164,6 +165,9 @@ data class GameDbBrowserRoute(val query: String? = null)
 
 @Serializable
 object AchievementsRoute
+
+@Serializable
+object ProfileRoute
 
 @Serializable
 object TextureManagerRoute
@@ -349,6 +353,11 @@ fun AppNavigation(
             launchSingleTop = true
         }
     }
+    val navigateProfile: () -> Unit = {
+        navController.navigate(ProfileRoute) {
+            launchSingleTop = true
+        }
+    }
     val navigateDiscord: () -> Unit = {
         navController.navigate(DiscordRoute) {
             launchSingleTop = true
@@ -454,6 +463,7 @@ fun AppNavigation(
                     onNavigateTextureManager = navigateTextureManager,
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
+                    onNavigateProfile = navigateProfile,
                     onLaunchGame = launchGamePickerAction,
                     onLaunchBios = launchBiosAction
                 ) { openDrawer ->
@@ -550,6 +560,7 @@ fun AppNavigation(
                     onNavigateTextureManager = navigateTextureManager,
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
+                    onNavigateProfile = navigateProfile,
                     onBackClick = { navController.popBackStack() },
                     onLaunchGame = launchGamePickerAction,
                     onLaunchBios = launchBiosAction
@@ -622,6 +633,7 @@ fun AppNavigation(
                         onNavigateTextureManager = navigateTextureManager,
                         onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
+                    onNavigateProfile = navigateProfile,
                         onBackClick = { navController.popBackStack() },
                     onLaunchGame = launchGamePickerAction,
                     onLaunchBios = launchBiosAction
@@ -719,6 +731,7 @@ fun AppNavigation(
                     onNavigateTextureManager = navigateTextureManager,
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
+                    onNavigateProfile = navigateProfile,
                     onBackClick = { navController.popBackStack() },
                     onLaunchGame = launchGamePickerAction,
                     onLaunchBios = launchBiosAction
@@ -757,6 +770,7 @@ fun AppNavigation(
                     onNavigateTextureManager = navigateTextureManager,
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
+                    onNavigateProfile = navigateProfile,
                     onBackClick = { navController.popBackStack() },
                     onLaunchGame = launchGamePickerAction,
                     onLaunchBios = launchBiosAction
@@ -801,6 +815,7 @@ fun AppNavigation(
                     onNavigateTextureManager = navigateTextureManager,
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
+                    onNavigateProfile = navigateProfile,
                     onBackClick = { navController.popBackStack() },
                     onLaunchGame = launchGamePickerAction,
                     onLaunchBios = launchBiosAction
@@ -858,6 +873,10 @@ fun AppNavigation(
                 } else {
                     ThemeManagerScreen(
                         initialLibrary = settingsUiState.customThemeLibrary,
+                        isProUnlocked = settingsUiState.isProUnlocked,
+                        onPurchasePro = {
+                            (context as? android.app.Activity)?.let(settingsViewModel::purchasePro)
+                        },
                         onSave = { library ->
                             settingsViewModel.saveCustomThemeLibrary(library, activate = false)
                         },
@@ -964,11 +983,67 @@ fun AppNavigation(
                     onNavigateTextureManager = navigateTextureManager,
                     onNavigateCheatManager = navigateCheatManager,
                     onNavigateAchievements = navigateAchievements,
+                    onNavigateProfile = navigateProfile,
                     onBackClick = { navController.popBackStack() },
                     onLaunchGame = launchGamePickerAction,
                     onLaunchBios = launchBiosAction
                 ) {
                     FeedbackScreen(onBackClick = { navController.popBackStack() })
+                }
+            }
+
+            composable<ProfileRoute> {
+                AdaptiveShell(
+                    selected = PrimaryDestination.Profile,
+                    onNavigateHub = navigateHub,
+                    onNavigateHome = {
+                        navController.navigate(HomeRoute) {
+                            launchSingleTop = true
+                            popUpTo(HomeRoute) { inclusive = false }
+                        }
+                    },
+                    onNavigateSearch = {
+                        navController.navigate(CatalogSearchRoute) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateFormats = {
+                        navController.navigate(SupportedFormatsRoute) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateSettings = {
+                        navController.navigate(SettingsRoute()) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateDiscord = navigateDiscord,
+                    onNavigateFeedback = navigateFeedback,
+                    onNavigateGameSettingsManager = navigateGameSettingsManager,
+                    onNavigateDataTransfer = navigateDataTransfer,
+                    onResetAllSettings = resetAllSettingsAndOpenOnboarding,
+                    onNavigateSaveManager = {
+                        navController.navigate(SaveManagerRoute()) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateMemoryCardManager = navigateMemoryCardManager,
+                    onNavigateTextureManager = navigateTextureManager,
+                    onNavigateCheatManager = navigateCheatManager,
+                    onNavigateAchievements = navigateAchievements,
+                    onNavigateProfile = { },
+                    onBackClick = { navController.popBackStack() },
+                    onLaunchGame = launchGamePickerAction,
+                    onLaunchBios = launchBiosAction
+                ) {
+                    ProfileScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onOpenGameDetails = { catalogGameId ->
+                            navController.navigate(GameDetailRoute(catalogGameId = catalogGameId)) {
+                                launchSingleTop = true
+                            }
+                        }
+                    )
                 }
             }
 

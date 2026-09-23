@@ -1,6 +1,7 @@
 ﻿package com.sbro.emucoreh.ui.settings
 
 import android.app.Application
+import android.app.Activity
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -20,6 +21,9 @@ import com.sbro.emucoreh.core.GpuHardwareProfiles
 import com.sbro.emucoreh.core.RendererDefaults
 import com.sbro.emucoreh.core.GamepadManager
 import com.sbro.emucoreh.core.NativeApp
+import com.sbro.emucoreh.core.ProProductOffer
+import com.sbro.emucoreh.core.ProPurchaseManager
+import com.sbro.emucoreh.core.ProPurchaseTier
 import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.StorageAccess
 import com.sbro.emucoreh.core.TvInterfaceMode
@@ -74,6 +78,15 @@ data class SettingsUiState(
     val isLoaded: Boolean = false,
     val showMediatekCompatibilityNotice: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val isProUnlocked: Boolean = false,
+    val proPrice: String? = null,
+    val proProducts: List<ProProductOffer> = emptyList(),
+    val ownedProProductIds: Set<String> = emptySet(),
+    val isProPurchaseStatusVerified: Boolean = false,
+    val isProProductLoading: Boolean = false,
+    val isProProductAvailable: Boolean = false,
+    val isProPurchaseInProgress: Boolean = false,
+    val proPurchaseMessageResId: Int? = null,
     val customTheme: CustomThemeConfig = CustomThemeConfig.Default,
     val customThemeLibrary: CustomThemeLibrary = CustomThemeLibrary.Empty,
     val customTouchControls: CustomTouchControlLibrary = CustomTouchControlLibrary.Empty,
@@ -209,6 +222,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val emulationSideArtworkRepository = EmulationSideArtworkRepository(application)
     private val retroArchShaderRepository = RetroArchShaderRepository(application)
     private val appUpdateRepository = AppUpdateRepository(application)
+    private val proPurchaseManager = ProPurchaseManager.getInstance(application)
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
     val orientationLock: StateFlow<Int> = preferences.orientationLock
@@ -234,6 +248,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
         refreshEmulatorDataLocations()
+
+        viewModelScope.launch {
+            proPurchaseManager.state.collect { proState ->
+                _uiState.value = _uiState.value.copy(
+                    isProUnlocked = proState.isProUnlocked,
+                    proPrice = proState.productPrice,
+                    proProducts = proState.products,
+                    ownedProProductIds = proState.ownedProductIds,
+                    isProPurchaseStatusVerified = proState.isPurchaseStatusVerified,
+                    isProProductLoading = proState.isProductLoading,
+                    isProProductAvailable = proState.isProductAvailable,
+                    isProPurchaseInProgress = proState.isPurchaseInProgress,
+                    proPurchaseMessageResId = proState.messageResId
+                )
+            }
+        }
     }
 
     private fun initializeAboutInfo() {
@@ -384,10 +414,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
     fun saveCustomTheme(config: CustomThemeConfig, activate: Boolean) = viewModelScope.launch {
+        if (!_uiState.value.isProUnlocked) return@launch
         if (activate) preferences.applyCustomTheme(config) else preferences.setCustomTheme(config)
     }
     fun saveCustomThemeLibrary(library: CustomThemeLibrary, activate: Boolean) {
         val current = _uiState.value
+        if (!current.isProUnlocked) return
+
         val safeLibrary = library.sanitized()
         val activeConfig = safeLibrary.activeTheme()?.config
         val nextThemeMode = when {
@@ -407,12 +440,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun saveCustomTouchControls(library: CustomTouchControlLibrary) {
         val current = _uiState.value
+        if (!current.isProUnlocked) return
+
         val safeLibrary = library.sanitized()
         _uiState.value = current.copy(customTouchControls = safeLibrary)
         viewModelScope.launch {
             preferences.setCustomTouchControls(safeLibrary)
         }
     }
+
+    fun purchasePro(
+        activity: Activity,
+        tier: ProPurchaseTier = ProPurchaseTier.BASE
+    ) {
+        proPurchaseManager.purchase(activity, tier)
+    }
+
+    fun restoreProPurchases() { proPurchaseManager.restorePurchases(showMessage = true) }
+
+    fun clearProPurchaseMessage() { proPurchaseManager.clearMessage() }
     fun setAppFontChoice(choice: AppFontChoice) = viewModelScope.launch {
         if (choice == AppFontChoice.CUSTOM && customFontRepository.installedFile() == null) return@launch
         preferences.setAppFontChoice(choice)
