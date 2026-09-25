@@ -54,6 +54,7 @@ data class PerGameSettings(
     val touchControlVisualStyle: TouchControlVisualStyle? = null,
     val touchControlPressEffect: TouchControlPressEffect? = null,
     val touchControlsLayout: TouchControlsLayoutProfile? = null,
+    val customTouchControls: CustomTouchControlLibrary? = null,
     val audioVolume: Int = AudioDefaults.VOLUME_DEFAULT,
     val audioMuted: Boolean = false,
     val audioOutputLatencyMs: Int = AudioDefaults.OUTPUT_LATENCY_MS_DEFAULT,
@@ -265,6 +266,9 @@ private fun JSONObject.toPerGameSettings(): PerGameSettings {
             null
         },
         touchControlsLayout = optJSONObject("touchControlsLayout")?.toTouchControlsLayoutProfile(),
+        customTouchControls = CustomTouchControlLibrary.decodeOrNull(
+            optString("customTouchControls")
+        ),
         coreOptions = optJSONObject("coreOptions")?.let { obj ->
             buildMap {
                 obj.keys().forEach { optionKey ->
@@ -350,6 +354,9 @@ private fun PerGameSettings.toJson(): JSONObject {
             touchControlPressEffect?.let { put("touchControlPressEffect", it.preferenceValue) }
         }
         if (shouldWrite("touchControlsLayout")) touchControlsLayout?.let { put("touchControlsLayout", it.toJson()) }
+        if (shouldWrite("customTouchControls")) {
+            customTouchControls?.sanitized()?.let { put("customTouchControls", it.encode()) }
+        }
         put("updatedAt", updatedAt)
     }
 }
@@ -434,6 +441,11 @@ private fun OverlayControlLayout.toJson(): JSONObject {
         )
         .put("visible", visible)
         .put("surfaceOnly", surfaceOnly)
+        .apply {
+            secondaryActionId
+                ?.takeIf { it in CustomTouchControl.ALLOWED_ACTION_IDS }
+                ?.let { put("secondaryActionId", it) }
+        }
 }
 
 private fun JSONObject.toOverlayControlLayout(): OverlayControlLayout {
@@ -448,7 +460,9 @@ private fun JSONObject.toOverlayControlLayout(): OverlayControlLayout {
                 AppPreferences.OVERLAY_CONTROL_OPACITY_MAX
             ),
         visible = optBoolean("visible", true),
-        surfaceOnly = optBoolean("surfaceOnly", false)
+        surfaceOnly = optBoolean("surfaceOnly", false),
+        secondaryActionId = optString("secondaryActionId")
+            .takeIf { it in CustomTouchControl.ALLOWED_ACTION_IDS }
     )
 }
 

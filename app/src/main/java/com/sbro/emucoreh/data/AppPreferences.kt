@@ -174,7 +174,8 @@ data class OverlayControlLayout(
     val widthScale: Int = 100,
     val opacity: Int = 100,
     val visible: Boolean = true,
-    val surfaceOnly: Boolean = false
+    val surfaceOnly: Boolean = false,
+    val secondaryActionId: String? = null
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -231,7 +232,7 @@ class AppPreferences(private val context: Context) {
         const val OVERLAY_CONTROL_SCALE_MIN = 50
         const val OVERLAY_CONTROL_SCALE_MAX = 500
         const val OVERLAY_CONTROL_SCALE_DEFAULT = 100
-        const val OVERLAY_CONTROL_OPACITY_MIN = 20
+        const val OVERLAY_CONTROL_OPACITY_MIN = 5
         const val OVERLAY_CONTROL_OPACITY_MAX = 100
         const val OVERLAY_CONTROL_OPACITY_DEFAULT = 100
         const val OVERLAY_OPACITY_MIN = 0
@@ -693,7 +694,6 @@ class AppPreferences(private val context: Context) {
 
     suspend fun setCustomTouchControls(library: CustomTouchControlLibrary) {
         context.dataStore.edit { prefs ->
-            if (prefs[PRO_UNLOCKED] != true) return@edit
             prefs[CUSTOM_TOUCH_CONTROLS_JSON] = library.sanitized().encode()
         }
     }
@@ -2316,7 +2316,9 @@ class AppPreferences(private val context: Context) {
                             opacity = item.optInt("opacity", OVERLAY_CONTROL_OPACITY_DEFAULT)
                                 .coerceIn(OVERLAY_CONTROL_OPACITY_MIN, OVERLAY_CONTROL_OPACITY_MAX),
                             visible = item.optBoolean("visible", true),
-                            surfaceOnly = item.optBoolean("surfaceOnly", false)
+                            surfaceOnly = item.optBoolean("surfaceOnly", false),
+                            secondaryActionId = item.optString("secondaryActionId")
+                                .takeIf { it in CustomTouchControl.ALLOWED_ACTION_IDS }
                         )
                     )
                 }
@@ -2341,6 +2343,9 @@ class AppPreferences(private val context: Context) {
                         )
                         put("visible", layout.visible)
                         put("surfaceOnly", layout.surfaceOnly)
+                        layout.secondaryActionId
+                            ?.takeIf { it in CustomTouchControl.ALLOWED_ACTION_IDS }
+                            ?.let { put("secondaryActionId", it) }
                     }
                 )
             }
