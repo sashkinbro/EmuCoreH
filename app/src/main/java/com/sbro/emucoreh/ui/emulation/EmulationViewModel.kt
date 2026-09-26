@@ -1737,25 +1737,24 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             val updatedLayouts = current.controlLayouts.toMutableMap()
             val defaults = AppPreferences.defaultOverlayControlLayouts(current.stickScale)
             val leftStickLayout = updatedLayouts["left_stick"] ?: defaults["left_stick"] ?: OverlayControlLayout(scale = current.stickScale)
-            val showingStick = leftStickLayout.visible
+            // Dedicated second D-pad owned by the toggle. It replaces the selected stick
+            // and is never the extra D-pad users manage in the layout editor.
+            val toggleDpad = updatedLayouts["dpad_toggle"] ?: defaults["dpad_toggle"] ?: OverlayControlLayout()
 
             // Keep the DualShock: hiding the touch stick only stops stick input,
             // it must not demote the port to a digital pad (which kills rumble).
             NativeApp.setPadAnalogMode(0, true)
 
-            updatedLayouts["left_stick"] = leftStickLayout.copy(visible = !showingStick)
-            listOf("dpad_up", "dpad_down", "dpad_left", "dpad_right").forEach { id ->
-                val currentLayout = updatedLayouts[id] ?: defaults[id] ?: OverlayControlLayout()
-                updatedLayouts[id] = currentLayout.copy(visible = showingStick)
+            // Two-state cycle for the left stick: stick <-> dedicated second D-pad.
+            val (nextStick, nextToggleDpad) = if (leftStickLayout.visible) {
+                leftStickLayout.copy(visible = false) to toggleDpad.copy(visible = true)
+            } else {
+                leftStickLayout.copy(visible = true) to toggleDpad.copy(visible = false)
             }
+            updatedLayouts["left_stick"] = nextStick
+            updatedLayouts["dpad_toggle"] = nextToggleDpad
 
-            persistTouchControlsLayout(
-                current.copy(
-                    controlLayouts = updatedLayouts,
-                    dpadOffset = current.lstickOffset,
-                    lstickOffset = current.dpadOffset
-                )
-            )
+            persistTouchControlsLayout(current.copy(controlLayouts = updatedLayouts))
         }
     }
 
