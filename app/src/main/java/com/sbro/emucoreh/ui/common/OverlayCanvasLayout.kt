@@ -54,7 +54,8 @@ data class OverlayCanvasLayout(
     val actionButtons: List<OverlayCanvasButtonSpec>,
     val centerButtons: List<OverlayCanvasButtonSpec>,
     val leftStick: OverlayCanvasStickSpec?,
-    val rightStick: OverlayCanvasStickSpec?
+    val rightStick: OverlayCanvasStickSpec?,
+    val toggleDpad: OverlayCanvasDpadClusterSpec? = null
 ) {
     val allButtons: List<OverlayCanvasButtonSpec> = buildList {
         addAll(leftShoulders)
@@ -559,6 +560,20 @@ fun buildOverlayCanvasLayout(
         visible = rightStickLayout.visible
     )
 
+    // Dedicated toggle D-pad: it replaces the stick the on-screen toggle targets,
+    // so it always mirrors that stick's position and size.
+    val toggleDpadLayout = layoutFor("dpad_toggle")
+    val toggleDpad = OverlayCanvasDpadClusterSpec(
+        id = "dpad_toggle",
+        size = leftStick.size,
+        baseX = leftStick.baseX,
+        baseY = leftStick.baseY,
+        x = leftStick.baseX + pxToDp(toggleDpadLayout.offset.first),
+        y = leftStick.baseY + pxToDp(toggleDpadLayout.offset.second),
+        opacity = toggleDpadLayout.opacity,
+        visible = toggleDpadLayout.visible
+    )
+
     return OverlayCanvasLayout(
         leftShoulders = leftShoulders,
         rightShoulders = rightShoulders,
@@ -567,6 +582,7 @@ fun buildOverlayCanvasLayout(
         actionButtons = actionButtons,
         centerButtons = centerButtons.filter { previewMode || it.visible },
         leftStick = leftStick.takeIf { previewMode || it.visible },
-        rightStick = rightStick.takeIf { previewMode || it.visible }
+        rightStick = rightStick.takeIf { previewMode || it.visible },
+        toggleDpad = toggleDpad.takeIf { it.visible }
     )
 }
