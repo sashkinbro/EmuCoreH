@@ -186,7 +186,7 @@ class AppPreferences(private val context: Context) {
 
     companion object {
         const val DEFAULT_LOCAL_LINK_PORT = 19072
-        private const val CURRENT_OVERLAY_LAYOUT_VERSION = 17
+        private const val CURRENT_OVERLAY_LAYOUT_VERSION = 18
         const val DEFAULT_NTSC_FRAMERATE = 59.94f
         const val MIN_REGION_FRAMERATE = 50f
         const val MAX_REGION_FRAMERATE = 65f
@@ -309,7 +309,7 @@ class AppPreferences(private val context: Context) {
             "coin" to OverlayControlLayout(scale = 80, visible = false),
             "test" to OverlayControlLayout(scale = 80, visible = false),
             "service" to OverlayControlLayout(scale = 80, visible = false),
-            "left_input_toggle" to OverlayControlLayout(scale = 80, visible = false),
+            "left_input_toggle" to OverlayControlLayout(scale = 80, visible = true),
             "start" to OverlayControlLayout(scale = 80),
             "fast_forward" to OverlayControlLayout(scale = 80, visible = false)
         )
@@ -2581,6 +2581,17 @@ class AppPreferences(private val context: Context) {
                     if (layout == OverlayControlLayout(scale = 76, visible = true)) {
                         layouts[id] = layout.copy(visible = false)
                     }
+                }
+                encodeControlLayouts(layouts)?.let { prefs[CONTROL_LAYOUTS] = it }
+            }
+            if (currentVersion < 18) {
+                // The stick toggle button is on by default now; only upgrade the
+                // untouched default so users who disabled it keep their choice.
+                val layouts = decodeControlLayouts(prefs[CONTROL_LAYOUTS]).toMutableMap()
+                val toggle = layouts["left_input_toggle"]
+                if (toggle == null || toggle == OverlayControlLayout(scale = 80, visible = false)) {
+                    layouts["left_input_toggle"] = (toggle ?: OverlayControlLayout(scale = 80))
+                        .copy(visible = true)
                 }
                 encodeControlLayouts(layouts)?.let { prefs[CONTROL_LAYOUTS] = it }
             }
