@@ -42,6 +42,16 @@ class CoverIndexRepository(private val context: Context) {
         return Cover("$BASE_URL/$path", game.optString("source_url"), game.optString(if (threeDimensional) "sha256_3d" else "sha256"))
     }
 
+    /** Product code -> catalogue id from the bundled serial map plus learned aliases. */
+    fun gameIdForSerial(serial: String?): Long? {
+        val normalizedSerial = serial.orEmpty().uppercase(Locale.ROOT).replace(Regex("[-_.\\s]"), "")
+        if (normalizedSerial.length < 6) return null
+        val index = load() ?: return null
+        val id = learned.getString(normalizedSerial, null)
+            ?: index.optJSONObject("serials")?.optString(normalizedSerial).orEmpty()
+        return id.takeIf { it.isNotBlank() }?.toLongOrNull()
+    }
+
     /** Romsets matched to an IGDB entry reuse the standard game artwork. */
     private fun arcadeGameId(index: JSONObject, title: String?): String =
         romsetKey(title)?.let { index.optJSONObject("arcade")?.optString(it).orEmpty() }.orEmpty()

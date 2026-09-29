@@ -335,6 +335,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+        viewModelScope.launch {
+            // A finished session can leave covers stale: temp files may have
+            // been evicted while the core owned the device and serials may
+            // have been learned at boot. Repair the library before the user
+            // starts browsing again.
+            EmulatorBridge.sessionEnded.collect {
+                syncMissingCovers()
+            }
+        }
     }
 
     fun onFolderSelected(uri: Uri) {
@@ -656,7 +665,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val covers = CoverArtRepository(getApplication())
         allGames = allGames.map { game ->
             val selected = covers.displayCoverPath(game.serial, game.title, game.coverArtPath)
-            if (selected == game.coverArtPath) game else game.copy(coverArtPath = selected)
+            when {
+                selected == game.coverArtPath -> game
+                selected != null -> game.copy(coverArtPath = selected)
+                // Resolution failed: keep the previous path. The background
+                // cover sync repairs missing files, so a transient miss must
+                // not erase the artwork from every screen.
+                else -> game
+            }
         }
         val state = _uiState.value
         val query = normalizeSearchToken(state.searchQuery)
@@ -813,7 +829,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     return@map game
                 }
                 if (currentPath != null && currentPath.startsWith(cachePrefix, ignoreCase = true)) {
-                    game.copy(coverArtPath = coverRepository.findCachedCoverPath(game.serial))
+                    game.copy(coverArtPath = coverRepository.findCachedCoverPath(game.serial, title = game.title))
                 } else {
                     game
                 }

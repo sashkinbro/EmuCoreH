@@ -18,8 +18,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -76,6 +79,14 @@ object EmulatorBridge {
     private val _presentationSurfaceGeneration = MutableStateFlow(0L)
     val presentationSurfaceGeneration: StateFlow<Long> =
         _presentationSurfaceGeneration.asStateFlow()
+
+    /**
+     * Emitted once a running session has been fully torn down. Consumers use
+     * it to repair state that could not be touched while the core owned the
+     * device (cover downloads, library metadata).
+     */
+    private val _sessionEnded = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val sessionEnded: SharedFlow<Unit> = _sessionEnded.asSharedFlow()
     val runtimeFailure: StateFlow<RuntimeFailure?> get() = NativeApp.runtimeFailure
 
     @Volatile
@@ -680,6 +691,7 @@ object EmulatorBridge {
         // A failed native shutdown must never unlock memory-card backup while the VM still owns it.
         if (!runCatching { NativeApp.hasValidVm() }.getOrDefault(true)) {
             BackupSessionGate.stopped()
+            _sessionEnded.tryEmit(Unit)
             getContext()?.let { com.sbro.emucoreh.data.drive.DriveBackupWork.afterGame(it) }
         }
     }
