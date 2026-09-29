@@ -95,6 +95,11 @@
     <string name="tv_storage_source_title">Выберите накопитель</string>
     <string name="tv_storage_all_locations">Все расположения</string>
     <string name="tv_storage_picker_unavailable">На этом ТВ-устройстве не установлен совместимый системный выбор файлов.</string>
+    <string name="tv_storage_picker_install_title">Установите файловый менеджер</string>
+    <string name="tv_storage_picker_install_message">На этом телевизоре нет системного выбора папок, поэтому папку выбрать невозможно. Установите совместимый файловый менеджер (например, AnExplorer) из магазина и попробуйте снова.</string>
+    <string name="tv_storage_picker_install_confirm">Установить</string>
+    <string name="tv_storage_picker_install_retry">Попробовать снова</string>
+    <string name="tv_storage_picker_store_unavailable">Не удалось открыть магазин приложений. Установите файловый менеджер вручную и попробуйте снова.</string>
     <string name="settings_language_system">По умолчанию</string>
     <string name="settings_language_screen_subtitle">Выберите язык интерфейса для EmuCoreH.</string>
     <string name="settings_language_system_subtitle">Использовать язык устройства.</string>

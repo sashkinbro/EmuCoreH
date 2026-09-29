@@ -95,6 +95,11 @@
     <string name="tv_storage_source_title">選擇儲存空間</string>
     <string name="tv_storage_all_locations">所有位置</string>
     <string name="tv_storage_picker_unavailable">此電視裝置未安裝相容的系統檔案選擇器。</string>
+    <string name="tv_storage_picker_install_title">安裝檔案管理員</string>
+    <string name="tv_storage_picker_install_message">此電視沒有系統資料夾選擇器，無法選擇資料夾。請從商店安裝相容的檔案管理員（例如 AnExplorer），然後再試一次。</string>
+    <string name="tv_storage_picker_install_confirm">安裝</string>
+    <string name="tv_storage_picker_install_retry">再試一次</string>
+    <string name="tv_storage_picker_store_unavailable">無法開啟應用程式商店。請手動安裝檔案管理員，然後再試一次。</string>
     <string name="settings_language_system">系統預設</string>
     <string name="settings_language_screen_subtitle">選擇 EmuCoreH 的介面語言。</string>
     <string name="settings_language_system_subtitle">跟隨您的裝置語言。</string>

@@ -139,6 +139,11 @@
     <string name="tv_storage_source_title">Vyberte úložiště</string>
     <string name="tv_storage_all_locations">Všechna umístění</string>
     <string name="tv_storage_picker_unavailable">Na tomto televizním zařízení není nainstalován žádný kompatibilní systémový nástroj pro výběr souborů.</string>
+    <string name="tv_storage_picker_install_title">Nainstalujte správce souborů</string>
+    <string name="tv_storage_picker_install_message">Tato televize nemá systémový výběr složek, proto nelze složky vybrat. Nainstalujte z obchodu kompatibilní správce souborů (například AnExplorer) a zkuste to znovu.</string>
+    <string name="tv_storage_picker_install_confirm">Nainstalovat</string>
+    <string name="tv_storage_picker_install_retry">Zkusit znovu</string>
+    <string name="tv_storage_picker_store_unavailable">Obchod s aplikacemi se nepodařilo otevřít. Nainstalujte správce souborů ručně a zkuste to znovu.</string>
     <string name="settings_language_system">Výchozí nastavení systému</string>
     <string name="settings_language_screen_subtitle">Vyberte jazyk rozhraní pro EmuCoreH.</string>
     <string name="settings_language_system_subtitle">Následovat jazyk zařízení.</string>

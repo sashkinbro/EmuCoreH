@@ -140,6 +140,11 @@
     <string name="tv_storage_source_title">Choose storage</string>
     <string name="tv_storage_all_locations">All locations</string>
     <string name="tv_storage_picker_unavailable">No compatible system file picker is installed on this TV device.</string>
+    <string name="tv_storage_picker_install_title">Install a file manager</string>
+    <string name="tv_storage_picker_install_message">This TV has no system folder picker, so folders cannot be chosen. Install a compatible file manager (for example AnExplorer) from the store, then try again.</string>
+    <string name="tv_storage_picker_install_confirm">Install</string>
+    <string name="tv_storage_picker_install_retry">Try again</string>
+    <string name="tv_storage_picker_store_unavailable">Could not open the app store. Install a file manager manually, then try again.</string>
     <string name="settings_language_system">System default</string>
     <string name="settings_language_screen_subtitle">Choose the interface language for EmuCoreH.</string>
     <string name="settings_language_system_subtitle">Follow your device language.</string>

@@ -23,13 +23,33 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.faketouch" android:required="false" />
 
-    <!-- Package visibility for the TV storage picker: AnExplorer is the common
-         document provider on TVs without a system file picker, and the intent
-         query keeps any tree-capable picker resolvable on API 30+. -->
+    <!-- Android 11+ package visibility hides other apps from queryIntentActivities unless the
+         queried intents are declared here. Without these entries the TV storage picker cannot
+         see an installed file manager (DocumentsUI, AnExplorer, X-plore) and reports that no
+         compatible picker exists even when one is installed. The OPEN_DOCUMENT filter must
+         mirror the picker filters (OPENABLE + any MIME type) or file managers that omit the
+         OPEN_DOCUMENT_TREE filter stay hidden. AnExplorer is the common document provider on
+         TVs without a system file picker. -->
     <queries>
         <package android:name="dev.dworks.apps.anexplorer" />
         <intent>
             <action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.OPEN_DOCUMENT" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.OPEN_DOCUMENT" />
+            <category android:name="android.intent.category.OPENABLE" />
+            <data android:mimeType="*/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT" />
+            <category android:name="android.intent.category.OPENABLE" />
+            <data android:mimeType="*/*" />
         </intent>
     </queries>
 

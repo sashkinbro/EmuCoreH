@@ -139,6 +139,11 @@
     <string name="tv_storage_source_title">انتخاب فضای ذخیره‌سازی</string>
     <string name="tv_storage_all_locations">همه مکان‌ها</string>
     <string name="tv_storage_picker_unavailable">هیچ انتخابگر فایل سیستمی سازگاری روی این دستگاه تلویزیون نصب نیست.</string>
+    <string name="tv_storage_picker_install_title">یک مدیر فایل نصب کنید</string>
+    <string name="tv_storage_picker_install_message">این تلویزیون انتخابگر پوشه سیستمی ندارد، بنابراین نمی‌توان پوشه انتخاب کرد. یک مدیر فایل سازگار (مثلاً AnExplorer) از فروشگاه نصب کنید و دوباره تلاش کنید.</string>
+    <string name="tv_storage_picker_install_confirm">نصب</string>
+    <string name="tv_storage_picker_install_retry">تلاش دوباره</string>
+    <string name="tv_storage_picker_store_unavailable">فروشگاه برنامه‌ها باز نشد. مدیر فایل را دستی نصب کنید و دوباره تلاش کنید.</string>
     <string name="settings_language_system">پیش‌فرض سیستم</string>
     <string name="settings_language_screen_subtitle">زبان رابط کاربری EmuCoreH را انتخاب کنید.</string>
     <string name="settings_language_system_subtitle">پیروی از زبان دستگاه شما.</string>

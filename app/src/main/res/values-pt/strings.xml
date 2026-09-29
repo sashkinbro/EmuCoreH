@@ -95,6 +95,11 @@
     <string name="tv_storage_source_title">Escolher armazenamento</string>
     <string name="tv_storage_all_locations">Todos os locais</string>
     <string name="tv_storage_picker_unavailable">Nenhum seletor de arquivos do sistema compatível está instalado neste dispositivo de TV.</string>
+    <string name="tv_storage_picker_install_title">Instale um gerenciador de arquivos</string>
+    <string name="tv_storage_picker_install_message">Esta TV não tem seletor de pastas do sistema, então não é possível escolher pastas. Instale um gerenciador de arquivos compatível (por exemplo, o AnExplorer) na loja e tente novamente.</string>
+    <string name="tv_storage_picker_install_confirm">Instalar</string>
+    <string name="tv_storage_picker_install_retry">Tentar novamente</string>
+    <string name="tv_storage_picker_store_unavailable">Não foi possível abrir a loja de aplicativos. Instale um gerenciador de arquivos manualmente e tente novamente.</string>
     <string name="settings_language_system">Padrão do sistema</string>
     <string name="settings_language_screen_subtitle">Escolha o idioma da interface para o EmuCoreH.</string>
     <string name="settings_language_system_subtitle">Seguir o idioma do seu dispositivo.</string>

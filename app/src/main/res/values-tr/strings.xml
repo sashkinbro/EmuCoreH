@@ -130,6 +130,11 @@
     <string name="tv_storage_source_title">Depolama alanı seç</string>
     <string name="tv_storage_all_locations">Tüm konumlar</string>
     <string name="tv_storage_picker_unavailable">Bu TV cihazında uyumlu bir sistem dosya seçicisi yüklü değil.</string>
+    <string name="tv_storage_picker_install_title">Bir dosya yöneticisi yükleyin</string>
+    <string name="tv_storage_picker_install_message">Bu TV\'de sistem klasör seçici yok, bu nedenle klasör seçilemez. Mağazadan uyumlu bir dosya yöneticisi (örneğin AnExplorer) yükleyip tekrar deneyin.</string>
+    <string name="tv_storage_picker_install_confirm">Yükle</string>
+    <string name="tv_storage_picker_install_retry">Tekrar dene</string>
+    <string name="tv_storage_picker_store_unavailable">Uygulama mağazası açılamadı. Bir dosya yöneticisini elle yükleyip tekrar deneyin.</string>
     <string name="settings_language_system">Sistem varsayılanı</string>
     <string name="settings_language_screen_subtitle">EmuCoreH için arayüz dilini seçin.</string>
     <string name="settings_language_system_subtitle">Cihazınızın dilini izleyin.</string>
