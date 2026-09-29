@@ -3,6 +3,7 @@ package com.sbro.emucoreh.data.ps1
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
+import com.sbro.emucoreh.data.catalog.CoverIndexRepository
 import java.io.File
 import java.io.FileOutputStream
 import java.text.Normalizer
@@ -146,6 +147,10 @@ class Ps1CatalogRepository(private val context: Context) {
             Log.d(TAG, "Catalog match by database serial: $serial -> $id")
             return id
         }
+        findIdBySerialIndex(db, candidateSerials)?.let { id ->
+            Log.d(TAG, "Catalog match by cover-index serial: $serial -> $id")
+            return id
+        }
 
         val candidateTitles = listOfNotNull(title)
             .map(::normalizeIdentityTitle)
@@ -179,6 +184,23 @@ class Ps1CatalogRepository(private val context: Context) {
                 serials.toTypedArray()
             ).use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else null }
         }.getOrNull()
+    }
+
+    /**
+     * The bundled database ships without product codes, so the Dreamcast
+     * serial -> IGDB map from the cover index is used as a fallback. The id is
+     * only accepted when the database actually contains that game.
+     */
+    private fun findIdBySerialIndex(db: SQLiteDatabase, serials: List<String>): Long? {
+        val index = CoverIndexRepository(context)
+        for (serial in serials) {
+            val id = index.gameIdForSerial(serial) ?: continue
+            db.rawQuery(
+                "SELECT igdb_id FROM games WHERE igdb_id = ? LIMIT 1",
+                arrayOf(id.toString())
+            ).use { cursor -> if (cursor.moveToFirst()) return cursor.getLong(0) }
+        }
+        return null
     }
 
     private fun findExactTitleId(db: SQLiteDatabase, titles: List<String>): Long? {

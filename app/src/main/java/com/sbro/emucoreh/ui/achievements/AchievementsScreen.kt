@@ -44,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -95,6 +96,14 @@ fun AchievementsScreen(
     // Kept outside the detail branch so returning from a game restores the
     // exact scroll position of the hub list.
     val hubListState = rememberLazyListState()
+
+    // Rebuild the library list on every visit so covers and progress that
+    // changed while a game was running are picked up without an app restart.
+    LaunchedEffect(Unit) {
+        if (ready && state.enabled && state.loggedIn) {
+            viewModel.refreshLibrary()
+        }
+    }
 
     selectedGame?.let { game ->
         // The system gesture must close the game details, not the whole screen.
@@ -431,7 +440,13 @@ private fun AccountSection(
 
 @Composable
 private fun LibraryGameCard(game: RetroAchievementsLibraryGame, onClick: () -> Unit) {
-    val coverPath = game.coverArtPath?.takeIf { File(it).isFile }
+    val coverPath = game.coverArtPath
+        ?.takeIf {
+            it.isNotBlank() && (it.startsWith("content://") ||
+                it.startsWith("http://") ||
+                it.startsWith("https://") ||
+                File(it).isFile)
+        }
         ?: game.imageUrl.takeIf { it.isNotBlank() }
 
     Surface(

@@ -452,7 +452,10 @@ class PlayerProfileRepository(context: Context) {
                     put(GAME_LAST_PLAYED_AT_MS, entry.lastPlayedAtMs)
                     put(GAME_ARCADE, entry.arcade || existingGame.booleanValue(GAME_ARCADE))
                     entry.serial?.takeIf { it.isNotBlank() }?.let { put(GAME_SERIAL, it.take(MAX_SERIAL_LENGTH)) }
-                    buildShareableCoverPath(entry.coverArtPath, entry.serial)?.let { put(GAME_COVER_ART_PATH, it.take(MAX_COVER_PATH_LENGTH)) }
+                    val existingCover = existingGame.stringValue(GAME_COVER_ART_PATH).takeIf { it.isNotBlank() }
+                    val shareableCover = buildShareableCoverPath(entry.coverArtPath, entry.serial, cleanTitle)
+                        ?: existingCover
+                    shareableCover?.let { put(GAME_COVER_ART_PATH, it.take(MAX_COVER_PATH_LENGTH)) }
                 }
                 existingGames[gameKey] = nextGame
                 changedGames[gameKey] = nextGame
@@ -821,7 +824,7 @@ class PlayerProfileRepository(context: Context) {
             gameKey = gameKey,
             title = title,
             serial = serial,
-            coverArtPath = resolveReadableCoverPath(map.stringValue(GAME_COVER_ART_PATH), serial),
+            coverArtPath = resolveReadableCoverPath(map.stringValue(GAME_COVER_ART_PATH), serial, title),
             totalPlayTimeMs = map.longValue(GAME_TOTAL_MS),
             sessions = map.longValue(GAME_SESSIONS).toInt(),
             lastPlayedAtMs = map.longValue(GAME_LAST_PLAYED_AT_MS).takeIf { it > 0L },
@@ -874,9 +877,13 @@ class PlayerProfileRepository(context: Context) {
             source.stringValue(GAME_SERIAL).takeIf { it.isNotBlank() }?.let {
                 put(GAME_SERIAL, it.take(MAX_SERIAL_LENGTH))
             }
-            source.stringValue(GAME_COVER_ART_PATH)
-                .takeIf { it.startsWith("https://") || it.startsWith("http://") }
-                ?.let { put(GAME_COVER_ART_PATH, it.take(MAX_COVER_PATH_LENGTH)) }
+            // Local cover paths are device specific; shared profiles receive a
+            // public URL resolved through the same Dreamcast cover index.
+            buildShareableCoverPath(
+                coverArtPath = source.stringValue(GAME_COVER_ART_PATH),
+                serial = source.stringValue(GAME_SERIAL).takeIf { it.isNotBlank() },
+                title = source.stringValue(GAME_TITLE).takeIf { it.isNotBlank() }
+            )?.let { put(GAME_COVER_ART_PATH, it.take(MAX_COVER_PATH_LENGTH)) }
         }
     }
 
@@ -923,22 +930,25 @@ class PlayerProfileRepository(context: Context) {
         return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestampMs))
     }
 
-    private fun buildShareableCoverPath(coverArtPath: String?, serial: String?): String? {
+    private fun buildShareableCoverPath(coverArtPath: String?, serial: String?, title: String?): String? {
         val cover = coverArtPath?.trim().orEmpty()
         return when {
             cover.startsWith("http://") || cover.startsWith("https://") -> cover
-            else -> coverArtRepository.buildPublicCoverUrl(serial)
+            else -> coverArtRepository.buildPublicCoverUrl(serial, title = title)
         }
     }
 
-    private fun resolveReadableCoverPath(coverArtPath: String, serial: String?): String? {
+    private fun resolveReadableCoverPath(coverArtPath: String, serial: String?, title: String?): String? {
         val cover = coverArtPath.trim()
         return when {
-            cover.isBlank() -> coverArtRepository.buildPublicCoverUrl(serial)
             cover.startsWith("http://") || cover.startsWith("https://") -> cover
             cover.startsWith("content://") -> cover
             File(cover).exists() -> cover
-            else -> coverArtRepository.buildPublicCoverUrl(serial)
+            // The stored path is stale or absent: reuse the artwork the local
+            // library already downloaded, matched by serial or title exactly
+            // like the library cache does.
+            else -> coverArtRepository.findCachedCoverPath(serial, title = title)
+                ?: coverArtRepository.buildPublicCoverUrl(serial, title = title)
         }
     }
 

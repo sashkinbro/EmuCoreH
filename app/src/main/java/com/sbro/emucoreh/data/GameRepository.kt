@@ -145,10 +145,9 @@ class GameRepository {
         val covers = CoverArtRepository(context)
         // Also attempted without a product code: CHD images and arcade archives
         // are resolved through their title/romset instead.
-        val downloaded = covers.downloadCover(serial, title = game.title)
-        if (covers.hasIndexedCover(serial, game.title)) return downloaded
-        return downloaded
-            ?: game.coverArtPath?.takeIf { File(it).isFile }
+        covers.downloadCover(serial, title = game.title)?.let { return it }
+        covers.findCachedCoverPath(serial, title = game.title)?.let { return it }
+        return game.coverArtPath?.takeIf { File(it).isFile }
     }
 
     private fun scanLocalDirectory(
@@ -232,7 +231,7 @@ class GameRepository {
                         ),
                         lastModified = file.lastModified(),
                         coverArtPath = customCoverRepository.findCustomCoverPath(file.absolutePath)
-                            ?: coverRepository.findCachedCoverPath(serial)
+                            ?: coverRepository.findCachedCoverPath(serial, title = title)
                             ?: cachedGame?.coverArtPath?.takeIf { File(it).exists() }
                             ?: coverCandidates[normalizeBaseName(file.nameWithoutExtension)]?.absolutePath
                             ?: coverCandidates[normalizeBaseName(cleanGameName(title))]?.absolutePath,
@@ -355,7 +354,7 @@ class GameRepository {
                         ),
                         lastModified = lastModified,
                         coverArtPath = customCoverRepository.findCustomCoverPath(uriPath)
-                            ?: coverRepository.findCachedCoverUri(serial)
+                            ?: coverRepository.findCachedCoverUri(serial, title = title)
                             ?: cachedGame?.coverArtPath
                             ?: coverCandidates[normalizeBaseName(name.substringBeforeLast('.'))]?.uri?.toString()
                             ?: coverCandidates[normalizeBaseName(cleanGameName(title))]?.uri?.toString(),
@@ -376,14 +375,14 @@ class GameRepository {
         val titleKey = normalizeBaseName(cleanGameName(title ?: EmulatorBridge.getGameTitle(path)))
         val coverCandidates = buildLocalCoverCandidates(parent.listFiles().orEmpty())
         return CustomGameCoverRepository(context).findCustomCoverPath(path)
-            ?: CoverArtRepository(context).findCachedCoverPath(serial)
+            ?: CoverArtRepository(context).findCachedCoverPath(serial, title = title)
             ?: coverCandidates[baseName]?.absolutePath
             ?: coverCandidates[titleKey]?.absolutePath
     }
 
     private fun findDocumentCover(path: String, context: Context, serial: String?, title: String?): String? {
         CustomGameCoverRepository(context).findCustomCoverPath(path)?.let { return it }
-        CoverArtRepository(context).findCachedCoverUri(serial)?.let { return it }
+        CoverArtRepository(context).findCachedCoverUri(serial, title = title)?.let { return it }
 
         val uri = path.toUri()
         val document = DocumentFile.fromSingleUri(context, uri) ?: return null

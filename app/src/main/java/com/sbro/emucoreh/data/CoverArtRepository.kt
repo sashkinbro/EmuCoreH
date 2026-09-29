@@ -62,10 +62,17 @@ class CoverArtRepository(context: Context) {
     fun hasIndexedCover(serial: String?, title: String?): Boolean =
         com.sbro.emucoreh.data.catalog.CoverIndexRepository(context).find(serial, title) != null
 
-    /** Never flash an embedded icon or a previous style before the selected artwork loads. */
+    /**
+     * Never flash an embedded icon or a previous style before the selected
+     * artwork loads. A missing managed-cache file must not erase a candidate
+     * that was already resolved: the caller keeps showing the previous cover
+     * while the background sync re-downloads it.
+     */
     fun displayCoverPath(serial: String?, title: String?, candidate: String?): String? {
         if (candidate != null && !isManagedCoverCachePath(candidate)) return candidate
-        if (hasIndexedCover(serial, title)) return findCachedCoverPath(serial, title = title)
+        if (hasIndexedCover(serial, title)) {
+            return findCachedCoverPath(serial, title = title) ?: candidate
+        }
         return candidate
     }
 
@@ -81,32 +88,42 @@ class CoverArtRepository(context: Context) {
         }
         // CHD and arcade archives carry no product code, so the cache key falls
         // back to the filename-derived title, exactly like the downloader.
-        val normalizedSerial = normalizeSerial(serial) ?: titleCoverKey(title)
-        if (normalizedSerial == null) {
+        // Both keys are probed: a cover downloaded before the serial was
+        // learned (or after it was forgotten) stays visible.
+        val coverKeys = listOfNotNull(normalizeSerial(serial), titleCoverKey(title)).distinct()
+        if (coverKeys.isEmpty()) {
             Log.d(TAG, "No serial or title provided")
             return null
         }
-        val preferredFiles = if (style == AppPreferences.COVER_ART_STYLE_3D) {
-            listOf(
-                File(cacheDirectory, "${normalizedSerial}_3d.webp"),
-                File(cacheDirectory, "${normalizedSerial}_3d.png"),
-                File(cacheDirectory, "${normalizedSerial}_3d.jpg")
-            )
-        } else {
-            listOf(
-                File(cacheDirectory, "$normalizedSerial.jpg"),
-                File(cacheDirectory, "$normalizedSerial.png")
-            )
-        }
-        preferredFiles.filter(File::exists).forEach { file ->
-            if (!isUsableCoverFile(file)) {
-                Log.w(TAG, "Removing invalid cached cover: ${file.absolutePath}")
-                runCatching { file.delete() }
+        for (key in coverKeys) {
+            val preferredFiles = preferredCoverFiles(key, style)
+            preferredFiles.filter(File::exists).forEach { file ->
+                if (file.isFile && file.length() <= 0L) {
+                    Log.w(TAG, "Removing empty cached cover: ${file.absolutePath}")
+                    runCatching { file.delete() }
+                }
+            }
+            val found = preferredFiles.firstOrNull(::isUsableCoverFile)
+            if (found != null) {
+                Log.d(TAG, "Cached cover for $key (style=$style): FOUND")
+                return found.absolutePath
             }
         }
-        val found = preferredFiles.firstOrNull(::isUsableCoverFile)
-        Log.d(TAG, "Cached cover for $normalizedSerial (style=$style): ${if (found != null) "FOUND" else "NOT FOUND"}")
-        return found?.absolutePath
+        Log.d(TAG, "Cached cover for ${coverKeys.joinToString()} (style=$style): NOT FOUND")
+        return null
+    }
+
+    private fun preferredCoverFiles(key: String, style: Int): List<File> = if (style == AppPreferences.COVER_ART_STYLE_3D) {
+        listOf(
+            File(cacheDirectory, "${key}_3d.webp"),
+            File(cacheDirectory, "${key}_3d.png"),
+            File(cacheDirectory, "${key}_3d.jpg")
+        )
+    } else {
+        listOf(
+            File(cacheDirectory, "$key.jpg"),
+            File(cacheDirectory, "$key.png")
+        )
     }
 
     fun findCachedCoverUri(
@@ -189,6 +206,19 @@ class CoverArtRepository(context: Context) {
         Log.d(TAG, "Normalized serial: $normalizedSerial")
         Log.d(TAG, "Cover base URL: $coverBaseUrl")
         Log.d(TAG, "Cover style: $style")
+
+        // Reuse artwork cached under the other key (title before the serial was
+        // learned, or serial after a rename) instead of downloading a duplicate.
+        findCachedCoverPath(
+            serial = originalSerial,
+            styleOverride = style,
+            ignoreDisabled = true,
+            title = title
+        )?.let { existing ->
+            Log.d(TAG, "Cover already exists: $existing")
+            Log.d(TAG, "========== COVER DOWNLOAD END (CACHED) ==========")
+            return existing
+        }
 
         val coverFile = File(cacheDirectory, cacheFileName(normalizedSerial, style, targetExtension))
         if (isUsableCoverFile(coverFile)) {

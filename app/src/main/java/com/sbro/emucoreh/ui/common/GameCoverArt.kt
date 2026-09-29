@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
@@ -54,6 +55,9 @@ internal fun isGenerated3dCover(coverPath: String?): Boolean =
             path.startsWith("https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/") &&
             path.contains("/covers/3d/") && path.endsWith(".webp")
     } == true
+
+private const val COVER_LOAD_MAX_ATTEMPTS = 4
+private const val COVER_LOAD_RETRY_DELAY_MS = 750L
 
 private val imageLoadingSemaphore = Semaphore(4)
 @Composable
@@ -98,19 +102,30 @@ fun GameCoverArt(
         }
 
         isLoading = true
-        val loadedBitmap = withContext(Dispatchers.IO) {
-            imageLoadingSemaphore.withPermit {
-                loadBitmap(context, coverPath)
+        var attempt = 0
+        while (true) {
+            val loadedBitmap = withContext(Dispatchers.IO) {
+                imageLoadingSemaphore.withPermit {
+                    loadBitmap(context, coverPath)
+                }
             }
+            if (loadedBitmap != null) {
+                putCachedBitmap(coverPath, loadedBitmap)
+                loadedPath = coverPath
+                bitmap = loadedBitmap
+                isLoading = false
+                return@LaunchedEffect
+            }
+            if (attempt >= COVER_LOAD_MAX_ATTEMPTS) {
+                isLoading = false
+                return@LaunchedEffect
+            }
+            attempt++
+            // Cover files are repaired by the background sync; keep trying for
+            // a while so a transient miss does not blank the artwork until the
+            // next app restart.
+            delay(COVER_LOAD_RETRY_DELAY_MS * attempt)
         }
-        if (loadedBitmap != null) {
-            putCachedBitmap(coverPath, loadedBitmap)
-            loadedPath = coverPath
-        }
-        if (loadedBitmap != null || bitmap == null) {
-            bitmap = loadedBitmap
-        }
-        isLoading = false
     }
 
     val currentBitmap = bitmap
