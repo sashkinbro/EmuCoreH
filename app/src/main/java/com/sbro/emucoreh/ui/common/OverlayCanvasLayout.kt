@@ -5,6 +5,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.data.AppPreferences
 import com.sbro.emucoreh.data.OverlayControlLayout
@@ -43,7 +44,9 @@ data class OverlayCanvasDpadClusterSpec(
     val x: Dp,
     val y: Dp,
     val opacity: Int,
-    val visible: Boolean
+    val visible: Boolean,
+    val directionOffsets: Map<OverlayDpadDirection, DpOffset> = emptyMap(),
+    val surface: OverlayDpadClusterSurface = OverlayDpadClusterSurface(DpOffset.Zero, size, size)
 )
 
 data class OverlayCanvasLayout(
@@ -291,11 +294,10 @@ fun buildOverlayCanvasLayout(
     } else {
         OverlayPrimaryControlGapPortrait
     }) * responsiveScale
-    val leftStickRowStart = if (extraDpadLayout.visible) {
-        edgePadStart + extraDpadSize + primaryControlGap
-    } else {
-        edgePadStart
-    }
+    // The left stick keeps its slot next to the D-pad position even when the D-pad is
+    // hidden, so toggling one control's visibility never makes another jump across
+    // the canvas (and the editor preview stays stable while arranging controls).
+    val leftStickRowStart = edgePadStart + extraDpadSize + primaryControlGap
     val leftStickBaseY = primaryTop + leftStickBase
     val leftStick = OverlayCanvasStickSpec(
         id = "left_stick",
@@ -351,7 +353,26 @@ fun buildOverlayCanvasLayout(
         )
     )
 
+    // Arrows inside the extra D-pad can be moved anywhere on the canvas by the layout
+    // editor. Offsets stay raw; the block surface grows around them so moved arrows
+    // remain fully touchable at runtime.
+    fun dpadClusterDirectionOffsets(): Map<OverlayDpadDirection, DpOffset> =
+        OverlayDpadDirection.entries.associateWith { direction ->
+            val controlId = when (direction) {
+                OverlayDpadDirection.Up -> "dpad_up"
+                OverlayDpadDirection.Down -> "dpad_down"
+                OverlayDpadDirection.Left -> "dpad_left"
+                OverlayDpadDirection.Right -> "dpad_right"
+            }
+            val controlLayout = layoutFor(controlId)
+            DpOffset(
+                x = pxToDp(controlLayout.offset.first),
+                y = pxToDp(controlLayout.offset.second)
+            )
+        }
+
     val extraDpadBaseY = primaryTop + (primaryExtent - extraDpadSize) / 2f
+    val dpadClusterOffsets = dpadClusterDirectionOffsets()
     val dpadCluster = OverlayCanvasDpadClusterSpec(
         id = "dpad_cluster",
         size = extraDpadSize,
@@ -360,7 +381,9 @@ fun buildOverlayCanvasLayout(
         x = dpadClusterLeft + pxToDp(extraDpadLayout.offset.first),
         y = extraDpadBaseY + pxToDp(extraDpadLayout.offset.second),
         opacity = extraDpadLayout.opacity,
-        visible = extraDpadLayout.visible
+        visible = extraDpadLayout.visible,
+        directionOffsets = dpadClusterOffsets,
+        surface = overlayDpadClusterSurface(extraDpadSize, dpadClusterOffsets)
     )
 
     val actionClusterLeft = canvasWidth - edgePadEnd - actionClusterExtent + actionAdjustment.first

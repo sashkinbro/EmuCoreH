@@ -46,10 +46,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -100,6 +102,10 @@ enum class OverlayDpadDirection {
     Left,
     Right
 }
+
+// Shared between the runtime renderer and the layout editor so arrow hit visuals and
+// drag clamping always agree on the same in-cluster arrow footprint.
+internal const val OverlayDpadClusterArrowScale = 0.36f
 
 @DrawableRes
 fun overlayDrawableForControl(controlId: String): Int? = when (controlId) {
@@ -471,6 +477,10 @@ fun VectorDpadCluster(
     interactive: Boolean = true,
     visualStyle: TouchControlVisualStyle = TouchControlVisualStyle.CLASSIC,
     pressEffect: TouchControlPressEffect = TouchControlPressEffect.GROW,
+    directionOffsets: Map<OverlayDpadDirection, DpOffset> = emptyMap(),
+    surface: OverlayDpadClusterSurface = overlayDpadClusterSurface(size, directionOffsets),
+    showDirections: Boolean = true,
+    previewOutline: Boolean = false,
     onDirectionsChange: ((Set<OverlayDpadDirection>) -> Unit)? = null
 ) {
     var bounds by remember { mutableStateOf(androidx.compose.ui.geometry.Size.Zero) }
@@ -478,6 +488,26 @@ fun VectorDpadCluster(
     var activeDirections by remember { mutableStateOf(emptySet<OverlayDpadDirection>()) }
     val currentDirections by rememberUpdatedState(activeDirections)
     val currentOnDirectionsChange by rememberUpdatedState(onDirectionsChange)
+
+    val density = LocalDensity.current
+    val arrowSize = size * OverlayDpadClusterArrowScale
+    val arrowSizePx = with(density) { arrowSize.toPx() }
+    val surfaceOffsetXPx = with(density) { surface.offset.x.toPx() }
+    val surfaceOffsetYPx = with(density) { surface.offset.y.toPx() }
+    // Direction zones follow the real arrow anchors so arrows moved by the layout
+    // editor still trigger their own direction. Default slots keep the old centre.
+    val anchors = OverlayDpadDirection.entries.map { direction ->
+        overlayDpadArrowDefault(direction, size) +
+            (directionOffsets[direction] ?: DpOffset.Zero)
+    }
+    val centerXPx = anchors.map { with(density) { (it.x + arrowSize / 2f).toPx() } }
+        .average().toFloat() - surfaceOffsetXPx
+    val centerYPx = anchors.map { with(density) { (it.y + arrowSize / 2f).toPx() } }
+        .average().toFloat() - surfaceOffsetYPx
+    val deadZonePx = with(density) { (size * 0.16f).toPx() }
+    val currentCenterXPx by rememberUpdatedState(centerXPx)
+    val currentCenterYPx by rememberUpdatedState(centerYPx)
+    val currentDeadZonePx by rememberUpdatedState(deadZonePx)
 
     fun setDirections(directions: Set<OverlayDpadDirection>) {
         if (directions == activeDirections) return
@@ -487,17 +517,13 @@ fun VectorDpadCluster(
 
     fun directionsFromPosition(x: Float, y: Float): Set<OverlayDpadDirection> {
         if (bounds.width <= 0f || bounds.height <= 0f) return emptySet()
-        val centerX = bounds.width / 2f
-        val centerY = bounds.height / 2f
-        val deadZoneX = bounds.width * 0.16f
-        val deadZoneY = bounds.height * 0.16f
-        val dx = x - centerX
-        val dy = y - centerY
+        val dx = x - currentCenterXPx
+        val dy = y - currentCenterYPx
         return buildSet {
-            if (dx < -deadZoneX) add(OverlayDpadDirection.Left)
-            if (dx > deadZoneX) add(OverlayDpadDirection.Right)
-            if (dy < -deadZoneY) add(OverlayDpadDirection.Up)
-            if (dy > deadZoneY) add(OverlayDpadDirection.Down)
+            if (dx < -currentDeadZonePx) add(OverlayDpadDirection.Left)
+            if (dx > currentDeadZonePx) add(OverlayDpadDirection.Right)
+            if (dy < -currentDeadZonePx) add(OverlayDpadDirection.Up)
+            if (dy > currentDeadZonePx) add(OverlayDpadDirection.Down)
         }
     }
 
@@ -560,66 +586,84 @@ fun VectorDpadCluster(
         TouchControlVisualStyle.ARCADE -> CircleShape
         TouchControlVisualStyle.MINIMAL -> neonShape(24.dp)
     }
-    val buttonSize = size * 0.36f
+    val upOffset = directionOffsets[OverlayDpadDirection.Up] ?: DpOffset.Zero
+    val downOffset = directionOffsets[OverlayDpadDirection.Down] ?: DpOffset.Zero
+    val leftOffset = directionOffsets[OverlayDpadDirection.Left] ?: DpOffset.Zero
+    val rightOffset = directionOffsets[OverlayDpadDirection.Right] ?: DpOffset.Zero
     Box(
         modifier = modifier
-            .size(size)
+            .size(surface.width, surface.height)
             .graphicsLayer(alpha = alpha)
             .then(
-                if (selected) {
-                    Modifier.border(1.5.dp, OverlaySelectedStroke, shape)
-                } else {
-                    Modifier
+                when {
+                    selected -> Modifier.border(1.5.dp, OverlaySelectedStroke, shape)
+                    previewOutline -> Modifier.border(1.dp, OverlayPreviewStroke, shape)
+                    else -> Modifier
                 }
             )
             .onSizeChanged { bounds = androidx.compose.ui.geometry.Size(it.width.toFloat(), it.height.toFloat()) }
-            .then(pointerModifier),
-        contentAlignment = Alignment.Center
+            .then(pointerModifier)
     ) {
-        VectorOverlayButton(
-            drawableRes = R.drawable.ic_controller_up_button,
-            width = buttonSize,
-            height = buttonSize,
-            shape = neonShape(8.dp),
-            pressed = activeDirections.contains(OverlayDpadDirection.Up),
-            interactive = false,
-            visualStyle = visualStyle,
-            pressEffect = pressEffect,
-            modifier = Modifier.align(Alignment.TopCenter)
-        )
-        VectorOverlayButton(
-            drawableRes = R.drawable.ic_controller_down_button,
-            width = buttonSize,
-            height = buttonSize,
-            shape = neonShape(8.dp),
-            pressed = activeDirections.contains(OverlayDpadDirection.Down),
-            interactive = false,
-            visualStyle = visualStyle,
-            pressEffect = pressEffect,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
-        VectorOverlayButton(
-            drawableRes = R.drawable.ic_controller_left_button,
-            width = buttonSize,
-            height = buttonSize,
-            shape = neonShape(8.dp),
-            pressed = activeDirections.contains(OverlayDpadDirection.Left),
-            interactive = false,
-            visualStyle = visualStyle,
-            pressEffect = pressEffect,
-            modifier = Modifier.align(Alignment.CenterStart)
-        )
-        VectorOverlayButton(
-            drawableRes = R.drawable.ic_controller_right_button,
-            width = buttonSize,
-            height = buttonSize,
-            shape = neonShape(8.dp),
-            pressed = activeDirections.contains(OverlayDpadDirection.Right),
-            interactive = false,
-            visualStyle = visualStyle,
-            pressEffect = pressEffect,
-            modifier = Modifier.align(Alignment.CenterEnd)
-        )
+        if (showDirections) {
+            Box(
+                modifier = Modifier
+                    .offset(x = -surface.offset.x, y = -surface.offset.y)
+                    .size(size)
+            ) {
+                VectorOverlayButton(
+                    drawableRes = R.drawable.ic_controller_up_button,
+                    width = arrowSize,
+                    height = arrowSize,
+                    shape = neonShape(8.dp),
+                    pressed = activeDirections.contains(OverlayDpadDirection.Up),
+                    interactive = false,
+                    visualStyle = visualStyle,
+                    pressEffect = pressEffect,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(x = upOffset.x, y = upOffset.y)
+                )
+                VectorOverlayButton(
+                    drawableRes = R.drawable.ic_controller_down_button,
+                    width = arrowSize,
+                    height = arrowSize,
+                    shape = neonShape(8.dp),
+                    pressed = activeDirections.contains(OverlayDpadDirection.Down),
+                    interactive = false,
+                    visualStyle = visualStyle,
+                    pressEffect = pressEffect,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .offset(x = downOffset.x, y = downOffset.y)
+                )
+                VectorOverlayButton(
+                    drawableRes = R.drawable.ic_controller_left_button,
+                    width = arrowSize,
+                    height = arrowSize,
+                    shape = neonShape(8.dp),
+                    pressed = activeDirections.contains(OverlayDpadDirection.Left),
+                    interactive = false,
+                    visualStyle = visualStyle,
+                    pressEffect = pressEffect,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .offset(x = leftOffset.x, y = leftOffset.y)
+                )
+                VectorOverlayButton(
+                    drawableRes = R.drawable.ic_controller_right_button,
+                    width = arrowSize,
+                    height = arrowSize,
+                    shape = neonShape(8.dp),
+                    pressed = activeDirections.contains(OverlayDpadDirection.Right),
+                    interactive = false,
+                    visualStyle = visualStyle,
+                    pressEffect = pressEffect,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .offset(x = rightOffset.x, y = rightOffset.y)
+                )
+            }
+        }
     }
 }
 

@@ -74,6 +74,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -95,6 +96,8 @@ import com.sbro.emucoreh.ui.common.CustomControlVisual
 import com.sbro.emucoreh.ui.common.OverlayCanvasButtonSpec
 import com.sbro.emucoreh.ui.common.OverlayCanvasDpadClusterSpec
 import com.sbro.emucoreh.ui.common.OverlayCanvasStickSpec
+import com.sbro.emucoreh.ui.common.OverlayDpadClusterArrowScale
+import com.sbro.emucoreh.ui.common.OverlayDpadDirection
 import com.sbro.emucoreh.ui.common.VectorAnalogStick
 import com.sbro.emucoreh.ui.common.VectorDpadCluster
 import com.sbro.emucoreh.ui.common.VectorOverlayButton
@@ -102,6 +105,7 @@ import com.sbro.emucoreh.ui.common.actionLabel
 import com.sbro.emucoreh.ui.common.actionDrawableRes
 import com.sbro.emucoreh.ui.common.buildOverlayCanvasLayout
 import com.sbro.emucoreh.ui.common.composeShape
+import com.sbro.emucoreh.ui.common.overlayDpadArrowDefault
 import com.sbro.emucoreh.ui.emulation.EmulationUiState
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 import java.util.UUID
@@ -200,6 +204,26 @@ private data class PreviewGroupBounds(
     val width: Dp,
     val height: Dp
 )
+
+// Mirrors VectorDpadCluster's internal arrow layout so the editor can place the
+// per-direction drag handles exactly where the runtime draws them.
+private data class DpadClusterArrowSlot(
+    val controlId: String,
+    val direction: OverlayDpadDirection,
+    val default: Pair<Dp, Dp>
+)
+
+private fun dpadClusterArrowSlots(clusterSize: Dp): List<DpadClusterArrowSlot> =
+    OverlayDpadDirection.entries.map { direction ->
+        val controlId = when (direction) {
+            OverlayDpadDirection.Up -> "dpad_up"
+            OverlayDpadDirection.Down -> "dpad_down"
+            OverlayDpadDirection.Left -> "dpad_left"
+            OverlayDpadDirection.Right -> "dpad_right"
+        }
+        val arrowDefault = overlayDpadArrowDefault(direction, clusterSize)
+        DpadClusterArrowSlot(controlId, direction, arrowDefault.x to arrowDefault.y)
+    }
 
 private data class EditorControlGeometry(
     val positionX: Float,
@@ -1578,15 +1602,39 @@ private fun PreviewLayout(
 
         fun moveDpadCluster(controlId: String, spec: OverlayCanvasDpadClusterSpec, delta: Pair<Float, Float>) {
             val current = controlLayouts[controlId] ?: OverlayControlLayout()
+            val surface = spec.surface
             onSetControlOffset(
                 controlId,
                 clampOffset(
                     currentOffset = current.offset,
                     delta = delta,
-                    baseX = spec.baseX,
-                    baseY = spec.baseY,
-                    width = spec.size,
-                    height = spec.size
+                    baseX = spec.x + surface.offset.x,
+                    baseY = spec.y + surface.offset.y,
+                    width = surface.width,
+                    height = surface.height
+                )
+            )
+        }
+
+        // D-pad arrows can be moved anywhere inside the safe canvas; the block surface
+        // follows them, so offsets are stored relative to the arrow's default slot.
+        fun moveDpadClusterButton(
+            controlId: String,
+            spec: OverlayCanvasDpadClusterSpec,
+            slot: DpadClusterArrowSlot,
+            delta: Pair<Float, Float>
+        ) {
+            val current = controlLayouts[controlId] ?: OverlayControlLayout()
+            val arrowSize = spec.size * OverlayDpadClusterArrowScale
+            onSetControlOffset(
+                controlId,
+                clampOffset(
+                    currentOffset = current.offset,
+                    delta = delta,
+                    baseX = spec.x + slot.default.first,
+                    baseY = spec.y + slot.default.second,
+                    width = arrowSize,
+                    height = arrowSize
                 )
             )
         }
@@ -1684,12 +1732,47 @@ private fun PreviewLayout(
                 selected = selectedControlId == spec.id,
                 onSelectControl = onSelectControl,
                 onMoveControlBy = { id, delta -> moveDpadCluster(id, spec, delta) },
-                onCommitControlPosition = onCommitControlPosition
+                onCommitControlPosition = onCommitControlPosition,
+                showDirections = !showIndependentDpad,
+                baseZIndex = if (showIndependentDpad) 0.5f else 1.5f,
+                selectedZBoost = if (showIndependentDpad) 0.5f else 10f
             )
+
+            // Individual D-pad arrows stay draggable even outside the base square: the
+            // block surface expands around them so nothing becomes unreachable.
+            if (showIndependentDpad) {
+                dpadClusterArrowSlots(spec.size).forEach { slot ->
+                    val arrowSpec = layout.button(slot.controlId) ?: return@forEach
+                    val offset = spec.directionOffsets[slot.direction] ?: DpOffset.Zero
+                    PreviewCanvasButton(
+                        spec = arrowSpec.copy(
+                            width = spec.size * OverlayDpadClusterArrowScale,
+                            height = spec.size * OverlayDpadClusterArrowScale,
+                            shape = neonShape(8.dp),
+                            baseX = spec.x + slot.default.first,
+                            baseY = spec.y + slot.default.second,
+                            x = spec.x + slot.default.first + offset.x,
+                            y = spec.y + slot.default.second + offset.y,
+                            opacity = spec.opacity,
+                            visible = true
+                        ),
+                        visualStyle = state.touchControlVisualStyle,
+                        pressEffect = state.touchControlPressEffect,
+                        selected = selectedControlId == slot.controlId,
+                        onSelectControl = onSelectControl,
+                        onMoveControlBy = { movedId, delta ->
+                            moveDpadClusterButton(movedId, spec, slot, delta)
+                        },
+                        onCommitControlPosition = onCommitControlPosition,
+                        baseZIndex = 5f
+                    )
+                }
+            }
         }
 
+        // Hidden controls stay on the canvas (dimmed) so they can be re-enabled; while
+        // hidden they sit below active controls so they never steal their touches.
         layout.leftStick
-            ?.takeIf { showLeftStick }
             ?.let { spec ->
             PreviewCanvasStick(
                 spec = spec,
@@ -1699,6 +1782,7 @@ private fun PreviewLayout(
                 surfaceOnly = stickSurfaceMode(spec.id),
                 panelWidth = stickPanelWidth(spec),
                 panelX = stickPanelX(spec),
+                baseZIndex = if (spec.visible) 2f else 0.5f,
                 onSelectControl = onSelectControl,
                 onMoveControlBy = { id, delta -> moveStick(id, spec, delta) },
                 onCommitControlPosition = onCommitControlPosition
@@ -1715,6 +1799,7 @@ private fun PreviewLayout(
                 surfaceOnly = stickSurfaceMode(spec.id),
                 panelWidth = stickPanelWidth(spec),
                 panelX = stickPanelX(spec),
+                baseZIndex = if (spec.visible) 2f else 0.5f,
                 onSelectControl = onSelectControl,
                 onMoveControlBy = { id, delta -> moveStick(id, spec, delta) },
                 onCommitControlPosition = onCommitControlPosition
@@ -1801,22 +1886,46 @@ private fun PreviewLayout(
                         }
                     } else {
                         layout.button(selection)?.let { spec ->
-                            val widthPx = with(density) { spec.width.toPx() }
-                            val heightPx = with(density) { spec.height.toPx() }
+                            val cluster = layout.dpadCluster?.takeIf { showIndependentDpad }
+                            val clusterSlot = if (cluster != null) {
+                                dpadClusterArrowSlots(cluster.size)
+                                    .firstOrNull { it.controlId == selection }
+                            } else {
+                                null
+                            }
+                            val visualX: Dp
+                            val visualY: Dp
+                            val visualWidth: Dp
+                            val visualHeight: Dp
+                            if (cluster != null && clusterSlot != null) {
+                                val offset = cluster.directionOffsets[clusterSlot.direction]
+                                    ?: DpOffset.Zero
+                                visualX = cluster.x + clusterSlot.default.first + offset.x
+                                visualY = cluster.y + clusterSlot.default.second + offset.y
+                                visualWidth = cluster.size * OverlayDpadClusterArrowScale
+                                visualHeight = visualWidth
+                            } else {
+                                visualX = spec.x
+                                visualY = spec.y
+                                visualWidth = spec.width
+                                visualHeight = spec.height
+                            }
+                            val widthPx = with(density) { visualWidth.toPx() }
+                            val heightPx = with(density) { visualHeight.toPx() }
                             val travelX = (canvasWidthPx - safeLeftPx - safeRightPx - widthPx)
                                 .coerceAtLeast(1f)
                             val travelY = (canvasHeightPx - safeTopPx - safeBottomPx - heightPx)
                                 .coerceAtLeast(1f)
                             EditorControlGeometry(
                                 positionX = (
-                                    (with(density) { spec.x.toPx() } - safeLeftPx) / travelX
+                                    (with(density) { visualX.toPx() } - safeLeftPx) / travelX
                                     ).coerceIn(0f, 1f),
                                 positionY = (
-                                    (with(density) { spec.y.toPx() } - safeTopPx) / travelY
+                                    (with(density) { visualY.toPx() } - safeTopPx) / travelY
                                     ).coerceIn(0f, 1f),
-                                widthDp = spec.width.value.roundToInt()
+                                widthDp = visualWidth.value.roundToInt()
                                     .coerceIn(CustomTouchControl.MIN_SIZE_DP, CustomTouchControl.MAX_SIZE_DP),
-                                heightDp = spec.height.value.roundToInt()
+                                heightDp = visualHeight.value.roundToInt()
                                     .coerceIn(CustomTouchControl.MIN_SIZE_DP, CustomTouchControl.MAX_SIZE_DP)
                             )
                         }
@@ -1836,8 +1945,12 @@ private fun PreviewCanvasDpadCluster(
     selected: Boolean,
     onSelectControl: (String) -> Unit,
     onMoveControlBy: (String, Pair<Float, Float>) -> Unit,
-    onCommitControlPosition: (String) -> Unit
+    onCommitControlPosition: (String) -> Unit,
+    showDirections: Boolean = true,
+    baseZIndex: Float = 1.5f,
+    selectedZBoost: Float = 10f
 ) {
+    val surface = spec.surface
     DraggableControl(
         id = spec.id,
         selected = selected,
@@ -1846,11 +1959,12 @@ private fun PreviewCanvasDpadCluster(
         onCommitControlPosition = onCommitControlPosition,
         modifier = Modifier.offset {
             IntOffset(
-                spec.x.roundToPx(),
-                spec.y.roundToPx()
+                (spec.x + surface.offset.x).roundToPx(),
+                (spec.y + surface.offset.y).roundToPx()
             )
         },
-        baseZIndex = 1.5f
+        baseZIndex = baseZIndex,
+        selectedZBoost = selectedZBoost
     ) {
         VectorDpadCluster(
             size = spec.size,
@@ -1858,7 +1972,11 @@ private fun PreviewCanvasDpadCluster(
             selected = selected,
             interactive = false,
             visualStyle = visualStyle,
-            pressEffect = pressEffect
+            pressEffect = pressEffect,
+            directionOffsets = spec.directionOffsets,
+            surface = surface,
+            showDirections = showDirections,
+            previewOutline = true
         )
     }
 }
@@ -2001,6 +2119,7 @@ private fun PreviewCanvasStick(
     surfaceOnly: Boolean = false,
     panelWidth: Dp = spec.size,
     panelX: Dp = spec.x,
+    baseZIndex: Float = 2f,
     onSelectControl: (String) -> Unit,
     onMoveControlBy: (String, Pair<Float, Float>) -> Unit,
     onCommitControlPosition: (String) -> Unit
@@ -2017,7 +2136,7 @@ private fun PreviewCanvasStick(
                 spec.y.roundToPx()
             )
         },
-        baseZIndex = 2f
+        baseZIndex = baseZIndex
     ) {
         VectorAnalogStick(
             analogSize = spec.size,
