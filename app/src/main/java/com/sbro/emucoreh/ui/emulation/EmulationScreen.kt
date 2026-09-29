@@ -2288,27 +2288,38 @@ private fun OnScreenControls(
         }
 
         layout.dpadCluster?.takeIf { it.visible }?.let { cluster ->
+            val surface = cluster.surface
             VectorDpadCluster(
                 size = cluster.size,
                 alpha = cluster.opacity / 100f,
                 visualStyle = visualStyle,
                 pressEffect = pressEffect,
+                directionOffsets = cluster.directionOffsets,
+                surface = surface,
                 onDirectionsChange = ::updateExtraDpadDirections,
                 modifier = Modifier.offset {
-                    IntOffset(cluster.x.roundToPx(), cluster.y.roundToPx())
+                    IntOffset(
+                        (cluster.x + surface.offset.x).roundToPx(),
+                        (cluster.y + surface.offset.y).roundToPx()
+                    )
                 }
             )
         }
 
         layout.toggleDpad?.takeIf { it.visible }?.let { cluster ->
+            val surface = cluster.surface
             VectorDpadCluster(
                 size = cluster.size,
                 alpha = cluster.opacity / 100f,
                 visualStyle = visualStyle,
                 pressEffect = pressEffect,
+                surface = surface,
                 onDirectionsChange = ::updateToggleDpadDirections,
                 modifier = Modifier.offset {
-                    IntOffset(cluster.x.roundToPx(), cluster.y.roundToPx())
+                    IntOffset(
+                        (cluster.x + surface.offset.x).roundToPx(),
+                        (cluster.y + surface.offset.y).roundToPx()
+                    )
                 }
             )
         }
