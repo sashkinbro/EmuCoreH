@@ -2372,6 +2372,25 @@ private fun CustomizationSettingsTab(
         }
     }
 
+    // Directly under the preview so the row count and card size update while
+    // the slider is being dragged.
+    SettingsSection(title = stringResource(R.string.settings_customization_library_section)) {
+        SliderItem(
+            icon = Icons.Rounded.Wallpaper,
+            title = stringResource(R.string.settings_customization_grid_size),
+            subtitle = "",
+            value = uiState.homeGridScale,
+            range = AppPreferences.MIN_HOME_GRID_SCALE..AppPreferences.MAX_HOME_GRID_SCALE,
+            steps = 19,
+            onValueChange = viewModel::setHomeGridScale,
+            valueLabel = { "${(it * 100).roundToInt()}%" },
+            helpText = stringResource(R.string.settings_customization_grid_size_help),
+            onResetToDefault = {
+                viewModel.setHomeGridScale(AppPreferences.DEFAULT_HOME_GRID_SCALE)
+            }
+        )
+    }
+
     SettingsSection(title = stringResource(R.string.settings_customization_background_section)) {
         Text(
             text = stringResource(R.string.settings_customization_background_presets),
@@ -2568,23 +2587,6 @@ private fun CustomizationSettingsTab(
                 onClick = viewModel::clearCustomEmulationSideArtwork
             )
         }
-    }
-
-    SettingsSection(title = stringResource(R.string.settings_customization_library_section)) {
-        SliderItem(
-            icon = Icons.Rounded.Wallpaper,
-            title = stringResource(R.string.settings_customization_grid_size),
-            subtitle = "",
-            value = uiState.homeGridScale,
-            range = AppPreferences.MIN_HOME_GRID_SCALE..AppPreferences.MAX_HOME_GRID_SCALE,
-            steps = 19,
-            onValueChange = viewModel::setHomeGridScale,
-            valueLabel = { "${(it * 100).roundToInt()}%" },
-            helpText = stringResource(R.string.settings_customization_grid_size_help),
-            onResetToDefault = {
-                viewModel.setHomeGridScale(AppPreferences.DEFAULT_HOME_GRID_SCALE)
-            }
-        )
     }
 
     SettingsSection(title = stringResource(R.string.settings_customization_drawer_section)) {
