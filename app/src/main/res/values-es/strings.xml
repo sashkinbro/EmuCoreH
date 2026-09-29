@@ -95,6 +95,11 @@
     <string name="tv_storage_source_title">Elegir almacenamiento</string>
     <string name="tv_storage_all_locations">Todas las ubicaciones</string>
     <string name="tv_storage_picker_unavailable">Este dispositivo de TV no tiene instalado un selector de archivos del sistema compatible.</string>
+    <string name="tv_storage_picker_install_title">Instala un explorador de archivos</string>
+    <string name="tv_storage_picker_install_message">Este televisor no tiene selector de carpetas del sistema, por lo que no se pueden elegir carpetas. Instala un explorador de archivos compatible (por ejemplo, AnExplorer) desde la tienda y vuelve a intentarlo.</string>
+    <string name="tv_storage_picker_install_confirm">Instalar</string>
+    <string name="tv_storage_picker_install_retry">Volver a intentarlo</string>
+    <string name="tv_storage_picker_store_unavailable">No se pudo abrir la tienda de aplicaciones. Instala un explorador de archivos manualmente y vuelve a intentarlo.</string>
     <string name="settings_language_system">Predeterminado del sistema</string>
     <string name="settings_language_screen_subtitle">Elige el idioma de la interfaz para EmuCoreH.</string>
     <string name="settings_language_system_subtitle">Seguir el idioma de tu dispositivo.</string>

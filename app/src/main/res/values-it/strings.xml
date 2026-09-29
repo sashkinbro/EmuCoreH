@@ -122,6 +122,11 @@
     <string name="tv_storage_source_title">Scegli archivio</string>
     <string name="tv_storage_all_locations">Tutte le posizioni</string>
     <string name="tv_storage_picker_unavailable">Su questo dispositivo TV non è installato un selettore file di sistema compatibile.</string>
+    <string name="tv_storage_picker_install_title">Installa un file manager</string>
+    <string name="tv_storage_picker_install_message">Questa TV non ha un selettore di cartelle di sistema, quindi non è possibile scegliere le cartelle. Installa un file manager compatibile (ad esempio AnExplorer) dallo store e riprova.</string>
+    <string name="tv_storage_picker_install_confirm">Installa</string>
+    <string name="tv_storage_picker_install_retry">Riprova</string>
+    <string name="tv_storage_picker_store_unavailable">Impossibile aprire lo store delle app. Installa manualmente un file manager e riprova.</string>
     <string name="settings_language_system">Predefinita di sistema</string>
     <string name="settings_language_screen_subtitle">Scegli la lingua dell\'interfaccia per EmuCoreH.</string>
     <string name="settings_language_system_subtitle">Segui la lingua del dispositivo.</string>

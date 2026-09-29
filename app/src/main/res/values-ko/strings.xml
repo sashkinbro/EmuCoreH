@@ -130,6 +130,11 @@
     <string name="tv_storage_source_title">저장소 선택</string>
     <string name="tv_storage_all_locations">모든 위치</string>
     <string name="tv_storage_picker_unavailable">이 TV 기기에 호환되는 시스템 파일 선택기가 설치되어 있지 않습니다.</string>
+    <string name="tv_storage_picker_install_title">파일 관리자 설치</string>
+    <string name="tv_storage_picker_install_message">이 TV에는 시스템 폴더 선택기가 없어 폴더를 선택할 수 없습니다. 스토어에서 호환되는 파일 관리자(예: AnExplorer)를 설치한 후 다시 시도하세요.</string>
+    <string name="tv_storage_picker_install_confirm">설치</string>
+    <string name="tv_storage_picker_install_retry">다시 시도</string>
+    <string name="tv_storage_picker_store_unavailable">앱 스토어를 열 수 없습니다. 파일 관리자를 수동으로 설치한 후 다시 시도하세요.</string>
     <string name="settings_language_system">시스템 기본값</string>
     <string name="settings_language_screen_subtitle">EmuCoreH의 인터페이스 언어를 선택하세요.</string>
     <string name="settings_language_system_subtitle">기기 언어를 따릅니다.</string>

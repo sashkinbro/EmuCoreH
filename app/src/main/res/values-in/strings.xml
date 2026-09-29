@@ -139,6 +139,11 @@
     <string name="tv_storage_source_title">Pilih penyimpanan</string>
     <string name="tv_storage_all_locations">Semua lokasi</string>
     <string name="tv_storage_picker_unavailable">Tidak ada pemilih file sistem yang kompatibel terpasang di perangkat TV ini.</string>
+    <string name="tv_storage_picker_install_title">Instal pengelola file</string>
+    <string name="tv_storage_picker_install_message">TV ini tidak memiliki pemilih folder sistem, jadi folder tidak dapat dipilih. Instal pengelola file yang kompatibel (misalnya AnExplorer) dari toko, lalu coba lagi.</string>
+    <string name="tv_storage_picker_install_confirm">Instal</string>
+    <string name="tv_storage_picker_install_retry">Coba lagi</string>
+    <string name="tv_storage_picker_store_unavailable">Tidak dapat membuka toko aplikasi. Instal pengelola file secara manual, lalu coba lagi.</string>
     <string name="settings_language_system">Default sistem</string>
     <string name="settings_language_screen_subtitle">Pilih bahasa antarmuka untuk EmuCoreH.</string>
     <string name="settings_language_system_subtitle">Ikuti bahasa perangkat Anda.</string>

@@ -130,6 +130,11 @@
     <string name="tv_storage_source_title">اختر وحدة التخزين</string>
     <string name="tv_storage_all_locations">كل المواقع</string>
     <string name="tv_storage_picker_unavailable">لا يوجد منتقي ملفات نظام متوافق مثبت على جهاز التلفاز هذا.</string>
+    <string name="tv_storage_picker_install_title">ثبّت مدير ملفات</string>
+    <string name="tv_storage_picker_install_message">لا يحتوي هذا التلفاز على منتقي مجلدات النظام، لذا لا يمكن اختيار المجلدات. ثبّت مدير ملفات متوافقًا (مثل AnExplorer) من المتجر ثم حاول مجددًا.</string>
+    <string name="tv_storage_picker_install_confirm">تثبيت</string>
+    <string name="tv_storage_picker_install_retry">إعادة المحاولة</string>
+    <string name="tv_storage_picker_store_unavailable">تعذر فتح متجر التطبيقات. ثبّت مدير ملفات يدويًا ثم حاول مجددًا.</string>
     <string name="settings_language_system">الافتراضي للنظام</string>
     <string name="settings_language_screen_subtitle">اختر لغة واجهة EmuCoreH.</string>
     <string name="settings_language_system_subtitle">اتباع لغة جهازك.</string>

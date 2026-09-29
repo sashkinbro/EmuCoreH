@@ -122,6 +122,11 @@
     <string name="tv_storage_source_title">स्टोरेज चुनें</string>
     <string name="tv_storage_all_locations">सभी स्थान</string>
     <string name="tv_storage_picker_unavailable">इस टीवी डिवाइस पर कोई संगत सिस्टम फ़ाइल पिकर इंस्टॉल नहीं है।</string>
+    <string name="tv_storage_picker_install_title">फ़ाइल मैनेजर इंस्टॉल करें</string>
+    <string name="tv_storage_picker_install_message">इस TV में सिस्टम फ़ोल्डर चुनने वाला नहीं है, इसलिए फ़ोल्डर चुना नहीं जा सकता। स्टोर से संगत फ़ाइल मैनेजर (जैसे AnExplorer) इंस्टॉल करें और फिर से कोशिश करें।</string>
+    <string name="tv_storage_picker_install_confirm">इंस्टॉल करें</string>
+    <string name="tv_storage_picker_install_retry">फिर से कोशिश करें</string>
+    <string name="tv_storage_picker_store_unavailable">ऐप स्टोर नहीं खुल सका। फ़ाइल मैनेजर मैन्युअल रूप से इंस्टॉल करें और फिर से कोशिश करें।</string>
     <string name="settings_language_system">सिस्टम डिफ़ॉल्ट</string>
     <string name="settings_language_screen_subtitle">EmuCoreH के लिए इंटरफ़ेस भाषा चुनें।</string>
     <string name="settings_language_system_subtitle">अपने डिवाइस की भाषा का पालन करें।</string>

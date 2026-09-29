@@ -139,6 +139,11 @@
     <string name="tv_storage_source_title">Wybierz pamięć</string>
     <string name="tv_storage_all_locations">Wszystkie lokalizacje</string>
     <string name="tv_storage_picker_unavailable">Na tym urządzeniu TV nie jest zainstalowany żaden kompatybilny menedżer plików systemowych.</string>
+    <string name="tv_storage_picker_install_title">Zainstaluj menedżer plików</string>
+    <string name="tv_storage_picker_install_message">Ten telewizor nie ma systemowego wyboru folderów, więc nie można wybrać folderu. Zainstaluj ze sklepu zgodny menedżer plików (na przykład AnExplorer) i spróbuj ponownie.</string>
+    <string name="tv_storage_picker_install_confirm">Zainstaluj</string>
+    <string name="tv_storage_picker_install_retry">Spróbuj ponownie</string>
+    <string name="tv_storage_picker_store_unavailable">Nie udało się otworzyć sklepu z aplikacjami. Zainstaluj menedżer plików ręcznie i spróbuj ponownie.</string>
     <string name="settings_language_system">Domyślny systemowy</string>
     <string name="settings_language_screen_subtitle">Wybierz język interfejsu dla EmuCoreH.</string>
     <string name="settings_language_system_subtitle">Naśladuj język urządzenia.</string>
