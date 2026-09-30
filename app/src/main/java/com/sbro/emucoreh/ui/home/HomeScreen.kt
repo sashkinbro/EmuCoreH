@@ -717,6 +717,18 @@ fun HomeScreen(
             }
         )
     }
+
+    if (
+        uiState.showCoreResetDialog &&
+        !uiState.showWelcomeDialog &&
+        canShowWelcomeDialog &&
+        !isShelfView
+    ) {
+        CoreUpdateResetDialog(
+            onReset = viewModel::resetGeneratedCoreState,
+            onKeep = viewModel::dismissCoreResetPrompt
+        )
+    }
 }
 
 @Composable
@@ -805,6 +817,54 @@ private fun WelcomeProDialog(
                 TextButton(onClick = onDismiss) {
                     Text(text = stringResource(R.string.welcome_secondary))
                 }
+            }
+        }
+    )
+}
+
+@Composable
+private fun CoreUpdateResetDialog(
+    onReset: () -> Unit,
+    onKeep: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onKeep,
+        showEyebrow = false,
+        showIconContainer = false,
+        icon = {
+            Image(
+                painter = painterResource(R.drawable.ic_drawer_app),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        },
+        title = { Text(text = stringResource(R.string.core_update_reset_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.core_update_reset_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(R.string.core_update_reset_kept),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                shape = neonButtonShape(),
+                onClick = onReset
+            ) {
+                Text(text = stringResource(R.string.core_update_reset_action))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onKeep) {
+                Text(text = stringResource(R.string.core_update_reset_keep))
             }
         }
     )
