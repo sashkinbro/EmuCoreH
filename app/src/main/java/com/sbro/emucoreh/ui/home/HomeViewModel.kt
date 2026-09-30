@@ -916,6 +916,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 CoreMaintenanceRepository(getApplication()).resetGeneratedCoreState()
                 preferences.setLastCoreBinaryFingerprint(resolveCoreFingerprint())
             }
+            android.widget.Toast.makeText(
+                getApplication(),
+                com.sbro.emucoreh.R.string.core_update_reset_done,
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
         }
     }
 

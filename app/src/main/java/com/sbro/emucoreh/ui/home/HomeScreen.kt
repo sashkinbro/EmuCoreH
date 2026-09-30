@@ -855,16 +855,23 @@ private fun CoreUpdateResetDialog(
             }
         },
         confirmButton = {
-            Button(
-                shape = neonButtonShape(),
-                onClick = onReset
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = stringResource(R.string.core_update_reset_action))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onKeep) {
-                Text(text = stringResource(R.string.core_update_reset_keep))
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = neonButtonShape(),
+                    onClick = onReset
+                ) {
+                    Text(text = stringResource(R.string.core_update_reset_action))
+                }
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onKeep
+                ) {
+                    Text(text = stringResource(R.string.core_update_reset_keep))
+                }
             }
         }
     )
