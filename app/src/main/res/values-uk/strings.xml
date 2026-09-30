@@ -2969,9 +2969,10 @@
     <string name="touch_control_creator_preview_mode">Режим попереднього перегляду</string>
     <string name="touch_control_creator_pro_desc">Вивчайте всі опції безкоштовно. PRO потрібен для створення, збереження, дублювання або ввімкнення кастомних кнопок в іграх.</string>
     <string name="touch_control_creator_unlock">Розблокувати PRO</string>
-    <string name="core_update_reset_title">Нове ядро емулятора</string>
+    <string name="core_update_reset_title">Оновлення ядра</string>
     <string name="core_update_reset_body">Це оновлення містить зміни в ядрі емулятора. Скиньте кеш і конфігурацію емулятора, щоб нове ядро працювало без збоїв.</string>
     <string name="core_update_reset_kept">BIOS, папки ігор, керування, збереження, карти пам’яті та обкладинки залишаться.</string>
-    <string name="core_update_reset_action">Скинути налаштування емулятора</string>
+    <string name="core_update_reset_action">Скинути налаштування</string>
     <string name="core_update_reset_keep">Залишити як є</string>
+    <string name="core_update_reset_done">Налаштування скинуто</string>
 </resources>
