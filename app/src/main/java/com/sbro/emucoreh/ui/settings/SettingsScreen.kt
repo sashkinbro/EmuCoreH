@@ -62,6 +62,7 @@ import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.FolderOpen
@@ -251,6 +252,7 @@ import com.sbro.emucoreh.ui.common.tvFocusGroup
 import com.sbro.emucoreh.ui.common.tvGamepadFocusableCard
 import com.sbro.emucoreh.ui.customization.HomeBackgroundMedia
 import com.sbro.emucoreh.ui.home.calculateHomeGridColumnCount
+import com.sbro.emucoreh.ui.profile.CloudProfilesDialog
 import com.sbro.emucoreh.ui.theme.ScreenHorizontalPadding
 import com.sbro.emucoreh.ui.theme.ThemeMode
 import kotlinx.coroutines.Dispatchers
@@ -302,6 +304,7 @@ fun SettingsScreen(
     var showTopBarMenu by remember { mutableStateOf(false) }
     val showResetAllSettingsDialog = remember { mutableStateOf(false) }
     var showBackupExportDialog by rememberSaveable { mutableStateOf(false) }
+    var showDriveBackupDialog by rememberSaveable { mutableStateOf(false) }
     var includeSaveStatesInBackup by rememberSaveable { mutableStateOf(false) }
     val showCoverUrlDialog = remember { mutableStateOf(false) }
     var showClearCoverCacheDialog by rememberSaveable { mutableStateOf(false) }
@@ -578,6 +581,7 @@ fun SettingsScreen(
                     showBackupExportDialog = true
                 },
                 launchSettingsBackupImport = { settingsBackupImporter.launch(arrayOf("application/zip", "*/*")) },
+                launchCloudBackup = { showDriveBackupDialog = true },
                 openLanguageSheet = openLanguageSheet,
                 onRequestGamepadBinding = { padIndex, actionId ->
                     pendingGamepadPadIndex = padIndex
@@ -736,6 +740,10 @@ fun SettingsScreen(
                 }
             }
         )
+    }
+
+    if (showDriveBackupDialog) {
+        CloudProfilesDialog(onDismiss = { showDriveBackupDialog = false }, firebaseAvailable = false, initialDrive = true)
     }
 
     if (showBackupExportDialog) {
@@ -1034,6 +1042,7 @@ private fun SettingsContent(
     onClearCoverCache: () -> Unit,
     launchSettingsBackupExport: () -> Unit,
     launchSettingsBackupImport: () -> Unit,
+    launchCloudBackup: () -> Unit,
     openLanguageSheet: () -> Unit,
     onRequestGamepadBinding: (Int, String) -> Unit,
     onOpenGamepadAssignment: () -> Unit,
@@ -1845,6 +1854,12 @@ private fun SettingsContent(
                             label = stringResource(R.string.settings_backup_restore_title),
                             value = stringResource(R.string.settings_backup_restore_desc),
                             onClick = launchSettingsBackupImport
+                        )
+                        SettingsItem(
+                            icon = Icons.Rounded.CloudSync,
+                            label = stringResource(R.string.drive_title),
+                            value = stringResource(R.string.drive_private),
+                            onClick = launchCloudBackup
                         )
                     }
                 }
@@ -4206,6 +4221,7 @@ private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
         entry(SettingsTab.Library, R.string.settings_clear_cover_cache),
         entry(SettingsTab.Library, R.string.settings_backup_export_title),
         entry(SettingsTab.Library, R.string.settings_backup_restore_title),
+        entry(SettingsTab.Library, R.string.drive_title),
         entry(SettingsTab.Graphics, R.string.settings_renderer),
         entry(SettingsTab.Graphics, R.string.settings_upscale),
         entry(SettingsTab.Graphics, R.string.settings_aspect_ratio),
