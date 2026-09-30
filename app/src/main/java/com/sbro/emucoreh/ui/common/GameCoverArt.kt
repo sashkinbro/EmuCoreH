@@ -241,15 +241,6 @@ private fun loadBitmap(context: android.content.Context, coverPath: String?): Bi
 
         openStream()?.use { stream ->
             BitmapFactory.decodeStream(stream, null, decodeOptions)
-        }?.let { decoded ->
-            // Only our generated cases have the known outer shadow. Flat, custom,
-            // and catalogue images retain their complete original canvas.
-            val generatedCase = isGenerated3dCover(coverPath)
-            if (!generatedCase || !decoded.hasAlpha()) return@let decoded
-            val pixels = IntArray(decoded.width * decoded.height)
-            decoded.getPixels(pixels, 0, decoded.width, 0, 0, decoded.width, decoded.height)
-            val bounds = opaqueCoverBounds(pixels, decoded.width, decoded.height) ?: return@let decoded
-            Bitmap.createBitmap(decoded, bounds.left, bounds.top, bounds.width, bounds.height)
         }
     }.getOrElse { e ->
         Log.w("GameCoverArt", "Failed to load cover from $coverPath: ${e.message}")
