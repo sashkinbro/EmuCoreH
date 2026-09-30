@@ -347,6 +347,8 @@ class AppPreferences(private val context: Context) {
         private val MEMORY_CARDS_INITIALIZED = booleanPreferencesKey("memory_cards_initialized")
         private val PRO_UNLOCKED = booleanPreferencesKey("pro_unlocked")
         private val WELCOME_DIALOG_SHOWN = booleanPreferencesKey("welcome_dialog_shown")
+        private val LAST_CORE_BINARY_FINGERPRINT =
+            stringPreferencesKey("last_core_binary_fingerprint")
         private val IN_APP_REVIEW_QUALIFYING_SESSION_COUNT =
             intPreferencesKey("in_app_review_qualifying_session_count")
         private val IN_APP_REVIEW_TOTAL_ACTIVE_PLAY_TIME_MS =
@@ -865,6 +867,20 @@ class AppPreferences(private val context: Context) {
 
     suspend fun setWelcomeDialogShown(shown: Boolean) {
         context.dataStore.edit { prefs -> prefs[WELCOME_DIALOG_SHOWN] = shown }
+    }
+
+    val lastCoreBinaryFingerprint: Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[LAST_CORE_BINARY_FINGERPRINT] }
+        .distinctUntilChanged()
+
+    suspend fun setLastCoreBinaryFingerprint(fingerprint: String?) {
+        context.dataStore.edit { prefs ->
+            if (fingerprint.isNullOrBlank()) {
+                prefs.remove(LAST_CORE_BINARY_FINGERPRINT)
+            } else {
+                prefs[LAST_CORE_BINARY_FINGERPRINT] = fingerprint
+            }
+        }
     }
 
     suspend fun recordInAppReviewSession(activePlayTimeMs: Long) {

@@ -462,6 +462,10 @@ object NativeApp {
     }
 
 
+    /** Root directory that stores native core data such as caches, settings and memory cards. */
+    @JvmStatic
+    fun dataRoot(context: Context): File = File(resolveDataRoot(context.applicationContext))
+
     private fun resolveDataRoot(context: Context): String {
         val override = dataRootOverride
         if (!override.isNullOrBlank()) {

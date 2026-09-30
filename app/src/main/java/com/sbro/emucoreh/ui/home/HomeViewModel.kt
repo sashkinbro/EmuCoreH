@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sbro.emucoreh.core.BiosValidator
+import com.sbro.emucoreh.core.CoreBinaryFingerprint
 import com.sbro.emucoreh.core.DreamcastBios
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.EmulatorStorage
@@ -19,12 +20,15 @@ import com.sbro.emucoreh.data.HomeBackgroundRepository
 import com.sbro.emucoreh.data.HomeBackgroundPreset
 import com.sbro.emucoreh.data.HomeBackgroundType
 import com.sbro.emucoreh.data.CoverArtRepository
+import com.sbro.emucoreh.data.CoreMaintenanceRepository
+import com.sbro.emucoreh.data.CoreUpdateResetAction
 import com.sbro.emucoreh.data.CustomGameCoverRepository
 import com.sbro.emucoreh.data.GameItem
 import com.sbro.emucoreh.data.GameLibraryCacheRepository
 import com.sbro.emucoreh.data.GameLibraryCacheSnapshot
 import com.sbro.emucoreh.data.GameRepository
 import com.sbro.emucoreh.data.RecentGameEntry
+import com.sbro.emucoreh.data.decideCoreUpdateResetAction
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
@@ -81,6 +85,7 @@ data class HomeUiState(
     val lastStandardLibraryViewMode: HomeLibraryViewMode = HomeLibraryViewMode.GRID,
     val isCoverArtDisabled: Boolean = true,
     val showWelcomeDialog: Boolean = false,
+    val showCoreResetDialog: Boolean = false,
     val isProUnlocked: Boolean = false,
     val proPrice: String? = null,
     val proProducts: List<ProProductOffer> = emptyList(),
@@ -129,6 +134,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var deferredLibraryScan: DeferredLibraryScan? = null
     private var deferredWorkJob: Job? = null
     private var deferredCoverSync = false
+    private var pendingCoreFingerprint: String? = null
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -170,6 +176,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             preferences.welcomeDialogShown.distinctUntilChanged().collect { shown ->
                 _uiState.value = _uiState.value.copy(showWelcomeDialog = !shown)
+            }
+        }
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val currentFingerprint = withContext(Dispatchers.IO) {
+                CoreBinaryFingerprint.current(context)
+            }
+            pendingCoreFingerprint = currentFingerprint
+            val storedFingerprint = preferences.lastCoreBinaryFingerprint.first()
+            val hadExistingInstall = preferences.welcomeDialogShown.first()
+            when (decideCoreUpdateResetAction(storedFingerprint, currentFingerprint, hadExistingInstall)) {
+                CoreUpdateResetAction.STORE_SILENTLY ->
+                    preferences.setLastCoreBinaryFingerprint(currentFingerprint)
+                CoreUpdateResetAction.PROMPT ->
+                    _uiState.value = _uiState.value.copy(showCoreResetDialog = true)
+                CoreUpdateResetAction.NONE -> Unit
             }
         }
         viewModelScope.launch {
@@ -885,6 +907,30 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun dismissWelcomeDialog() {
         viewModelScope.launch { preferences.setWelcomeDialogShown(true) }
     }
+
+    fun resetGeneratedCoreState() {
+        if (!_uiState.value.showCoreResetDialog) return
+        _uiState.value = _uiState.value.copy(showCoreResetDialog = false)
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                CoreMaintenanceRepository(getApplication()).resetGeneratedCoreState()
+                preferences.setLastCoreBinaryFingerprint(resolveCoreFingerprint())
+            }
+        }
+    }
+
+    fun dismissCoreResetPrompt() {
+        if (!_uiState.value.showCoreResetDialog) return
+        _uiState.value = _uiState.value.copy(showCoreResetDialog = false)
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                preferences.setLastCoreBinaryFingerprint(resolveCoreFingerprint())
+            }
+        }
+    }
+
+    private suspend fun resolveCoreFingerprint(): String? =
+        pendingCoreFingerprint ?: CoreBinaryFingerprint.current(getApplication())
 
     fun purchasePro(
         activity: Activity,
