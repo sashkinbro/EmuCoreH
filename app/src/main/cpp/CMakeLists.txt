@@ -3,6 +3,10 @@
 cmake_minimum_required(VERSION 3.22)
 project(EmuCoreHAndroid LANGUAGES CXX C)
 
+# Google Play requires 16 KiB page size support: keep every ELF load segment aligned
+# even when a toolchain default changes.
+add_link_options("-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
