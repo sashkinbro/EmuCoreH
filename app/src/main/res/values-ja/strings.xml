@@ -250,6 +250,9 @@
     <string name="settings_help_content_description">設定の詳細を表示</string>
     <string name="settings_help_gamepad_mode">1つの物理コントローラーとタッチコントロールのやり取りの方法を選択します。「タッチを置換」にすると、1つのゲームパッドがすぐにプレイヤー1になります。「タッチ + ゲームパッド」にすると、タッチがプレイヤー1に残り、単一のゲームパッドがプレイヤー2に移動します。2つの物理コントローラーが同時に接続されている場合は、常にプレイヤー1とプレイヤー2になります。</string>
     <string name="settings_help_keep_screen_on">プレイ中にAndroidが画面を暗くしたりロックしたりするのを防ぎます。長時間のセッションやカットシーンのあるゲームに役立ちますが、アプリを開いたままにするとバッテリーを少し多く消費します。</string>
+    <string name="settings_respect_display_cutout">カメラの切り欠きを考慮</string>
+    <string name="settings_respect_display_cutout_desc">ゲーム映像をカメラ切り欠き領域の外側に保ちます。</string>
+    <string name="settings_help_respect_display_cutout">エミュレーション映像がカメラの切り欠き（ノッチやパンチホール）の下に描画されないよう余白を追加します。切り欠きが映像に重なる横向き時に便利です。影響するのはエミュレーションのみで、アプリの他の画面は既に切り欠きを考慮しています。</string>
     <string name="settings_help_pad_vibration">サポートされているゲームでコントローラーの振動をトリガーできるようにします。レーシング、戦闘、衝撃の強いゲームに役立つフィードバックを追加しますが、バッテリーの消耗が早くなる可能性があり、一部のワイヤレスパッドは弱く、またはわずかな遅延で振動する場合があります。</string>
     <string name="settings_help_pad_vibration_strength">Androidに送信される前にゲームの振動をスケーリングします。ノイズの多いハンドヘルドモーターの場合は下げ、コントローラーが弱すぎると感じる場合は上げます。</string>
     <string name="settings_help_pad_vibration_test">有効になっている場合、最初に接続されたコントローラーに直接Androidの振動リクエストを送信し、次に電話またはハンドヘルドのフォールバックに送信します。</string>

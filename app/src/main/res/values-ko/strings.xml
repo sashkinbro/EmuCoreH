@@ -250,6 +250,9 @@
     <string name="settings_help_content_description">설정 세부 정보 표시</string>
     <string name="settings_help_gamepad_mode">단일 물리 컨트롤러가 터치 컨트롤과 상호작용하는 방식을 선택합니다. 터치 교체를 선택하면 하나의 게임패드가 즉시 플레이어 1을 차지하고, 터치 + 게임패드를 선택하면 터치가 플레이어 1로 유지되고 단일 게임패드가 플레이어 2로 이동합니다. 두 개의 물리 컨트롤러가 동시에 연결된 경우 항상 플레이어 1과 플레이어 2가 됩니다.</string>
     <string name="settings_help_keep_screen_on">플레이 중에 Android가 화면을 어둡게 하거나 잠그지 않도록 합니다. 긴 세션이나 컷신이 있는 게임에 유용하지만, 앱을 열어두면 배터리를 조금 더 소모합니다.</string>
+    <string name="settings_respect_display_cutout">카메라 컷아웃 고려</string>
+    <string name="settings_respect_display_cutout_desc">게임 화면이 카메라 컷아웃 영역을 피하도록 합니다.</string>
+    <string name="settings_help_respect_display_cutout">에뮬레이션 화면이 카메라 컷아웃(노치 또는 펀치홀) 아래에 그려지지 않도록 여백을 추가합니다. 컷아웃이 화면을 가리는 가로 모드에서 유용합니다. 에뮬레이션에만 적용되며 나머지 앱 화면은 이미 컷아웃을 고려합니다.</string>
     <string name="settings_help_pad_vibration">지원되는 게임에서 컨트롤러 진동을 트리거할 수 있게 합니다. 레이싱, 전투, 타격감이 중요한 게임에서 유용한 피드백을 추가하지만 배터리가 더 빨리 닳을 수 있으며 일부 무선 패드는 약하게 진동하거나 약간의 지연이 있을 수 있습니다.</string>
     <string name="settings_help_pad_vibration_strength">Android로 전송되기 전에 게임 진동 크기를 조절합니다. 소음이 큰 핸드헬드 모터의 경우 낮추고, 컨트롤러 진동이 너무 약할 경우 올리세요.</string>
     <string name="settings_help_pad_vibration_test">연결된 컨트롤러에 직접 Android 진동 요청을 보낸 다음, 활성화된 경우 휴대전화 또는 핸드헬드 폴백(Fallback)으로 진동을 보냅니다.</string>

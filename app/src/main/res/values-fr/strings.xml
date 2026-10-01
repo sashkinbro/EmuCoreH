@@ -436,6 +436,9 @@
     <string name="settings_show_home_search_desc">Affiche la barre de recherche sur l\'écran d\'accueil.</string>
     <string name="settings_help_content_description">Afficher les détails des paramètres</string>
     <string name="settings_help_keep_screen_on">Empêche Android d\'assombrir ou de verrouiller l\'écran pendant le jeu. Utile pour les longues sessions et les jeux avec des cinématiques, mais cela consommera un peu plus de batterie si vous laissez l\'application ouverte.</string>
+    <string name="settings_respect_display_cutout">Respecter l\'encoche de la caméra</string>
+    <string name="settings_respect_display_cutout_desc">Garder l\'image du jeu hors de la zone de l\'encoche.</string>
+    <string name="settings_help_respect_display_cutout">Ajoute une marge autour de l\'image d\'émulation pour qu\'elle ne passe pas sous l\'encoche de la caméra (notch ou poinçon). Utile en mode paysage lorsque l\'encoche recouvre l\'image. N\'affecte que l\'émulation ; le reste de l\'application respecte déjà les encoches.</string>
     <string name="settings_help_pad_vibration">Permet aux jeux compatibles de déclencher les vibrations de la manette. Cela ajoute un retour utile dans les jeux de course, de combat et à fort impact, mais cela peut vider la batterie plus rapidement et certaines manettes sans fil peuvent vibrer faiblement ou avec un léger retard.</string>
     <string name="settings_help_recent_games">Affiche une ligne d\'accès rapide pour les jeux auxquels vous avez joué en dernier. Pratique si vous naviguez souvent entre quelques titres ; désactivez-le si vous souhaitez un écran d\'accueil plus épuré.</string>
     <string name="settings_help_home_search">Affiche la barre de recherche de la bibliothèque directement sur l\'écran d\'accueil. Laissez-la activée pour les grandes bibliothèques ; désactivez-la si vous préférez une mise en page plus claire et que vous effectuez rarement des recherches par nom.</string>
