@@ -50,6 +50,7 @@ import com.sbro.emucoreh.core.AudioDefaults
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.GpuHardwareProfiles
 import com.sbro.emucoreh.core.RendererDefaults
+import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.buildUpscaleOptions
 import com.sbro.emucoreh.core.upscaleKeyToMultiplier
 import com.sbro.emucoreh.core.upscaleMultiplierKey
@@ -247,7 +248,8 @@ fun PerGameSettingsManagerScreen(
 
     LaunchedEffect(rootPaths, preferEnglishTitles) {
         libraryGames = withContext(Dispatchers.IO) {
-            rootPaths.takeIf { it.isNotEmpty() }
+            val readableRoots = rootPaths.filter { SetupValidator.hasCoreReadableGameFile(context, it) }
+            readableRoots.takeIf { it.isNotEmpty() }
                 ?.let { libraryCacheRepository.loadSnapshot(GameLibraryCacheRepository.libraryKey(it), preferEnglishTitles).games }
                 .orEmpty()
         }
