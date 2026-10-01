@@ -717,7 +717,7 @@
     <string name="gpu_powervr_title">PowerVR</string>
     <string name="settings_racing_mode">赛车模式</string>
     <string name="settings_racing_mode_desc">轻触动作和肩部按钮以保持按下状态，再次轻触即可释放。</string>
-    <string name="settings_sticky_buttons">固定按键</string>
+    <string name="settings_sticky_buttons">锁定按键</string>
     <string name="settings_sticky_buttons_desc">轻点所选按键即可保持按下，再次轻点即可松开。</string>
     <string name="settings_help_sticky_buttons">可让你选择以轻点切换按下状态的覆盖按键，而无需一直按住。适合在射击和恐怖游戏中，让你使用正面按键时保持 R1、R2 或其他按键按下。</string>
     <string name="settings_help_racing_mode">使触摸动作按钮和肩部按钮通过轻触来切换其按下状态。这对于需要保持按住加速键的赛车游戏非常有用，同时 Start、Select、摇杆和十字键 (D-pad) 将保持正常行为。</string>

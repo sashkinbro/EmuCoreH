@@ -476,7 +476,7 @@
     <string name="settings_overlay_opacity">Opasitas Hamparan</string>
     <string name="settings_racing_mode">Mode balap</string>
     <string name="settings_racing_mode_desc">Ketuk tombol aksi dan bahu untuk menahannya, lalu ketuk lagi untuk melepaskan.</string>
-    <string name="settings_sticky_buttons">Tombol lengket</string>
+    <string name="settings_sticky_buttons">Tombol kunci</string>
     <string name="settings_sticky_buttons_desc">Ketuk tombol yang dipilih untuk menahannya, lalu ketuk lagi untuk melepaskannya.</string>
     <string name="settings_help_sticky_buttons">Memungkinkan Anda memilih tombol overlay yang mengalihkan status ditekan dengan ketukan alih-alih harus ditahan. Berguna untuk game tembak-menembak dan horor yang ingin R1, R2, atau tombol lain tetap ditekan saat Anda menggunakan tombol muka.</string>
     <string name="settings_left_stick_sensitivity">Sensitivitas Stik Kiri</string>

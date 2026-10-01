@@ -717,7 +717,7 @@
     <string name="gpu_powervr_title">PowerVR</string>
     <string name="settings_racing_mode">Modo corrida</string>
     <string name="settings_racing_mode_desc">Toque nos botões de ação e de ombro para mantê-los pressionados e toque novamente para soltar.</string>
-    <string name="settings_sticky_buttons">Botões fixos</string>
+    <string name="settings_sticky_buttons">Botões de fixação</string>
     <string name="settings_sticky_buttons_desc">Toque num botão selecionado para o manter, e toque novamente para o soltar.</string>
     <string name="settings_help_sticky_buttons">Permite escolher botões da sobreposição que alternam o estado premido com um toque em vez de exigir que sejam mantidos. Útil para jogos de tiro e terror que querem manter R1, R2 ou outros botões premidos enquanto usas os botões frontais.</string>
     <string name="settings_help_racing_mode">Faz com que os botões de ação de toque e os botões de ombro alternem seu estado de pressionados com um toque. Isso é útil para jogos de corrida onde a aceleração precisa ser mantida pressionada, enquanto Start, Select, os analógicos e o D-pad mantêm o comportamento normal.</string>
