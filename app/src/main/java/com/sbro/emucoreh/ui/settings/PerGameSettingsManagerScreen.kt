@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -1142,7 +1141,9 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_sticky_buttons),
                         onResetToDefault = {
                             onDraftChange(draft.copy(stickyButtons = defaultProfile.stickyButtons))
-                        }
+                        },
+                        horizontalPadding = GameSettingsSectionContentPadding,
+                        fullBleedPadding = GameSettingsSectionContentPadding
                     )
                     ToggleRow(
                         title = stringResource(R.string.settings_touchscreen_right_stick),
@@ -1373,50 +1374,27 @@ private fun SelectionRow(
                 SettingHelpButton(title = title, description = it)
             }
         }
-        if (options.size > 3) {
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .sectionContentFullBleed(GameSettingsSectionContentPadding)
-                    .tvFocusGroup(),
-                contentPadding = PaddingValues(horizontal = GameSettingsSectionContentPadding),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(options, key = { it.first }) { (value, label) ->
-                    val optionInteractionSource = remember { MutableInteractionSource() }
-                    FilterChip(
-                        modifier = Modifier.tvGamepadFocusableCard(
-                            shape = neonShape(16.dp),
-                            interactionSource = optionInteractionSource,
-                            addFocusTarget = false
-                        ),
-                        selected = selectedValue == value,
-                        onClick = { onSelected(value) },
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .sectionContentFullBleed(GameSettingsSectionContentPadding)
+                .tvFocusGroup(),
+            contentPadding = PaddingValues(horizontal = GameSettingsSectionContentPadding),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(options, key = { it.first }) { (value, label) ->
+                val optionInteractionSource = remember { MutableInteractionSource() }
+                FilterChip(
+                    modifier = Modifier.tvGamepadFocusableCard(
+                        shape = neonShape(16.dp),
                         interactionSource = optionInteractionSource,
-                        label = { Text(label) }
-                    )
-                }
-            }
-        } else {
-            FlowRow(
-                modifier = Modifier.tvFocusGroup(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                options.forEach { (value, label) ->
-                    val optionInteractionSource = remember { MutableInteractionSource() }
-                    FilterChip(
-                        modifier = Modifier.tvGamepadFocusableCard(
-                            shape = neonShape(16.dp),
-                            interactionSource = optionInteractionSource,
-                            addFocusTarget = false
-                        ),
-                        selected = selectedValue == value,
-                        onClick = { onSelected(value) },
-                        interactionSource = optionInteractionSource,
-                        label = { Text(label) }
-                    )
-                }
+                        addFocusTarget = false
+                    ),
+                    selected = selectedValue == value,
+                    onClick = { onSelected(value) },
+                    interactionSource = optionInteractionSource,
+                    label = { Text(label) }
+                )
             }
         }
     }

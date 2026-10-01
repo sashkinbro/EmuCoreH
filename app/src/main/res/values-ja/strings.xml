@@ -715,7 +715,7 @@
     <string name="gpu_powervr_title">PowerVR</string>
     <string name="settings_racing_mode">レーシングモード</string>
     <string name="settings_racing_mode_desc">アクションボタンとショルダーボタンをタップしてホールド状態にし、もう一度タップして解除します。</string>
-    <string name="settings_sticky_buttons">固定ボタン</string>
+    <string name="settings_sticky_buttons">トグルボタン</string>
     <string name="settings_sticky_buttons_desc">選択したボタンをタップすると押しっぱなしになり、もう一度タップすると離します。</string>
     <string name="settings_help_sticky_buttons">押し続ける代わりにタップで押下状態を切り替えるオーバーレイボタンを選べます。顔ボタンを使っている間、R1やR2などを押しっぱなしにしたいシューティングやホラーゲームに便利です。</string>
     <string name="settings_help_racing_mode">タッチアクションボタンとショルダーボタンをタップするだけで、押された状態を切り替えられるようにします。これは、Start、Select、スティック、方向キーは通常の動作を維持しつつ、アクセルを踏みっぱなしにする必要があるレースゲームに便利です。</string>

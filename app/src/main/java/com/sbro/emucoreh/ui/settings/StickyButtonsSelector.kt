@@ -21,9 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
@@ -67,17 +69,22 @@ internal fun StickyButtonsSelector(
     onSelectionChange: (Set<String>) -> Unit,
     modifier: Modifier = Modifier,
     helpText: String? = null,
-    onResetToDefault: (() -> Unit)? = null
+    onResetToDefault: (() -> Unit)? = null,
+    horizontalPadding: Dp = 16.dp,
+    fullBleedPadding: Dp = 0.dp
 ) {
     val context = LocalContext.current
     val tvUiEnabled = LocalTvUiEnvironment.current.enabled
     val titleFocusRequester = remember { FocusRequester() }
     val helpFocusRequester = remember { FocusRequester() }
     val resetToast = stringResource(R.string.settings_reset_to_default_toast)
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(
+        modifier = modifier.stickyButtonsFullBleed(fullBleedPadding),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = horizontalPadding)
                 .then(
                     if (tvUiEnabled && helpText != null) {
                         Modifier
@@ -129,7 +136,7 @@ internal fun StickyButtonsSelector(
             modifier = Modifier
                 .fillMaxWidth()
                 .tvFocusGroup(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = horizontalPadding),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(STICKY_BUTTON_IDS) { id ->
@@ -150,6 +157,21 @@ internal fun StickyButtonsSelector(
                     label = { Text(text = stickyButtonLabel(id)) }
                 )
             }
+        }
+    }
+}
+
+private fun Modifier.stickyButtonsFullBleed(horizontalPadding: Dp): Modifier {
+    if (horizontalPadding == 0.dp) return this
+    return layout { measurable, constraints ->
+        val sidePadding = horizontalPadding.roundToPx()
+        val expandedConstraints = constraints.copy(
+            minWidth = (constraints.minWidth + sidePadding * 2).coerceAtLeast(0),
+            maxWidth = (constraints.maxWidth + sidePadding * 2).coerceAtLeast(0)
+        )
+        val placeable = measurable.measure(expandedConstraints)
+        layout(constraints.maxWidth, placeable.height) {
+            placeable.placeRelative(-sidePadding, 0)
         }
     }
 }

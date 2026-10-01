@@ -497,7 +497,7 @@
     <string name="settings_overlay_opacity">Neprůhlednost překrytí</string>
     <string name="settings_racing_mode">Závodní režim</string>
     <string name="settings_racing_mode_desc">Klepnutím na akční a postranní tlačítka je podržíte, dalším klepnutím je uvolníte.</string>
-    <string name="settings_sticky_buttons">Přilepená tlačítka</string>
+    <string name="settings_sticky_buttons">Přepínatelná tlačítka</string>
     <string name="settings_sticky_buttons_desc">Klepněte na vybrané tlačítko pro jeho podržení a klepnutím znovu jej uvolníte.</string>
     <string name="settings_help_sticky_buttons">Umožňuje vybrat tlačítka překryvu, která přepínají stisknutí klepnutím místo držení. Hodí se pro střílečky a horory, které chtějí držet R1, R2 nebo jiná tlačítka stisknutá, zatímco používáte přední tlačítka.</string>
     <string name="settings_left_stick_sensitivity">Citlivost levé páčky</string>

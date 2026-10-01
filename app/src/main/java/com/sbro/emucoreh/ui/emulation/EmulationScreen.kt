@@ -3571,6 +3571,8 @@ private fun EmulationSidebarMenu(
                             options = fpsOverlayCornerLiveOptions(),
                             currentValue = uiState.fpsOverlayCorner,
                             onValueChange = onSetFpsOverlayCorner,
+                            allowWrap = false,
+                            horizontalScrolling = true,
                             helpText = stringResource(R.string.settings_help_fps_overlay_position),
                             onResetToDefault = { onSetFpsOverlayCorner(globalDefaults.fpsOverlayCorner) }
                         )

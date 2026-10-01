@@ -715,7 +715,7 @@
     <string name="gpu_powervr_title">PowerVR</string>
     <string name="settings_racing_mode">Modalità corsa</string>
     <string name="settings_racing_mode_desc">Tocca i pulsanti azione e i dorsali per tenerli premuti, quindi tocca di nuovo per rilasciarli.</string>
-    <string name="settings_sticky_buttons">Pulsanti bloccati</string>
+    <string name="settings_sticky_buttons">Pulsanti a commutazione</string>
     <string name="settings_sticky_buttons_desc">Tocca un pulsante selezionato per tenerlo premuto, poi tocca di nuovo per rilasciarlo.</string>
     <string name="settings_help_sticky_buttons">Consente di scegliere i pulsanti dell\'overlay che alternano lo stato premuto con un tocco invece di richiedere una pressione continua. Utile per sparatutto e horror che vogliono mantenere premuti R1, R2 o altri pulsanti mentre usi i pulsanti frontali.</string>
     <string name="settings_help_racing_mode">Fa in modo che i pulsanti azione touch e i dorsali cambino il loro stato di pressione con un tocco. Questo è utile per i giochi di corsa in cui l\'accelerazione deve essere mantenuta, mentre Start, Select, le levette e il D-pad mantengono il comportamento normale.</string>
