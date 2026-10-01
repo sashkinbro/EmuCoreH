@@ -26,6 +26,7 @@ data class PerGameSettings(
     val showFps: Boolean = false,
     val fpsOverlayMode: Int = AppPreferences.FPS_OVERLAY_MODE_DETAILED,
     val racingMode: Boolean = false,
+    val stickyButtons: Set<String> = emptySet(),
     val touchscreenRightStick: Boolean = AppPreferences.DEFAULT_TOUCHSCREEN_RIGHT_STICK,
     val touchscreenRightStickSensitivity: Int = AppPreferences.DEFAULT_TOUCHSCREEN_RIGHT_STICK_SENSITIVITY,
     val touchHaptics: Boolean = false,
@@ -207,6 +208,11 @@ private fun JSONObject.toPerGameSettings(): PerGameSettings {
         showFps = optBoolean("showFps", false),
         fpsOverlayMode = optInt("fpsOverlayMode", AppPreferences.FPS_OVERLAY_MODE_DETAILED),
         racingMode = optBoolean("racingMode", false),
+        stickyButtons = optJSONArray("stickyButtons")?.let { array ->
+            (0 until array.length()).mapNotNull { index ->
+                (array.opt(index) as? String)?.takeIf { it.isNotBlank() }
+            }.toSet()
+        } ?: emptySet(),
         touchscreenRightStick = optBoolean(
             "touchscreenRightStick",
             AppPreferences.DEFAULT_TOUCHSCREEN_RIGHT_STICK
@@ -307,6 +313,7 @@ private fun PerGameSettings.toJson(): JSONObject {
         if (shouldWrite("showFps")) put("showFps", showFps)
         if (shouldWrite("fpsOverlayMode")) put("fpsOverlayMode", fpsOverlayMode)
         if (shouldWrite("racingMode")) put("racingMode", racingMode)
+        if (shouldWrite("stickyButtons")) put("stickyButtons", JSONArray(stickyButtons.sorted()))
         if (shouldWrite("touchscreenRightStick")) put("touchscreenRightStick", touchscreenRightStick)
         if (shouldWrite("touchscreenRightStickSensitivity")) {
             put("touchscreenRightStickSensitivity", touchscreenRightStickSensitivity)

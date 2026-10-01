@@ -732,6 +732,9 @@
     <string name="gpu_powervr_title">PowerVR</string>
     <string name="settings_racing_mode">Гоночний режим</string>
     <string name="settings_racing_mode_desc">Торкніться кнопок дій та тригерів (шифтів), щоб утримувати їх натиснутими, і торкніться знову, щоб відпустити.</string>
+    <string name="settings_sticky_buttons">Залипкі кнопки</string>
+    <string name="settings_sticky_buttons_desc">Торкніться вибраної кнопки, щоб утримувати її, і торкніться знову, щоб відпустити.</string>
+    <string name="settings_help_sticky_buttons">Дозволяє вибрати кнопки оверлея, які перемикають натискання одним дотиком замість утримання. Зручно для шутерів і хорорів, де R1, R2 чи інші кнопки мають лишатися натиснутими, поки ви користуєтесь лицьовими кнопками.</string>
     <string name="settings_help_racing_mode">Дозволяє сенсорним кнопкам дій і тригерам перемикати стан натискання одним дотиком. Це корисно для гоночних ігор, де потрібно постійно утримувати газ, тоді як Start, Select, стіки та хрестовина (D-pad) працюють як зазвичай.</string>
     <string name="game_settings_manager_choose_game">Вибрати гру</string>
     <string name="game_settings_manager_no_games">У вашій поточній бібліотеці не знайдено жодної гри.</string>

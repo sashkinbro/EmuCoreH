@@ -1386,6 +1386,12 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_racing_mode),
                             onResetToDefault = { viewModel.setRacingMode(defaults.racingMode) }
                         )
+                        StickyButtonsSelector(
+                            selected = uiState.stickyButtons,
+                            onSelectionChange = viewModel::setStickyButtons,
+                            helpText = stringResource(R.string.settings_help_sticky_buttons),
+                            onResetToDefault = { viewModel.setStickyButtons(defaults.stickyButtons) }
+                        )
                         ToggleItem(
                             icon = Icons.Rounded.Vibration,
                             title = stringResource(R.string.settings_touch_haptics),
@@ -5600,7 +5606,7 @@ private fun BitmaskChoiceSection(
 }
 
 @Composable
-private fun premiumFilterChipColors() = FilterChipDefaults.filterChipColors(
+internal fun premiumFilterChipColors() = FilterChipDefaults.filterChipColors(
     containerColor = Color.Transparent,
     labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
     iconColor = MaterialTheme.colorScheme.primary,

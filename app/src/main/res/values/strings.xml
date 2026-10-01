@@ -497,6 +497,9 @@
     <string name="settings_overlay_opacity">Overlay Opacity</string>
     <string name="settings_racing_mode">Racing mode</string>
     <string name="settings_racing_mode_desc">Tap action and shoulder buttons to hold them, then tap again to release.</string>
+    <string name="settings_sticky_buttons">Sticky buttons</string>
+    <string name="settings_sticky_buttons_desc">Tap a selected button to hold it, then tap again to release.</string>
+    <string name="settings_help_sticky_buttons">Lets you pick overlay buttons that toggle their pressed state with a tap instead of requiring a hold. Useful for shooters and horror games that want R1, R2 or other buttons kept pressed while you use the face buttons.</string>
     <string name="settings_left_stick_sensitivity">Left Stick Sensitivity</string>
     <string name="settings_right_stick_sensitivity">Right Stick Sensitivity</string>
     <string name="settings_invert_left_stick">Invert Left Stick</string>
