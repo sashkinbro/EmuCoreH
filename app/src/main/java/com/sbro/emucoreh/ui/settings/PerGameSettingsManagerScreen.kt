@@ -1134,6 +1134,14 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_racing_mode),
                         onResetToDefault = { onDraftChange(draft.copy(racingMode = defaultProfile.racingMode)) }
                     )
+                    StickyButtonsSelector(
+                        selected = draft.stickyButtons,
+                        onSelectionChange = { onDraftChange(draft.copy(stickyButtons = it)) },
+                        helpText = stringResource(R.string.settings_help_sticky_buttons),
+                        onResetToDefault = {
+                            onDraftChange(draft.copy(stickyButtons = defaultProfile.stickyButtons))
+                        }
+                    )
                     ToggleRow(
                         title = stringResource(R.string.settings_touchscreen_right_stick),
                         checked = draft.touchscreenRightStick,
@@ -1659,6 +1667,7 @@ private fun SettingsSnapshot.toPerGameSettings(game: GameItem): PerGameSettings 
         showFps = showFps,
         fpsOverlayMode = fpsOverlayMode,
         racingMode = racingMode,
+        stickyButtons = stickyButtons,
         touchscreenRightStick = touchscreenRightStick,
         touchscreenRightStickSensitivity = touchscreenRightStickSensitivity,
         touchHaptics = touchHaptics,
@@ -1707,6 +1716,7 @@ private fun PerGameSettings.resolveAgainst(defaultProfile: PerGameSettings): Per
         showFps = pick("showFps", showFps, defaultProfile.showFps),
         fpsOverlayMode = pick("fpsOverlayMode", fpsOverlayMode, defaultProfile.fpsOverlayMode),
         racingMode = pick("racingMode", racingMode, defaultProfile.racingMode),
+        stickyButtons = pick("stickyButtons", stickyButtons, defaultProfile.stickyButtons),
         touchscreenRightStick = pick("touchscreenRightStick", touchscreenRightStick, defaultProfile.touchscreenRightStick),
         touchscreenRightStickSensitivity = pick(
             "touchscreenRightStickSensitivity",

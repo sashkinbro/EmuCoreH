@@ -491,6 +491,9 @@
     <string name="settings_overlay_opacity">Krycie nakładki</string>
     <string name="settings_racing_mode">Tryb wyścigowy</string>
     <string name="settings_racing_mode_desc">Dotknij przycisków akcji lub bocznych, aby zachować je jako wciśnięte, a następnie dotknij ponownie, aby je puścić.</string>
+    <string name="settings_sticky_buttons">Przyciski przytrzymywane</string>
+    <string name="settings_sticky_buttons_desc">Dotknij wybranego przycisku, aby go przytrzymać, i dotknij ponownie, aby go zwolnić.</string>
+    <string name="settings_help_sticky_buttons">Pozwala wybrać przyciski nakładki, które przełączają stan wciśnięcia dotknięciem zamiast wymagać przytrzymania. Przydatne w strzelankach i grach grozy, w których R1, R2 lub inne przyciski mają pozostać wciśnięte, gdy używasz przycisków przednich.</string>
     <string name="settings_left_stick_sensitivity">Czułość lewej gałki</string>
     <string name="settings_right_stick_sensitivity">Czułość prawej gałki</string>
     <string name="settings_invert_left_stick">Odwróć lewą gałkę</string>

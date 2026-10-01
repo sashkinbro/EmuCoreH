@@ -712,6 +712,9 @@
     <string name="gpu_powervr_title">PowerVR</string>
     <string name="settings_racing_mode">وضع السباق</string>
     <string name="settings_racing_mode_desc">انقر على أزرار الإجراءات وأزرار الكتف للاستمرار في الضغط عليها، ثم انقر مرة أخرى للتحرير.</string>
+    <string name="settings_sticky_buttons">أزرار مثبتة</string>
+    <string name="settings_sticky_buttons_desc">انقر على الزر المحدد لتثبيته، ثم انقر مرة أخرى لتحريره.</string>
+    <string name="settings_help_sticky_buttons">يتيح لك اختيار أزرار الواجهة التي تبدّل حالة الضغط بلمسة واحدة بدلاً من الاستمرار في الضغط. مفيد لألعاب التصويب والرعب التي تريد إبقاء R1 أو R2 أو أزرار أخرى مضغوطة أثناء استخدام أزرار الوجه.</string>
     <string name="settings_help_racing_mode">يجعل أزرار الإجراءات التي تعمل باللمس وأزرار الكتف تبدل حالة الضغط عليها بنقرة واحدة. هذا مفيد لألعاب السباق حيث يجب أن يظل التسارع مضغوطًا، بينما تحافظ أزرار Start و Select وعصا التحكم ولوحة الاتجاهات (D-pad) على سلوكها الطبيعي.</string>
     <string name="game_settings_manager_choose_game">اختر اللعبة</string>
     <string name="game_settings_manager_no_games">لم يتم العثور على ألعاب في مكتبتك الحالية.</string>

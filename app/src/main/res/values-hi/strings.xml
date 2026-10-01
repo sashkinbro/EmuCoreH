@@ -712,6 +712,9 @@
     <string name="gpu_powervr_title">PowerVR</string>
     <string name="settings_racing_mode">रेसिंग मोड</string>
     <string name="settings_racing_mode_desc">एक्शन और शोल्डर बटन को दबाए रखने के लिए टैप करें, फिर छोड़ने के लिए फिर से टैप करें।</string>
+    <string name="settings_sticky_buttons">स्टिकी बटन</string>
+    <string name="settings_sticky_buttons_desc">किसी चुने हुए बटन को दबाए रखने के लिए उस पर टैप करें, छोड़ने के लिए फिर टैप करें।</string>
+    <string name="settings_help_sticky_buttons">आप ओवरले बटन चुन सकते हैं जो दबाए रखने के बजाय एक टैप से दबी अवस्था बदलते हैं। शूटर और हॉरर गेम के लिए उपयोगी, जहाँ फेस बटन इस्तेमाल करते समय R1, R2 या अन्य बटन दबे रहने चाहिए।</string>
     <string name="settings_help_racing_mode">टच एक्शन बटन और शोल्डर बटन को एक टैप से उनकी दबाई गई स्थिति को टॉगल करने योग्य बनाता है। यह रेसिंग गेम के लिए उपयोगी है जहां त्वरण (acceleration) को दबाए रखना होता है, जबकि Start, Select, स्टिक्स और D-पैड अपना सामान्य व्यवहार बनाए रखते हैं。</string>
     <string name="game_settings_manager_choose_game">गेम चुनें</string>
     <string name="game_settings_manager_no_games">आपकी वर्तमान लाइब्रेरी में कोई गेम नहीं मिला।</string>

@@ -167,6 +167,7 @@ data class SettingsUiState(
     val overlayOpacity: Int = AppPreferences.DEFAULT_OVERLAY_OPACITY,
     val overlayShow: Boolean = true,
     val racingMode: Boolean = false,
+    val stickyButtons: Set<String> = emptySet(),
     val touchscreenRightStick: Boolean = AppPreferences.DEFAULT_TOUCHSCREEN_RIGHT_STICK,
     val touchscreenRightStickSensitivity: Int = AppPreferences.DEFAULT_TOUCHSCREEN_RIGHT_STICK_SENSITIVITY,
     val touchHaptics: Boolean = false,
@@ -348,6 +349,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             overlayOpacity = snapshot.overlayOpacity,
             overlayShow = snapshot.overlayShow,
             racingMode = snapshot.racingMode,
+            stickyButtons = snapshot.stickyButtons,
             touchscreenRightStick = snapshot.touchscreenRightStick,
             touchscreenRightStickSensitivity = snapshot.touchscreenRightStickSensitivity,
             touchHaptics = snapshot.touchHaptics,
@@ -941,6 +943,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { preferences.setTvInterfaceMode(mode) }
     }
     fun setRacingMode(enabled: Boolean) { viewModelScope.launch { preferences.setRacingMode(enabled) } }
+    fun setStickyButtons(buttons: Set<String>) {
+        viewModelScope.launch { preferences.setStickyButtons(buttons) }
+    }
     fun setTouchHaptics(enabled: Boolean) { viewModelScope.launch { preferences.setTouchHaptics(enabled) } }
     fun setTouchscreenRightStick(enabled: Boolean) { viewModelScope.launch { preferences.setTouchscreenRightStick(enabled) } }
     fun setTouchscreenRightStickSensitivity(value: Int) {

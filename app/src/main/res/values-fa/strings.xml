@@ -473,6 +473,9 @@
     <string name="settings_overlay_opacity">شفافیت روکش</string>
     <string name="settings_racing_mode">حالت مسابقه</string>
     <string name="settings_racing_mode_desc">برای نگه داشتن دکمه‌های اکشن و شانه‌ها ضربه بزنید، و برای رها کردن دوباره ضربه بزنید.</string>
+    <string name="settings_sticky_buttons">دکمه‌های چسبان</string>
+    <string name="settings_sticky_buttons_desc">برای نگه‌داشتن دکمه انتخاب‌شده روی آن بزنید و برای رها کردن دوباره بزنید.</string>
+    <string name="settings_help_sticky_buttons">به شما امکان می‌دهد دکمه‌های روکش را انتخاب کنید که به‌جای نگه‌داشتن، با یک ضربه وضعیت فشرده را تغییر می‌دهند. برای بازی‌های تیراندازی و ترسناک که می‌خواهند R1، R2 یا دکمه‌های دیگر هنگام استفاده از دکمه‌های چهره فشرده بمانند مفید است.</string>
     <string name="settings_left_stick_sensitivity">حساسیت استیک چپ</string>
     <string name="settings_right_stick_sensitivity">حساسیت استیک راست</string>
     <string name="settings_invert_left_stick">معکوس کردن استیک چپ</string>

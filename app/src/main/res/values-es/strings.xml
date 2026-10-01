@@ -714,6 +714,9 @@
     <string name="gpu_powervr_title">PowerVR</string>
     <string name="settings_racing_mode">Modo carrera</string>
     <string name="settings_racing_mode_desc">Toca los botones de acción y los gatillos para mantenerlos pulsados, y vuelve a tocarlos para soltarlos.</string>
+    <string name="settings_sticky_buttons">Botones fijados</string>
+    <string name="settings_sticky_buttons_desc">Toca un botón seleccionado para mantenerlo y vuelve a tocar para soltarlo.</string>
+    <string name="settings_help_sticky_buttons">Permite elegir botones de la superposición que alternan su estado pulsado con un toque en lugar de mantenerlos. Útil para juegos de disparos y terror que quieren mantener R1, R2 u otros botones pulsados mientras usas los botones frontales.</string>
     <string name="settings_help_racing_mode">Hace que los botones de acción táctiles y los gatillos alternen su estado de pulsación con un toque. Esto es útil para los juegos de carreras donde la aceleración debe mantenerse pulsada, mientras que Start, Select, los joysticks y la cruceta (D-pad) mantienen su comportamiento normal.</string>
     <string name="game_settings_manager_choose_game">Elegir juego</string>
     <string name="game_settings_manager_no_games">No se encontraron juegos en tu biblioteca actual.</string>
