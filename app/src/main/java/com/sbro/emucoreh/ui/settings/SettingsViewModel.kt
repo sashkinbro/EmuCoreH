@@ -145,6 +145,7 @@ data class SettingsUiState(
     val backButtonExitsGame: Boolean = false,
     val compactControls: Boolean = true,
     val keepScreenOn: Boolean = true,
+    val respectDisplayCutout: Boolean = false,
     val showRecentGames: Boolean = true,
     val showHomeSearch: Boolean = false,
     val showDebugOptions: Boolean = false,
@@ -333,6 +334,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             backButtonExitsGame = snapshot.backButtonExitsGame,
             compactControls = snapshot.compactControls,
             keepScreenOn = snapshot.keepScreenOn,
+            respectDisplayCutout = snapshot.respectDisplayCutout,
             showRecentGames = snapshot.showRecentGames,
             showHomeSearch = snapshot.showHomeSearch,
             showDebugOptions = snapshot.showDebugOptions,
@@ -939,6 +941,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
     fun setBackButtonExitsGame(enabled: Boolean) { viewModelScope.launch { preferences.setBackButtonExitsGame(enabled) } }
     fun setKeepScreenOn(enabled: Boolean) { viewModelScope.launch { preferences.setKeepScreenOn(enabled) } }
+
+    fun setRespectDisplayCutout(enabled: Boolean) {
+        viewModelScope.launch { preferences.setRespectDisplayCutout(enabled) }
+    }
     fun setTvInterfaceMode(mode: TvInterfaceMode) {
         viewModelScope.launch { preferences.setTvInterfaceMode(mode) }
     }

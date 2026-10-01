@@ -376,6 +376,9 @@
     <string name="settings_help_reset_tip_body">نام یک تنظیم را نگه دارید تا آن گزینه به مقدار پیش‌فرض خود بازگردد.</string>
     <string name="settings_help_gamepad_mode">انتخاب کنید که یک کنترلر فیزیکی منفرد چگونه باید با کنترل‌های لمسی تعامل داشته باشد. جایگزینی لمس باعث می‌شود یک گیم‌پد بلافاصله به Player 1 تبدیل شود، در حالی که Touch + Gamepad کنترل لمسی را روی Player 1 نگه می‌دارد و گیم‌پد منفرد را به Player 2 منتقل می‌کند.</string>
     <string name="settings_help_keep_screen_on">از کم نور شدن یا قفل شدن صفحه نمایش اندروید در حین بازی جلوگیری می‌کند.</string>
+    <string name="settings_respect_display_cutout">در نظر گرفتن بریدگی دوربین</string>
+    <string name="settings_respect_display_cutout_desc">تصویر بازی را خارج از ناحیه بریدگی دوربین نگه دارید.</string>
+    <string name="settings_help_respect_display_cutout">حاشیه‌ای вокруг تصویر شبیه‌سازی اضافه می‌کند تا زیر بریدگی دوربین (notch یا حفره) رسم نشود. در حالت افقی که بریدگی روی تصویر می‌افتد مفید است. فقط روی شبیه‌سازی اثر دارد؛ بقیه برنامه از قبل بریدگی‌ها را در نظر می‌گیرد.</string>
     <string name="settings_help_pad_vibration">به بازی‌های پشتیبانی شده اجازه می‌دهد لرزش کنترلر را ایجاد کنند.</string>
     <string name="settings_help_pad_vibration_strength">لرزش بازی را قبل از ارسال به اندروید مقیاس می‌کند.</string>
     <string name="settings_help_pad_vibration_test">یک درخواست لرزش مستقیم اندروید را ابتدا به کنترلر متصل ارسال می‌کند.</string>

@@ -436,6 +436,9 @@
     <string name="settings_show_home_search_desc">在主屏幕上显示搜索栏。</string>
     <string name="settings_help_content_description">显示设置详情</string>
     <string name="settings_help_keep_screen_on">防止 Android 在游戏过程中变暗或锁定屏幕。对于长时间的游戏和带有过场动画的游戏很有用，但如果您让应用保持打开状态，它会消耗更多电量。</string>
+    <string name="settings_respect_display_cutout">避开摄像头挖孔</string>
+    <string name="settings_respect_display_cutout_desc">让游戏画面避开摄像头挖孔区域。</string>
+    <string name="settings_help_respect_display_cutout">在模拟画面上添加边距，避免其绘制到摄像头挖孔（刘海或打孔）下方。横向时挖孔遮挡画面会很有用。仅影响模拟画面，应用其他界面已适配挖孔。</string>
     <string name="settings_help_pad_vibration">允许支持的游戏触发控制器震动。它在赛车、格斗和高冲击力的游戏中增加了有用的反馈，但它会更快地耗尽电池，并且一些无线手柄可能会出现震动微弱或轻微延迟的情况。</string>
     <string name="settings_help_recent_games">为您最后玩过的游戏显示一个快速访问行。如果您经常在几个游戏之间切换，这很好；如果您想要一个更干净的主屏幕，请将其关闭。</string>
     <string name="settings_help_home_search">直接在主屏幕上显示库搜索栏。对于大型游戏库，请保持开启；如果您喜欢更干净的布局并且很少按名称搜索，请将其关闭。</string>

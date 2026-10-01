@@ -83,6 +83,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Newspaper
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Restore
@@ -1186,6 +1187,15 @@ private fun SettingsContent(
                             onCheckedChange = viewModel::setEmulationAllowsBothOrientations,
                             helpText = stringResource(R.string.settings_help_emulation_both_orientations),
                             onResetToDefault = { viewModel.setEmulationAllowsBothOrientations(false) }
+                        )
+                        ToggleItem(
+                            icon = Icons.Rounded.PhoneAndroid,
+                            title = stringResource(R.string.settings_respect_display_cutout),
+                            subtitle = stringResource(R.string.settings_respect_display_cutout_desc),
+                            checked = uiState.respectDisplayCutout,
+                            onCheckedChange = viewModel::setRespectDisplayCutout,
+                            helpText = stringResource(R.string.settings_help_respect_display_cutout),
+                            onResetToDefault = { viewModel.setRespectDisplayCutout(defaults.respectDisplayCutout) }
                         )
                         ToggleItem(
                             icon = Icons.Rounded.Save,
@@ -4181,6 +4191,7 @@ private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
         entry(SettingsTab.GameMenu, R.string.settings_game_menu_session_sections),
         entry(SettingsTab.General, R.string.settings_keep_screen_on),
         entry(SettingsTab.General, R.string.settings_emulation_both_orientations),
+        entry(SettingsTab.General, R.string.settings_respect_display_cutout),
         entry(SettingsTab.General, R.string.settings_orientation_lock),
         entry(SettingsTab.General, R.string.settings_confirm_save_load_actions),
         entry(SettingsTab.General, R.string.settings_floating_quick_actions),

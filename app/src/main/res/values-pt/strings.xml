@@ -436,6 +436,9 @@
     <string name="settings_show_home_search_desc">Exibe a barra de pesquisa na tela inicial.</string>
     <string name="settings_help_content_description">Mostrar detalhes da configuração</string>
     <string name="settings_help_keep_screen_on">Impede que o Android diminua o brilho ou bloqueie a tela durante o jogo. Útil para sessões longas e jogos com cenas cortadas (cutscenes), mas consumirá um pouco mais de bateria se você deixar o aplicativo aberto.</string>
+    <string name="settings_respect_display_cutout">Respeitar o recorte da câmara</string>
+    <string name="settings_respect_display_cutout_desc">Manter a imagem do jogo fora da área do recorte.</string>
+    <string name="settings_help_respect_display_cutout">Adiciona margem ao redor da imagem emulada para que não seja desenhada sob o recorte da câmara (notch ou orifício). Útil na horizontal quando o recorte tapa a imagem. Afeta apenas a emulação; o resto da app já respeita os recortes.</string>
     <string name="settings_help_pad_vibration">Permite que jogos compatíveis acionem a vibração (rumble) do controle. Adiciona feedback útil em jogos de corrida, combate e de grande impacto, mas pode descarregar a bateria mais rápido e alguns controles sem fio podem vibrar fracamente ou com um leve atraso.</string>
     <string name="settings_help_recent_games">Mostra uma linha de acesso rápido para os jogos que você jogou por último. Útil se você costuma alternar entre alguns títulos frequentemente; desligue se quiser uma tela inicial mais limpa.</string>
     <string name="settings_help_home_search">Mostra a barra de pesquisa da biblioteca diretamente na tela inicial. Deixe ativado para grandes bibliotecas; desligue se preferir um layout mais limpo e raramente pesquisar por nome.</string>

@@ -436,6 +436,9 @@
     <string name="settings_show_home_search_desc">Die Suchleiste auf dem Startbildschirm anzeigen.</string>
     <string name="settings_help_content_description">Einstellungsdetails anzeigen</string>
     <string name="settings_help_keep_screen_on">Verhindert, dass Android den Bildschirm während des Spielens dimmt oder sperrt. Nützlich für lange Sitzungen und Spiele mit Zwischensequenzen, verbraucht aber etwas mehr Akku, wenn du die App geöffnet lässt.</string>
+    <string name="settings_respect_display_cutout">Kameraussparung berücksichtigen</string>
+    <string name="settings_respect_display_cutout_desc">Spielbild außerhalb der Kameraussparung halten.</string>
+    <string name="settings_help_respect_display_cutout">Fügt einen Rand um das Emulationsbild hinzu, damit es nicht unter der Kameraussparung (Notch oder Loch) gerendert wird. Nützlich im Querformat, wenn die Aussparung das Bild überdeckt. Betrifft nur die Emulation – der Rest der App berücksichtigt Aussparungen bereits.</string>
     <string name="settings_help_pad_vibration">Lässt unterstützte Spiele Controller-Vibrationen (Rumble) auslösen. Es fügt in Renn-, Kampf- und actionreichen Spielen nützliches Feedback hinzu, kann aber den Akku schneller entladen und einige kabellose Gamepads vibrieren möglicherweise schwach oder mit leichter Verzögerung.</string>
     <string name="settings_help_recent_games">Zeigt eine Schnellzugriffsleiste für die Spiele, die du zuletzt gespielt hast. Gut, wenn du oft zwischen ein paar Titeln hin und her wechselst; schalte es aus, wenn du einen aufgeräumteren Startbildschirm möchtest.</string>
     <string name="settings_help_home_search">Zeigt die Suchleiste für die Bibliothek direkt auf dem Startbildschirm. Lass es für große Bibliotheken eingeschaltet; schalte es aus, wenn du ein saubereres Layout bevorzugst und selten nach Namen suchst.</string>
