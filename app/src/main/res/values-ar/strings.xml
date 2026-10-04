@@ -2085,7 +2085,7 @@
     <string name="formats_psp_supported_body">تقبل نواة Flycast المضمّنة ملفات الألعاب هذه مباشرة.</string>
     <string name="formats_psp_recommended_title">صور أقراص GD-ROM</string>
     <string name="formats_psp_recommended_body">‏GDI هو النسخ القياسي لأقراص GD-ROM. كما تُدعم صور CHD وCDI وCUE/BIN.</string>
-    <string name="formats_psp_homebrew_title">مجموعات ROM لـ Naomi وAtomiswave</string>
+    <string name="formats_psp_homebrew_title">مجموعات ROM للأركيد</string>
 <string name="formats_psp_homebrew_body">يمكن أيضًا فتح مجموعات ROM الخاصة بـ Naomi وNaomi 2 وAtomiswave بصيغ zip و7z وbin وdat وlst.</string>
     <string name="settings_network_tab">الشبكة</string>
     <string name="emulation_fast_forward">تقديم سريع (ضغط مطوّل)</string>
@@ -2988,4 +2988,17 @@
     <string name="core_update_reset_action">إعادة تعيين الإعدادات</string>
     <string name="core_update_reset_keep">الاحتفاظ بالإعدادات</string>
     <string name="core_update_reset_done">تمت إعادة تعيين الإعدادات</string>
+
+    <!-- Naomi 1-2 arcade tab and setup guide. -->
+    <string name="settings_arcade_tab">Naomi 1–2</string>
+    <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
+    <string name="naomi_guide_subtitle">تعمل ألعاب Naomi وNaomi 2 وAtomiswave من مجموعات ROM الخاصة بـ MAME.</string>
+    <string name="naomi_guide_intro">احتفظ بكل مجموعة ROM في أرشيفها الخاص وأضف المجلد إلى المكتبة. يعثر EmuCoreH على BIOS ويشغّل الخرطوشة أو GD-ROM ويحمّل الغلاف تلقائيًا.</string>
+    <string name="naomi_guide_step_bios">BIOS — اختر مجلدًا يحتوي على مجموعات BIOS للأركيد: naomi.zip لـ Naomi وnaomi2.zip لـ Naomi 2 وawbios.zip لـ Atomiswave. بعض الألعاب تحتاج مجموعتها الخاصة مثل f355bios.zip أو segasp.zip. ملفات Dreamcast اختيارية.</string>
+    <string name="naomi_guide_step_game">مجموعات ROM — استخدم مجموعات MAME بصيغة .zip أو .7z ولا تغيّر اسم الأرشيف لأن الاسم يحدد اللعبة. تعمل أيضًا ملفات .lst و.dat و.bin القديمة. أضف مجلدها إلى المكتبة.</string>
+    <string name="naomi_guide_step_gdrom">ألعاب GD-ROM — ألعاب مثل Ikaruga أو Initial D تحتاج أيضًا إلى القرص. بجانب ikaruga.zip أنشئ مجلدًا باسم ikaruga وضع فيه gdl-0010.chd.</string>
+    <string name="naomi_guide_step_launch">التشغيل — شغّل مجموعة ROM من المكتبة. لا تشغّل الملفات المستخرجة من الأرشيف: مجلد ROM عادي لا يقلع.</string>
+    <string name="naomi_guide_step_controls">التحكم — زر Select يُدخل عملة وStart يبدأ اللعبة. مع يد التحكم يفتح L3 قائمة Test وR3 قائمة Service. الوضع المجاني مفعّل افتراضيًا.</string>
+    <string name="naomi_guide_step_covers">الأغلفة — تُحمّل من كتالوج EmuCoreH حسب اسم مجموعة ROM. الألعاب بلا صورة تعرض بطاقة بالاسم.</string>
+    <string name="naomi_guide_settings_desc">إرشادات BIOS ومجموعة ROM وGD-ROM والتشغيل والتحكم.</string>
 </resources>
