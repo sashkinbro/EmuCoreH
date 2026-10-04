@@ -2082,7 +2082,7 @@
     <string name="formats_psp_supported_body">Вбудоване ядро Flycast відкриває ці ігрові файли напряму.</string>
     <string name="formats_psp_recommended_title">Образи дисків GD-ROM</string>
     <string name="formats_psp_recommended_body">GDI — стандартний дамп GD-ROM. Також підтримуються образи CHD, CDI та CUE/BIN.</string>
-    <string name="formats_psp_homebrew_title">ROM-набори Naomi та Atomiswave</string>
+    <string name="formats_psp_homebrew_title">Аркадні ROM-сети</string>
 <string name="formats_psp_homebrew_body">ROM-набори Naomi, Naomi 2 та Atomiswave у форматах zip, 7z, bin, dat або lst також можна відкривати.</string>
     <string name="settings_network_tab">Мережа</string>
     <string name="emulation_fast_forward">Перемотування вперед (утримувати)</string>
@@ -2985,4 +2985,17 @@
     <string name="core_update_reset_action">Скинути налаштування</string>
     <string name="core_update_reset_keep">Залишити як є</string>
     <string name="core_update_reset_done">Налаштування скинуто</string>
+
+    <!-- Naomi 1-2 arcade tab and setup guide. -->
+    <string name="settings_arcade_tab">Naomi 1–2</string>
+    <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
+    <string name="naomi_guide_subtitle">Ігри Naomi, Naomi 2 та Atomiswave запускаються з MAME-ромсетів.</string>
+    <string name="naomi_guide_intro">Тримай кожен ромсет окремим архівом і додай теку з ними до бібліотеки. EmuCoreH сам знайде BIOS, завантажить картридж або GD-ROM і підтягне обкладинку.</string>
+    <string name="naomi_guide_step_bios">BIOS — вибери теку з аркадними BIOS-сетами: naomi.zip для Naomi, naomi2.zip для Naomi 2 і awbios.zip для Atomiswave. Деяким іграм потрібен власний сет, наприклад f355bios.zip або segasp.zip. Дампи Dreamcast необов’язкові.</string>
+    <string name="naomi_guide_step_game">Ромсети — використовуй MAME-сети .zip або .7z і не перейменовуй архів, бо саме назва визначає гру. Старі дампи .lst, .dat і .bin теж відкриваються. Додай теку з ними до бібліотеки.</string>
+    <string name="naomi_guide_step_gdrom">Ігри з GD-ROM — таким тайтлам, як Ikaruga чи Initial D, потрібен ще й диск. Поруч з ikaruga.zip створи теку ikaruga і поклади туди gdl-0010.chd.</string>
+    <string name="naomi_guide_step_launch">Запуск — запускай ромсет із бібліотеки. Не запускай файли, розпаковані з архіву: звичайна тека з ROM-ами не завантажиться.</string>
+    <string name="naomi_guide_step_controls">Керування — Select вставляє монету, Start починає гру. На геймпаді L3 відкриває тестове меню, R3 — сервісне. Режим free play увімкнено за замовчуванням.</string>
+    <string name="naomi_guide_step_covers">Обкладинки — завантажуються з каталогу EmuCoreH за назвою ромсету. Для ігор без арту показується картка з назвою.</string>
+    <string name="naomi_guide_settings_desc">Інструкція: BIOS, ромсети, GD-ROM, запуск і керування.</string>
 </resources>

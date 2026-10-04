@@ -2077,7 +2077,7 @@
     <string name="formats_psp_supported_body">Paketlenmiş Flycast çekirdeği bu oyun dosyalarını doğrudan kabul eder.</string>
     <string name="formats_psp_recommended_title">GD-ROM disk görüntüleri</string>
     <string name="formats_psp_recommended_body">GDI, standart GD-ROM dökümüdür. CHD, CDI ve CUE/BIN disk görüntüleri de desteklenir.</string>
-    <string name="formats_psp_homebrew_title">Naomi ve Atomiswave ROM setleri</string>
+    <string name="formats_psp_homebrew_title">Arcade ROM setleri</string>
 <string name="formats_psp_homebrew_body">Naomi, Naomi 2 ve Atomiswave ROM setleri zip, 7z, bin, dat veya lst biçiminde de açılabilir.</string>
     <string name="settings_network_tab">Ağ</string>
     <string name="emulation_fast_forward">Hızlı ileri sar (basılı tut)</string>
@@ -2980,4 +2980,17 @@
     <string name="core_update_reset_action">Ayarları sıfırla</string>
     <string name="core_update_reset_keep">Ayarları koru</string>
     <string name="core_update_reset_done">Ayarlar sıfırlandı</string>
+
+    <!-- Naomi 1-2 arcade tab and setup guide. -->
+    <string name="settings_arcade_tab">Naomi 1–2</string>
+    <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
+    <string name="naomi_guide_subtitle">Naomi, Naomi 2 ve Atomiswave oyunları MAME ROM setlerinden çalışır.</string>
+    <string name="naomi_guide_intro">Her ROM setini kendi arşivinde tut ve klasörü kitaplığa ekle. EmuCoreH BIOS’u bulur, kartuşu veya GD-ROM’u başlatır ve kapak resmini otomatik indirir.</string>
+    <string name="naomi_guide_step_bios">BIOS — arcade BIOS setlerini içeren bir klasör seç: Naomi için naomi.zip, Naomi 2 için naomi2.zip ve Atomiswave için awbios.zip. Bazı oyunlar f355bios.zip veya segasp.zip gibi kendi setini ister. Dreamcast dökümleri isteğe bağlıdır.</string>
+    <string name="naomi_guide_step_game">ROM setleri — MAME .zip veya .7z setleri kullan ve arşivin adını asla değiştirme: oyunu adı belirler. Eski .lst, .dat ve .bin dökümleri de açılır. Bulundukları klasörü kitaplığa ekle.</string>
+    <string name="naomi_guide_step_gdrom">GD-ROM oyunları — Ikaruga veya Initial D gibi oyunlar diske de ihtiyaç duyar. ikaruga.zip yanında ikaruga adında bir klasör oluştur ve içine gdl-0010.chd koy.</string>
+    <string name="naomi_guide_step_launch">Başlatma — ROM setini kitaplıktan başlat. Arşivden çıkarılan dosyaları başlatma: düz bir ROM klasörü açılmaz.</string>
+    <string name="naomi_guide_step_controls">Kontroller — Select jeton atar, Start oyunu başlatır. Gamepad’de L3 Test menüsünü, R3 Servis menüsünü açar. Ücretsiz oyun varsayılan olarak açıktır.</string>
+    <string name="naomi_guide_step_covers">Kapaklar — ROM seti adına göre EmuCoreH kataloğundan indirilir. Görseli olmayan oyunlar için adı taşıyan bir kart gösterilir.</string>
+    <string name="naomi_guide_settings_desc">BIOS, ROM seti, GD-ROM, başlatma ve kontrol talimatları.</string>
 </resources>

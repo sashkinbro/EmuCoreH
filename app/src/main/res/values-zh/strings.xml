@@ -2078,7 +2078,7 @@
     <string name="formats_psp_supported_body">内置的 Flycast 核心可直接读取这些游戏文件。</string>
     <string name="formats_psp_recommended_title">GD-ROM 光盘映像</string>
     <string name="formats_psp_recommended_body">GDI 是标准的 GD-ROM 转储。同时也支持 CHD、CDI 和 CUE/BIN 光盘映像。</string>
-    <string name="formats_psp_homebrew_title">Naomi 和 Atomiswave ROM 集</string>
+    <string name="formats_psp_homebrew_title">街机 ROM 集</string>
 <string name="formats_psp_homebrew_body">也可以打开 zip、7z、bin、dat 或 lst 格式的 Naomi、Naomi 2 和 Atomiswave ROM 集。</string>
     <string name="settings_network_tab">網路</string>
     <string name="emulation_fast_forward">快进（长按）</string>
@@ -2981,4 +2981,17 @@
     <string name="core_update_reset_action">重置设置</string>
     <string name="core_update_reset_keep">保留当前设置</string>
     <string name="core_update_reset_done">设置已重置</string>
+
+    <!-- Naomi 1-2 arcade tab and setup guide. -->
+    <string name="settings_arcade_tab">Naomi 1–2</string>
+    <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
+    <string name="naomi_guide_subtitle">Naomi、Naomi 2 和 Atomiswave 游戏通过 MAME ROM 集运行。</string>
+    <string name="naomi_guide_intro">让每个 ROM 集保持为独立压缩包，并把所在文件夹加入游戏库。EmuCoreH 会自动找到 BIOS、启动卡带或 GD-ROM 并下载封面。</string>
+    <string name="naomi_guide_step_bios">BIOS — 选择包含街机 BIOS 集的文件夹：Naomi 用 naomi.zip，Naomi 2 用 naomi2.zip，Atomiswave 用 awbios.zip。部分游戏需要专属集，如 f355bios.zip 或 segasp.zip。Dreamcast 转储是可选的。</string>
+    <string name="naomi_guide_step_game">ROM 集 — 使用 MAME 的 .zip 或 .7z 集，并且不要重命名压缩包，因为名称就是游戏标识。旧式 .lst、.dat 和 .bin 转储也能打开。把所在文件夹加入游戏库。</string>
+    <string name="naomi_guide_step_gdrom">GD-ROM 游戏 — Ikaruga、Initial D 等还需要光盘。在 ikaruga.zip 旁新建 ikaruga 文件夹，并放入 gdl-0010.chd。</string>
+    <string name="naomi_guide_step_launch">启动 — 请从游戏库启动 ROM 集。不要启动从压缩包解出的文件：普通 ROM 文件夹无法启动。</string>
+    <string name="naomi_guide_step_controls">操作 — Select 投币，Start 开始游戏。手柄上 L3 打开 Test 菜单，R3 打开 Service 菜单。免费游玩默认开启。</string>
+    <string name="naomi_guide_step_covers">封面 — 按 ROM 集名称从 EmuCoreH 目录下载。没有图片的游戏会显示带名称的卡片。</string>
+    <string name="naomi_guide_settings_desc">BIOS、ROM 集、GD-ROM、启动和操作说明。</string>
 </resources>

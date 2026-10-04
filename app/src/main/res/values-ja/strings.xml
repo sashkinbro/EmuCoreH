@@ -2076,7 +2076,7 @@
     <string name="formats_psp_supported_body">同梱のFlycastコアはこれらのゲームファイルを直接読み込めます。</string>
     <string name="formats_psp_recommended_title">GD-ROMディスクイメージ</string>
     <string name="formats_psp_recommended_body">GDIはGD-ROMの標準ダンプです。CHD、CDI、CUE/BINのディスクイメージにも対応しています。</string>
-    <string name="formats_psp_homebrew_title">NaomiとAtomiswaveのROMセット</string>
+    <string name="formats_psp_homebrew_title">アーケードROMセット</string>
 <string name="formats_psp_homebrew_body">Naomi、Naomi 2、AtomiswaveのROMセット（zip、7z、bin、dat、lst形式）も開けます。</string>
     <string name="settings_network_tab">ネットワーク</string>
     <string name="emulation_fast_forward">早送り（長押し）</string>
@@ -2979,4 +2979,17 @@
     <string name="core_update_reset_action">設定をリセット</string>
     <string name="core_update_reset_keep">設定を保持</string>
     <string name="core_update_reset_done">設定をリセットしました</string>
+
+    <!-- Naomi 1-2 arcade tab and setup guide. -->
+    <string name="settings_arcade_tab">Naomi 1–2</string>
+    <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
+    <string name="naomi_guide_subtitle">Naomi、Naomi 2、AtomiswaveのゲームはMAME ROMセットから起動します。</string>
+    <string name="naomi_guide_intro">ROMセットはアーカイブのまま保管し、フォルダをライブラリに追加してください。EmuCoreHがBIOSを見つけ、カートリッジまたはGD-ROMを起動し、カバーを自動で取得します。</string>
+    <string name="naomi_guide_step_bios">BIOS — アーケードBIOSセットを入れたフォルダを選びます。Naomiはnaomi.zip、Naomi 2はnaomi2.zip、Atomiswaveはawbios.zip。f355bios.zipやsegasp.zipなど専用セットが必要なゲームもあります。Dreamcastのダンプは任意です。</string>
+    <string name="naomi_guide_step_game">ROMセット — MAMEの.zipまたは.7zを使い、アーカイブ名は変更しないでください。名前がゲームの識別子です。旧形式の.lst、.dat、.binも開けます。フォルダをライブラリに追加します。</string>
+    <string name="naomi_guide_step_gdrom">GD-ROMゲーム — IkarugaやInitial Dなどはディスクも必要です。ikaruga.zipの隣にikarugaフォルダを作り、gdl-0010.chdを入れてください。</string>
+    <string name="naomi_guide_step_launch">起動 — ライブラリからROMセットを起動します。アーカイブから展開したファイルは起動しないでください。ROMフォルダだけではブートしません。</string>
+    <string name="naomi_guide_step_controls">操作 — Selectでコインを投入、Startでゲーム開始。ゲームパッドではL3がTestメニュー、R3がServiceメニューです。フリープレイは初期状態で有効です。</string>
+    <string name="naomi_guide_step_covers">カバー — ROMセット名でEmuCoreHカタログからダウンロードされます。画像がないゲームは名前入りのカードを表示します。</string>
+    <string name="naomi_guide_settings_desc">BIOS、ROMセット、GD-ROM、起動、操作の説明。</string>
 </resources>

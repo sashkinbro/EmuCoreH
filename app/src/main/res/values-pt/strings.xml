@@ -2079,7 +2079,7 @@
     <string name="formats_psp_supported_body">O núcleo Flycast incluído aceita esses arquivos de jogo diretamente.</string>
     <string name="formats_psp_recommended_title">Imagens de disco GD-ROM</string>
     <string name="formats_psp_recommended_body">GDI é o dump padrão de um GD-ROM. Imagens CHD, CDI e CUE/BIN também são compatíveis.</string>
-    <string name="formats_psp_homebrew_title">Conjuntos ROM de Naomi e Atomiswave</string>
+    <string name="formats_psp_homebrew_title">Sets ROM arcade</string>
 <string name="formats_psp_homebrew_body">Conjuntos ROM de Naomi, Naomi 2 e Atomiswave nos formatos zip, 7z, bin, dat ou lst também podem ser abertos.</string>
     <string name="settings_network_tab">Rede</string>
     <string name="emulation_fast_forward">Avanço rápido (manter pressionado)</string>
@@ -2982,4 +2982,17 @@
     <string name="core_update_reset_action">Redefinir configurações</string>
     <string name="core_update_reset_keep">Manter configurações</string>
     <string name="core_update_reset_done">Configurações redefinidas</string>
+
+    <!-- Naomi 1-2 arcade tab and setup guide. -->
+    <string name="settings_arcade_tab">Naomi 1–2</string>
+    <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
+    <string name="naomi_guide_subtitle">Os jogos Naomi, Naomi 2 e Atomiswave correm a partir de sets ROM MAME.</string>
+    <string name="naomi_guide_intro">Mantém cada set ROM no seu próprio arquivo e adiciona a pasta à biblioteca. O EmuCoreH encontra o BIOS, arranca o cartucho ou o GD-ROM e descarrega a capa automaticamente.</string>
+    <string name="naomi_guide_step_bios">BIOS — seleciona uma pasta com os teus sets BIOS arcade: naomi.zip para Naomi, naomi2.zip para Naomi 2 e awbios.zip para Atomiswave. Alguns jogos precisam do seu próprio set, como f355bios.zip ou segasp.zip. Os dumps Dreamcast são opcionais.</string>
+    <string name="naomi_guide_step_game">Sets ROM — usa sets MAME .zip ou .7z e não renomeies o arquivo: o nome identifica o jogo. Dumps antigos .lst, .dat e .bin também abrem. Adiciona a pasta deles à biblioteca.</string>
+    <string name="naomi_guide_step_gdrom">Jogos GD-ROM — títulos como Ikaruga ou Initial D também precisam do disco. Ao lado de ikaruga.zip cria uma pasta ikaruga e coloca lá gdl-0010.chd.</string>
+    <string name="naomi_guide_step_launch">Arranque — inicia o set ROM a partir da biblioteca. Não inicies ficheiros extraídos do arquivo: uma pasta simples de ROMs não arranca.</string>
+    <string name="naomi_guide_step_controls">Controlos — Select insere uma moeda e Start começa o jogo. Com comando, L3 abre o menu Test e R3 o menu Service. O free play está ativo por predefinição.</string>
+    <string name="naomi_guide_step_covers">Capas — descarregadas do catálogo EmuCoreH pelo nome do set ROM. Sem artwork é mostrado um cartão com o nome.</string>
+    <string name="naomi_guide_settings_desc">Instruções de BIOS, set ROM, GD-ROM, arranque e controlos.</string>
 </resources>

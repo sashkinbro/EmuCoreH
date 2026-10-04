@@ -232,6 +232,7 @@ import com.sbro.emucoreh.ui.common.EmulationSideArtworkThumbnail
 import com.sbro.emucoreh.ui.common.EmulatorDataLocationDialog
 import com.sbro.emucoreh.ui.common.GameCoverAspectRatio
 import com.sbro.emucoreh.ui.common.NavigationBackButton
+import com.sbro.emucoreh.ui.common.NaomiArcadeGuideContent
 import com.sbro.emucoreh.ui.common.ProvideGamepadShoulderActions
 import com.sbro.emucoreh.ui.common.ProSupportOptionsDialog
 import com.sbro.emucoreh.ui.common.RequestFocusOnResume
@@ -274,7 +275,7 @@ import com.sbro.emucoreh.ui.theme.neon.neonShapeCorners
 import java.util.Locale
 
 private enum class SettingsTab {
-    General, Graphics, Controls, Emulation, Network, Audio, Library, Customization, GameMenu, Updates, Pro, About
+    General, Graphics, Controls, Emulation, Network, Audio, Library, Customization, GameMenu, Updates, Pro, Arcade, About
 }
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -310,6 +311,7 @@ fun SettingsScreen(
     val showCoverUrlDialog = remember { mutableStateOf(false) }
     var showClearCoverCacheDialog by rememberSaveable { mutableStateOf(false) }
     var showEmulatorDataLocationDialog by remember { mutableStateOf(false) }
+    var showNaomiArcadeGuide by rememberSaveable { mutableStateOf(false) }
     val pendingCoverUrl = remember { mutableStateOf("") }
     var searchEnabled by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
@@ -550,6 +552,7 @@ fun SettingsScreen(
     context = context,
     launchGamePicker = launchGamePicker,
     launchBiosPicker = launchBiosPicker,
+    onOpenNaomiGuide = { showNaomiArcadeGuide = true },
     openEmulatorDataLocationDialog = openEmulatorDataLocationDialog,
                 launchHomeBackgroundPicker = {
                     homeBackgroundPicker.launch(arrayOf("image/*", "video/*"))
@@ -741,6 +744,34 @@ fun SettingsScreen(
                 }
             }
         )
+    }
+
+    if (showNaomiArcadeGuide) {
+        SettingsStyledDialog(
+            title = stringResource(R.string.naomi_guide_title),
+            eyebrow = stringResource(R.string.app_name),
+            icon = Icons.Rounded.SportsEsports,
+            onDismissRequest = { showNaomiArcadeGuide = false }
+        ) {
+            Text(
+                text = stringResource(R.string.naomi_guide_subtitle),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            NaomiArcadeGuideContent()
+            Button(
+                onClick = { showNaomiArcadeGuide = false },
+                modifier = Modifier.fillMaxWidth(),
+                shape = neonShape(18.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.close),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(vertical = 6.dp)
+                )
+            }
+        }
     }
 
     if (showDriveBackupDialog) {
@@ -1034,6 +1065,7 @@ private fun SettingsContent(
     context: android.content.Context,
     launchGamePicker: () -> Unit,
     launchBiosPicker: () -> Unit,
+    onOpenNaomiGuide: () -> Unit,
     openEmulatorDataLocationDialog: () -> Unit,
     launchHomeBackgroundPicker: () -> Unit,
     launchSideArtworkPicker: () -> Unit,
@@ -2139,6 +2171,53 @@ private fun SettingsContent(
                         onRestore = viewModel::restoreProPurchases,
                         onApplyCrimson = { viewModel.setThemeMode(ThemeMode.PRO) }
                     )
+                }
+
+                SettingsTab.Arcade -> {
+                    val arcadeBiosDisplayName = uiState.biosPath
+                        ?.let(DocumentPathResolver::getFallbackDisplayName)
+                        ?: notSetLabel
+                    val builtInCoverSourceLabel = stringResource(R.string.settings_cover_download_url_builtin)
+                    val coverDownloadDisabledLabel = stringResource(R.string.settings_cover_download_url_disabled)
+                    val customCoverSourceLabel = stringResource(R.string.settings_cover_download_url_custom)
+                    val arcadeCoverUrlDisplay = if (!uiState.coverDownloadBaseUrl.isNullOrBlank()) {
+                        customCoverSourceLabel
+                    } else if (uiState.coverArtStyle == AppPreferences.COVER_ART_STYLE_DISABLED) {
+                        coverDownloadDisabledLabel
+                    } else {
+                        builtInCoverSourceLabel
+                    }
+                    SettingsSection(title = stringResource(R.string.naomi_guide_title)) {
+                        SettingsItem(
+                            icon = Icons.Rounded.Info,
+                            label = stringResource(R.string.naomi_guide_title),
+                            value = stringResource(R.string.naomi_guide_settings_desc),
+                            onClick = onOpenNaomiGuide,
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                            )
+                        )
+                    }
+                    SettingsSection(title = stringResource(R.string.settings_bios_path)) {
+                        SettingsItem(
+                            icon = Icons.Rounded.FolderOpen,
+                            label = stringResource(R.string.settings_bios_path),
+                            value = arcadeBiosDisplayName,
+                            onClick = launchBiosPicker,
+                            helpText = stringResource(R.string.settings_bios_picker_desc)
+                        )
+                        SettingsInlineNote(stringResource(R.string.naomi_guide_step_bios))
+                    }
+                    SettingsSection(title = stringResource(R.string.settings_covers_tab)) {
+                        SettingsItem(
+                            icon = Icons.Rounded.Link,
+                            label = stringResource(R.string.settings_cover_download_url),
+                            value = arcadeCoverUrlDisplay,
+                            onClick = onOpenCoverUrlEditor
+                        )
+                        SettingsInlineNote(stringResource(R.string.naomi_guide_step_covers))
+                    }
                 }
 
                 SettingsTab.About -> {
@@ -4247,6 +4326,9 @@ private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
         entry(SettingsTab.Emulation, R.string.settings_fps_overlay_position),
         entry(SettingsTab.Emulation, R.string.settings_fps_overlay_scale),
         entry(SettingsTab.Emulation, R.string.settings_fps_overlay_metrics),
+        entry(SettingsTab.Arcade, R.string.naomi_guide_title),
+        entry(SettingsTab.Arcade, R.string.settings_bios_path),
+        entry(SettingsTab.Arcade, R.string.settings_cover_download_url),
         entry(SettingsTab.Updates, R.string.settings_updates_tab)
     )
 }
@@ -6116,6 +6198,7 @@ private fun SettingsTab.label(): String {
         SettingsTab.Library -> stringResource(R.string.settings_library_tab)
         SettingsTab.Updates -> stringResource(R.string.settings_updates_tab)
         SettingsTab.Pro -> stringResource(R.string.settings_pro_tab)
+        SettingsTab.Arcade -> stringResource(R.string.settings_arcade_tab)
         SettingsTab.About -> stringResource(R.string.settings_about)
     }
 }
@@ -6133,6 +6216,7 @@ private fun SettingsTab.icon(): ImageVector {
         SettingsTab.Library -> Icons.Rounded.FolderOpen
         SettingsTab.Updates -> Icons.Rounded.SystemUpdateAlt
         SettingsTab.Pro -> Icons.Rounded.Star
+        SettingsTab.Arcade -> Icons.Rounded.SportsEsports
         SettingsTab.About -> Icons.Rounded.Info
     }
 }
@@ -6150,6 +6234,7 @@ private fun String.toSettingsTab(): SettingsTab {
         "network", "wlan", "adhoc" -> SettingsTab.Network
         "updates", "update", "app_update", "app-update" -> SettingsTab.Updates
         "pro", "premium", "crimson", "support" -> SettingsTab.Pro
+        "arcade", "naomi", "naomi2", "atomiswave", "mame" -> SettingsTab.Arcade
         "about" -> SettingsTab.About
         else -> SettingsTab.General
     }
