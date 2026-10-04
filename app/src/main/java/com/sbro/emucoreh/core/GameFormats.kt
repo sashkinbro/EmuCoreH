@@ -40,6 +40,8 @@ object GameFormats {
         "application/x-7z-compressed",
         "application/zip",
         "audio/x-mpegurl",
+        // Providers report legacy Naomi `.lst`/`.dat` sets as plain text.
+        "text/plain",
         "application/x-elf"
     )
 

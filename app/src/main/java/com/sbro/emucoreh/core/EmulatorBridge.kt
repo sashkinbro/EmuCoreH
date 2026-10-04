@@ -849,7 +849,7 @@ object EmulatorBridge {
 
     fun parseMetadataFromName(rawName: String): GameMetadata {
         val ext = rawName.substringAfterLast('.', "").lowercase()
-        val cleanName = if (ext in setOf("iso", "bin", "cue", "img", "mdf", "gz", "cso", "zso", "chd", "elf", "pbp", "prx", "plf", "zip")) {
+        val cleanName = if (ext in setOf("iso", "bin", "cue", "img", "mdf", "gz", "cso", "zso", "chd", "elf", "pbp", "prx", "plf", "zip", "7z", "dat", "lst", "m3u")) {
             rawName.substringBeforeLast('.').trim()
         } else {
             rawName.trim()

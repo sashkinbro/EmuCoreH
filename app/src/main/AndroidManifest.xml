@@ -84,8 +84,8 @@
             </intent-filter>
 
             <!-- Launcher frontends (Beacon, Daijisho, DIG, ES-DE, LaunchBox
-                 custom emulators, ...) open disc images with a plain VIEW
-                 intent, by file path or by content URI. -->
+                 custom emulators, ...) open disc images and arcade ROM sets
+                 with a plain VIEW intent, by file path or by content URI. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -96,6 +96,14 @@
                 <data android:scheme="file" android:pathPattern=".*\\.CSO" />
                 <data android:scheme="file" android:pathPattern=".*\\.chd" />
                 <data android:scheme="file" android:pathPattern=".*\\.CHD" />
+                <data android:scheme="file" android:pathPattern=".*\\.gdi" />
+                <data android:scheme="file" android:pathPattern=".*\\.GDI" />
+                <data android:scheme="file" android:pathPattern=".*\\.cdi" />
+                <data android:scheme="file" android:pathPattern=".*\\.CDI" />
+                <data android:scheme="file" android:pathPattern=".*\\.cue" />
+                <data android:scheme="file" android:pathPattern=".*\\.CUE" />
+                <data android:scheme="file" android:pathPattern=".*\\.m3u" />
+                <data android:scheme="file" android:pathPattern=".*\\.M3U" />
                 <data android:scheme="file" android:pathPattern=".*\\.pbp" />
                 <data android:scheme="file" android:pathPattern=".*\\.PBP" />
                 <data android:scheme="file" android:pathPattern=".*\\.elf" />
@@ -106,6 +114,12 @@
                 <data android:scheme="file" android:pathPattern=".*\\.PLF" />
                 <data android:scheme="file" android:pathPattern=".*\\.zip" />
                 <data android:scheme="file" android:pathPattern=".*\\.ZIP" />
+                <data android:scheme="file" android:pathPattern=".*\\.7z" />
+                <data android:scheme="file" android:pathPattern=".*\\.7Z" />
+                <data android:scheme="file" android:pathPattern=".*\\.dat" />
+                <data android:scheme="file" android:pathPattern=".*\\.DAT" />
+                <data android:scheme="file" android:pathPattern=".*\\.lst" />
+                <data android:scheme="file" android:pathPattern=".*\\.LST" />
                 <data android:scheme="file" android:pathPattern=".*\\.bin" />
                 <data android:scheme="file" android:pathPattern=".*\\.BIN" />
             </intent-filter>
@@ -119,6 +133,8 @@
                 <data android:scheme="content" android:mimeType="application/x-iso9660-image" />
                 <data android:scheme="content" android:mimeType="application/x-cd-image" />
                 <data android:scheme="content" android:mimeType="application/x-raw-disk-image" />
+                <data android:scheme="content" android:mimeType="application/zip" />
+                <data android:scheme="content" android:mimeType="application/x-7z-compressed" />
             </intent-filter>
         </activity>
 

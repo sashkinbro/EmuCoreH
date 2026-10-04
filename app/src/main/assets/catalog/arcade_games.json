@@ -1,0 +1,2466 @@
+{
+ "source": "core/core/hw/naomi/naomi_roms.cpp",
+ "games": {
+  "18wheelr": {
+   "title": "18 Wheeler (deluxe, Rev A)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "18wheelro": {
+   "title": "18 Wheeler (deluxe)",
+   "parent": "18wheelr",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "18wheelrt": {
+   "title": "18 Wheeler (deluxe, Rev T)",
+   "parent": "18wheelr",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "18wheels": {
+   "title": "18 Wheeler (standard)",
+   "parent": "18wheelr",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "18wheelu": {
+   "title": "18 Wheeler (upright)",
+   "parent": "18wheelr",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "alienfnt": {
+   "title": "Alien Front (Rev T)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "alienfnta": {
+   "title": "Alien Front (Rev A)",
+   "parent": "alienfnt",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "alpilot": {
+   "title": "Airline Pilots (World, Rev B)",
+   "bios": "airlbios",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "alpilotj": {
+   "title": "Airline Pilots (Japan, Rev A)",
+   "bios": "airlbios",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "anmlbskt": {
+   "title": "Animal Basket",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT270"
+  },
+  "anmlbskta": {
+   "title": "Animal Basket (19 Jan 2005)",
+   "parent": "anmlbskt",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT270"
+  },
+  "anpanman2": {
+   "title": "Soreike! Anpanman Popcorn Koujou 2",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "anpanman2a": {
+   "title": "Soreike! Anpanman Popcorn Koujou 2 (Rev A)",
+   "parent": "anpanman2",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "asndynmt": {
+   "title": "Asian Dynamite / Dynamite Deka EX",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "asndynmto": {
+   "title": "Asian Dynamite / Dynamite Deka EX (older)",
+   "parent": "asndynmt",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "ausfache": {
+   "title": "Akatsuki Blitzkampf Ausf. Achse",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "azumanga": {
+   "title": "Azumanga Daioh Puzzle Bobble",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0018"
+  },
+  "basschal": {
+   "title": "Sega Bass Fishing Challenge (Ver. A)",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "basschalo": {
+   "title": "Sega Bass Fishing Challenge",
+   "parent": "basschal",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "bdrdown": {
+   "title": "Border Down",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0023a"
+  },
+  "beachspi": {
+   "title": "Beach Spikers",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0014"
+  },
+  "bingogal": {
+   "title": "Bingo Galaxy (main)",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "bingogals": {
+   "title": "Bingo Galaxy (satellite)",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "blokpong": {
+   "title": "Block Pong-Pong",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT270"
+  },
+  "brickppl": {
+   "title": "Brick People / Block PeePoo",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "btlracer": {
+   "title": "Saikyou Saisoku Battle Racer",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "capsnk": {
+   "title": "Capcom vs. SNK Millennium Fight 2000 (Rev C)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "capsnka": {
+   "title": "Capcom vs. SNK Millennium Fight 2000 (Rev A)",
+   "parent": "capsnk",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "capsnkb": {
+   "title": "Capcom vs. SNK Millennium Fight 2000",
+   "parent": "capsnk",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "cfield": {
+   "title": "Chaos Field",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0025"
+  },
+  "chocomk": {
+   "title": "Musapey's Choco Marker (Rev A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0014a"
+  },
+  "claychal": {
+   "title": "Sega Clay Challenge",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "cleoftp": {
+   "title": "Cleopatra Fortune Plus",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0012"
+  },
+  "clubk2k3": {
+   "title": "Club Kart: European Session (2003, Rev A)",
+   "bios": "naomi2",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "clubk2kp": {
+   "title": "Club Kart: European Session (2003, prototype, set 1)",
+   "parent": "clubk2k3",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "clubk2kpa": {
+   "title": "Club Kart: European Session (2003, prototype, set 2)",
+   "parent": "clubk2k3",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "clubkcyc": {
+   "title": "Club Kart for Cycraft (Rev A)",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0029a"
+  },
+  "clubkcyco": {
+   "title": "Club Kart for Cycraft",
+   "parent": "clubkcyc",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0029"
+  },
+  "clubkprz": {
+   "title": "Club Kart Prize (Rev A)",
+   "bios": "naomi2",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "clubkpzb": {
+   "title": "Club Kart Prize (Ver. B)",
+   "bios": "naomi2",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "clubkpzbp": {
+   "title": "Club Kart Prize (Ver. B prototype)",
+   "parent": "clubkpzb",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "clubkrt": {
+   "title": "Club Kart: European Session (Rev D)",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "clubkrta": {
+   "title": "Club Kart: European Session (Rev A)",
+   "parent": "clubkrt",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "clubkrtc": {
+   "title": "Club Kart: European Session (Rev C)",
+   "parent": "clubkrt",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "clubkrto": {
+   "title": "Club Kart: European Session",
+   "parent": "clubkrt",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "confmiss": {
+   "title": "Confidential Mission",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0001"
+  },
+  "crackndj": {
+   "title": "Crackin' DJ",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "crakndj2": {
+   "title": "Crackin' DJ Part 2",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "crzytaxi": {
+   "title": "Crazy Taxi",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "csmash": {
+   "title": "Cosmic Smash (Rev A)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "csmasho": {
+   "title": "Cosmic Smash",
+   "parent": "csmash",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "cspike": {
+   "title": "Cannon Spike / Gun Spike",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "cvs2": {
+   "title": "Capcom vs. SNK 2 Mark Of The Millennium 2001 (USA)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0008"
+  },
+  "cvs2mf": {
+   "title": "Capcom vs. SNK 2 Millionaire Fighting 2001 (Japan, Rev A)",
+   "parent": "cvs2",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0007a"
+  },
+  "cvsgd": {
+   "title": "Capcom vs. SNK Millennium Fight 2000 Pro (Japan)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0004"
+  },
+  "deathcox": {
+   "title": "Death Crimson OX (USA)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "deathcoxj": {
+   "title": "Death Crimson OX (Japan, Rev A)",
+   "parent": "deathcox",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "deathcoxo": {
+   "title": "Death Crimson OX (Japan)",
+   "parent": "deathcox",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "demofist": {
+   "title": "Demolish Fist",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "derbyo2k": {
+   "title": "Derby Owners Club 2000 Ver.2 (Japan, Rev A)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "derbyoc": {
+   "title": "Derby Owners Club (Japan, Rev B)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "derbyoc2": {
+   "title": "Derby Owners Club II Ver.2.1 (Japan, Rev B)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "derbyocw": {
+   "title": "Derby Owners Club World Edition EX (Rev D)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "dinoki25": {
+   "title": "Dinosaur King - D-Team VS. the Alpha Fortress (Export)",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0",
+   "gdrom": "mda-c0047"
+  },
+  "dinoki4": {
+   "title": "Ancient Ruler Dinosaur King - Wake up! New Power!! (Japan)",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0",
+   "gdrom": "mda-c0061"
+  },
+  "dinokich": {
+   "title": "Konglongwang - D-Kids VS Alpha Yaosai (China)",
+   "parent": "dinoki25",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0",
+   "gdrom": "mda-c0081"
+  },
+  "dinoking": {
+   "title": "Dinosaur King (USA)",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "dinokior": {
+   "title": "Dinosaur King - Operation: Dinosaur Rescue (USA, Export)",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0",
+   "gdrom": "mda-c0021"
+  },
+  "dirtypig": {
+   "title": "Dirty Pigskin Football",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "doa2": {
+   "title": "Dead or Alive 2",
+   "parent": "doa2m",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "doa2a": {
+   "title": "Dead or Alive 2 (Rev A)",
+   "parent": "doa2m",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "doa2m": {
+   "title": "Dead or Alive 2 Millennium",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "dolphin": {
+   "title": "Dolphin Blue",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "dragntr": {
+   "title": "Dragon Treasure (Rev B)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0030b"
+  },
+  "dragntr2": {
+   "title": "Dragon Treasure 2 (Rev A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0037a"
+  },
+  "dragntr3": {
+   "title": "Dragon Treasure 3 (Rev A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0041a"
+  },
+  "dragntra": {
+   "title": "Dragon Treasure (Rev A)",
+   "parent": "dragntr",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0030a"
+  },
+  "drbyocwa": {
+   "title": "Derby Owners Club World Edition (Rev A)",
+   "parent": "derbyocw",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "drbyocwb": {
+   "title": "Derby Owners Club World Edition (Rev B)",
+   "parent": "derbyocw",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "drbyocwc": {
+   "title": "Derby Owners Club World Edition (Rev C)",
+   "parent": "derbyocw",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "drbyocwt": {
+   "title": "Derby Owners Club World Edition (Rev T)",
+   "parent": "derbyocw",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "dybb99": {
+   "title": "Dynamite Baseball '99 / World Series '99",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "dybbnao": {
+   "title": "Dynamite Baseball NAOMI",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "dygolf": {
+   "title": "Virtua Golf / Dynamic Golf",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0009a"
+  },
+  "dygolfp": {
+   "title": "Virtua Golf / Dynamic Golf (prototype)",
+   "parent": "dygolf",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "f355": {
+   "title": "Ferrari F355 Challenge (deluxe)",
+   "bios": "f355dlx",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "f355twin": {
+   "title": "Ferrari F355 Challenge (twin)",
+   "bios": "f355bios",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "f355twinp": {
+   "title": "Ferrari F355 Challenge (twin, preview)",
+   "parent": "f355twin",
+   "bios": "f355bios",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "f355twn2": {
+   "title": "Ferrari F355 Challenge 2",
+   "bios": "f355bios",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "fotns": {
+   "title": "Fist Of The North Star",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "ftspeed": {
+   "title": "Faster Than Speed",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "galilfac": {
+   "title": "Galileo Factory (main)",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "ggisuka": {
+   "title": "Guilty Gear Isuka",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "ggram2": {
+   "title": "Giant Gram: All Japan Pro Wrestling 2",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "ggx": {
+   "title": "Guilty Gear X",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "ggx15": {
+   "title": "Guilty Gear X ver. 1.5",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "ggxx": {
+   "title": "Guilty Gear XX",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0011"
+  },
+  "ggxxac": {
+   "title": "Guilty Gear XX Accent Core",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0041"
+  },
+  "ggxxrl": {
+   "title": "Guilty Gear XX #Reload (Rev A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0019a"
+  },
+  "ggxxrlo": {
+   "title": "Guilty Gear XX #Reload",
+   "parent": "ggxxrl",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0019"
+  },
+  "ggxxsla": {
+   "title": "Guilty Gear XX Slash (Rev A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0033a"
+  },
+  "gram2000": {
+   "title": "Giant Gram 2000",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "gundmct": {
+   "title": "Mobile Suit Gundam: Federation vs. Zeon",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "gundmgd": {
+   "title": "Mobile Suit Gundam: Federation vs. Zeon",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0001"
+  },
+  "gundmxgd": {
+   "title": "Mobile Suit Gundam: Federation vs. Zeon DX",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0006"
+  },
+  "gunsur2": {
+   "title": "Gun Survivor 2 Biohazard Code: Veronica (World)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "gunsur2j": {
+   "title": "Gun Survivor 2 Biohazard Code: Veronica (Japan)",
+   "parent": "gunsur2",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "gwing2": {
+   "title": "Giga Wing 2",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "hmgeo": {
+   "title": "Heavy Metal: Geomatrix",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "hopper": {
+   "title": "SWP Hopper Board",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "hotd2": {
+   "title": "The House of the Dead 2 (USA)",
+   "bios": "hod2bios",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "hotd2e": {
+   "title": "The House of the Dead 2 (Export)",
+   "parent": "hotd2",
+   "bios": "hod2bios",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "hotd2o": {
+   "title": "The House of the Dead 2",
+   "parent": "hotd2",
+   "bios": "hod2bios",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "hotd2p": {
+   "title": "The House of the Dead 2 (prototype)",
+   "parent": "hotd2",
+   "bios": "hod2bios",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "huhimage": {
+   "title": "Heat Up Hockey Image",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT270",
+   "gdrom": "tsb0-sega00001"
+  },
+  "ikaruga": {
+   "title": "Ikaruga",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0010"
+  },
+  "illvelo": {
+   "title": "Illvelo (Illmatic Envelope)",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT270"
+  },
+  "inidv3ca": {
+   "title": "Initial D Arcade Stage 3 Cycraft Edition (Rev A)",
+   "parent": "inidv3cy",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0039a"
+  },
+  "inidv3cy": {
+   "title": "Initial D Arcade Stage 3 Cycraft Edition (Rev B)",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0039b"
+  },
+  "initd": {
+   "title": "Initial D Arcade Stage (Japan, Rev B)",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0020b"
+  },
+  "initdexp": {
+   "title": "Initial D Arcade Stage (Export, Rev A)",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0025a"
+  },
+  "initdexpo": {
+   "title": "Initial D Arcade Stage (Export)",
+   "parent": "initdexp",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0025"
+  },
+  "initdo": {
+   "title": "Initial D Arcade Stage (Japan)",
+   "parent": "initd",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0020"
+  },
+  "initdv2e": {
+   "title": "Initial D Arcade Stage 2 (Export)",
+   "parent": "initdv2j",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0027"
+  },
+  "initdv2j": {
+   "title": "Initial D Arcade Stage 2 (Japan, Rev B)",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0026b"
+  },
+  "initdv2ja": {
+   "title": "Initial D Arcade Stage 2 (Japan, Rev A)",
+   "parent": "initdv2j",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0026a"
+  },
+  "initdv2jo": {
+   "title": "Initial D Arcade Stage 2 (Japan)",
+   "parent": "initdv2j",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0026"
+  },
+  "initdv3e": {
+   "title": "Initial D Arcade Stage 3 (Export)",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0033"
+  },
+  "initdv3j": {
+   "title": "Initial D Arcade Stage 3 (Japan, Rev C)",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0032c"
+  },
+  "initdv3jb": {
+   "title": "Initial D Arcade Stage 3 (Japan, Rev B)",
+   "parent": "initdv3j",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0032b"
+  },
+  "inunoos": {
+   "title": "Inu no Osanpo / Dog Walking",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "isshoni": {
+   "title": "Isshoni Wanwan Waiwai Puppy 2008",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "jambo": {
+   "title": "Jambo! Safari",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "jingystm": {
+   "title": "Jingi Storm - The Arcade",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0037"
+  },
+  "karous": {
+   "title": "Karous",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0040"
+  },
+  "keyboard": {
+   "title": "La Keyboard",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0017"
+  },
+  "kick4csh": {
+   "title": "Kick '4' Cash (Export)",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "kingrt66": {
+   "title": "The King of Route 66 (Rev A)",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "kingrt66p": {
+   "title": "The King of Route 66 (prototype)",
+   "parent": "kingrt66",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "kingyo": {
+   "title": "Yataimura Kingyosukui",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "kingyoch": {
+   "title": "Yataimura Kingyosukui (China)",
+   "parent": "kingyo",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0",
+   "gdrom": "kingyo"
+  },
+  "kofnw": {
+   "title": "The King of Fighters Neowave",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "kofnwj": {
+   "title": "The King of Fighters Neowave (Japan)",
+   "parent": "kofnw",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "kofxi": {
+   "title": "The King of Fighters XI",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "kov7sprt": {
+   "title": "Knights of Valour - The Seven Spirits",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "kurucham": {
+   "title": "Kurukuru Chameleon",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0034"
+  },
+  "loveber3": {
+   "title": "Love And Berry - 3rd-5th Collection (USA, Export)",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0",
+   "gdrom": "mda-c0042"
+  },
+  "loveber3cn": {
+   "title": "Love And Berry - 3rd-5th Collection (China)",
+   "parent": "loveber3",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0",
+   "gdrom": "mda-c0071"
+  },
+  "lovebero": {
+   "title": "Love And Berry - 1st-2nd Collection (Export, v1.003)",
+   "parent": "lovebery",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "lovebery": {
+   "title": "Love And Berry - 1st-2nd Collection (Export)",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "lupinsho": {
+   "title": "Lupin The Third - The Shooting (Rev A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0018a"
+  },
+  "lupinshoo": {
+   "title": "Lupin The Third - The Shooting",
+   "parent": "lupinsho",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0018"
+  },
+  "luptype": {
+   "title": "Lupin The Third - The Typing",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0021a"
+  },
+  "magicpop": {
+   "title": "Magical Poppins",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "mamonoro": {
+   "title": "Mamoru-kun wa Norowarete Shimatta!",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT270"
+  },
+  "manicpnc": {
+   "title": "Manic Panic Ghosts!",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "manpuku": {
+   "title": "Manpuku Suizokukan",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "marstv": {
+   "title": "Kasei Channel Mars TV",
+   "bios": "naomi-jp-d",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "maxspeed": {
+   "title": "Maximum Speed",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "mazan": {
+   "title": "Mazan: Flash of the Blade (World)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "mazanj": {
+   "title": "Mazan: Flash of the Blade (Japan)",
+   "parent": "mazan",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "mazanu": {
+   "title": "Mazan: Flash of the Blade (US)",
+   "parent": "mazan",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "mbaa": {
+   "title": "Melty Blood Actress Again (Ver. A, Rev A)",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "mbaao": {
+   "title": "Melty Blood Actress Again",
+   "parent": "mbaa",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "meltyb": {
+   "title": "Melty Blood Act Cadenza (Ver. B2)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0039a"
+  },
+  "meltybld": {
+   "title": "Melty Blood Act Cadenza (Ver. A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0028c"
+  },
+  "meltyblo": {
+   "title": "Melty Blood Act Cadenza",
+   "parent": "meltybld",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0028"
+  },
+  "meltybo": {
+   "title": "Melty Blood Act Cadenza (Ver. B)",
+   "parent": "meltyb",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0039"
+  },
+  "mj1": {
+   "title": "Sega Yonin Uchi Mahjong MJ (Update Disc Ver.1.008, Japan) (CDP-10002B)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdp-10002b"
+  },
+  "moeru": {
+   "title": "Moeru Casinyo",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0013"
+  },
+  "mok": {
+   "title": "The Maze of the Kings",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0022"
+  },
+  "monkeyba": {
+   "title": "Monkey Ball",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0008"
+  },
+  "monomedal": {
+   "title": "Monopoly the Medal 2nd Edition",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0",
+   "gdrom": "mda-c0056a"
+  },
+  "mslug6": {
+   "title": "Metal Slug 6",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "mushi2eo": {
+   "title": "Mushiking The King Of Beetles - Mushiking II / III / III+ (World, Ver. 1.001)",
+   "parent": "mushik2e",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "mushi2k3": {
+   "title": "Mushiking The King Of Beetle (2K3 2ND, Japan)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "mushi2k4": {
+   "title": "Mushiking The King Of Beetles 2004 Second (Japan)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "mushi2k5": {
+   "title": "Mushiking The King Of Beetles 2005 First (Japan)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "mushi2k61": {
+   "title": "Mushiking The King Of Beetles 2006 First (Japan)",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "mushi2k62": {
+   "title": "Mushiking The King Of Beetles 2006 Second (Japan)",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "mushik2e": {
+   "title": "Mushiking The King Of Beetles - Mushiking II / III / III+ (World, Ver. 2.001)",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "mushik2k": {
+   "title": "Mushiking The King Of Beetles - Mushiking II / III / III+ (Ver. 1.000-) (Korea)",
+   "parent": "mushik2e",
+   "bios": "naomi-ko-h",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "mushik4e": {
+   "title": "Mushiking The King Of Beetles - Mushiking IV / V / VI (World)",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "mushik4t": {
+   "title": "Mushiking The King Of Beetles - Mushiking IV / V / VI (Taiwan)",
+   "parent": "mushik4e",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "mushikc": {
+   "title": "Mushiking The King Of Beetle (2K3 2ND Ver. 1.000-, China)",
+   "parent": "mushik2e",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "mushike": {
+   "title": "Mushiking The King Of Beetle (2K3 2ND Ver. 1.003-, World)",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "mushikeo": {
+   "title": "Mushiking The King Of Beetle (2K3 2ND Ver. 1.002-, World)",
+   "parent": "mushike",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "mushikep": {
+   "title": "Mushiking The King Of Beetle (MUSHIUSA '04 1ST, Prototype)",
+   "parent": "mushike",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "mushikk": {
+   "title": "Mushiking The King Of Beetle (2K3 2ND Ver. 1.000-, Korea)",
+   "parent": "mushike",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "mvsc2": {
+   "title": "Marvel vs. Capcom 2 New Age of Heroes (Export, Korea)",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "mvsc2u": {
+   "title": "Marvel vs. Capcom 2 New Age of Heroes (USA)",
+   "parent": "mvsc2",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "ngbc": {
+   "title": "NeoGeo Battle Coliseum",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "ngbcj": {
+   "title": "NeoGeo Battle Coliseum (Japan)",
+   "parent": "ngbc",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "ninjaslt": {
+   "title": "Ninja Assault (World, NJA2 Ver.A)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "ninjaslta": {
+   "title": "Ninja Assault (Asia, NJA4 Ver.A)",
+   "parent": "ninjaslt",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "ninjasltj": {
+   "title": "Ninja Assault (Japan, NJA1 Ver.A)",
+   "parent": "ninjaslt",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "ninjasltu": {
+   "title": "Ninja Assault (US, NJA3 Ver.A)",
+   "parent": "ninjaslt",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "ntvmys": {
+   "title": "Nittere Shiki! Mirai Yosou Studio / NTV Future Forecast Studio",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "ochaken": {
+   "title": "Ocha-Ken Hot Medal",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "oinori": {
+   "title": "Oinori-daimyoujin Matsuri",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "otrigger": {
+   "title": "OutTrigger",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "pjustic": {
+   "title": "Project Justice / Moero! Justice Gakuen",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "pjustica": {
+   "title": "Project Justice / Moero! Justice Gakuen (Rev A)",
+   "parent": "pjustic",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "pokasuka": {
+   "title": "Pokasuka Ghost!",
+   "parent": "manicpnc",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "pstone": {
+   "title": "Power Stone",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "pstone2": {
+   "title": "Power Stone 2",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "pstone2b": {
+   "title": "Power Stone 2 (bootleg)",
+   "parent": "pstone2",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "psyvar2": {
+   "title": "Psyvariar 2 - The Will To Fabricate",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0024"
+  },
+  "puyoda": {
+   "title": "Puyo Puyo Da!",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "puyofev": {
+   "title": "Puyo Pop Fever (World)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0034"
+  },
+  "puyofevj": {
+   "title": "Puyo Puyo Fever (Japan)",
+   "parent": "puyofev",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0031"
+  },
+  "puyofevp": {
+   "title": "Puyo Puyo Fever (Prototype)",
+   "parent": "puyofev",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "puyomedal": {
+   "title": "Puyo Puyo! The Medal Edition",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "qmegamis": {
+   "title": "Quiz Ah Megamisama",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "quizqgd": {
+   "title": "Quiz Keitai Q mode",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0017"
+  },
+  "radirgy": {
+   "title": "Radirgy (Rev A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0032a"
+  },
+  "radirgyn": {
+   "title": "Radirgy Noa",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "radirgyo": {
+   "title": "Radirgy",
+   "parent": "radirgy",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0032"
+  },
+  "rangrmsn": {
+   "title": "Ranger Mission",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "rhytngk": {
+   "title": "Rhythm Tengoku",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "ringout": {
+   "title": "Ring Out 4x4 (Rev A)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "ringouto": {
+   "title": "Ring Out 4x4",
+   "parent": "ringout",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "rumblef": {
+   "title": "The Rumble Fish",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "rumblef2": {
+   "title": "The Rumble Fish 2",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "rumblefp": {
+   "title": "The Rumble Fish (prototype)",
+   "parent": "rumblef",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "rumblf2p": {
+   "title": "The Rumble Fish 2 (prototype)",
+   "parent": "rumblef2",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "salmankt": {
+   "title": "Net Select: Salaryman Kintaro",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "samba": {
+   "title": "Samba De Amigo (Rev B)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "samba2k": {
+   "title": "Samba de Amigo ver. 2000 (Japan)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "sambaa": {
+   "title": "Samba De Amigo (Rev A)",
+   "parent": "samba",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "sambap": {
+   "title": "Samba De Amigo (USA, prototype)",
+   "parent": "samba",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "samsptk": {
+   "title": "Samurai Shodown VI",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "senko": {
+   "title": "Senko no Ronde (Rev A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0030a"
+  },
+  "senkoo": {
+   "title": "Senko no Ronde",
+   "parent": "senko",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0030"
+  },
+  "senkosp": {
+   "title": "Senko no Ronde Special",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0038"
+  },
+  "sfz3ugd": {
+   "title": "Street Fighter Zero 3 Upper",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0002"
+  },
+  "sgdrvsim": {
+   "title": "Sega Driving Simulator",
+   "bios": "naomi2",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "sgtetris": {
+   "title": "Sega Tetris",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "shaktam": {
+   "title": "Shakatto Tambourine (Rev B)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0002b"
+  },
+  "shaktamb": {
+   "title": "Shakatto Tambourine Cho Powerup Chu (2K1 AUT)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0016"
+  },
+  "shaktmsp": {
+   "title": "Shakatto Tambourine Motto Norinori Shinkyoku Tsuika (2K1 SPR)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0013"
+  },
+  "shangril": {
+   "title": "Dengen Tenshi Taisen Janshi Shangri-la",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "shateki": {
+   "title": "Yataimura Shateki",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "shikgam2": {
+   "title": "Shikigami no Shiro II / The Castle of Shikigami II",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0021"
+  },
+  "shootopl": {
+   "title": "Shootout Pool",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "shootpl": {
+   "title": "Shootout Pool Prize (Export) / Shootout Pool The Medal (Japan, Rev A)",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "shootplm": {
+   "title": "Shootout Pool Prize (Export) / Shootout Pool The Medal (Japan) Version B",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "shootplmp": {
+   "title": "Shootout Pool Prize (Export) / Shootout Pool The Medal (Japan) Version B (prototype)",
+   "parent": "shootplm",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "shors2k1": {
+   "title": "Star Horse 2001 (satellite, Rev B)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT270"
+  },
+  "shors2k2": {
+   "title": "Star Horse 2002 (sound, Export/Taiwan)",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "shors2k2l": {
+   "title": "Star Horse 2002 (live)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "shors2k2m": {
+   "title": "Star Horse 2002 (main screens)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "shors2k2s": {
+   "title": "Star Horse 2002 (sound and backup)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "shorse": {
+   "title": "Star Horse (satellite)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT270"
+  },
+  "shorsel": {
+   "title": "Star Horse (live and backup)",
+   "parent": "shorse",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "shorsem": {
+   "title": "Star Horse (main screens)",
+   "parent": "shorse",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "shorsep": {
+   "title": "Star Horse Progress (satellite, Rev A)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT270"
+  },
+  "shorsepb": {
+   "title": "Star Horse Progress (backup data)",
+   "parent": "shorsep",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "shorsepl": {
+   "title": "Star Horse Progress (live, Rev A)",
+   "parent": "shorsep",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "shorsepm": {
+   "title": "Star Horse Progress (main screens, Rev B)",
+   "parent": "shorsep",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "shorsepr": {
+   "title": "Star Horse Progress Returns (satellite)",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT270"
+  },
+  "shorseps": {
+   "title": "Star Horse Progress (sound & backup, Rev A)",
+   "parent": "shorsep",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "sl2007": {
+   "title": "Shooting Love 2007",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT270"
+  },
+  "slasho": {
+   "title": "Slashout",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "slashout": {
+   "title": "Slashout",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0004"
+  },
+  "smarinef": {
+   "title": "Sega Marine Fishing",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "smlg99": {
+   "title": "World Series 99 / Super Major League 99",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "soulsurf": {
+   "title": "Soul Surfer (Rev A)",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "spawn": {
+   "title": "Spawn: In the Demon's Hand",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "spkrbtl": {
+   "title": "Spikers Battle",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0005"
+  },
+  "sprtjam": {
+   "title": "Sports Jam",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0003"
+  },
+  "sprtshot": {
+   "title": "Sports Shooting USA",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "ss2005": {
+   "title": "Super Shanghai 2005 (Rev A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0031a"
+  },
+  "ss2005o": {
+   "title": "Super Shanghai 2005",
+   "parent": "ss2005",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0031"
+  },
+  "sstrkfgt": {
+   "title": "Sega Strike Fighter",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "sstrkfgta": {
+   "title": "Sega Strike Fighter (no training mode)",
+   "parent": "sstrkfgt",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "starseek": {
+   "title": "Doki Doki Idol Star Seeker",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0005"
+  },
+  "suchie3": {
+   "title": "Idol Janshi Suchie-Pai 3",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "sushibar": {
+   "title": "Sushi Bar",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "takoron": {
+   "title": "Noukone Puzzle Takoron",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0042"
+  },
+  "tduno": {
+   "title": "Touch de Uno! / Unou Nouryoku Check Machine",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "tduno2": {
+   "title": "Touch de Uno! 2",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "tetgiano": {
+   "title": "Tetris Giant / Tetris Dekaris",
+   "parent": "tetgiant",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0",
+   "gdrom": "mda-c0076"
+  },
+  "tetgiant": {
+   "title": "Tetris Giant / Tetris Dekaris",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "tetkiwam": {
+   "title": "Tetris Kiwamemichi",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0020"
+  },
+  "tokyobus": {
+   "title": "Tokyo Bus Guide",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "totd": {
+   "title": "The Typing of the Dead (Rev A)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "totdo": {
+   "title": "The Typing of the Dead",
+   "parent": "totd",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "toukon4": {
+   "title": "Shin Nihon Pro Wrestling Toukon Retsuden 4 Arcade Edition (Japan, TRF1 Ver.A)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "toyfight": {
+   "title": "Toy Fighter",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "trgheart": {
+   "title": "Trigger Heart Exelica (Ver. A)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0036a"
+  },
+  "trghearto": {
+   "title": "Trigger Heart Exelica",
+   "parent": "trgheart",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0036"
+  },
+  "trizeal": {
+   "title": "Trizeal",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0026"
+  },
+  "undefeat": {
+   "title": "Under Defeat",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT270",
+   "gdrom": "gdl-0035"
+  },
+  "unomedal": {
+   "title": "UNO the Medal",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "usagiym": {
+   "title": "Usagi - Yamashiro Mahjong Hen",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gdl-0022"
+  },
+  "vathlete": {
+   "title": "Virtua Athletics / Virtua Athlete",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0019"
+  },
+  "vf4": {
+   "title": "Virtua Fighter 4 (Ver. C)",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0012c"
+  },
+  "vf4b": {
+   "title": "Virtua Fighter 4 (Rev B)",
+   "parent": "vf4",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0012b"
+  },
+  "vf4cart": {
+   "title": "Virtua Fighter 4 (World)",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "vf4evo": {
+   "title": "Virtua Fighter 4 Evolution (Japan, Ver. B)",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0024c"
+  },
+  "vf4evoa": {
+   "title": "Virtua Fighter 4 Evolution (Japan)",
+   "parent": "vf4evo",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0024a"
+  },
+  "vf4evob": {
+   "title": "Virtua Fighter 4 Evolution (Japan, Ver. B, GDS-0024B)",
+   "parent": "vf4evo",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0024b"
+  },
+  "vf4evoct": {
+   "title": "Virtua Fighter 4 Evolution (World)",
+   "bios": "naomi2",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "vf4o": {
+   "title": "Virtua Fighter 4",
+   "parent": "vf4",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0012"
+  },
+  "vf4tuned": {
+   "title": "Virtua Fighter 4 Final Tuned (Ver. B)",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0036f"
+  },
+  "vf4tuneda": {
+   "title": "Virtua Fighter 4 Final Tuned (Rev A)",
+   "parent": "vf4tuned",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0036a"
+  },
+  "vf4tunedd": {
+   "title": "Virtua Fighter 4 Final Tuned (Ver. A)",
+   "parent": "vf4tuned",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0036d"
+  },
+  "vfurlong": {
+   "title": "Net Select Horse Racing: Victory Furlong",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "virnba": {
+   "title": "Virtua NBA (USA)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "virnbao": {
+   "title": "Virtua NBA",
+   "parent": "virnba",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "virnbap": {
+   "title": "Virtua NBA (prototype)",
+   "parent": "virnba",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "virnbapa": {
+   "title": "Virtua NBA (prototype, 15.11)",
+   "parent": "virnba",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "vonot": {
+   "title": "Virtual-On Oratorio Tangram M.S.B.S. Ver. 5.66",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "vs2_2k": {
+   "title": "Virtua Striker 2 Ver. 2000 (Rev C)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "vs2_2ko": {
+   "title": "Virtua Striker 2 Ver. 2000",
+   "parent": "vs2_2k",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "vstrik3": {
+   "title": "Virtua Striker 3",
+   "bios": "naomi2",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0006"
+  },
+  "vstrik3c": {
+   "title": "Virtua Striker 3 (World, Rev B)",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "vstrik3co": {
+   "title": "Virtua Striker 3 (World)",
+   "parent": "vstrik3c",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "vtenis2c": {
+   "title": "Virtua Tennis 2 / Power Smash 2",
+   "bios": "naomi",
+   "cart": "M1",
+   "rotation": "ROT0"
+  },
+  "vtennis": {
+   "title": "Virtua Tennis / Power Smash",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "vtennis2": {
+   "title": "Virtua Tennis 2 / Power Smash 2",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0015a"
+  },
+  "vtennisg": {
+   "title": "Virtua Tennis / Power Smash",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0011"
+  },
+  "waidrive": {
+   "title": "WaiWai Drive",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT270"
+  },
+  "wccf116": {
+   "title": "World Club Champion Football Serie A 2001-2002",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdp-10001c"
+  },
+  "wccf1dup": {
+   "title": "World Club Champion Football Serie A 2001-2002 DIMM FIRM Ver.3.03",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdp-10003"
+  },
+  "wccf212e": {
+   "title": "World Club Champion Football Serie A 2002-2003 (Italy)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdv-10002"
+  },
+  "wccf234j": {
+   "title": "World Club Champion Football Serie A 2002-2003 (Japan)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdv-10008"
+  },
+  "wccf310j": {
+   "title": "World Club Champion Football European Clubs 2004-2005 (Asia)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdv-10013"
+  },
+  "wccf322e": {
+   "title": "World Club Champion Football European Clubs 2004-2005 (Export)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdv-10015p"
+  },
+  "wccf331e": {
+   "title": "World Club Champion Football European Clubs 2004-2005 v1.1 (Export)",
+   "parent": "wccf322e",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdv-10015"
+  },
+  "wccf331j": {
+   "title": "World Club Champion Football European Clubs 2004-2005 v1.1 (Japan)",
+   "parent": "wccf341j",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdv-10020"
+  },
+  "wccf341j": {
+   "title": "World Club Champion Football European Clubs 2004-2005 (Japan)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdv-10021"
+  },
+  "wccf400j": {
+   "title": "World Club Champion Football European Clubs 2005-2006 (Japan)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdv-10025"
+  },
+  "wccf420e": {
+   "title": "World Club Champion Football European Clubs 2005-2006 (Export)",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "cdv-10027"
+  },
+  "westdrmg": {
+   "title": "Western Dream Gold",
+   "bios": "segasp",
+   "cart": "M4",
+   "rotation": "ROT0"
+  },
+  "wldkicks": {
+   "title": "World Kicks (World, WK2 Ver.A)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "wldkicksj": {
+   "title": "World Kicks (Japan, WK1 Ver.A)",
+   "parent": "wldkicks",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "wldkickspj": {
+   "title": "World Kicks (PCB, Japan, WKC1 Ver.A)",
+   "parent": "wldkicks",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "wldkickspw": {
+   "title": "World Kicks (PCB, World, WKC2 Ver.A)",
+   "parent": "wldkicks",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "wldkicksu": {
+   "title": "World Kicks (US, WK3 Ver.A)",
+   "parent": "wldkicks",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "wldrider": {
+   "title": "Wild Riders",
+   "bios": "naomi2",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "wrungp": {
+   "title": "Wave Runner GP",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "wrungpo": {
+   "title": "Wave Runner GP (USA, Rev A)",
+   "parent": "wrungp",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "wsbbgd": {
+   "title": "World Series Baseball / Super Major League",
+   "bios": "naomi",
+   "cart": "GD",
+   "rotation": "ROT0",
+   "gdrom": "gds-0010"
+  },
+  "wwfroyal": {
+   "title": "WWF Royal Rumble",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "xtrmhnt2": {
+   "title": "Extreme Hunting 2",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "xtrmhunt": {
+   "title": "Extreme Hunting",
+   "bios": "awbios",
+   "cart": "AW",
+   "rotation": "ROT0"
+  },
+  "zerogu2": {
+   "title": "Zero Gunner 2",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "zombrvn": {
+   "title": "Zombie Revenge (Rev A)",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "zombrvne": {
+   "title": "Zombie Revenge (Export)",
+   "parent": "zombrvn",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "zombrvno": {
+   "title": "Zombie Revenge",
+   "parent": "zombrvn",
+   "bios": "naomi",
+   "cart": "M2",
+   "rotation": "ROT0"
+  },
+  "zunou": {
+   "title": "Touch De Zunou (Rev A)",
+   "bios": "naomi",
+   "cart": "M4",
+   "rotation": "ROT0"
+  }
+ },
+ "gdroms": [
+  "cdp-10001c",
+  "cdp-10002b",
+  "cdp-10003",
+  "cdv-10002",
+  "cdv-10008",
+  "cdv-10013",
+  "cdv-10015",
+  "cdv-10015p",
+  "cdv-10020",
+  "cdv-10021",
+  "cdv-10025",
+  "cdv-10027",
+  "gdl-0001",
+  "gdl-0002",
+  "gdl-0004",
+  "gdl-0005",
+  "gdl-0006",
+  "gdl-0007a",
+  "gdl-0008",
+  "gdl-0010",
+  "gdl-0011",
+  "gdl-0012",
+  "gdl-0013",
+  "gdl-0014a",
+  "gdl-0017",
+  "gdl-0018",
+  "gdl-0019",
+  "gdl-0019a",
+  "gdl-0020",
+  "gdl-0021",
+  "gdl-0022",
+  "gdl-0023a",
+  "gdl-0024",
+  "gdl-0025",
+  "gdl-0026",
+  "gdl-0028",
+  "gdl-0028c",
+  "gdl-0030",
+  "gdl-0030a",
+  "gdl-0031",
+  "gdl-0031a",
+  "gdl-0032",
+  "gdl-0032a",
+  "gdl-0033a",
+  "gdl-0034",
+  "gdl-0035",
+  "gdl-0036",
+  "gdl-0036a",
+  "gdl-0037",
+  "gdl-0038",
+  "gdl-0039",
+  "gdl-0039a",
+  "gdl-0040",
+  "gdl-0041",
+  "gdl-0042",
+  "gds-0001",
+  "gds-0002b",
+  "gds-0003",
+  "gds-0004",
+  "gds-0005",
+  "gds-0006",
+  "gds-0008",
+  "gds-0009a",
+  "gds-0010",
+  "gds-0011",
+  "gds-0012",
+  "gds-0012b",
+  "gds-0012c",
+  "gds-0013",
+  "gds-0014",
+  "gds-0015a",
+  "gds-0016",
+  "gds-0017",
+  "gds-0018",
+  "gds-0018a",
+  "gds-0019",
+  "gds-0020",
+  "gds-0020b",
+  "gds-0021a",
+  "gds-0022",
+  "gds-0024a",
+  "gds-0024b",
+  "gds-0024c",
+  "gds-0025",
+  "gds-0025a",
+  "gds-0026",
+  "gds-0026a",
+  "gds-0026b",
+  "gds-0027",
+  "gds-0029",
+  "gds-0029a",
+  "gds-0030a",
+  "gds-0030b",
+  "gds-0031",
+  "gds-0032b",
+  "gds-0032c",
+  "gds-0033",
+  "gds-0034",
+  "gds-0036a",
+  "gds-0036d",
+  "gds-0036f",
+  "gds-0037a",
+  "gds-0039a",
+  "gds-0039b",
+  "gds-0041a",
+  "kingyo",
+  "mda-c0021",
+  "mda-c0042",
+  "mda-c0047",
+  "mda-c0056a",
+  "mda-c0061",
+  "mda-c0071",
+  "mda-c0076",
+  "mda-c0081",
+  "tsb0-sega00001"
+ ]
+}
