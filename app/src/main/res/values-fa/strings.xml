@@ -2970,6 +2970,10 @@
     <string name="profile_tab_games">بازی‌ها</string>
     <string name="profile_tab_leaderboard">1000 نفر برتر</string>
     <string name="profile_tab_overview">بررسی اجمالی</string>
+    <string name="profile_duration_hours_minutes_format">%1$dس %2$02dد</string>
+    <string name="profile_duration_hours_format">%1$,d ساعت</string>
+    <string name="profile_duration_hours_compact_format">%1$s ساعت</string>
+    <string name="profile_duration_minutes_format">%1$d دقیقه</string>
     <string name="profile_tab_stats">آمار</string>
     <string name="profile_title">پروفایل</string>
     <string name="profile_total_players">بازیکنان رتبه‌بندی شده</string>

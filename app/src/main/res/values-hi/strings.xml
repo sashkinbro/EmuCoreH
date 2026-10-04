@@ -2955,6 +2955,10 @@
     <string name="profile_tab_games">गेम्स</string>
     <string name="profile_tab_leaderboard">शीर्ष 1000</string>
     <string name="profile_tab_overview">अवलोकन</string>
+    <string name="profile_duration_hours_minutes_format">%1$dघं %2$02dमि</string>
+    <string name="profile_duration_hours_format">%1$,d घंटे</string>
+    <string name="profile_duration_hours_compact_format">%1$s घंटे</string>
+    <string name="profile_duration_minutes_format">%1$d मिनट</string>
     <string name="profile_tab_stats">आँकड़े</string>
     <string name="profile_title">प्रोफ़ाइल</string>
     <string name="profile_total_players">रैंक किए गए प्लेयर्स</string>

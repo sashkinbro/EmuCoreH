@@ -2957,6 +2957,10 @@
     <string name="profile_tab_games">Jogos</string>
     <string name="profile_tab_leaderboard">Top 1000</string>
     <string name="profile_tab_overview">Resumo</string>
+    <string name="profile_duration_hours_minutes_format">%1$dh %2$02dmin</string>
+    <string name="profile_duration_hours_format">%1$,d h</string>
+    <string name="profile_duration_hours_compact_format">%1$s h</string>
+    <string name="profile_duration_minutes_format">%1$d min</string>
     <string name="profile_tab_stats">Estatísticas</string>
     <string name="profile_title">Perfil</string>
     <string name="profile_total_players">Jogadores classificados</string>

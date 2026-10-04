@@ -2954,6 +2954,10 @@
     <string name="profile_tab_games">게임</string>
     <string name="profile_tab_leaderboard">상위 1000위</string>
     <string name="profile_tab_overview">개요</string>
+    <string name="profile_duration_hours_minutes_format">%1$d시간 %2$02d분</string>
+    <string name="profile_duration_hours_format">%1$,d시간</string>
+    <string name="profile_duration_hours_compact_format">%1$s시간</string>
+    <string name="profile_duration_minutes_format">%1$d분</string>
     <string name="profile_tab_stats">통계</string>
     <string name="profile_title">프로필</string>
     <string name="profile_total_players">랭크된 플레이어 수</string>
