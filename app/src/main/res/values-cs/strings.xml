@@ -2976,6 +2976,10 @@
     <string name="profile_tab_games">Hry</string>
     <string name="profile_tab_leaderboard">Top 1000</string>
     <string name="profile_tab_overview">Přehled</string>
+    <string name="profile_duration_hours_minutes_format">%1$dh %2$02dmin</string>
+    <string name="profile_duration_hours_format">%1$,d h</string>
+    <string name="profile_duration_hours_compact_format">%1$s h</string>
+    <string name="profile_duration_minutes_format">%1$d min</string>
     <string name="profile_tab_stats">Statistiky</string>
     <string name="profile_title">Profil</string>
     <string name="profile_total_players">Hodnocení hráči</string>

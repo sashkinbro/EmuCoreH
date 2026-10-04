@@ -2969,6 +2969,10 @@
     <string name="profile_tab_games">Game</string>
     <string name="profile_tab_leaderboard">Top 1000</string>
     <string name="profile_tab_overview">Ikhtisar</string>
+    <string name="profile_duration_hours_minutes_format">%1$dj %2$02dmnt</string>
+    <string name="profile_duration_hours_format">%1$,d jam</string>
+    <string name="profile_duration_hours_compact_format">%1$s jam</string>
+    <string name="profile_duration_minutes_format">%1$d mnt</string>
     <string name="profile_tab_stats">Statistik</string>
     <string name="profile_title">Profil</string>
     <string name="profile_total_players">Pemain diurutkan</string>

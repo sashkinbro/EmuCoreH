@@ -60,6 +60,9 @@ private const val COVER_LOAD_MAX_ATTEMPTS = 4
 private const val COVER_LOAD_RETRY_DELAY_MS = 750L
 
 private val imageLoadingSemaphore = Semaphore(4)
+private const val DEFAULT_COVER_DECODE_WIDTH = 720
+private const val DEFAULT_COVER_DECODE_HEIGHT = 1080
+
 @Composable
 fun GameCoverArt(
     coverPath: String?,
@@ -67,14 +70,25 @@ fun GameCoverArt(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
     loadEnabled: Boolean = true,
-    matchImageAspectRatio: Boolean = false
+    matchImageAspectRatio: Boolean = false,
+    showTitleWhileLoading: Boolean = true,
+    shimmerWhileLoading: Boolean = true,
+    decodeWidth: Int = DEFAULT_COVER_DECODE_WIDTH,
+    decodeHeight: Int = DEFAULT_COVER_DECODE_HEIGHT
 ) {
     val context = LocalContext.current
-    var bitmap by remember(coverPath) { mutableStateOf(coverPath?.let(::getCachedBitmap)) }
-    var loadedPath by remember(coverPath) { mutableStateOf(coverPath?.takeIf { getCachedBitmap(it) != null }) }
+    val cacheKey: (String) -> String = remember(decodeWidth, decodeHeight) {
+        { path -> "$path@${decodeWidth}x$decodeHeight" }
+    }
+    var bitmap by remember(coverPath, decodeWidth, decodeHeight) {
+        mutableStateOf(coverPath?.let { getCachedBitmap(cacheKey(it)) })
+    }
+    var loadedPath by remember(coverPath, decodeWidth, decodeHeight) {
+        mutableStateOf(coverPath?.takeIf { getCachedBitmap(cacheKey(it)) != null })
+    }
     var isLoading by remember { mutableStateOf(false) }
 
-    LaunchedEffect(coverPath, loadEnabled) {
+    LaunchedEffect(coverPath, loadEnabled, decodeWidth, decodeHeight) {
         if (coverPath.isNullOrBlank()) {
             bitmap = null
             loadedPath = null
@@ -82,8 +96,9 @@ fun GameCoverArt(
             return@LaunchedEffect
         }
 
+        val key = cacheKey(coverPath)
         if (!loadEnabled) {
-            bitmap = getCachedBitmap(coverPath)
+            bitmap = getCachedBitmap(key)
             loadedPath = coverPath.takeIf { bitmap != null }
             isLoading = false
             return@LaunchedEffect
@@ -94,7 +109,7 @@ fun GameCoverArt(
             return@LaunchedEffect
         }
 
-        getCachedBitmap(coverPath)?.let { cached ->
+        getCachedBitmap(key)?.let { cached ->
             bitmap = cached
             loadedPath = coverPath
             isLoading = false
@@ -106,11 +121,11 @@ fun GameCoverArt(
         while (true) {
             val loadedBitmap = withContext(Dispatchers.IO) {
                 imageLoadingSemaphore.withPermit {
-                    loadBitmap(context, coverPath)
+                    loadBitmap(context, coverPath, decodeWidth, decodeHeight)
                 }
             }
             if (loadedBitmap != null) {
-                putCachedBitmap(coverPath, loadedBitmap)
+                putCachedBitmap(key, loadedBitmap)
                 loadedPath = coverPath
                 bitmap = loadedBitmap
                 isLoading = false
@@ -144,21 +159,23 @@ fun GameCoverArt(
             modifier = imageModifier
                 .clip(neonShape(20.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                .shimmer(showShimmer = isLoading),
+                .shimmer(showShimmer = isLoading && shimmerWhileLoading),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = fallbackTitle,
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
-                textAlign = TextAlign.Center,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp)
-                    .wrapContentSize(Alignment.Center)
-            )
+            if (!isLoading || showTitleWhileLoading) {
+                Text(
+                    text = fallbackTitle,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                    textAlign = TextAlign.Center,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp)
+                        .wrapContentSize(Alignment.Center)
+                )
+            }
         }
     }
 }
@@ -175,7 +192,9 @@ fun clearCoverImageMemoryCache() {
 
 fun invalidateCoverImage(path: String?) {
     if (path.isNullOrBlank()) return
-    coverBitmapCache.remove(path)
+    coverBitmapCache.snapshot().keys
+        .filter { key -> key == path || key.startsWith("$path@") }
+        .forEach { key -> coverBitmapCache.remove(key) }
 }
 
 private fun getCachedBitmap(path: String): Bitmap? = coverBitmapCache.get(path)
@@ -186,11 +205,13 @@ private fun putCachedBitmap(path: String, bitmap: Bitmap) {
     }
 }
 
-private fun loadBitmap(context: android.content.Context, coverPath: String?): Bitmap? {
+private fun loadBitmap(
+    context: android.content.Context,
+    coverPath: String?,
+    reqWidth: Int = DEFAULT_COVER_DECODE_WIDTH,
+    reqHeight: Int = DEFAULT_COVER_DECODE_HEIGHT
+): Bitmap? {
     if (coverPath.isNullOrBlank()) return null
-
-    val reqWidth = 720
-    val reqHeight = 1080
 
     return runCatching {
         fun openStream() = when {

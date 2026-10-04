@@ -2959,6 +2959,10 @@
     <string name="profile_tab_games">Игры</string>
     <string name="profile_tab_leaderboard">Топ-1000</string>
     <string name="profile_tab_overview">Обзор</string>
+    <string name="profile_duration_hours_minutes_format">%1$dч %2$02dмин</string>
+    <string name="profile_duration_hours_format">%1$,d ч</string>
+    <string name="profile_duration_hours_compact_format">%1$s ч</string>
+    <string name="profile_duration_minutes_format">%1$d мин</string>
     <string name="profile_tab_stats">Статистика</string>
     <string name="profile_title">Профиль</string>
     <string name="profile_total_players">Игроков в рейтинге</string>

@@ -2955,6 +2955,10 @@
     <string name="profile_tab_games">Oyunlar</string>
     <string name="profile_tab_leaderboard">İlk 1000</string>
     <string name="profile_tab_overview">Genel Bakış</string>
+    <string name="profile_duration_hours_minutes_format">%1$dsa %2$02ddk</string>
+    <string name="profile_duration_hours_format">%1$,d sa</string>
+    <string name="profile_duration_hours_compact_format">%1$s sa</string>
+    <string name="profile_duration_minutes_format">%1$d dk</string>
     <string name="profile_tab_stats">İstatistikler</string>
     <string name="profile_title">Profil</string>
     <string name="profile_total_players">Sıralanan oyuncular</string>

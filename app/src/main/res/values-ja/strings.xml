@@ -2954,6 +2954,10 @@
     <string name="profile_tab_games">ゲーム</string>
     <string name="profile_tab_leaderboard">トップ 1000</string>
     <string name="profile_tab_overview">概要</string>
+    <string name="profile_duration_hours_minutes_format">%1$d時間%2$02d分</string>
+    <string name="profile_duration_hours_format">%1$,d時間</string>
+    <string name="profile_duration_hours_compact_format">%1$s時間</string>
+    <string name="profile_duration_minutes_format">%1$d分</string>
     <string name="profile_tab_stats">統計</string>
     <string name="profile_title">プロフィール</string>
     <string name="profile_total_players">ランクインしたプレイヤー</string>
