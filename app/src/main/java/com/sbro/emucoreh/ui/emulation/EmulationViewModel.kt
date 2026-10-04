@@ -14,6 +14,7 @@ import com.sbro.emucoreh.core.AndroidGamePerformance
 import com.sbro.emucoreh.core.AndroidGamePhase
 import com.sbro.emucoreh.core.AudioDefaults
 import com.sbro.emucoreh.core.DocumentPathResolver
+import com.sbro.emucoreh.core.DreamcastBios
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.RendererDefaults
 import com.sbro.emucoreh.core.SetupValidator
@@ -925,6 +926,21 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         )
     }
 
+    /**
+     * True when the content is an arcade ROM set rather than a Dreamcast disc
+     * image. Document URIs often carry no file extension in the path itself,
+     * so the provider's display name is used there.
+     */
+    private fun isArcadeContentPath(path: String?): Boolean {
+        if (path.isNullOrBlank()) return false
+        val name = if (path.startsWith("content://")) {
+            DocumentPathResolver.getDisplayName(getApplication(), path)
+        } else {
+            path.substringAfterLast('/')
+        }
+        return name.substringAfterLast('.', "").lowercase(Locale.ROOT) in GameFormats.romExtensions
+    }
+
     fun startEmulation(
         path: String?,
         slotToLoad: Int? = null,
@@ -1131,11 +1147,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                     shouldTrackCurrentProfilePlayTime = !bootSmokeProbe
                     shouldCountCurrentProfileSession = shouldTrackCurrentProfilePlayTime
-                    val arcadeName = launchPath ?: safePath
-                    currentGameIsArcade = arcadeName
-                        .substringAfterLast('/')
-                        .substringAfterLast('.', "")
-                        .lowercase(java.util.Locale.ROOT) in GameFormats.romExtensions
+                    currentGameIsArcade = isArcadeContentPath(launchPath ?: safePath)
                     pendingPerGameCoreOptions = (
                         existingProfile
                             ?: safePath.takeIf { it.isNotBlank() }?.let(perGameSettingsRepository::get)
@@ -1363,10 +1375,18 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 !cancelPendingStart &&
                 !isShuttingDown
             ) {
+                // A Naomi/Naomi 2/Atomiswave ROM set needs its MAME BIOS
+                // (naomi.zip, naomi2.zip, awbios.zip) before the core can boot
+                // it. Surface that instead of a generic failure so it is clear
+                // what has to be installed.
+                val arcadeWithoutBios = isArcadeContentPath(pathToLaunch) &&
+                    !DreamcastBios.hasArcadeBios(
+                        EmulatorStorage.flycastSystemDir(getApplication()).absolutePath
+                    )
                 _uiState.value = _uiState.value.copy(
                     isRunning = false,
                     statusMessage = null,
-                    toastMessage = "launch_failed"
+                    toastMessage = if (arcadeWithoutBios) "bios_missing" else "launch_failed"
                 )
                 delay(2500.milliseconds)
                 _uiState.value = _uiState.value.copy(toastMessage = null)

@@ -571,15 +571,23 @@ void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
     va_end(args);
 
     // The core reports the disc product code as "Game ID is [MK-51035]" once
-    // the bootstrap is parsed. Keep it for the library's learned serials.
+    // the bootstrap is parsed, and arcade game IDs as "NAOMI GAME ID [ikaruga]"
+    // (optionally followed by region/players/vertical info). Keep either for
+    // the library's learned IDs and cheat/texture catalog lookups.
     static constexpr char kGameIdMarker[] = "Game ID is [";
+    static constexpr char kNaomiGameIdMarker[] = "NAOMI GAME ID [";
     const char* marker = strstr(message, kGameIdMarker);
     if (marker != nullptr) {
-        const char* value = marker + sizeof(kGameIdMarker) - 1;
-        const char* end = strchr(value, ']');
-        if (end != nullptr && end > value) {
+        marker += sizeof(kGameIdMarker) - 1;
+    } else {
+        marker = strstr(message, kNaomiGameIdMarker);
+        if (marker != nullptr) marker += sizeof(kNaomiGameIdMarker) - 1;
+    }
+    if (marker != nullptr) {
+        const char* end = strchr(marker, ']');
+        if (end != nullptr && end > marker) {
             std::lock_guard<std::mutex> lock(g_game_serial_mutex);
-            g_game_serial.assign(value, static_cast<size_t>(end - value));
+            g_game_serial.assign(marker, static_cast<size_t>(end - marker));
         }
     }
 

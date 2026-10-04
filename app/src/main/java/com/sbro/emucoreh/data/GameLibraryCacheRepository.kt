@@ -17,7 +17,9 @@ data class GameLibraryCacheSnapshot(
 class GameLibraryCacheRepository(context: Context) {
 
     companion object {
-        private const val CACHE_SCHEMA_VERSION = 5
+        // v6: arcade ROM sets are recognised through Flycast's game table, so
+        // libraries scanned by older builds have to be rebuilt.
+        private const val CACHE_SCHEMA_VERSION = 6
 
         fun libraryKey(paths: List<String>): String =
             paths.map(String::trim).filter(String::isNotBlank).distinct().joinToString("\u001F")

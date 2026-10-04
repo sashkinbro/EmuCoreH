@@ -11,6 +11,7 @@ import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.GameMetadataReader
+import com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository
 import com.sbro.emucoreh.data.catalog.TitleIndexRepository
 import java.io.File
 import java.util.Locale
@@ -166,6 +167,7 @@ class GameRepository {
         val coverRepository = CoverArtRepository(context)
         val customCoverRepository = CustomGameCoverRepository(context)
         val titleIndex = TitleIndexRepository(context)
+        val arcadeCatalog = ArcadeCatalogRepository(context)
 
         children.forEach { file ->
             if (shouldAbort()) return items
@@ -183,6 +185,7 @@ class GameRepository {
                 }
 
                 file.isFile && com.sbro.emucoreh.core.GameFormats.isSupportedName(file.name) -> {
+                    if (!isLibraryContent(file.name, arcadeCatalog)) return@forEach
                     val entrySize = file.length()
                     val cachedGame = cachedGamesByPath[file.absolutePath]
                     val canReuseCachedMetadata = cachedGame != null &&
@@ -267,6 +270,7 @@ class GameRepository {
         val coverRepository = CoverArtRepository(context)
         val customCoverRepository = CustomGameCoverRepository(context)
         val titleIndex = TitleIndexRepository(context)
+        val arcadeCatalog = ArcadeCatalogRepository(context)
 
         for (file in children) {
             if (shouldAbort() || !budget.tryVisitEntry()) return items
@@ -292,7 +296,7 @@ class GameRepository {
                 SetupValidator.DocumentEntryKind.GAME_FILE -> {
                     val uriPath = file.uri.toString()
                     val fileSize = runCatching { file.length() }.getOrDefault(0L)
-                    if (name.endsWith(".zip", true) && GameMetadataReader.read(context, uriPath) == null) continue
+                    if (!isLibraryContent(name, arcadeCatalog)) continue
                     val entrySize = fileSize
                     val lastModified = runCatching { file.lastModified() }.getOrDefault(0L)
 
@@ -422,6 +426,23 @@ class GameRepository {
         }
 
         return null
+    }
+
+    /**
+     * Mirrors Flycast's content scanner: `.zip`/`.7z` archives are only listed
+     * when their base name is a known Naomi/Naomi 2/Atomiswave romset, and raw
+     * arcade GD-ROM images are hidden because the core boots them through the
+     * romset archive. Legacy `.dat`/`.lst` sets and disc formats stay visible;
+     * the core rejects archives it does not know, so listing them as games
+     * would only produce broken entries.
+     */
+    private fun isLibraryContent(name: String, arcadeCatalog: ArcadeCatalogRepository): Boolean {
+        val extension = name.substringAfterLast('.', "").lowercase(Locale.US)
+        return when (extension) {
+            in com.sbro.emucoreh.core.GameFormats.archives -> arcadeCatalog.isKnownRomset(name)
+            "chd", "gdi" -> !arcadeCatalog.isArcadeGdrom(name)
+            else -> true
+        }
     }
 
     private fun normalizeBaseName(value: String): String {
