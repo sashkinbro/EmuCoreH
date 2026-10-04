@@ -25,6 +25,16 @@ object GameFormats {
     val archives = setOf("zip", "7z")
 
     /**
+     * Display labels for the Supported Formats screen. They mirror the
+     * extension sets above so the screen can never advertise a format the
+     * frontend does not scan or the core does not open.
+     */
+    val discFormatLabels = listOf("GDI", "CHD", "CDI", "CUE/BIN", "ISO")
+    val playlistFormatLabels = listOf("M3U")
+    /** Zip/7z sets plus the legacy `.bin`/`.dat`/`.lst` Naomi dumps. */
+    val arcadeFormatLabels = listOf("ZIP", "7Z", "BIN", "DAT", "LST")
+
+    /**
      * MIME filter for the system file picker. Providers report unknown
      * extensions such as `.gdi` or `.chd` as `application/octet-stream`, so
      * that entry keeps them selectable while unrelated media stays hidden.
