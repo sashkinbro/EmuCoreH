@@ -45,6 +45,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.R
+import com.sbro.emucoreh.core.GameFormats
 import com.sbro.emucoreh.core.ImageConversionManager
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
@@ -171,21 +172,21 @@ fun SupportedFormatsScreen(
                     icon = Icons.Rounded.Description,
                     title = stringResource(R.string.formats_psp_supported_title),
                     body = stringResource(R.string.formats_psp_supported_body),
-                    formats = ImageConversionManager.libraryFormats
+                    formats = GameFormats.discFormatLabels + GameFormats.playlistFormatLabels
                 )
 
                 FormatGroupCard(
                     icon = Icons.Rounded.Memory,
                     title = stringResource(R.string.formats_psp_recommended_title),
                     body = stringResource(R.string.formats_psp_recommended_body),
-                    formats = ImageConversionManager.recommendedFormats
+                    formats = listOf("GDI", "CHD", "CDI", "CUE/BIN")
                 )
 
                 FormatGroupCard(
                     icon = Icons.Rounded.FolderZip,
                     title = stringResource(R.string.formats_psp_homebrew_title),
                     body = stringResource(R.string.formats_psp_homebrew_body),
-                    formats = listOf("PBP", "ELF", "PRX")
+                    formats = GameFormats.arcadeFormatLabels
                 )
             }
         }
