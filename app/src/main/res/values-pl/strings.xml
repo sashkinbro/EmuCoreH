@@ -3008,8 +3008,8 @@
     <string name="naomi_guide_subtitle">Gry Naomi, Naomi 2 i Atomiswave działają z zestawów ROM MAME.</string>
     <string name="naomi_guide_intro">Trzymaj każdy zestaw ROM w osobnym archiwum i dodaj folder do biblioteki. EmuCoreH znajdzie BIOS, uruchomi kartridż lub GD-ROM i pobierze okładkę automatycznie.</string>
     <string name="naomi_guide_step_bios">BIOS — wybierz folder z zestawami BIOS arcade: naomi.zip dla Naomi, naomi2.zip dla Naomi 2 i awbios.zip dla Atomiswave. Niektóre gry wymagają własnego zestawu, np. f355bios.zip lub segasp.zip. Zrzuty Dreamcast są opcjonalne.</string>
-    <string name="naomi_guide_step_game">Zestawy ROM — używaj zestawów MAME .zip lub .7z i nie zmieniaj nazwy archiwum: nazwa identyfikuje grę. Stare zrzuty .lst, .dat i .bin też działają. Dodaj ich folder do biblioteki.</string>
-    <string name="naomi_guide_step_gdrom">Gry GD-ROM — tytuły takie jak Ikaruga czy Initial D potrzebują także dysku. Obok ikaruga.zip utwórz folder ikaruga i umieść w nim gdl-0010.chd.</string>
+    <string name="naomi_guide_step_game">Zestawy ROM — używaj zestawów MAME .zip lub .7z, a nazwa archiwum musi być identyfikatorem MAME (np. vf4tuned.zip). Gry na kartridż potrzebują tylko tego pliku. Stare zrzuty .lst, .dat i .bin też działają.</string>
+    <string name="naomi_guide_step_gdrom">Gry GD-ROM — potrzebują także dysku, wypakowanego z archiwum: obok ikaruga.zip utwórz folder ikaruga i umieść w nim gdl-0010.chd jako zwykły plik. CHD pozostawiony w zip nie jest czytany; zrzuty GDI/CUE dysków Naomi nie działają.</string>
     <string name="naomi_guide_step_launch">Uruchamianie — uruchamiaj zestaw ROM z biblioteki. Nie uruchamiaj plików wypakowanych z archiwum: zwykły folder z ROM-ami nie wystartuje.</string>
     <string name="naomi_guide_step_controls">Sterowanie — Select wrzuca monetę, Start rozpoczyna grę. Na padzie L3 otwiera menu Test, a R3 menu Service. Tryb free play jest domyślnie włączony.</string>
     <string name="naomi_guide_step_covers">Okładki — pobierane z katalogu EmuCoreH po nazwie zestawu ROM. Bez grafiki pokazuje się karta z nazwą.</string>

@@ -3002,8 +3002,8 @@
     <string name="naomi_guide_subtitle">بازیهای Naomi، Naomi 2 و Atomiswave از ستهای ROM مِیم اجرا میشوند.</string>
     <string name="naomi_guide_intro">هر ست ROM را در آرشیو خودش نگه دار و پوشه را به کتابخانه اضافه کن. EmuCoreH خودش BIOS را پیدا میکند، کارتریج یا GD-ROM را بوت میکند و کاور را دانلود میکند.</string>
     <string name="naomi_guide_step_bios">BIOS — پوشهای با ستهای BIOS آرکید انتخاب کن: naomi.zip برای Naomi، naomi2.zip برای Naomi 2 و awbios.zip برای Atomiswave. برخی بازیها ست مخصوص خود را میخواهند، مثل f355bios.zip یا segasp.zip. دامپهای Dreamcast اختیاریاند.</string>
-    <string name="naomi_guide_step_game">ستهای ROM — از ستهای MAME با پسوند .zip یا .7z استفاده کن و نام آرشیو را تغییر نده، چون نام، بازی را مشخص میکند. دامپهای قدیمی .lst، .dat و .bin هم باز میشوند. پوشهشان را به کتابخانه اضافه کن.</string>
-    <string name="naomi_guide_step_gdrom">بازیهای GD-ROM — بازیهایی مثل Ikaruga یا Initial D به دیسک هم نیاز دارند. کنار ikaruga.zip پوشهای به نام ikaruga بساز و gdl-0010.chd را داخلش بگذار.</string>
+    <string name="naomi_guide_step_game">ستهای ROM — از ستهای MAME با پسوند .zip یا .7z استفاده کن و نام آرشیو باید شناسه MAME باشد (مثلاً vf4tuned.zip). بازیهای کارتریجی فقط همین فایل را میخواهند. دامپهای قدیمی .lst، .dat و .bin هم کار میکنند.</string>
+    <string name="naomi_guide_step_gdrom">بازیهای GD-ROM — به دیسک هم نیاز دارند که از آرشیو استخراج شده باشد: کنار ikaruga.zip پوشهای به نام ikaruga بساز و gdl-0010.chd را بهصورت فایل معمولی داخلش بگذار. CHD داخل zip خوانده نمیشود؛ دامپهای GDI/CUE دیسکهای Naomi کار نمیکنند.</string>
     <string name="naomi_guide_step_launch">اجرا — ست ROM را از کتابخانه اجرا کن. فایلهای استخراجشده از آرشیو را اجرا نکن: پوشه ساده ROM بوت نمیشود.</string>
     <string name="naomi_guide_step_controls">کنترلها — Select سکه میاندازد و Start بازی را شروع میکند. با دسته، L3 منوی Test و R3 منوی Service را باز میکند. حالت بازی رایگان بهطور پیشفرض روشن است.</string>
     <string name="naomi_guide_step_covers">کاورها — بر اساس نام ست ROM از کاتالوگ EmuCoreH دانلود میشوند. بازیهای بدون تصویر کارتی با نامشان نشان میدهند.</string>

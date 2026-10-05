@@ -2986,8 +2986,8 @@
     <string name="naomi_guide_subtitle">Naomi, Naomi 2, Atomiswave 게임은 MAME ROM 세트로 실행됩니다.</string>
     <string name="naomi_guide_intro">각 ROM 세트를 자체 아카이브로 유지하고 폴더를 라이브러리에 추가하세요. EmuCoreH가 BIOS를 찾아 카트리지나 GD-ROM을 부팅하고 커버를 자동으로 받아옵니다.</string>
     <string name="naomi_guide_step_bios">BIOS — 아케이드 BIOS 세트가 있는 폴더를 선택하세요. Naomi는 naomi.zip, Naomi 2는 naomi2.zip, Atomiswave는 awbios.zip입니다. f355bios.zip이나 segasp.zip처럼 전용 세트가 필요한 게임도 있습니다. Dreamcast 덤프는 선택 사항입니다.</string>
-    <string name="naomi_guide_step_game">ROM 세트 — MAME .zip 또는 .7z 세트를 사용하고 아카이브 이름을 바꾸지 마세요. 이름이 게임을 식별합니다. 예전 .lst, .dat, .bin 덤프도 열립니다. 해당 폴더를 라이브러리에 추가하세요.</string>
-    <string name="naomi_guide_step_gdrom">GD-ROM 게임 — Ikaruga나 Initial D 같은 게임은 디스크도 필요합니다. ikaruga.zip 옆에 ikaruga 폴더를 만들고 gdl-0010.chd를 넣으세요.</string>
+    <string name="naomi_guide_step_game">ROM 세트 — MAME .zip 또는 .7z를 사용하고 아카이브 이름은 MAME ID여야 합니다 (예: vf4tuned.zip). 카트리지 게임은 이 파일만 필요합니다. 예전 .lst, .dat, .bin 덤프도 열립니다.</string>
+    <string name="naomi_guide_step_gdrom">GD-ROM 게임 — 아카이브에서 추출한 디스크도 필요합니다. ikaruga.zip 옆에 ikaruga 폴더를 만들고 gdl-0010.chd를 일반 파일로 넣으세요. zip 안에 있는 CHD는 읽지 않습니다. Naomi 디스크의 GDI/CUE 덤프는 작동하지 않습니다.</string>
     <string name="naomi_guide_step_launch">실행 — 라이브러리에서 ROM 세트를 실행하세요. 아카이브에서 추출한 파일은 실행하지 마세요. 일반 ROM 폴더는 부팅되지 않습니다.</string>
     <string name="naomi_guide_step_controls">조작 — Select는 코인을 넣고 Start는 게임을 시작합니다. 게임패드에서 L3는 Test 메뉴, R3는 Service 메뉴를 엽니다. 프리 플레이는 기본으로 켜져 있습니다.</string>
     <string name="naomi_guide_step_covers">커버 — ROM 세트 이름으로 EmuCoreH 카탈로그에서 받아옵니다. 아트워크가 없으면 이름이 적힌 카드가 표시됩니다.</string>

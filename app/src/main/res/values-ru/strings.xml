@@ -2991,8 +2991,8 @@
     <string name="naomi_guide_subtitle">Игры Naomi, Naomi 2 и Atomiswave запускаются из MAME-ромсетов.</string>
     <string name="naomi_guide_intro">Держите каждый ромсет отдельным архивом и добавьте папку с ними в библиотеку. EmuCoreH сам найдёт BIOS, загрузит картридж или GD-ROM и подберёт обложку.</string>
     <string name="naomi_guide_step_bios">BIOS — выберите папку с аркадными BIOS-сетами: naomi.zip для Naomi, naomi2.zip для Naomi 2 и awbios.zip для Atomiswave. Некоторым играм нужен свой сет, например f355bios.zip или segasp.zip. Дампы Dreamcast необязательны.</string>
-    <string name="naomi_guide_step_game">Ромсеты — используйте MAME-сеты .zip или .7z и не переименовывайте архив: именно имя определяет игру. Старые дампы .lst, .dat и .bin тоже открываются. Добавьте папку с ними в библиотеку.</string>
-    <string name="naomi_guide_step_gdrom">Игры с GD-ROM — таким играм, как Ikaruga или Initial D, нужен ещё и диск. Рядом с ikaruga.zip создайте папку ikaruga и положите в неё gdl-0010.chd.</string>
+    <string name="naomi_guide_step_game">Ромсеты — используйте MAME-сеты .zip или .7z, и имя архива должно быть MAME ID (например vf4tuned.zip). Картриджным играм нужен только этот файл. Старые дампы .lst, .dat и .bin тоже открываются.</string>
+    <string name="naomi_guide_step_gdrom">Игры с GD-ROM — нужен ещё диск, распакованный из архива: рядом с ikaruga.zip создайте папку ikaruga и положите туда gdl-0010.chd обычным файлом. CHD внутри zip не читается; дампы GDI/CUE дисков Naomi не работают.</string>
     <string name="naomi_guide_step_launch">Запуск — запускайте ромсет из библиотеки. Не запускайте файлы, распакованные из архива: обычная папка с ROM-ами не загрузится.</string>
     <string name="naomi_guide_step_controls">Управление — Select вставляет монету, Start начинает игру. На геймпаде L3 открывает тестовое меню, R3 — сервисное. Режим free play включён по умолчанию.</string>
     <string name="naomi_guide_step_covers">Обложки — загружаются из каталога EmuCoreH по имени ромсета. Для игр без арта показывается карточка с названием.</string>

@@ -2986,8 +2986,8 @@
     <string name="naomi_guide_subtitle">Naomi、Naomi 2、AtomiswaveのゲームはMAME ROMセットから起動します。</string>
     <string name="naomi_guide_intro">ROMセットはアーカイブのまま保管し、フォルダをライブラリに追加してください。EmuCoreHがBIOSを見つけ、カートリッジまたはGD-ROMを起動し、カバーを自動で取得します。</string>
     <string name="naomi_guide_step_bios">BIOS — アーケードBIOSセットを入れたフォルダを選びます。Naomiはnaomi.zip、Naomi 2はnaomi2.zip、Atomiswaveはawbios.zip。f355bios.zipやsegasp.zipなど専用セットが必要なゲームもあります。Dreamcastのダンプは任意です。</string>
-    <string name="naomi_guide_step_game">ROMセット — MAMEの.zipまたは.7zを使い、アーカイブ名は変更しないでください。名前がゲームの識別子です。旧形式の.lst、.dat、.binも開けます。フォルダをライブラリに追加します。</string>
-    <string name="naomi_guide_step_gdrom">GD-ROMゲーム — IkarugaやInitial Dなどはディスクも必要です。ikaruga.zipの隣にikarugaフォルダを作り、gdl-0010.chdを入れてください。</string>
+    <string name="naomi_guide_step_game">ROMセット — MAMEの.zipまたは.7zを使い、アーカイブ名はMAME ID（例：vf4tuned.zip）にしてください。カートリッジゲームはこのファイルだけで動きます。旧形式の.lst、.dat、.binも開けます。</string>
+    <string name="naomi_guide_step_gdrom">GD-ROMゲーム — アーカイブから展開したディスクも必要です。ikaruga.zipの隣にikarugaフォルダを作り、gdl-0010.chdを通常ファイルとして入れてください。zip内のCHDは読めません。NaomiディスクのGDI/CUEダンプは動作しません。</string>
     <string name="naomi_guide_step_launch">起動 — ライブラリからROMセットを起動します。アーカイブから展開したファイルは起動しないでください。ROMフォルダだけではブートしません。</string>
     <string name="naomi_guide_step_controls">操作 — Selectでコインを投入、Startでゲーム開始。ゲームパッドではL3がTestメニュー、R3がServiceメニューです。フリープレイは初期状態で有効です。</string>
     <string name="naomi_guide_step_covers">カバー — ROMセット名でEmuCoreHカタログからダウンロードされます。画像がないゲームは名前入りのカードを表示します。</string>

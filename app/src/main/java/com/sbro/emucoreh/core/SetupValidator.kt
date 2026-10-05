@@ -6,10 +6,25 @@ import android.provider.DocumentsContract
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
+import java.util.Locale
 
 object SetupValidator {
     private val supportedDiscExtensions = GameFormats.extensions
     private val supportedGameExtensions = supportedDiscExtensions
+    private val gameMimeTypes = setOf(
+        "application/zip",
+        "application/x-7z-compressed",
+        "application/x-lzma",
+        "application/x-iso9660-image",
+        "application/x-cd-image",
+        "application/x-raw-disk-image",
+        "application/x-cue",
+        "application/x-gdi",
+        "application/x-cdi",
+        "application/x-chd",
+        "audio/x-mpegurl",
+        "application/x-elf"
+    )
     private const val MAX_GAME_READ_PROBE_FILES = 24
     private const val MAX_GAME_READ_PROBE_DIRECTORIES = 96
 
@@ -122,8 +137,13 @@ object SetupValidator {
         if (mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
             return DocumentEntryKind.DIRECTORY
         }
-        val extension = displayName.orEmpty().substringAfterLast('.', "").lowercase()
         if (GameFormats.isSupportedName(displayName.orEmpty())) {
+            return DocumentEntryKind.GAME_FILE
+        }
+        // Some OEM providers (OnePlus, ColorOS, cloud apps) return a document
+        // name without an extension. Fall back to the MIME type so the file is
+        // not silently dropped from scans and onboarding probes.
+        if (mimeType != null && mimeType.lowercase(Locale.US) in gameMimeTypes) {
             return DocumentEntryKind.GAME_FILE
         }
         return if (mimeType == null) DocumentEntryKind.UNKNOWN else DocumentEntryKind.OTHER
@@ -134,10 +154,11 @@ object SetupValidator {
 
     private fun isLaunchPathReadable(context: Context, rawGamePath: String): Boolean {
         if (rawGamePath.startsWith("content://")) {
+            // Opening the descriptor is the real readability check. Several
+            // OEM providers report a zero size until the stream is opened, so
+            // the size must not disqualify an otherwise readable game file.
             return runCatching {
-                context.contentResolver.openFileDescriptor(rawGamePath.toUri(), "r")?.use { descriptor ->
-                    descriptor.statSize != 0L
-                } ?: false
+                context.contentResolver.openFileDescriptor(rawGamePath.toUri(), "r")?.use { true } ?: false
             }.getOrDefault(false)
         }
 

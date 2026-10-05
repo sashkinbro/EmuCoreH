@@ -439,7 +439,15 @@ class GameRepository {
     private fun isLibraryContent(name: String, arcadeCatalog: ArcadeCatalogRepository): Boolean {
         val extension = name.substringAfterLast('.', "").lowercase(Locale.US)
         return when (extension) {
-            in com.sbro.emucoreh.core.GameFormats.archives -> arcadeCatalog.isKnownRomset(name)
+            in com.sbro.emucoreh.core.GameFormats.archives -> {
+                val known = arcadeCatalog.isKnownRomset(name)
+                if (!known) {
+                    // Diagnostic for arcade reports: logcat shows which
+                    // archives the Flycast game table does not recognise.
+                    Log.d(TAG, "Skipping unrecognised archive: $name")
+                }
+                known
+            }
             "chd", "gdi" -> !arcadeCatalog.isArcadeGdrom(name)
             else -> true
         }

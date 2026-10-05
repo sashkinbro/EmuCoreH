@@ -2987,8 +2987,8 @@
     <string name="naomi_guide_subtitle">Naomi, Naomi 2 और Atomiswave गेम MAME ROM सेट से चलते हैं।</string>
     <string name="naomi_guide_intro">हर ROM सेट को अलग आर्काइव में रखें और फ़ोल्डर को लाइब्रेरी में जोड़ें। EmuCoreH खुद BIOS ढूँढता है, कार्ट्रिज या GD-ROM बूट करता है और कवर डाउनलोड करता है।</string>
     <string name="naomi_guide_step_bios">BIOS — अपने आर्केड BIOS सेट वाला फ़ोल्डर चुनें: Naomi के लिए naomi.zip, Naomi 2 के लिए naomi2.zip और Atomiswave के लिए awbios.zip। कुछ गेम को अपना सेट चाहिए, जैसे f355bios.zip या segasp.zip। Dreamcast डंप वैकल्पिक हैं।</string>
-    <string name="naomi_guide_step_game">ROM सेट — MAME .zip या .7z सेट इस्तेमाल करें और आर्काइव का नाम न बदलें, क्योंकि नाम से ही गेम पहचाना जाता है। पुराने .lst, .dat और .bin डंप भी खुलते हैं। इनका फ़ोल्डर लाइब्रेरी में जोड़ें।</string>
-    <string name="naomi_guide_step_gdrom">GD-ROM गेम — Ikaruga या Initial D जैसे गेम को डिस्क भी चाहिए। ikaruga.zip के पास ikaruga नाम का फ़ोल्डर बनाएँ और उसमें gdl-0010.chd रखें।</string>
+    <string name="naomi_guide_step_game">ROM सेट — MAME .zip या .7z सेट इस्तेमाल करें और आर्काइव का नाम MAME ID होना चाहिए (जैसे vf4tuned.zip)। कार्ट्रिज गेम को सिर्फ़ यही फ़ाइल चाहिए। पुराने .lst, .dat और .bin डंप भी चलते हैं।</string>
+    <string name="naomi_guide_step_gdrom">GD-ROM गेम — डिस्क भी चाहिए, आर्काइव से निकाली हुई: ikaruga.zip के पास ikaruga फ़ोल्डर बनाएँ और उसमें gdl-0010.chd सामान्य फ़ाइल के रूप में रखें। zip में छोड़ा CHD नहीं पढ़ा जाता; Naomi डिस्क के GDI/CUE डंप नहीं चलते।</string>
     <string name="naomi_guide_step_launch">लॉन्च — ROM सेट को लाइब्रेरी से शुरू करें। आर्काइव से निकाली गई फ़ाइलें न चलाएँ: सादा ROM फ़ोल्डर बूट नहीं होता।</string>
     <string name="naomi_guide_step_controls">कंट्रोल — Select सिक्का डालता है और Start गेम शुरू करता है। गेमपैड पर L3 Test मेन्यू और R3 Service मेन्यू खोलता है। फ्री प्ले डिफ़ॉल्ट रूप से चालू है।</string>
     <string name="naomi_guide_step_covers">कवर — ROM सेट के नाम से EmuCoreH कैटलॉग से डाउनलोड होते हैं। आर्टवर्क न होने पर नाम वाला कार्ड दिखता है।</string>

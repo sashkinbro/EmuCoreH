@@ -3012,8 +3012,8 @@
     <string name="naomi_guide_subtitle">Naomi, Naomi 2 and Atomiswave games run from MAME ROM sets.</string>
     <string name="naomi_guide_intro">Keep every ROM set in its own archive and add the folder to the library. EmuCoreH finds the BIOS, boots the cartridge or GD-ROM and matches the artwork automatically.</string>
     <string name="naomi_guide_step_bios">BIOS — select a folder with your arcade BIOS sets: naomi.zip for Naomi, naomi2.zip for Naomi 2 and awbios.zip for Atomiswave. Some games need their own set, such as f355bios.zip or segasp.zip. Dreamcast dumps are optional.</string>
-    <string name="naomi_guide_step_game">ROM sets — use MAME .zip or .7z sets and never rename the archive, because the name identifies the game. Legacy .lst, .dat and .bin dumps also open. Add the folder that holds them to the library.</string>
-    <string name="naomi_guide_step_gdrom">GD-ROM games — titles such as Ikaruga or Initial D also need the disc. Next to ikaruga.zip create a folder named ikaruga and put gdl-0010.chd inside it.</string>
+    <string name="naomi_guide_step_game">ROM sets — use MAME .zip or .7z sets and keep the archive name as the MAME ID (for example vf4tuned.zip). Cartridge games need only this file. Legacy .lst, .dat and .bin dumps also open.</string>
+    <string name="naomi_guide_step_gdrom">GD-ROM games — also need the disc, extracted from its archive: next to ikaruga.zip create a folder named ikaruga and put gdl-0010.chd inside as a normal file. A CHD left inside a zip is not read; GDI or CUE dumps of Naomi discs do not work.</string>
     <string name="naomi_guide_step_launch">Launch — start the ROM set from the library. Never launch files extracted from the archive: a plain folder of ROMs cannot boot.</string>
     <string name="naomi_guide_step_controls">Controls — Select inserts a coin and Start begins the game. With a gamepad, L3 opens the Test menu and R3 the Service menu. Free play is on by default.</string>
     <string name="naomi_guide_step_covers">Covers — artwork is downloaded from the EmuCoreH catalogue by ROM set name. Titles without artwork show a card with their name.</string>
