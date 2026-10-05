@@ -3001,8 +3001,8 @@
     <string name="naomi_guide_subtitle">Game Naomi, Naomi 2, dan Atomiswave berjalan dari set ROM MAME.</string>
     <string name="naomi_guide_intro">Simpan setiap set ROM dalam arsipnya sendiri dan tambahkan foldernya ke pustaka. EmuCoreH menemukan BIOS, menjalankan kartrid atau GD-ROM, dan mengunduh sampulnya otomatis.</string>
     <string name="naomi_guide_step_bios">BIOS — pilih folder berisi set BIOS arcade: naomi.zip untuk Naomi, naomi2.zip untuk Naomi 2, dan awbios.zip untuk Atomiswave. Sebagian game butuh set sendiri, seperti f355bios.zip atau segasp.zip. Dump Dreamcast opsional.</string>
-    <string name="naomi_guide_step_game">Set ROM — gunakan set MAME .zip atau .7z dan jangan mengganti nama arsip karena nama itu menentukan gamenya. Dump lama .lst, .dat, dan .bin juga bisa dibuka. Tambahkan foldernya ke pustaka.</string>
-    <string name="naomi_guide_step_gdrom">Game GD-ROM — judul seperti Ikaruga atau Initial D juga butuh disk. Di samping ikaruga.zip buat folder bernama ikaruga dan taruh gdl-0010.chd di dalamnya.</string>
+    <string name="naomi_guide_step_game">Set ROM — gunakan set MAME .zip atau .7z dan nama arsipnya harus MAME ID (misalnya vf4tuned.zip). Game kartrid hanya butuh file ini. Dump lama .lst, .dat, dan .bin juga bisa dibuka.</string>
+    <string name="naomi_guide_step_gdrom">Game GD-ROM — juga butuh disk yang diekstrak dari arsipnya: di samping ikaruga.zip buat folder ikaruga dan taruh gdl-0010.chd sebagai file biasa. CHD yang masih di dalam zip tidak terbaca; dump GDI/CUE disk Naomi tidak berfungsi.</string>
     <string name="naomi_guide_step_launch">Menjalankan — jalankan set ROM dari pustaka. Jangan jalankan file hasil ekstrak arsip: folder ROM biasa tidak bisa boot.</string>
     <string name="naomi_guide_step_controls">Kontrol — Select memasukkan koin dan Start memulai game. Di gamepad, L3 membuka menu Test dan R3 menu Service. Mode free play aktif secara default.</string>
     <string name="naomi_guide_step_covers">Sampul — diunduh dari katalog EmuCoreH berdasarkan nama set ROM. Game tanpa artwork menampilkan kartu berisi namanya.</string>

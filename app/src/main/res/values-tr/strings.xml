@@ -2987,8 +2987,8 @@
     <string name="naomi_guide_subtitle">Naomi, Naomi 2 ve Atomiswave oyunları MAME ROM setlerinden çalışır.</string>
     <string name="naomi_guide_intro">Her ROM setini kendi arşivinde tut ve klasörü kitaplığa ekle. EmuCoreH BIOS’u bulur, kartuşu veya GD-ROM’u başlatır ve kapak resmini otomatik indirir.</string>
     <string name="naomi_guide_step_bios">BIOS — arcade BIOS setlerini içeren bir klasör seç: Naomi için naomi.zip, Naomi 2 için naomi2.zip ve Atomiswave için awbios.zip. Bazı oyunlar f355bios.zip veya segasp.zip gibi kendi setini ister. Dreamcast dökümleri isteğe bağlıdır.</string>
-    <string name="naomi_guide_step_game">ROM setleri — MAME .zip veya .7z setleri kullan ve arşivin adını asla değiştirme: oyunu adı belirler. Eski .lst, .dat ve .bin dökümleri de açılır. Bulundukları klasörü kitaplığa ekle.</string>
-    <string name="naomi_guide_step_gdrom">GD-ROM oyunları — Ikaruga veya Initial D gibi oyunlar diske de ihtiyaç duyar. ikaruga.zip yanında ikaruga adında bir klasör oluştur ve içine gdl-0010.chd koy.</string>
+    <string name="naomi_guide_step_game">ROM setleri — MAME .zip veya .7z setleri kullan ve arşiv adı MAME kimliği olmalı (örneğin vf4tuned.zip). Kartuş oyunları yalnızca bu dosyayı ister. Eski .lst, .dat ve .bin dökümleri de açılır.</string>
+    <string name="naomi_guide_step_gdrom">GD-ROM oyunları — ayrıca arşivden çıkarılmış diske ihtiyaç duyar: ikaruga.zip yanında ikaruga klasörü oluştur ve içine gdl-0010.chd dosyasını normal dosya olarak koy. Zip içinde kalan CHD okunmaz; Naomi disklerinin GDI/CUE dökümleri çalışmaz.</string>
     <string name="naomi_guide_step_launch">Başlatma — ROM setini kitaplıktan başlat. Arşivden çıkarılan dosyaları başlatma: düz bir ROM klasörü açılmaz.</string>
     <string name="naomi_guide_step_controls">Kontroller — Select jeton atar, Start oyunu başlatır. Gamepad’de L3 Test menüsünü, R3 Servis menüsünü açar. Ücretsiz oyun varsayılan olarak açıktır.</string>
     <string name="naomi_guide_step_covers">Kapaklar — ROM seti adına göre EmuCoreH kataloğundan indirilir. Görseli olmayan oyunlar için adı taşıyan bir kart gösterilir.</string>

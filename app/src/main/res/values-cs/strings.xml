@@ -3008,8 +3008,8 @@
     <string name="naomi_guide_subtitle">Hry Naomi, Naomi 2 a Atomiswave běží z MAME ROM sad.</string>
     <string name="naomi_guide_intro">Každou ROM sadu ponech v samostatném archivu a přidej složku do knihovny. EmuCoreH najde BIOS, spustí cartridge nebo GD-ROM a sám stáhne obal.</string>
     <string name="naomi_guide_step_bios">BIOS — vyber složku s arcade BIOS sadami: naomi.zip pro Naomi, naomi2.zip pro Naomi 2 a awbios.zip pro Atomiswave. Některé hry potřebují vlastní sadu, např. f355bios.zip nebo segasp.zip. Dreamcast dumpy jsou volitelné.</string>
-    <string name="naomi_guide_step_game">ROM sady — používej MAME sady .zip nebo .7z a archiv nikdy nepřejmenovávej: název určuje hru. Staré dumpy .lst, .dat a .bin také fungují. Přidej jejich složku do knihovny.</string>
-    <string name="naomi_guide_step_gdrom">Hry GD-ROM — tituly jako Ikaruga nebo Initial D potřebují i disk. Vedle ikaruga.zip vytvoř složku ikaruga a vlož do ní gdl-0010.chd.</string>
+    <string name="naomi_guide_step_game">ROM sady — používej MAME sady .zip nebo .7z a název archivu musí být MAME ID (např. vf4tuned.zip). Kartridžové hry potřebují jen tento soubor. Staré dumpy .lst, .dat a .bin také fungují.</string>
+    <string name="naomi_guide_step_gdrom">Hry GD-ROM — potřebují i disk vybalený z archivu: vedle ikaruga.zip vytvoř složku ikaruga a vlož do ní gdl-0010.chd jako běžný soubor. CHD ponechané v zipu se nečte; dumpy GDI/CUE disků Naomi nefungují.</string>
     <string name="naomi_guide_step_launch">Spuštění — spouštěj ROM sadu z knihovny. Nikdy nespouštěj soubory rozbalené z archivu: obyčejná složka s ROM se nespustí.</string>
     <string name="naomi_guide_step_controls">Ovládání — Select vhodí minci a Start zahájí hru. Na gamepadu L3 otevře menu Test a R3 menu Service. Režim free play je zapnutý ve výchozím stavu.</string>
     <string name="naomi_guide_step_covers">Obály — stahují se z katalogu EmuCoreH podle názvu ROM sady. Bez grafiky se zobrazí karta s názvem.</string>
