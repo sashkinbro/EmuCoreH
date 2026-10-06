@@ -702,8 +702,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             !BiosValidator.isLikelyBiosLibraryEntry(
                 fileName = game.fileName,
                 title = game.title,
-                serial = game.serial,
-                fileSize = game.fileSize
+                serial = game.serial
             ) && (
             query.isBlank() ||
                 normalizeSearchToken(game.title).contains(query) ||

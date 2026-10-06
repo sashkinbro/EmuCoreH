@@ -32,7 +32,7 @@ class GameRepository {
 
     companion object {
         private const val TAG = "GameRepository"
-        // Keep the library honest with what the bundled PPSSPP core mounts.
+        // Keep the library honest with what the bundled Flycast core mounts.
         private val COVER_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp")
         private val COVER_DIRECTORY_NAMES = setOf("covers", "cover", "art", "artwork", "boxart", "box art")
         private const val MAX_DOCUMENT_SCAN_DEPTH = 32
@@ -201,13 +201,13 @@ class GameRepository {
                             sourcePath,
                             readDiscMetadata = false
                         )
-                        val pspMetadata = GameMetadataReader.read(context, sourcePath)
+                        val discMetadata = GameMetadataReader.read(context, sourcePath)
                         sourceMetadata.copy(
-                            title = pspMetadata?.title ?: sourceMetadata.title,
-                            serial = pspMetadata?.serial ?: sourceMetadata.serial
+                            title = discMetadata?.title ?: sourceMetadata.title,
+                            serial = discMetadata?.serial ?: sourceMetadata.serial
                         )
                     }
-                    if (BiosValidator.isLikelyBiosLibraryEntry(file.name, metadata.title, metadata.serial, file.length())) {
+                    if (BiosValidator.isLikelyBiosLibraryEntry(file.name, metadata.title, metadata.serial)) {
                         return@forEach
                     }
 
@@ -314,14 +314,14 @@ class GameRepository {
                             sourcePath,
                             readDiscMetadata = false
                         )
-                        val pspMetadata = GameMetadataReader.read(context, sourcePath)
+                        val discMetadata = GameMetadataReader.read(context, sourcePath)
                         sourceMetadata.copy(
-                            title = pspMetadata?.title ?: sourceMetadata.title,
-                            serial = pspMetadata?.serial ?: sourceMetadata.serial
+                            title = discMetadata?.title ?: sourceMetadata.title,
+                            serial = discMetadata?.serial ?: sourceMetadata.serial
                         )
                     }
 
-                    if (BiosValidator.isLikelyBiosLibraryEntry(name, metadata.title, metadata.serial, fileSize)) {
+                    if (BiosValidator.isLikelyBiosLibraryEntry(name, metadata.title, metadata.serial)) {
                         continue
                     }
 

@@ -90,8 +90,7 @@ struct AchievementsState
   bool unofficial = false;
   bool encore = false;
   std::string last_error;
-  bool unsupported_image = false;
-  bool image_read_error = false;
+bool unsupported_image = false;
   std::deque<std::string> events;
   std::atomic<bool> has_game{false};
 
@@ -443,7 +442,6 @@ void EventHandler(const rc_client_event_t* event, rc_client_t* client)
 
 void LoginCallback(int result, const char* error_message, rc_client_t* client, void*)
 {
-  (void)client;
   if (result == RC_OK)
   {
     g_state.last_error.clear();
@@ -617,7 +615,6 @@ extern "C" void EmuCoreHAchievementsOnSessionEnd()
   std::lock_guard<std::recursive_mutex> lock(g_state.mutex);
   g_state.has_game.store(false, std::memory_order_relaxed);
   g_state.unsupported_image = false;
-  g_state.image_read_error = false;
   g_state.last_error.clear();
   if (g_state.client != nullptr)
     rc_client_unload_game(g_state.client);
@@ -636,7 +633,6 @@ extern "C" void EmuCoreHAchievementsShutdown()
   StopHttpWorkerLocked();
   g_state.has_game.store(false, std::memory_order_relaxed);
   g_state.unsupported_image = false;
-  g_state.image_read_error = false;
   g_state.last_error.clear();
 }
 
@@ -768,7 +764,6 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_achievementsLoadGame(JNIEnv* env, j
     g_state.memory_initialized = true;
   g_state.last_error.clear();
   g_state.unsupported_image = false;
-  g_state.image_read_error = false;
 
   StartHttpWorkerLocked();
   // rcheevos hashes Dreamcast gdi/cue/chd/cdi (and m3u playlists) through the
@@ -786,7 +781,6 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_achievementsUnloadGame(JNIEnv*, job
   std::lock_guard<std::recursive_mutex> lock(g_state.mutex);
   g_state.has_game.store(false, std::memory_order_relaxed);
   g_state.unsupported_image = false;
-  g_state.image_read_error = false;
   g_state.last_error.clear();
   if (g_state.client != nullptr)
     rc_client_unload_game(g_state.client);
@@ -868,8 +862,6 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_achievementsStateJson(JNIEnv* env, 
   json += user != nullptr ? "true" : "false";
   json += ",\"gameLoaded\":";
   json += game != nullptr ? "true" : "false";
-  json += ",\"imageReadError\":";
-  json += g_state.image_read_error ? "true" : "false";
   json += ",\"unsupportedImage\":";
   json += g_state.unsupported_image ? "true" : "false";
   json += ",\"loadState\":";

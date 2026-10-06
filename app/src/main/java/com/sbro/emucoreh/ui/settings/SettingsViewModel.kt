@@ -129,7 +129,6 @@ data class SettingsUiState(
     val localMultiplayerMode: Int = AppPreferences.LOCAL_MULTIPLAYER_OFF,
     val displayCrop: DisplayCrop = DisplayCrop.None,
     val audioVolume: Int = AudioDefaults.VOLUME_DEFAULT,
-    val audioFastForwardVolume: Int = AudioDefaults.VOLUME_DEFAULT,
     val audioMuted: Boolean = false,
     val audioOutputLatencyMs: Int = AudioDefaults.OUTPUT_LATENCY_MS_DEFAULT,
     val audioMinimalOutputLatency: Boolean = AudioDefaults.MINIMAL_OUTPUT_LATENCY_DEFAULT,
@@ -197,9 +196,6 @@ data class SettingsUiState(
     val pressureModifierAmount: Int = AppPreferences.DEFAULT_PRESSURE_MODIFIER_AMOUNT,
     val gamepadBindings: Map<String, Int> = emptyMap(),
     val gamepadBindingsByPad: Map<Int, Map<String, Int>> = emptyMap(),
-    val gpuDriverType: Int = 0,
-    val mediatekAngleOpenGl: Boolean = false,
-    val customDriverPath: String? = null,
     val appUpdate: AppUpdateUiState = AppUpdateUiState(),
     val frameLimitEnabled: Boolean = true,
     val floatingQuickActionsEnabled: Boolean = false,
@@ -318,7 +314,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             localMultiplayerMode = snapshot.localMultiplayerMode,
             displayCrop = snapshot.displayCrop,
             audioVolume = snapshot.audioVolume,
-            audioFastForwardVolume = snapshot.audioFastForwardVolume,
             audioMuted = snapshot.audioMuted,
             audioOutputLatencyMs = snapshot.audioOutputLatencyMs,
             audioMinimalOutputLatency = snapshot.audioMinimalOutputLatency,
@@ -379,9 +374,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             pressureModifierAmount = snapshot.pressureModifierAmount,
             gamepadBindings = snapshot.gamepadBindings,
             gamepadBindingsByPad = snapshot.gamepadBindingsByPad,
-            gpuDriverType = snapshot.gpuDriverType,
-            mediatekAngleOpenGl = snapshot.mediatekAngleOpenGl,
-            customDriverPath = snapshot.customDriverPath,
             frameLimitEnabled = snapshot.frameLimitEnabled,
             floatingQuickActionsEnabled = snapshot.floatingQuickActionsEnabled,
             vSyncEnabled = snapshot.vSyncEnabled,
@@ -653,15 +645,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setShaderChainEnabled(enabled: Boolean) = viewModelScope.launch {
         val preset = _uiState.value.shaderChainPreset
         preferences.setShaderChain(enabled, preset)
-        EmulatorBridge.setSetting("EmuCoreH/GS", "ShaderChainEnabled", "bool", enabled.toString())
-        EmulatorBridge.setSetting("EmuCoreH/GS", "ShaderChainPreset", "string", preset)
+        EmulatorBridge.setSetting("EmuCoreH/Runtime", "ShaderChainEnabled", "bool", enabled.toString())
+        EmulatorBridge.setSetting("EmuCoreH/Runtime", "ShaderChainPreset", "string", preset)
     }
 
     fun setShaderChainPreset(path: String) = viewModelScope.launch {
         val enabled = path.isNotBlank() && _uiState.value.shaderChainEnabled
         preferences.setShaderChain(enabled, path)
-        EmulatorBridge.setSetting("EmuCoreH/GS", "ShaderChainEnabled", "bool", enabled.toString())
-        EmulatorBridge.setSetting("EmuCoreH/GS", "ShaderChainPreset", "string", path)
+        EmulatorBridge.setSetting("EmuCoreH/Runtime", "ShaderChainEnabled", "bool", enabled.toString())
+        EmulatorBridge.setSetting("EmuCoreH/Runtime", "ShaderChainPreset", "string", path)
     }
 
     fun downloadOfficialShaderPack() {
@@ -887,22 +879,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val normalized = AudioDefaults.coerceVolume(value)
             preferences.setAudioVolume(normalized)
-            EmulatorBridge.setSetting("SPU2/Output", "StandardVolume", "int", normalized.toString())
-        }
-    }
-
-    fun setAudioFastForwardVolume(value: Int) {
-        viewModelScope.launch {
-            val normalized = AudioDefaults.coerceVolume(value)
-            preferences.setAudioFastForwardVolume(normalized)
-            EmulatorBridge.setSetting("SPU2/Output", "FastForwardVolume", "int", normalized.toString())
+            EmulatorBridge.setSetting("EmuCoreH/Audio", "StandardVolume", "int", normalized.toString())
         }
     }
 
     fun setAudioMuted(muted: Boolean) {
         viewModelScope.launch {
             preferences.setAudioMuted(muted)
-            EmulatorBridge.setSetting("SPU2/Output", "OutputMuted", "bool", muted.toString())
+            EmulatorBridge.setSetting("EmuCoreH/Audio", "OutputMuted", "bool", muted.toString())
         }
     }
 
@@ -915,14 +899,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val normalized = AudioDefaults.coerceOutputLatencyMs(value)
             preferences.setAudioOutputLatencyMs(normalized)
-            EmulatorBridge.setSetting("SPU2/Output", "OutputLatencyMS", "int", normalized.toString())
+            EmulatorBridge.setSetting("EmuCoreH/Audio", "OutputLatencyMS", "int", normalized.toString())
         }
     }
 
     fun setAudioMinimalOutputLatency(enabled: Boolean) {
         viewModelScope.launch {
             preferences.setAudioMinimalOutputLatency(enabled)
-            EmulatorBridge.setSetting("SPU2/Output", "OutputLatencyMinimal", "bool", enabled.toString())
+            EmulatorBridge.setSetting("EmuCoreH/Audio", "OutputLatencyMinimal", "bool", enabled.toString())
         }
     }
 
@@ -1041,17 +1025,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun setMediatekAngleOpenGl(enabled: Boolean) {
-        viewModelScope.launch {
-            val effectiveEnabled = enabled &&
-                GpuHardwareProfiles.isMediaTekHardware() &&
-                EmulatorBridge.isBundledAngleAvailable()
-            preferences.setMediatekAngleOpenGl(effectiveEnabled)
-            EmulatorBridge.setSetting("EmuCoreH/GS", "AndroidUseAngleOpenGL", "bool", effectiveEnabled.toString())
-        }
-    }
-
-
     fun setOverlayScale(value: Int) { viewModelScope.launch { preferences.setOverlayScale(value) } }
     fun setOverlayOpacity(value: Int) { viewModelScope.launch { preferences.setOverlayOpacity(value) } }
     fun setLeftStickSensitivity(value: Int) { viewModelScope.launch { preferences.setLeftStickSensitivity(value) } }
@@ -1094,18 +1067,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             EmulatorBridge.applyRuntimeConfig(
                 biosPath = uri.toString(),
                 emulatorDataPath = _uiState.value.emulatorDataPath,
-                memoryCardSlot1 = preferences.memoryCardSlot1.first(),
-                memoryCardSlot2 = preferences.memoryCardSlot2.first(),
                 renderer = _uiState.value.renderer,
                 upscaleMultiplier = _uiState.value.upscaleMultiplier,
-                gpuDriverType = _uiState.value.gpuDriverType,
-                customDriverPath = _uiState.value.customDriverPath,
                 gpuHardwareProfile = GpuHardwareProfiles.detectHardwareProfile(),
-                mediatekAngleOpenGl = _uiState.value.mediatekAngleOpenGl,
                 aspectRatio = _uiState.value.aspectRatio,
                 localMultiplayerMode = _uiState.value.localMultiplayerMode,
                 audioVolume = _uiState.value.audioVolume,
-                audioFastForwardVolume = _uiState.value.audioFastForwardVolume,
                 audioMuted = _uiState.value.audioMuted,
                 frameLimitEnabled = _uiState.value.frameLimitEnabled,
                 vSyncEnabled = _uiState.value.vSyncEnabled,
@@ -1190,23 +1157,5 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 onComplete(result)
             }
         }
-    }
-
-    fun setCustomDriverPath(path: String?) {
-        viewModelScope.launch {
-            preferences.setCustomDriverPath(path)
-            if (path != null) {
-                preferences.setGpuDriverType(1)
-                EmulatorBridge.setCustomDriverPath(path)
-            } else {
-                preferences.setGpuDriverType(0)
-                EmulatorBridge.setCustomDriverPath("")
-            }
-        }
-    }
-
-    private companion object {
-        const val CORE_NAME = "Flycast"
-        const val CORE_VERSION = "1.0.0"
     }
 }

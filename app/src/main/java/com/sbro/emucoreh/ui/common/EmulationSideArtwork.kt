@@ -71,7 +71,8 @@ fun calculateSideArtworkPreviewGutters(
 
 /**
  * Calculates conservative side gutters for the renderer's aspect-ratio modes.
- * Auto starts at the PSP aspect ratio until the renderer reports its exact draw rectangle.
+ * Auto starts at the Dreamcast 4:3 aspect ratio until the renderer reports its
+ * exact draw rectangle.
  */
 fun calculateSideArtworkGutters(
     widthPx: Int,
@@ -90,7 +91,7 @@ fun calculateSideArtworkGutters(
     val contentAspect = when (aspectRatioMode) {
         // Prevent the previous SurfaceView frame from showing edge-to-edge while the new
         // game starts. The renderer-provided rectangle replaces this as soon as it exists.
-        1 -> 480f / 272f
+        1 -> 4f / 3f
         2 -> 4f / 3f
         3 -> 16f / 9f
         4 -> 10f / 7f

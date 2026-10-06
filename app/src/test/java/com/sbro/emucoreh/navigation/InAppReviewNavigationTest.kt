@@ -11,8 +11,6 @@ class InAppReviewNavigationTest {
         assertFalse(EmulationRoute(gamePath = null).isMeaningfulReviewSession())
         assertFalse(EmulationRoute(gamePath = "").isMeaningfulReviewSession())
         assertFalse(EmulationRoute(gamePath = "game.iso", bootBios = true).isMeaningfulReviewSession())
-        assertFalse(EmulationRoute(gamePath = "game.iso", bootSmokeProbe = true).isMeaningfulReviewSession())
-        assertFalse(EmulationRoute(gamePath = "game.iso", autotestMode = true).isMeaningfulReviewSession())
         assertFalse(EmulationRoute(gamePath = "game.iso", exitAppOnExit = true).isMeaningfulReviewSession())
     }
 }

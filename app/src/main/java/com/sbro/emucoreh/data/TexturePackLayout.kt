@@ -3,9 +3,9 @@ package com.sbro.emucoreh.data
 /**
  * Paths have already passed the ZIP traversal check.
  *
- * PSP packs carry a single textures.ini and stay relative to it. Dreamcast
- * packs ship as <game id>/<hash>.png with no INI, so the game folder is
- * dropped here and re-added from the serial when the pack is staged.
+ * Legacy texture packs carry a single textures.ini and stay relative to it.
+ * Dreamcast packs ship as <game id>/<hash>.png with no INI, so the game folder
+ * is dropped here and re-added from the serial when the pack is staged.
  */
 internal fun resolveTexturePackLayout(paths: Set<String>): Map<String, String> {
     val mainIni = paths.filter { it.substringAfterLast('/').equals("textures.ini", ignoreCase = true) }

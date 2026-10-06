@@ -28,7 +28,8 @@ object ImageConversionManager {
         "application/x-raw-disk-image"
     )
 
-    // Conversion is not offered until its CHD output has been validated with PPSSPP.
+    // Conversion is not offered until its CHD output has been validated with
+    // the bundled Flycast core.
     fun isIsoToChdAvailable(): Boolean = false
 
     fun buildOutputName(sourceDisplayName: String): String {

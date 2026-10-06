@@ -69,7 +69,7 @@ class GameLibraryCacheRepository(context: Context) {
                             fileName = fileName
                         )
                         val fileSize = game.optLong("file_size")
-                        if (BiosValidator.isLikelyBiosLibraryEntry(fileName, title, serial, fileSize)) {
+                        if (BiosValidator.isLikelyBiosLibraryEntry(fileName, title, serial)) {
                             continue
                         }
                         add(

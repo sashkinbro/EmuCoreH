@@ -9,14 +9,12 @@ import android.provider.DocumentsContract
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.Reader
 import androidx.core.net.toUri
 
 object DocumentPathResolver {
     private const val TAG = "DocumentPathResolver"
-    private const val BIOS_SOURCE_MARKER = ".source-uri"
     private const val MAX_CUE_TEXT_CHARS = 256 * 1024
     private val cueFileDirective = Regex(
         pattern = """^(\s*)FILE\s+(?:\"([^\"]+)\"|(\S+))\s+(\S+)\s*$""",
@@ -47,14 +45,8 @@ object DocumentPathResolver {
     private val preparedDiscLock = Any()
     private var preparedDiscResources: PreparedDiscResources? = null
 
-    data class PreparedBiosSelection(
-        val directoryPath: String,
-        val fileName: String?
-    )
-
     private val biosImageExtensions = setOf("bin", "rom", "7d", "8g")
-    private val biosArtifactExtensions = setOf("mec", "nvm", "elf")
-    private val biosNameHints = listOf("scph", "ps1", "psx", "bios")
+    private val biosNameHints = listOf("bios", "boot", "flash", "reios")
     private const val MAX_IMPORTED_BIOS_BYTES = 8L * 1024L * 1024L
 
     fun resolveFilePath(context: Context, rawPath: String): String? {
@@ -124,71 +116,6 @@ object DocumentPathResolver {
         return normalized.startsWith(primaryExternal)
     }
 
-    fun prepareBiosDirectory(context: Context, rawPath: String?): String? {
-        return prepareBiosSelection(context, rawPath)?.directoryPath
-    }
-
-    fun prepareBiosSelection(context: Context, rawPath: String?): PreparedBiosSelection? {
-        if (rawPath.isNullOrBlank()) return null
-        if (!rawPath.startsWith("content://")) {
-            val file = File(rawPath)
-            return when {
-                file.isFile && BiosValidator.hasUsableBiosFiles(context, rawPath) -> PreparedBiosSelection(
-                    directoryPath = file.parentFile?.absolutePath ?: file.absoluteFile.parent.orEmpty(),
-                    fileName = file.name
-                )
-                file.isDirectory -> PreparedBiosSelection(
-                    directoryPath = file.absolutePath,
-                    fileName = findPreferredBiosFileName(file.absolutePath)
-                )
-                else -> null
-            }
-        }
-
-        val uri = rawPath.toUri()
-        val targetDir = File(context.getExternalFilesDir(null) ?: context.filesDir, "imported-bios")
-
-        val existing = preparedBiosForSource(targetDir, rawPath)
-        if (existing != null) return existing
-
-        if (!targetDir.exists() && !targetDir.mkdirs()) return null
-        val stagingDir = File(targetDir.parentFile ?: context.filesDir, "imported-bios-staging")
-
-        val imported = runCatching {
-            prepareFlatStagingDirectory(stagingDir)
-            if (DocumentsContract.isTreeUri(uri)) {
-                val root = DocumentFile.fromTreeUri(context, uri) ?: return@runCatching null
-                copyBiosFilesRecursive(context, root, stagingDir, ImportBudget())
-                val preferred = findPreferredBiosFileName(stagingDir.absolutePath)
-                    ?: return@runCatching null
-                writeBiosSourceMarker(stagingDir, rawPath)
-                if (!replaceImportedBiosDirectory(targetDir, stagingDir)) return@runCatching null
-                PreparedBiosSelection(targetDir.absolutePath, preferred)
-            } else {
-                val single = DocumentFile.fromSingleUri(context, uri) ?: return@runCatching null
-                val displayName = runCatching { single.name }.getOrNull().orEmpty().ifBlank {
-                    getDisplayName(context, rawPath)
-                }
-                val copiedPath = copySingleBiosFile(context, single, displayName, stagingDir)
-                    ?: return@runCatching null
-                val preferred = File(copiedPath).name
-                writeBiosSourceMarker(stagingDir, rawPath)
-                if (!replaceImportedBiosDirectory(targetDir, stagingDir)) return@runCatching null
-                PreparedBiosSelection(targetDir.absolutePath, preferred)
-            }
-        }.onFailure { error ->
-            Log.w(TAG, "Unable to prepare BIOS selection: $uri", error)
-        }.getOrNull()
-
-        return imported ?: preparedBiosForSource(targetDir, rawPath)
-    }
-
-    fun hasPreparedBiosForSource(context: Context, rawPath: String?): Boolean {
-        if (rawPath.isNullOrBlank()) return false
-        val targetDir = File(context.getExternalFilesDir(null) ?: context.filesDir, "imported-bios")
-        return preparedBiosForSource(targetDir, rawPath) != null
-    }
-
     fun findPreferredBiosFileName(directoryPath: String?): String? {
         if (directoryPath.isNullOrBlank()) return null
         val dir = File(directoryPath)
@@ -244,26 +171,6 @@ object DocumentPathResolver {
     fun getFallbackDisplayName(rawPath: String): String {
         if (!rawPath.startsWith("content://")) return normalizeDisplayName(rawPath)
         return normalizeDisplayName(rawPath, rawPath.toUri())
-    }
-
-    fun prepareElfLaunchPath(context: Context, rawPath: String): String? {
-        if (rawPath.isBlank()) return null
-        if (!rawPath.startsWith("content://")) return File(rawPath).takeIf { it.isFile && it.canRead() }?.absolutePath ?: rawPath
-
-        val uri = rawPath.toUri()
-        val single = DocumentFile.fromSingleUri(context, uri)
-        val displayName = single?.name ?: getDisplayName(context, rawPath)
-        if (!displayName.substringAfterLast('.', "").equals("elf", ignoreCase = true)) {
-            return rawPath
-        }
-
-        val directPath = resolveFilePath(context, rawPath)
-            ?.let(::File)
-            ?.takeIf { it.isFile && it.canRead() }
-            ?.absolutePath
-        if (!directPath.isNullOrBlank()) return directPath
-
-        return uri.toString()
     }
 
     fun prepareGameLaunchPath(context: Context, rawPath: String): String? {
@@ -590,80 +497,6 @@ object DocumentPathResolver {
         return storagePart.substringAfterLast('/').trim()
     }
 
-    private fun copyBiosFilesRecursive(
-        context: Context,
-        root: DocumentFile,
-        targetDir: File,
-        budget: ImportBudget
-    ) {
-        if (!budget.tryEnterDirectory()) return
-        for (child in runCatching { root.listFiles() }.getOrDefault(emptyArray())) {
-            val mimeType = runCatching { child.type }.getOrNull()
-            val displayName = runCatching { child.name }.getOrNull().orEmpty().ifBlank {
-                getDisplayName(context, child.uri.toString())
-            }
-            if (mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
-                copyBiosFilesRecursive(context, child, targetDir, budget)
-            } else if (isLikelyImportedBiosName(displayName)) {
-                if (!budget.tryCopyFile()) return
-                val targetFile = File(targetDir, sanitizeFileName(displayName))
-                copyUriToFile(context, child.uri, targetFile)
-            } else if (mimeType == null) {
-                copyBiosFilesRecursive(context, child, targetDir, budget)
-            }
-        }
-    }
-
-    private fun copySingleBiosFile(
-        context: Context,
-        file: DocumentFile,
-        displayName: String,
-        targetDir: File
-    ): String? {
-        if (displayName.substringAfterLast('.', "").lowercase() !in biosImageExtensions) return null
-
-        val targetFile = File(targetDir, sanitizeFileName(displayName))
-        val copiedPath = copyUriToFile(context, file.uri, targetFile) ?: return null
-        if (!isValidPreparedBiosFile(targetFile)) {
-            targetFile.delete()
-            return null
-        }
-        return copiedPath
-    }
-
-    private fun copyUriToFile(context: Context, uri: Uri, targetFile: File): String? {
-        return runCatching {
-            targetFile.parentFile?.mkdirs()
-            val descriptor = context.contentResolver.openFileDescriptor(uri, "r") ?: return null
-            ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { input ->
-                FileOutputStream(targetFile).use { output ->
-                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                    var copied = 0L
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read < 0) break
-                        copied += read
-                        if (copied > MAX_IMPORTED_BIOS_BYTES) {
-                            throw IOException("BIOS import exceeds $MAX_IMPORTED_BIOS_BYTES bytes")
-                        }
-                        output.write(buffer, 0, read)
-                    }
-                }
-            }
-            targetFile.absolutePath
-        }.onFailure { error ->
-            targetFile.delete()
-            Log.w(TAG, "Failed to copy $uri to ${targetFile.absolutePath}", error)
-        }.getOrNull()
-    }
-
-    private fun isLikelyImportedBiosName(name: String?): Boolean {
-        val fileName = name?.lowercase() ?: return false
-        val ext = fileName.substringAfterLast('.', "")
-        return ext in biosImageExtensions ||
-            (ext in biosArtifactExtensions && biosNameHints.any(fileName::contains))
-    }
-
     private fun isLikelyMainBiosName(name: String?): Boolean {
         val fileName = name?.lowercase() ?: return false
         val ext = fileName.substringAfterLast('.', "")
@@ -678,76 +511,6 @@ object DocumentPathResolver {
                 isLikelyMainBiosName(file.name)
         } else {
             isLikelyMainBiosName(file.name)
-        }
-    }
-
-    private fun prepareFlatStagingDirectory(stagingDir: File) {
-        if (!stagingDir.exists() && !stagingDir.mkdirs()) {
-            throw IOException("Unable to create BIOS staging directory")
-        }
-        stagingDir.listFiles().orEmpty().forEach { file ->
-            if (file.isFile) file.delete()
-        }
-    }
-
-    private fun writeBiosSourceMarker(directory: File, rawPath: String) {
-        File(directory, BIOS_SOURCE_MARKER).writeText(rawPath)
-    }
-
-    private fun preparedBiosForSource(targetDir: File, rawPath: String): PreparedBiosSelection? {
-        val markerMatches = runCatching {
-            File(targetDir, BIOS_SOURCE_MARKER).readText() == rawPath
-        }.getOrDefault(false)
-        if (!markerMatches) return null
-        val preferred = findPreferredBiosFileName(targetDir.absolutePath) ?: return null
-        return PreparedBiosSelection(targetDir.absolutePath, preferred)
-    }
-
-    internal fun replaceImportedBiosDirectory(targetDir: File, stagingDir: File): Boolean {
-        val parent = targetDir.parentFile ?: return false
-        val backupDir = File(parent, "imported-bios-backup")
-        prepareFlatStagingDirectory(backupDir)
-        backupDir.delete()
-
-        val hadTarget = targetDir.exists()
-        if (hadTarget && !targetDir.renameTo(backupDir)) return false
-        if (!stagingDir.renameTo(targetDir)) {
-            if (hadTarget) backupDir.renameTo(targetDir)
-            return false
-        }
-
-        val preserveExtensions = setOf("nvm", "mec")
-        backupDir.listFiles().orEmpty().forEach { file ->
-            if (file.isFile) {
-                if (file.extension.lowercase() in preserveExtensions) {
-                    val targetFile = File(targetDir, file.name)
-                    if (!targetFile.exists()) file.copyTo(targetFile, overwrite = false)
-                }
-                file.delete()
-            }
-        }
-        backupDir.delete()
-        return true
-    }
-
-    private class ImportBudget {
-        private var files = 0
-        private var directories = 0
-
-        fun tryCopyFile(): Boolean = files++ < 24
-        fun tryEnterDirectory(): Boolean = directories++ < 96
-    }
-
-    private fun sanitizeFileName(name: String): String {
-        return buildString(name.length) {
-            name.forEach { ch ->
-                append(
-                    when {
-                        ch.isLetterOrDigit() || ch == '.' || ch == '-' || ch == '_' -> ch
-                        else -> '_'
-                    }
-                )
-            }
         }
     }
 }

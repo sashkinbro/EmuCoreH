@@ -66,7 +66,6 @@ import com.sbro.emucoreh.ui.discord.DiscordScreen
 import com.sbro.emucoreh.ui.emulation.EmulationScreen
 import com.sbro.emucoreh.ui.formats.SupportedFormatsScreen
 import com.sbro.emucoreh.ui.feedback.FeedbackScreen
-import com.sbro.emucoreh.ui.gamedb.GameDbBrowserScreen
 import com.sbro.emucoreh.ui.home.HomeScreen
 import com.sbro.emucoreh.ui.hub.HubScreen
 import com.sbro.emucoreh.ui.hub.detail.HubDetailScreen
@@ -105,18 +104,12 @@ data class EmulationRoute(
     val gamePath: String? = null,
     val saveSlot: Int? = null,
     val bootBios: Boolean = false,
-    val bootSmokeProbe: Boolean = false,
-    val autotestMode: Boolean = false,
     val renderer: Int? = null,
-    val gsDumpFrames: Int? = null,
-    val gsDumpDelayMs: Int? = null,
     val exitAppOnExit: Boolean = false
 )
 
 internal fun EmulationRoute.isMeaningfulReviewSession(): Boolean =
     !bootBios &&
-        !bootSmokeProbe &&
-        !autotestMode &&
         !exitAppOnExit &&
         !gamePath.isNullOrBlank()
 
@@ -159,9 +152,6 @@ data class SaveManagerRoute(
 
 @Serializable
 object MemoryCardManagerRoute
-
-@Serializable
-data class GameDbBrowserRoute(val query: String? = null)
 
 @Serializable
 object AchievementsRoute
@@ -228,12 +218,6 @@ fun AppNavigation(
         key1 = preferences,
         key2 = launchIntentVersion
     ) {
-        val launchRequest = GameLaunchShortcut.parseLaunchRequest(activity?.intent)
-        if (launchRequest?.autotestMode == true) {
-            Log.i(TAG, "Startup destination forced HOME for autotest launch path=${launchRequest.gamePath}")
-            value = StartupDestination.HOME
-            return@produceState
-        }
         value = combine(
             preferences.onboardingCompleted,
             preferences.biosPath,
@@ -247,7 +231,7 @@ fun AppNavigation(
             val shouldOpenHome = onboardingCompleted && hasGameFolder
             Log.i(
                 TAG,
-                "Startup destination onboarding=$onboardingCompleted gameFolder=$hasGameFolder launch=${launchRequest != null}"
+                "Startup destination onboarding=$onboardingCompleted gameFolder=$hasGameFolder"
             )
             if (shouldOpenHome) StartupDestination.HOME else StartupDestination.ONBOARDING
         }.first()
@@ -502,13 +486,6 @@ fun AppNavigation(
                         onCreateShortcutClick = { game ->
                             GameLaunchShortcut.requestPinnedShortcut(context, game)
                         },
-                        onOpenGameDbClick = { game ->
-                            navController.navigate(
-                                GameDbBrowserRoute(query = game.serial?.takeIf { it.isNotBlank() } ?: game.title)
-                            ) {
-                                launchSingleTop = true
-                            }
-                        },
                         onMenuClick = openDrawer,
                         onShelfModeChanged = { isShelfMode ->
                             homeDrawerEnabled = !isShelfMode
@@ -671,12 +648,8 @@ fun AppNavigation(
                 EmulationScreen(
                     gamePath = route.gamePath,
                     bootToBios = route.bootBios,
-                    bootSmokeProbe = route.bootSmokeProbe,
                     saveSlot = route.saveSlot,
-                    autotestMode = route.autotestMode,
                     rendererOverride = route.renderer,
-                    gsDumpFrames = route.gsDumpFrames,
-                    gsDumpDelayMs = route.gsDumpDelayMs,
                     restoredAfterProcessDeath = blockRestoredEmulationRoute,
                     onExit = { activePlayTimeMs ->
                         if (route.exitAppOnExit) {
@@ -829,11 +802,6 @@ fun AppNavigation(
                                 launchSingleTop = true
                             }
                         },
-                        onOpenGameDbBrowser = {
-                            navController.navigate(GameDbBrowserRoute()) {
-                                launchSingleTop = true
-                            }
-                        },
                         onOpenControlsLayoutEditor = {
                             navController.navigate(ControlsLayoutEditorRoute()) {
                                 launchSingleTop = true
@@ -909,14 +877,6 @@ fun AppNavigation(
                         onBackClick = { navController.popBackStack() }
                     )
                 }
-            }
-
-            composable<GameDbBrowserRoute> { backStackEntry ->
-                val route = backStackEntry.toRoute<GameDbBrowserRoute>()
-                GameDbBrowserScreen(
-                    initialQuery = route.query,
-                    onBackClick = { navController.popBackStack() }
-                )
             }
 
             composable<GameSettingsManagerRoute> { backStackEntry ->
@@ -1095,7 +1055,7 @@ fun AppNavigation(
             val launchRequest = GameLaunchShortcut.parseLaunchRequest(activity?.intent) ?: return@LaunchedEffect
             Log.i(
                 TAG,
-                "Handling launch request destination=$startupDestination path=${launchRequest.gamePath} bios=${launchRequest.bootBios} autotest=${launchRequest.autotestMode}"
+                "Handling launch request destination=$startupDestination path=${launchRequest.gamePath} bios=${launchRequest.bootBios}"
             )
             if (startupDestination == null) return@LaunchedEffect
             // Shortcuts and external intents carry an explicit game; boot them
@@ -1108,11 +1068,7 @@ fun AppNavigation(
                     gamePath = launchRequest.gamePath,
                     saveSlot = launchRequest.saveSlot,
                     bootBios = launchRequest.bootBios,
-                    bootSmokeProbe = launchRequest.bootSmokeProbe,
-                    autotestMode = launchRequest.autotestMode,
                     renderer = launchRequest.renderer,
-                    gsDumpFrames = launchRequest.gsDumpFrames,
-                    gsDumpDelayMs = launchRequest.gsDumpDelayMs,
                     exitAppOnExit = true
                 )
             ) {

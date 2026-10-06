@@ -73,7 +73,6 @@ data class SettingsSnapshot(
     val shaderChainEnabled: Boolean = false,
     val shaderChainPreset: String = "",
     val audioVolume: Int = AudioDefaults.VOLUME_DEFAULT,
-    val audioFastForwardVolume: Int = AudioDefaults.VOLUME_DEFAULT,
     val audioMuted: Boolean = false,
     val audioOutputLatencyMs: Int = AudioDefaults.OUTPUT_LATENCY_MS_DEFAULT,
     val audioMinimalOutputLatency: Boolean = AudioDefaults.MINIMAL_OUTPUT_LATENCY_DEFAULT,
@@ -138,9 +137,6 @@ data class SettingsSnapshot(
     val gamepadBindingsByPad: Map<Int, Map<String, Int>> = emptyMap(),
     val gamepadDeviceAssignments: Map<Int, String> = emptyMap(),
     val ignoredGamepadDevices: Set<String> = emptySet(),
-    val gpuDriverType: Int = 0,
-    val mediatekAngleOpenGl: Boolean = false,
-    val customDriverPath: String? = null,
     val frameLimitEnabled: Boolean = true,
     val vSyncEnabled: Boolean = false,
     val fastForwardSpeed: Float = AppPreferences.DEFAULT_FAST_FORWARD_SPEED,
@@ -347,7 +343,6 @@ class AppPreferences(private val context: Context) {
         private val HIDDEN_GAME_MENU_SECTIONS = stringPreferencesKey("hidden_game_menu_sections")
         private val MEDIATEK_SETTINGS_NOTICE_SHOWN =
             booleanPreferencesKey("mediatek_settings_notice_shown")
-        private val MEMORY_CARDS_INITIALIZED = booleanPreferencesKey("memory_cards_initialized")
         private val PRO_UNLOCKED = booleanPreferencesKey("pro_unlocked")
         private val WELCOME_DIALOG_SHOWN = booleanPreferencesKey("welcome_dialog_shown")
         private val LAST_CORE_BINARY_FINGERPRINT =
@@ -380,7 +375,6 @@ class AppPreferences(private val context: Context) {
         private val DISPLAY_CROP_RIGHT = intPreferencesKey("display_crop_right")
         private val DISPLAY_CROP_BOTTOM = intPreferencesKey("display_crop_bottom")
         private val AUDIO_VOLUME = intPreferencesKey("audio_volume")
-        private val AUDIO_FAST_FORWARD_VOLUME = intPreferencesKey("audio_fast_forward_volume")
         private val AUDIO_MUTED = booleanPreferencesKey("audio_muted")
         private val AUDIO_OUTPUT_LATENCY_MS = intPreferencesKey("audio_output_latency_ms")
         private val AUDIO_MINIMAL_OUTPUT_LATENCY = booleanPreferencesKey("audio_minimal_output_latency")
@@ -450,9 +444,6 @@ class AppPreferences(private val context: Context) {
         private val GAMEPAD_BINDINGS = stringPreferencesKey("gamepad_bindings")
         private val GAMEPAD_DEVICE_ASSIGNMENTS = stringPreferencesKey("gamepad_device_assignments")
         private val GAMEPAD_IGNORED_DEVICES = stringPreferencesKey("gamepad_ignored_devices")
-        private val GPU_DRIVER_TYPE = intPreferencesKey("gpu_driver_type")
-        private val MEDIATEK_ANGLE_OPENGL = booleanPreferencesKey("mediatek_angle_opengl")
-        private val CUSTOM_DRIVER_PATH = stringPreferencesKey("custom_driver_path")
         private val FRAME_LIMIT_ENABLED = booleanPreferencesKey("frame_limit_enabled")
         private val VSYNC_ENABLED = booleanPreferencesKey("vsync_enabled")
         private val FAST_FORWARD_SPEED = floatPreferencesKey("fast_forward_speed")
@@ -461,8 +452,6 @@ class AppPreferences(private val context: Context) {
         private val PAL_FRAMERATE = floatPreferencesKey("pal_framerate")
         private val AUTO_SAVE_ENABLED = booleanPreferencesKey("auto_save_enabled")
         private val AUTO_SAVE_INTERVAL_MINUTES = intPreferencesKey("auto_save_interval_minutes")
-        private val MEMORY_CARD_SLOT1 = stringPreferencesKey("memory_card_slot_1")
-        private val MEMORY_CARD_SLOT2 = stringPreferencesKey("memory_card_slot_2")
 
         // Control Layout Customization
         private val DPAD_OFFSET = stringPreferencesKey("dpad_offset")
@@ -484,9 +473,9 @@ class AppPreferences(private val context: Context) {
         private val OVERLAY_LAYOUT_VERSION = intPreferencesKey("overlay_layout_version")
 
         internal val EMULATOR_CLOUD_KEYS = setOf(
-            "renderer", "mediatekAngleOpenGl", "upscaleMultiplier", "shaderChainEnabled",
+            "renderer", "upscaleMultiplier", "shaderChainEnabled",
             "shaderChainPreset", "aspectRatio", "displayCropLeft", "displayCropTop",
-            "displayCropRight", "displayCropBottom", "audioVolume", "audioFastForwardVolume",
+            "displayCropRight", "displayCropBottom", "audioVolume",
             "audioMuted", "audioOutputLatencyMs", "audioMinimalOutputLatency", "padVibration",
             "padVibrationStrength", "padVibrationFallback", "showFps", "fpsOverlayMode",
             "fpsOverlayCorner", "fpsOverlayScale", "fpsOverlayMetrics", "confirmSaveLoadActions",
@@ -499,7 +488,7 @@ class AppPreferences(private val context: Context) {
             "gamepadButtonHaptics", "pressureModifierAmount", "textureReplacementsEnabled",
             "textureReplacementsAsync", "textureReplacementsPrecache", "textureDumpingEnabled",
             "enableAutoGamepad", "hideOverlayOnGamepad", "gamepadBindings",
-            "gamepadDeviceAssignments", "gamepadIgnoredDevices", "gpuDriverType", "customDriverPath",
+            "gamepadDeviceAssignments", "gamepadIgnoredDevices",
             "frameLimitEnabled", "vSyncEnabled", "fastForwardSpeed", "targetFps", "ntscFramerate",
             "palFramerate", "autoSaveEnabled", "autoSaveIntervalMinutes", "overlayLayoutVersion",
             "dpadOffset", "lstickOffset", "rstickOffset", "actionOffset", "lbtnOffset",
@@ -944,14 +933,6 @@ class AppPreferences(private val context: Context) {
     }
 
 
-    val gpuDriverType: Flow<Int> = context.dataStore.data.map { prefs ->
-        prefs[GPU_DRIVER_TYPE] ?: 0
-    }
-
-    val customDriverPath: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[CUSTOM_DRIVER_PATH]
-    }
-
     suspend fun setRenderer(value: Int) {
         context.dataStore.edit { prefs ->
             prefs[RENDERER] = normalizeRendererPreference(value)
@@ -973,17 +954,6 @@ class AppPreferences(private val context: Context) {
         return GpuHardwareProfiles.detectHardwareProfile()
     }
 
-    suspend fun setGpuDriverType(value: Int) {
-        context.dataStore.edit { it[GPU_DRIVER_TYPE] = value }
-    }
-
-    suspend fun setCustomDriverPath(path: String?) {
-        context.dataStore.edit { prefs ->
-            if (path == null) prefs.remove(CUSTOM_DRIVER_PATH)
-            else prefs[CUSTOM_DRIVER_PATH] = path
-        }
-    }
-
     val frameLimitEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[FRAME_LIMIT_ENABLED] ?: true
     }
@@ -994,14 +964,6 @@ class AppPreferences(private val context: Context) {
 
     suspend fun setAudioVolume(value: Int) {
         context.dataStore.edit { it[AUDIO_VOLUME] = AudioDefaults.coerceVolume(value) }
-    }
-
-    val audioFastForwardVolume: Flow<Int> = context.dataStore.data.map { prefs ->
-        AudioDefaults.coerceVolume(prefs[AUDIO_FAST_FORWARD_VOLUME] ?: AudioDefaults.VOLUME_DEFAULT)
-    }
-
-    suspend fun setAudioFastForwardVolume(value: Int) {
-        context.dataStore.edit { it[AUDIO_FAST_FORWARD_VOLUME] = AudioDefaults.coerceVolume(value) }
     }
 
     val audioMuted: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[AUDIO_MUTED] ?: false }
@@ -1105,24 +1067,6 @@ class AppPreferences(private val context: Context) {
         localePrefs.edit().remove("language_tag").apply()
     }
 
-
-    val memoryCardSlot1: Flow<String?> = context.dataStore.data.map { prefs -> prefs[MEMORY_CARD_SLOT1] }
-    val memoryCardSlot2: Flow<String?> = context.dataStore.data.map { prefs -> prefs[MEMORY_CARD_SLOT2] }
-
-    val memoryCardsInitialized: Flow<Boolean> = context.dataStore.data
-        .map { prefs -> prefs[MEMORY_CARDS_INITIALIZED] == true }
-        .distinctUntilChanged()
-
-    suspend fun markMemoryCardsInitialized() {
-        context.dataStore.edit { prefs -> prefs[MEMORY_CARDS_INITIALIZED] = true }
-    }
-
-    suspend fun setMemoryCardAssignments(slot1: String?, slot2: String?) {
-        context.dataStore.edit { prefs ->
-            slot1?.let { prefs[MEMORY_CARD_SLOT1] = it } ?: prefs.remove(MEMORY_CARD_SLOT1)
-            slot2?.let { prefs[MEMORY_CARD_SLOT2] = it } ?: prefs.remove(MEMORY_CARD_SLOT2)
-        }
-    }
 
     val upscaleMultiplier: Flow<Float> = context.dataStore.data.map { prefs ->
         readUpscale(prefs)
@@ -1243,7 +1187,7 @@ class AppPreferences(private val context: Context) {
         COVER_ART_STYLE_DISABLED -> COVER_ART_STYLE_DISABLED
         COVER_ART_STYLE_DEFAULT -> COVER_ART_STYLE_DEFAULT
         COVER_ART_STYLE_3D -> COVER_ART_STYLE_3D
-        // Migrate old automatic artwork to PSP 3D once, preserving disabled artwork.
+        // Migrate old automatic artwork to the 3D style once, preserving disabled artwork.
         else -> if (prefs[LEGACY_COVER_ART_STYLE] == COVER_ART_STYLE_DISABLED)
             COVER_ART_STYLE_DISABLED else COVER_ART_STYLE_3D
     }
@@ -1349,9 +1293,6 @@ class AppPreferences(private val context: Context) {
                 audioVolume = AudioDefaults.coerceVolume(
                     prefs[AUDIO_VOLUME] ?: AudioDefaults.VOLUME_DEFAULT
                 ),
-                audioFastForwardVolume = AudioDefaults.coerceVolume(
-                    prefs[AUDIO_FAST_FORWARD_VOLUME] ?: AudioDefaults.VOLUME_DEFAULT
-                ),
                 audioMuted = prefs[AUDIO_MUTED] ?: false,
                 audioOutputLatencyMs = AudioDefaults.coerceOutputLatencyMs(
                     prefs[AUDIO_OUTPUT_LATENCY_MS] ?: AudioDefaults.OUTPUT_LATENCY_MS_DEFAULT
@@ -1433,9 +1374,6 @@ class AppPreferences(private val context: Context) {
                 gamepadBindingsByPad = decodeGamepadBindingsByPad(prefs[GAMEPAD_BINDINGS]),
                 gamepadDeviceAssignments = decodeGamepadDeviceAssignments(prefs[GAMEPAD_DEVICE_ASSIGNMENTS]),
                 ignoredGamepadDevices = decodeIgnoredGamepadDevices(prefs[GAMEPAD_IGNORED_DEVICES]),
-                gpuDriverType = prefs[GPU_DRIVER_TYPE] ?: 0,
-                mediatekAngleOpenGl = prefs[MEDIATEK_ANGLE_OPENGL] ?: false,
-                customDriverPath = prefs[CUSTOM_DRIVER_PATH],
                 frameLimitEnabled = prefs[FRAME_LIMIT_ENABLED] ?: true,
                 floatingQuickActionsEnabled = prefs[FLOATING_QUICK_ACTIONS_ENABLED] ?: false,
                 vSyncEnabled = prefs[VSYNC_ENABLED] ?: false,
@@ -2068,15 +2006,6 @@ class AppPreferences(private val context: Context) {
         }
     }
 
-    val mediatekAngleOpenGl: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[MEDIATEK_ANGLE_OPENGL] ?: false
-    }
-
-    suspend fun setMediatekAngleOpenGl(enabled: Boolean) {
-        context.dataStore.edit { it[MEDIATEK_ANGLE_OPENGL] = enabled }
-    }
-
-
     val textureReplacementsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[TEXTURE_REPLACEMENTS_ENABLED] ?: false
     }
@@ -2678,7 +2607,6 @@ class AppPreferences(private val context: Context) {
             put("hiddenGameMenuSections", prefs[HIDDEN_GAME_MENU_SECTIONS] ?: "")
             put("gpuHardwareProfile", gpuHardwareProfile)
             put("renderer", normalizeRendererPreference(prefs[RENDERER]))
-            put("mediatekAngleOpenGl", prefs[MEDIATEK_ANGLE_OPENGL] ?: false)
             put("upscaleMultiplier", readUpscale(prefs).toDouble())
             put("shaderChainEnabled", prefs[SHADER_CHAIN_ENABLED] ?: false)
             put("shaderChainPreset", prefs[SHADER_CHAIN_PRESET].orEmpty())
@@ -2698,7 +2626,6 @@ class AppPreferences(private val context: Context) {
                 put("displayCropBottom", crop.bottom)
             }
             put("audioVolume", AudioDefaults.coerceVolume(prefs[AUDIO_VOLUME] ?: AudioDefaults.VOLUME_DEFAULT))
-            put("audioFastForwardVolume", AudioDefaults.coerceVolume(prefs[AUDIO_FAST_FORWARD_VOLUME] ?: AudioDefaults.VOLUME_DEFAULT))
             put("audioMuted", prefs[AUDIO_MUTED] ?: false)
             put("audioOutputLatencyMs", AudioDefaults.coerceOutputLatencyMs(prefs[AUDIO_OUTPUT_LATENCY_MS] ?: AudioDefaults.OUTPUT_LATENCY_MS_DEFAULT))
             put("audioMinimalOutputLatency", prefs[AUDIO_MINIMAL_OUTPUT_LATENCY] ?: AudioDefaults.MINIMAL_OUTPUT_LATENCY_DEFAULT)
@@ -2778,8 +2705,6 @@ class AppPreferences(private val context: Context) {
             put("gamepadBindings", prefs[GAMEPAD_BINDINGS])
             put("gamepadDeviceAssignments", prefs[GAMEPAD_DEVICE_ASSIGNMENTS])
             put("gamepadIgnoredDevices", prefs[GAMEPAD_IGNORED_DEVICES])
-            put("gpuDriverType", prefs[GPU_DRIVER_TYPE] ?: 0)
-            put("customDriverPath", prefs[CUSTOM_DRIVER_PATH])
             put("frameLimitEnabled", prefs[FRAME_LIMIT_ENABLED] ?: true)
             put("vSyncEnabled", prefs[VSYNC_ENABLED] ?: false)
             put("fastForwardSpeed", sanitizeFastForwardSpeed(prefs[FAST_FORWARD_SPEED]).toDouble())
@@ -2809,8 +2734,6 @@ class AppPreferences(private val context: Context) {
             put("invertRightStickHorizontal", prefs[INVERT_RIGHT_STICK_HORIZONTAL] ?: false)
             put("stickSurfaceMode", prefs[STICK_SURFACE_MODE] ?: false)
             put("controlLayouts", prefs[CONTROL_LAYOUTS])
-            put("memoryCardSlot1", prefs[MEMORY_CARD_SLOT1])
-            put("memoryCardSlot2", prefs[MEMORY_CARD_SLOT2])
         }
     }
 
@@ -2887,8 +2810,6 @@ class AppPreferences(private val context: Context) {
                 if (json.has("renderer")) json.optInt("renderer") else null
             )
             prefs[RENDERER] = importedRenderer
-            prefs[MEDIATEK_ANGLE_OPENGL] = json.optBoolean("mediatekAngleOpenGl", false) &&
-                GpuHardwareProfiles.isMediatekProfile(gpuHardwareProfile)
             prefs[UPSCALE] = json.readUpscaleMultiplier()
             prefs[SHADER_CHAIN_ENABLED] = json.optBoolean("shaderChainEnabled", false)
             json.optString("shaderChainPreset").trim().takeIf(String::isNotEmpty)?.let {
@@ -2937,9 +2858,6 @@ class AppPreferences(private val context: Context) {
                 prefs[DISPLAY_CROP_BOTTOM] = crop.bottom
             }
             prefs[AUDIO_VOLUME] = AudioDefaults.coerceVolume(json.optInt("audioVolume", AudioDefaults.VOLUME_DEFAULT))
-            prefs[AUDIO_FAST_FORWARD_VOLUME] = AudioDefaults.coerceVolume(
-                json.optInt("audioFastForwardVolume", AudioDefaults.VOLUME_DEFAULT)
-            )
             prefs[AUDIO_MUTED] = json.optBoolean("audioMuted", false)
             prefs[AUDIO_OUTPUT_LATENCY_MS] = AudioDefaults.coerceOutputLatencyMs(
                 json.optInt("audioOutputLatencyMs", AudioDefaults.OUTPUT_LATENCY_MS_DEFAULT)
@@ -3046,8 +2964,6 @@ class AppPreferences(private val context: Context) {
             json.optString("gamepadBindings").takeIf { it.isNotBlank() }?.let { prefs[GAMEPAD_BINDINGS] = it } ?: prefs.remove(GAMEPAD_BINDINGS)
             json.optString("gamepadDeviceAssignments").takeIf { it.isNotBlank() }?.let { prefs[GAMEPAD_DEVICE_ASSIGNMENTS] = it } ?: prefs.remove(GAMEPAD_DEVICE_ASSIGNMENTS)
             json.optString("gamepadIgnoredDevices").takeIf { it.isNotBlank() }?.let { prefs[GAMEPAD_IGNORED_DEVICES] = it } ?: prefs.remove(GAMEPAD_IGNORED_DEVICES)
-            prefs[GPU_DRIVER_TYPE] = json.optInt("gpuDriverType", 0)
-            json.optString("customDriverPath").takeIf { it.isNotBlank() }?.let { prefs[CUSTOM_DRIVER_PATH] = it } ?: prefs.remove(CUSTOM_DRIVER_PATH)
             prefs[FRAME_LIMIT_ENABLED] = json.optBoolean("frameLimitEnabled", true)
             prefs[VSYNC_ENABLED] = json.optBoolean("vSyncEnabled", false)
             prefs[FAST_FORWARD_SPEED] = sanitizeFastForwardSpeed(json.optDouble("fastForwardSpeed", DEFAULT_FAST_FORWARD_SPEED.toDouble()).toFloat())
@@ -3089,8 +3005,6 @@ class AppPreferences(private val context: Context) {
             prefs[STICK_SURFACE_MODE] = json.optBoolean("stickSurfaceMode", false)
             json.optString("controlLayouts").takeIf { it.isNotBlank() }?.let { prefs[CONTROL_LAYOUTS] = it } ?: prefs.remove(CONTROL_LAYOUTS)
             migrateGlobalStickSurfaceMode(prefs)
-            json.optString("memoryCardSlot1").takeIf { it.isNotBlank() }?.let { prefs[MEMORY_CARD_SLOT1] = it } ?: prefs.remove(MEMORY_CARD_SLOT1)
-            json.optString("memoryCardSlot2").takeIf { it.isNotBlank() }?.let { prefs[MEMORY_CARD_SLOT2] = it } ?: prefs.remove(MEMORY_CARD_SLOT2)
         }
     }
 

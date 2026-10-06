@@ -1,4 +1,4 @@
-package com.sbro.emucoreh.data.ps1
+package com.sbro.emucoreh.data.igdb
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -9,13 +9,11 @@ import java.io.FileOutputStream
 import java.text.Normalizer
 import java.util.Locale
 
-class Ps1CatalogRepository(private val context: Context) {
+class IgdbCatalogRepository(private val context: Context) {
 
     companion object {
-        private const val TAG = "Ps1CatalogRepository"
-        // Keep the platform in the extracted filename so the old PS1 cache
-        // cannot be mistaken for the bundled PSP database.
-        private const val DB_NAME = "psp_games.db"
+        private const val TAG = "IgdbCatalogRepository"
+        private const val DB_NAME = "games.db"
         private const val ASSET_PATH = "catalog/games.db"
     }
 
@@ -51,7 +49,7 @@ class Ps1CatalogRepository(private val context: Context) {
 
     fun hasCatalog(): Boolean = ensureDatabaseReady()
 
-    fun search(query: String, limit: Int = 60, offset: Int = 0): List<Ps1CatalogSummary> {
+    fun search(query: String, limit: Int = 60, offset: Int = 0): List<IgdbCatalogSummary> {
         if (!ensureDatabaseReady()) return emptyList()
         return search(
             query = query,
@@ -70,7 +68,7 @@ class Ps1CatalogRepository(private val context: Context) {
         minRating: Double?,
         limit: Int = 60,
         offset: Int = 0
-    ): List<Ps1CatalogSummary> {
+    ): List<IgdbCatalogSummary> {
         if (!ensureDatabaseReady()) return emptyList()
         val normalized = normalizeSearchText(query)
         if (normalized.isBlank()) {
@@ -84,7 +82,7 @@ class Ps1CatalogRepository(private val context: Context) {
         }
 
         val db = getDatabase() ?: return emptyList()
-        val out = ArrayList<Ps1CatalogSummary>(limit)
+        val out = ArrayList<IgdbCatalogSummary>(limit)
         val seen = HashSet<Long>(limit * 2)
         val fetchWindow = limit + offset
         querySearchPage(
@@ -118,7 +116,7 @@ class Ps1CatalogRepository(private val context: Context) {
         return out.drop(offset).take(limit)
     }
 
-    fun getDetails(igdbId: Long): Ps1CatalogDetails? {
+    fun getDetails(igdbId: Long): IgdbCatalogDetails? {
         if (!ensureDatabaseReady()) return null
         val db = getDatabase() ?: return null
         return db.rawQuery(
@@ -240,10 +238,10 @@ class Ps1CatalogRepository(private val context: Context) {
         minRating: Double?,
         limit: Int = 60,
         offset: Int = 0
-    ): List<Ps1CatalogSummary> {
+    ): List<IgdbCatalogSummary> {
         if (!ensureDatabaseReady()) return emptyList()
         val db = getDatabase() ?: return emptyList()
-        val items = ArrayList<Ps1CatalogSummary>(limit)
+        val items = ArrayList<IgdbCatalogSummary>(limit)
         buildCatalogQuery(
             namePattern = null,
             genre = genre,
@@ -332,8 +330,8 @@ class Ps1CatalogRepository(private val context: Context) {
         year: Int?,
         minRating: Double?,
         limit: Int
-    ): List<Ps1CatalogSummary> {
-        val out = ArrayList<Ps1CatalogSummary>(limit)
+    ): List<IgdbCatalogSummary> {
+        val out = ArrayList<IgdbCatalogSummary>(limit)
         buildCatalogQuery(
             namePattern = normalizedPattern,
             genre = genre,
@@ -395,7 +393,7 @@ class Ps1CatalogRepository(private val context: Context) {
         """.trimIndent() to args
     }
 
-    private fun loadDetails(db: SQLiteDatabase, summary: Ps1CatalogSummary): Ps1CatalogDetails {
+    private fun loadDetails(db: SQLiteDatabase, summary: IgdbCatalogSummary): IgdbCatalogDetails {
         val genres = ArrayList<String>(summary.genres)
         if (genres.isEmpty()) {
             db.rawQuery(
@@ -445,7 +443,7 @@ class Ps1CatalogRepository(private val context: Context) {
             }
         }
 
-        return Ps1CatalogDetails(
+        return IgdbCatalogDetails(
             igdbId = summary.igdbId,
             name = summary.name,
             normalizedName = summary.normalizedName,
@@ -462,10 +460,10 @@ class Ps1CatalogRepository(private val context: Context) {
         )
     }
 
-    private fun cursorToSummary(cursor: android.database.Cursor, db: SQLiteDatabase): Ps1CatalogSummary {
+    private fun cursorToSummary(cursor: android.database.Cursor, db: SQLiteDatabase): IgdbCatalogSummary {
         val igdbId = cursor.getLong(0)
         val name = cursor.getString(1)
-        return Ps1CatalogSummary(
+        return IgdbCatalogSummary(
             igdbId = igdbId,
             name = name,
             normalizedName = cursor.getString(2),

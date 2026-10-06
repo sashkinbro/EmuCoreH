@@ -1,4 +1,5 @@
-﻿
+﻿// SPDX-FileCopyrightText: 2026 SBRO
+// SPDX-License-Identifier: LicenseRef-EmuCoreH-Proprietary
 package com.sbro.emucoreh.core
 
 import android.content.Context
@@ -41,9 +42,6 @@ object EmulatorBridge {
     const val AUTO_RENDERER = RendererDefaults.AUTO
     const val OPENGL_RENDERER = RendererDefaults.OPENGL
     const val VULKAN_RENDERER = RendererDefaults.VULKAN
-    private const val ANGLE_EGL_LIBRARY_NAME = "libEGL_angle.so"
-    private const val ANGLE_GLES_LIBRARY_NAME = "libGLESv2_angle.so"
-    private const val BOOT_SMOKE_PROBE_STEPS = 67_108_864
 
     private val aspectRatioSettingValues = mapOf(
         0 to "Stretch",
@@ -96,7 +94,6 @@ object EmulatorBridge {
     private val settingsCache = HashMap<String, String>()
     private var audioVolumeSetting: Int = AudioDefaults.VOLUME_DEFAULT
     private var audioMutedSetting: Boolean = false
-    private var audioBufferMsSetting: Int = AudioDefaults.BUFFER_MS_DEFAULT
 
     init {
         isNativeLoaded = NativeApp.hasNativeCore
@@ -127,52 +124,19 @@ object EmulatorBridge {
         normalizeAspectRatio(type).let { listOf(it.toString(), aspectRatioSettingValues.getValue(it)) }
     )
 
-    private fun customDriverOp(path: String) = RuntimeOp("custom_driver", listOf(path))
-
-    private fun prepareCustomDriverLibrary(path: String): String {
-        if (path.isBlank()) return ""
-        val file = File(path)
-        if (file.isFile) {
-            file.setReadable(true, true)
-            file.setWritable(true, true)
-            file.setExecutable(true, true)
-        }
-        return path
-    }
-
-    fun isBundledAngleAvailable(): Boolean {
-        val context = getContext() ?: return false
-        val nativeLibDir = context.applicationInfo.nativeLibraryDir ?: return false
-        return File(nativeLibDir, ANGLE_EGL_LIBRARY_NAME).isFile &&
-            File(nativeLibDir, ANGLE_GLES_LIBRARY_NAME).isFile
-    }
-
-    private fun shouldUseMediatekAngleOpenGl(
-        requested: Boolean,
-        gpuHardwareProfile: Int,
-        renderer: Int
-    ): Boolean {
-        return requested &&
-            renderer == OPENGL_RENDERER &&
-            GpuHardwareProfiles.isMediatekProfile(gpuHardwareProfile) &&
-            isBundledAngleAvailable()
-    }
-
-    private fun refreshBiosOp() = RuntimeOp("refresh_bios", emptyList())
-
     private fun regionFramerateOps(ntscFramerate: Float, palFramerate: Float): List<RuntimeOp> {
         val ntsc = sanitizeFramerate(ntscFramerate, AppPreferences.DEFAULT_NTSC_FRAMERATE)
         val pal = sanitizeFramerate(palFramerate, AppPreferences.DEFAULT_PAL_FRAMERATE)
         return listOf(
-            settingOp("EmuCoreH/GS", "FramerateNTSC", "float", ntsc.toString()),
-            settingOp("EmuCoreH/GS", "FrameratePAL", "float", pal.toString())
+            settingOp("EmuCoreH/Runtime", "FramerateNTSC", "float", ntsc.toString()),
+            settingOp("EmuCoreH/Runtime", "FrameratePAL", "float", pal.toString())
         )
     }
 
     private fun rendererExecutionOps(renderer: Int): List<RuntimeOp> {
         val resolved = normalizeRenderer(renderer)
         return listOf(
-            settingOp("EmuCoreH/GS", "Renderer", "int", resolved.toString())
+            settingOp("EmuCoreH/Runtime", "Renderer", "int", resolved.toString())
         )
     }
 
@@ -186,43 +150,32 @@ object EmulatorBridge {
         if (!isNativeLoaded || ops.isEmpty()) return true
         return runSerial {
             var succeeded = true
-            NativeApp.beginSettingsBatch()
-            try {
-                ops.forEach { op ->
-                    when (op.kind) {
-                        "setting" -> {
-                            val section = op.fields.getOrNull(0) ?: return@forEach
-                            val key = op.fields.getOrNull(1) ?: return@forEach
-                            val type = op.fields.getOrNull(2) ?: return@forEach
-                            val value = op.fields.getOrNull(3) ?: return@forEach
-                            if (!applyAudioOutputSetting(section, key, value) &&
-                                !NativeApp.setSetting(section, key, type, value)
-                            ) succeeded = false
-                        }
-                        "upscale" -> {
-                            val value = op.fields.firstOrNull()?.toFloatOrNull() ?: return@forEach
-                            NativeApp.renderUpscalemultiplier(normalizeUpscale(value))
-                        }
-                        "aspect" -> {
-                            val type = op.fields.firstOrNull()?.toIntOrNull() ?: return@forEach
-                            NativeApp.setAspectRatio(type)
-                            if (!NativeApp.setSetting(
-                                "EmuCoreH/GS",
-                                "AspectRatio",
-                                "string",
-                                op.fields.getOrNull(1) ?: aspectRatioSettingValues.getValue(1)
-                            )) succeeded = false
-                        }
-                        "custom_driver" -> {
-                            NativeApp.setCustomDriverPath(op.fields.firstOrNull().orEmpty())
-                        }
-                        "refresh_bios" -> {
-                            NativeApp.refreshBIOS()
-                        }
+            ops.forEach { op ->
+                when (op.kind) {
+                    "setting" -> {
+                        val section = op.fields.getOrNull(0) ?: return@forEach
+                        val key = op.fields.getOrNull(1) ?: return@forEach
+                        val type = op.fields.getOrNull(2) ?: return@forEach
+                        val value = op.fields.getOrNull(3) ?: return@forEach
+                        if (!applyAudioOutputSetting(section, key, value) &&
+                            !NativeApp.setSetting(section, key, type, value)
+                        ) succeeded = false
+                    }
+                    "upscale" -> {
+                        val value = op.fields.firstOrNull()?.toFloatOrNull() ?: return@forEach
+                        NativeApp.renderUpscalemultiplier(normalizeUpscale(value))
+                    }
+                    "aspect" -> {
+                        val type = op.fields.firstOrNull()?.toIntOrNull() ?: return@forEach
+                        NativeApp.setAspectRatio(type)
+                        if (!NativeApp.setSetting(
+                            "EmuCoreH/Runtime",
+                            "AspectRatio",
+                            "string",
+                            op.fields.getOrNull(1) ?: aspectRatioSettingValues.getValue(1)
+                        )) succeeded = false
                     }
                 }
-            } finally {
-                NativeApp.endSettingsBatch()
             }
             succeeded
         }
@@ -230,10 +183,11 @@ object EmulatorBridge {
 
     /**
      * Volume and mute are applied to the Kotlin PCM path because the core API
-     * has no gain stage. Accepts both the settings-screen and in-game keys.
+     * has no gain stage. The settings screen and in-game keys both target the
+     * `EmuCoreH/Audio` section.
      */
     private fun applyAudioOutputSetting(section: String, key: String, value: String): Boolean {
-        if (section != "SPU2/Output" && section != "EmuCoreH/Audio") return false
+        if (section != "EmuCoreH/Audio") return false
         when (key) {
             "StandardVolume", "Volume" -> {
                 val volume = value.toIntOrNull() ?: return false
@@ -241,12 +195,6 @@ object EmulatorBridge {
             }
             "OutputMuted", "Mute" -> {
                 audioMutedSetting = value.toBooleanStrictOrNull() ?: return false
-            }
-            "BufferMS", "AudioBufferMs" -> {
-                val milliseconds = value.toIntOrNull() ?: return false
-                audioBufferMsSetting = AudioDefaults.coerceBufferMs(milliseconds)
-                NativeApp.setAudioBufferMs(audioBufferMsSetting)
-                return true
             }
             "OutputLatencyMS", "AudioOutputLatencyMs" -> {
                 val milliseconds = value.toIntOrNull() ?: return false
@@ -307,11 +255,8 @@ object EmulatorBridge {
         }
 
         try {
-            NativeApp.setNativeLibraryDir(context.applicationInfo.nativeLibraryDir ?: "")
             NativeApp.initializeOnce(context.applicationContext)
             NativeApp.setSetting("EmuCoreH", "AppVersion", "string", appVersionName(context.applicationContext))
-            val jitSmokeOk = runCatching { NativeApp.runJitExecutableMemorySmokeTest() }.getOrDefault(false)
-            Log.i(TAG, "JIT executable-memory smoke result=$jitSmokeOk")
             val (preferEnglishTitles, emulatorDataPath) = runBlocking {
                 val preferences = AppPreferences(context.applicationContext)
                 preferences.preferEnglishGameTitles.first() to preferences.getEmulatorDataPathSync()
@@ -332,15 +277,11 @@ object EmulatorBridge {
         emulatorDataPath: String? = null,
         renderer: Int,
         upscaleMultiplier: Float,
-        gpuDriverType: Int = 0,
-        customDriverPath: String? = null,
         gpuHardwareProfile: Int = GpuHardwareProfiles.ADRENO,
-        mediatekAngleOpenGl: Boolean = false,
         aspectRatio: Int = 1,
         localMultiplayerMode: Int = AppPreferences.LOCAL_MULTIPLAYER_OFF,
         displayCrop: DisplayCrop = DisplayCrop.None,
         audioVolume: Int = AudioDefaults.VOLUME_DEFAULT,
-        audioFastForwardVolume: Int = AudioDefaults.VOLUME_DEFAULT,
         audioMuted: Boolean = false,
         audioOutputLatencyMs: Int = AudioDefaults.OUTPUT_LATENCY_MS_DEFAULT,
         audioMinimalOutputLatency: Boolean = AudioDefaults.MINIMAL_OUTPUT_LATENCY_DEFAULT,
@@ -352,10 +293,7 @@ object EmulatorBridge {
         palFramerate: Float = AppPreferences.DEFAULT_PAL_FRAMERATE,
         shaderChainEnabled: Boolean = false,
         shaderChainPreset: String = "",
-        pressureModifierAmount: Int = AppPreferences.DEFAULT_PRESSURE_MODIFIER_AMOUNT,
-        memoryCardSlot1: String? = null,
-        memoryCardSlot2: String? = null,
-        autotestMode: Boolean = false
+        pressureModifierAmount: Int = AppPreferences.DEFAULT_PRESSURE_MODIFIER_AMOUNT
     ) = withContext(serialDispatcher) {
         if (!isNativeLoaded) return@withContext
 
@@ -367,31 +305,16 @@ object EmulatorBridge {
         val resolvedBiosPath = biosPath?.let(DocumentPathResolver::resolveDirectoryPath)
         val preferredBiosFile = DocumentPathResolver.findPreferredBiosFileName(resolvedBiosPath)
         // Keep the native layer on the same data root as the runtime directories;
-        // saves and memory cards previously ignored the configured location.
+        // saves previously ignored the configured location.
         NativeApp.reloadDataRoot(emulatorDataPath ?: "")
         val runtimeDirectories = EmulatorStorage.runtimeDirectories(context, emulatorDataPath)
-        // Flycast keeps saves and memory cards under the configured data root.
+        // Flycast keeps saves under the configured data root.
         NativeApp.setDataRootOverride(runtimeDirectories.root.absolutePath)
 
         val normalizedGpuHardwareProfile = GpuHardwareProfiles.normalize(gpuHardwareProfile)
         val gpuHardwareProfileOverride = GpuHardwareProfiles.coreOverrideFor(normalizedGpuHardwareProfile)
-        // This frontend uses the system EGL/OpenGL driver unless a custom driver is configured.
-        val customDriverSupported = false
-        val effectiveGpuDriverType = if (gpuDriverType == 1 && customDriverSupported) 1 else 0
-        val effectiveMediatekAngleOpenGl = shouldUseMediatekAngleOpenGl(
-            requested = mediatekAngleOpenGl,
-            gpuHardwareProfile = normalizedGpuHardwareProfile,
-            renderer = resolvedRenderer
-        )
         NativeApp.setCrashContextString("emu_renderer_name", rendererName(resolvedRenderer))
-        NativeApp.setCrashContextString("emu_gpu_driver_mode", if (effectiveGpuDriverType == 1) "custom" else "system")
         NativeApp.setCrashContextString("emu_gpu_profile", gpuHardwareProfileOverride)
-        NativeApp.setCrashContextBool("emu_mediatek_angle_opengl", effectiveMediatekAngleOpenGl)
-        val resolvedCustomDriverPath = if (effectiveGpuDriverType == 1) {
-            prepareCustomDriverLibrary(customDriverPath.orEmpty())
-        } else {
-            ""
-        }
         val prefs = AppPreferences(context)
         val effectiveFrameLimitEnabled = frameLimitEnabled
         val padVibrationEnabled = prefs.padVibration.first()
@@ -409,7 +332,7 @@ object EmulatorBridge {
                 add(aspectOp(aspectRatio))
                 add(
                     settingOp(
-                        "EmuCoreH/GS",
+                        "EmuCoreH/Runtime",
                         "LocalMultiplayerMode",
                         "int",
                         localMultiplayerMode.coerceIn(
@@ -418,110 +341,74 @@ object EmulatorBridge {
                         ).toString()
                     )
                 )
-                add(settingOp("SPU2/Output", "StandardVolume", "int", AudioDefaults.coerceVolume(audioVolume).toString()))
-                add(settingOp("SPU2/Output", "FastForwardVolume", "int", AudioDefaults.coerceVolume(audioFastForwardVolume).toString()))
-                add(settingOp("SPU2/Output", "OutputMuted", "bool", audioMuted.toString()))
-                add(settingOp("SPU2/Output", "OutputLatencyMS", "int", AudioDefaults.coerceOutputLatencyMs(audioOutputLatencyMs).toString()))
-                add(settingOp("SPU2/Output", "OutputLatencyMinimal", "bool", audioMinimalOutputLatency.toString()))
+                add(settingOp("EmuCoreH/Audio", "StandardVolume", "int", AudioDefaults.coerceVolume(audioVolume).toString()))
+                add(settingOp("EmuCoreH/Audio", "OutputMuted", "bool", audioMuted.toString()))
+                add(settingOp("EmuCoreH/Audio", "OutputLatencyMS", "int", AudioDefaults.coerceOutputLatencyMs(audioOutputLatencyMs).toString()))
+                add(settingOp("EmuCoreH/Audio", "OutputLatencyMinimal", "bool", audioMinimalOutputLatency.toString()))
                 add(settingOp("Folders", "Bios", "string", resolvedBiosPath.orEmpty()))
                 add(settingOp("Folders", "Savestates", "string", runtimeDirectories.saveStates.absolutePath))
-                add(settingOp("Folders", "MemoryCards", "string", runtimeDirectories.memoryCards.absolutePath))
                 add(settingOp("Folders", "Textures", "string", runtimeDirectories.textures.absolutePath))
                 add(settingOp("Folders", "Cheats", "string", runtimeDirectories.cheats.absolutePath))
                 add(settingOp("Folders", "Patches", "string", runtimeDirectories.patches.absolutePath))
                 add(settingOp("Folders", "Logs", "string", runtimeDirectories.logs.absolutePath))
                 add(settingOp("Filenames", "BIOS", "string", preferredBiosFile.orEmpty()))
-                add(refreshBiosOp())
                 add(settingOp("EmuCoreH", "OpenGLTextureDebugLog", "bool", (resolvedRenderer == 12).toString()))
-                add(settingOp("EmuCoreH/GS", "AndroidGpuProfileOverride", "string", gpuHardwareProfileOverride))
-                add(settingOp("EmuCoreH/GS", "AndroidUseAngleOpenGL", "bool", effectiveMediatekAngleOpenGl.toString()))
-                add(settingOp("EmuCoreH/GS", "FrameLimitEnable", "bool", effectiveFrameLimitEnabled.toString()))
-                add(settingOp("EmuCoreH/GS", "VsyncEnable", "bool", vSyncEnabled.toString()))
+                add(settingOp("EmuCoreH/Runtime", "AndroidGpuProfileOverride", "string", gpuHardwareProfileOverride))
+                add(settingOp("EmuCoreH/Runtime", "FrameLimitEnable", "bool", effectiveFrameLimitEnabled.toString()))
+                add(settingOp("EmuCoreH/Runtime", "VsyncEnable", "bool", vSyncEnabled.toString()))
                 addAll(targetFpsOps(targetFps, ntscFramerate, palFramerate))
                 add(settingOp("Framerate", "NominalScalar", "float", "1.0"))
                 add(settingOp("Framerate", "TurboScalar", "float", sanitizeFastForwardSpeed(fastForwardSpeed).toString()))
-                add(settingOp("EmuCoreH/GS", "ShaderChainEnabled", "bool", (shaderChainEnabled && shaderChainPreset.isNotBlank()).toString()))
-                add(settingOp("EmuCoreH/GS", "ShaderChainPreset", "string", shaderChainPreset.trim()))
-                add(settingOp("EmuCoreH/GS", "LoadTextureReplacements", "bool", textureReplacementsEnabled.toString()))
-                add(settingOp("EmuCoreH/GS", "LoadTextureReplacementsAsync", "bool", textureReplacementsAsync.toString()))
-                add(settingOp("EmuCoreH/GS", "PrecacheTextureReplacements", "bool", textureReplacementsPrecache.toString()))
-                add(settingOp("EmuCoreH/GS", "DumpReplaceableTextures", "bool", textureDumpingEnabled.toString()))
-                add(settingOp("EmuCoreH/GS", "DumpTexturesWithFMVActive", "bool", "false"))
-                add(settingOp("EmuCoreH/GS", "DisableShaderCache", "bool", "false"))
+                add(settingOp("EmuCoreH/Runtime", "ShaderChainEnabled", "bool", (shaderChainEnabled && shaderChainPreset.isNotBlank()).toString()))
+                add(settingOp("EmuCoreH/Runtime", "ShaderChainPreset", "string", shaderChainPreset.trim()))
+                add(settingOp("EmuCoreH/Runtime", "LoadTextureReplacements", "bool", textureReplacementsEnabled.toString()))
+                add(settingOp("EmuCoreH/Runtime", "LoadTextureReplacementsAsync", "bool", textureReplacementsAsync.toString()))
+                add(settingOp("EmuCoreH/Runtime", "PrecacheTextureReplacements", "bool", textureReplacementsPrecache.toString()))
+                add(settingOp("EmuCoreH/Runtime", "DumpReplaceableTextures", "bool", textureDumpingEnabled.toString()))
+                add(settingOp("EmuCoreH/Runtime", "DumpTexturesWithFMVActive", "bool", "false"))
+                add(settingOp("EmuCoreH/Runtime", "DisableShaderCache", "bool", "false"))
                 add(settingOp("EmuCoreH", "BiosSource", "string", biosPath.orEmpty()))
                 add(settingOp("EmuCoreH", "Renderer", "int", resolvedRenderer.toString()))
                 add(settingOp("EmuCoreH", "UpscaleMultiplier", "float", upscaleMultiplier.toString()))
                 add(settingOp("EmuCoreH", "GpuHardwareProfile", "int", normalizedGpuHardwareProfile.toString()))
                 add(settingOp("EmuCoreH", "HasContext", "bool", (context.applicationContext != null).toString()))
-                add(settingOp("EmuCoreH", "AutotestMode", "bool", autotestMode.toString()))
                 add(settingOp("EmuCoreH", "ProfilerLogcat", "bool", prefs.profilerLogcatSync().toString()))
                 add(settingOp("EmuCoreH", "AppVersion", "string", appVersionName(context)))
                 add(settingOp("EmuCoreH", "WarnAboutUnsafeSettings", "bool", "false"))
                 add(settingOp("InputSources", "PadVibration", "bool", padVibrationEnabled.toString()))
-                add(customDriverOp(resolvedCustomDriverPath))
             }
         )
         // Crop is applied by the frontend presenter, not the core option set,
         // so it is pushed straight to the native bridge.
         NativeApp.setDisplayCrop(displayCrop.sanitized())
         if (runtimeApplied) {
-            settingsCache["EmuCoreH/GS:Renderer"] = resolvedRenderer.toString()
+            settingsCache["EmuCoreH/Runtime:Renderer"] = resolvedRenderer.toString()
         }
     }
 
     suspend fun startEmulation(
         path: String,
         saveStateIdentityPath: String? = null,
-        bootSmokeProbe: Boolean = false,
         allowBiosBoot: Boolean = false
     ): Boolean {
         if (!isNativeLoaded) {
             Log.e(TAG, "startEmulation skipped: native library is not loaded")
             return false
         }
-        if (path.isBlank() && !allowBiosBoot && !bootSmokeProbe) {
+        if (path.isBlank() && !allowBiosBoot) {
             Log.e(TAG, "startEmulation rejected blank game path")
             return false
         }
         // Save-state files are named after the path the user launched, not the
         // core's prepared/materialized path, so writes and listings agree.
         NativeApp.setSaveStateIdentityPath(saveStateIdentityPath ?: path)
-        val isElf = when {
-            path.substringAfterLast('.', "").equals("elf", ignoreCase = true) -> true
-            path.startsWith("content://") -> {
-                val context = getContext()
-                val displayName = context?.let { DocumentPathResolver.getDisplayName(it, path) }.orEmpty()
-                displayName.substringAfterLast('.', "").equals("elf", ignoreCase = true)
-            }
-            else -> false
-        }
-        val isIrx = when {
-            path.substringAfterLast('.', "").equals("irx", ignoreCase = true) -> true
-            path.startsWith("content://") -> {
-                val context = getContext()
-                val displayName = context?.let { DocumentPathResolver.getDisplayName(it, path) }.orEmpty()
-                displayName.substringAfterLast('.', "").equals("irx", ignoreCase = true)
-            }
-            else -> false
-        }
-        val isExeExecutable = when {
-            path.substringAfterLast('.', "").let { it.equals("exe", true) || it.equals("psexe", true) || it.equals("cpe", true) } -> true
-            path.startsWith("content://") -> {
-                val context = getContext()
-                val displayName = context?.let { DocumentPathResolver.getDisplayName(it, path) }.orEmpty()
-                displayName.substringAfterLast('.', "").let {
-                    it.equals("exe", true) || it.equals("psexe", true) || it.equals("cpe", true)
-                }
-            }
-            else -> false
-        }
         val pathType = when {
             path.startsWith("content://") -> "content"
             path.isBlank() -> "bios"
             else -> "file"
         }
         NativeApp.logCrashBreadcrumb("startEmulation requested pathType=$pathType vmActive=$isVmActive")
-        Log.i(TAG, "startEmulation requested pathType=$pathType bootSmoke=$bootSmokeProbe vmActive=$isVmActive")
+        Log.i(TAG, "startEmulation requested pathType=$pathType vmActive=$isVmActive")
 
         return BackupSessionGate.start(active = { isVmActive }) {
             getContext()?.let { com.sbro.emucoreh.data.drive.DriveBackupArchive(it).recoverPending() }
@@ -529,28 +416,14 @@ object EmulatorBridge {
             isVmActive = true
             shutdownRequested = false
             var result = try {
-                NativeApp.logCrashBreadcrumb(
-                    "startEmulation entering native ${
-                        when {
-                            bootSmokeProbe -> "runBootSmokeProbe"
-                            isElf -> "bootElf"
-                            isIrx -> "bootIrx"
-                            else -> "runVMThread"
-                        }
-                    }"
-                )
-                when {
-                    bootSmokeProbe -> NativeApp.runBootSmokeProbe(path, BOOT_SMOKE_PROBE_STEPS) != 0
-                    isElf -> NativeApp.bootElf(path)
-                    isIrx -> NativeApp.bootIrx(path)
-                    else -> NativeApp.runVMThread(path)
-                }
+                NativeApp.logCrashBreadcrumb("startEmulation entering native runVMThread")
+                NativeApp.runVMThread(path)
             } catch (error: Exception) {
                 NativeApp.logCrashBreadcrumb("startEmulation exception before native start returned")
                 Log.e(TAG, "startEmulation native call failed", error)
                 false
             }
-            if (result && !bootSmokeProbe && !allowBiosBoot && !isElf && !isIrx && !isExeExecutable && !path.isBlank()) {
+            if (result && !allowBiosBoot && !path.isBlank()) {
                 // The bundled core silently boots the BIOS when a disc image
                 // cannot be opened. Surface that as a failed launch instead of
                 // leaving the user on a misleading BIOS screen.
@@ -565,9 +438,7 @@ object EmulatorBridge {
             if (!isVmActive) {
                 DocumentPathResolver.releasePreparedLaunchHandles()
             }
-            if (result && !bootSmokeProbe && !allowBiosBoot && !isElf && !isIrx && !isExeExecutable &&
-                !path.isBlank()
-            ) {
+            if (result && !allowBiosBoot && !path.isBlank()) {
                 recordLearnedGameSerial(path)
             }
             NativeApp.logCrashBreadcrumb("startEmulation finished result=$result")
@@ -634,17 +505,6 @@ object EmulatorBridge {
         }
     }
 
-    suspend fun isJitProfilerActive(): Boolean {
-        if (!isNativeLoaded || !isVmActive) return false
-        return runSerial {
-            try {
-                NativeApp.isJitProfilerActive()
-            } catch (_: Exception) {
-                false
-            }
-        }
-    }
-
     suspend fun startHangTrace() {
         if (!isNativeLoaded || !isVmActive) return
         runSerial {
@@ -660,17 +520,6 @@ object EmulatorBridge {
             try {
                 NativeApp.stopHangTrace()
             } catch (_: Exception) { }
-        }
-    }
-
-    suspend fun isHangTraceActive(): Boolean {
-        if (!isNativeLoaded || !isVmActive) return false
-        return runSerial {
-            try {
-                NativeApp.isHangTraceActive()
-            } catch (_: Exception) {
-                false
-            }
         }
     }
 
@@ -746,7 +595,6 @@ object EmulatorBridge {
 
         if (!readDiscMetadata || !isNativeLoaded) return inferredMetadata
         if (isVmActive) return inferredMetadata
-        if (extension == "elf") return inferredMetadata
 
         getContext()?.let { context ->
             runCatching { GameMetadataReader.read(context, path) }.getOrNull()?.let { metadata ->
@@ -849,7 +697,7 @@ object EmulatorBridge {
 
     fun parseMetadataFromName(rawName: String): GameMetadata {
         val ext = rawName.substringAfterLast('.', "").lowercase()
-        val cleanName = if (ext in setOf("iso", "bin", "cue", "img", "mdf", "gz", "cso", "zso", "chd", "elf", "pbp", "prx", "plf", "zip", "7z", "dat", "lst", "m3u")) {
+        val cleanName = if (ext in setOf("iso", "bin", "cue", "img", "mdf", "gz", "chd", "zip", "7z", "dat", "lst", "m3u")) {
             rawName.substringBeforeLast('.').trim()
         } else {
             rawName.trim()
@@ -957,8 +805,9 @@ object EmulatorBridge {
     }
 
     /**
-     * Replaces the mounted PS2 disc without restarting the VM. Native code performs
-     * the CDVD mutation on the CPU thread and restores the previous image on failure.
+     * Replaces the mounted GD-ROM disc without restarting the VM. Native code
+     * performs the disc mutation on the CPU thread and restores the previous
+     * image on failure.
      */
     suspend fun changeDisc(path: String): Boolean {
         if (!isNativeLoaded || !isVmActive || path.isBlank()) return false
@@ -975,7 +824,7 @@ object EmulatorBridge {
 
     suspend fun setRenderer(gpuType: Int): Boolean {
         val resolvedRenderer = normalizeRenderer(gpuType)
-        val cacheKey = "EmuCoreH/GS:Renderer"
+        val cacheKey = "EmuCoreH/Runtime:Renderer"
         val rendererChanged = settingsCache[cacheKey] != resolvedRenderer.toString()
         NativeApp.logCrashBreadcrumb(
             "renderer change requested renderer=${rendererName(resolvedRenderer)}($resolvedRenderer) vmActive=$isVmActive"
@@ -1002,23 +851,23 @@ object EmulatorBridge {
 
     suspend fun setUpscaleMultiplier(multiplier: Float) {
         val normalized = normalizeUpscale(multiplier)
-        settingsCache["EmuCoreH/GS:upscale_multiplier"] = normalized.toString()
-        performRuntimeOps(listOf(upscaleOp(normalized), settingOp("EmuCoreH/GS", "upscale_multiplier", "float", normalized.toString())))
+        settingsCache["EmuCoreH/Runtime:upscale_multiplier"] = normalized.toString()
+        performRuntimeOps(listOf(upscaleOp(normalized), settingOp("EmuCoreH/Runtime", "upscale_multiplier", "float", normalized.toString())))
     }
 
     suspend fun setAspectRatio(type: Int) {
         val normalizedType = normalizeAspectRatio(type)
         val value = aspectRatioSettingValues.getValue(normalizedType)
-        settingsCache["EmuCoreH/GS:AspectRatio"] = value
+        settingsCache["EmuCoreH/Runtime:AspectRatio"] = value
         performRuntimeOps(listOf(aspectOp(normalizedType)))
     }
 
     suspend fun setDisplayCrop(value: DisplayCrop) {
         val crop = value.sanitized()
-        settingsCache["EmuCoreH/GS:CropLeft"] = crop.left.toString()
-        settingsCache["EmuCoreH/GS:CropTop"] = crop.top.toString()
-        settingsCache["EmuCoreH/GS:CropRight"] = crop.right.toString()
-        settingsCache["EmuCoreH/GS:CropBottom"] = crop.bottom.toString()
+        settingsCache["EmuCoreH/Runtime:CropLeft"] = crop.left.toString()
+        settingsCache["EmuCoreH/Runtime:CropTop"] = crop.top.toString()
+        settingsCache["EmuCoreH/Runtime:CropRight"] = crop.right.toString()
+        settingsCache["EmuCoreH/Runtime:CropBottom"] = crop.bottom.toString()
         NativeApp.setDisplayCrop(crop)
     }
 
@@ -1027,22 +876,16 @@ object EmulatorBridge {
             AppPreferences.LOCAL_MULTIPLAYER_OFF,
             AppPreferences.LOCAL_MULTIPLAYER_HORIZONTAL_CROP_SWAPPED
         )
-        settingsCache["EmuCoreH/GS:LocalMultiplayerMode"] = normalized.toString()
+        settingsCache["EmuCoreH/Runtime:LocalMultiplayerMode"] = normalized.toString()
         performRuntimeOps(
-            listOf(settingOp("EmuCoreH/GS", "LocalMultiplayerMode", "int", normalized.toString()))
+            listOf(settingOp("EmuCoreH/Runtime", "LocalMultiplayerMode", "int", normalized.toString()))
         )
-    }
-
-    suspend fun setCustomDriverPath(path: String) {
-        // The current PPSSPP frontend uses the system EGL/OpenGL driver.
-        settingsCache["EmuCoreH/GS:CustomDriverPath"] = ""
-        performRuntimeOps(listOf(customDriverOp("")))
     }
 
     suspend fun setFrameLimitEnabled(enabled: Boolean) {
         if (!isNativeLoaded) return
         val value = enabled.toString()
-        val cacheKey = "EmuCoreH/GS:FrameLimitEnable"
+        val cacheKey = "EmuCoreH/Runtime:FrameLimitEnable"
         if (settingsCache[cacheKey] == value) return
         runSerial {
             NativeApp.setFrameLimitEnabled(enabled)
@@ -1051,7 +894,7 @@ object EmulatorBridge {
     }
 
     suspend fun setVSyncEnabled(enabled: Boolean) {
-        setSetting("EmuCoreH/GS", "VsyncEnable", "bool", enabled.toString())
+        setSetting("EmuCoreH/Runtime", "VsyncEnable", "bool", enabled.toString())
     }
 
     suspend fun setFastForwardSpeed(value: Float) {
@@ -1166,7 +1009,8 @@ object EmulatorBridge {
         runCatching { NativeApp.pause() }
         Log.i(TAG, "onSurfaceDestroyed: pause done, calling native destroy")
         // Android invalidates the BufferQueue as soon as this callback returns.
-        // Detach GS synchronously so it cannot keep presenting to an abandoned Surface.
+        // Detach the core's renderer synchronously so it cannot keep presenting
+        // to an abandoned Surface.
         try {
             NativeApp.onNativeSurfaceDestroyed()
             Log.i(TAG, "onSurfaceDestroyed: native destroy done")
@@ -1202,11 +1046,6 @@ object EmulatorBridge {
             settingsCache[cacheKey] = value
     }
 
-    suspend fun reloadPatches() {
-        if (!isNativeLoaded) return
-        runSerial { NativeApp.reloadPatches() }
-    }
-
     fun getSetting(section: String, key: String, type: String): String? {
         if (!isNativeLoaded) return null
         return try {
@@ -1220,7 +1059,7 @@ object EmulatorBridge {
         // The frame pacer reads this key directly; it must be part of the
         // session-start batch or a manual rate is only honoured after the user
         // touches the in-game control.
-        val targetOp = settingOp("EmuCoreH/GS", "TargetFps", "int", targetFps.coerceIn(0, 120).toString())
+        val targetOp = settingOp("EmuCoreH/Runtime", "TargetFps", "int", targetFps.coerceIn(0, 120).toString())
         if (targetFps <= 0) {
             return listOf(targetOp) + regionFramerateOps(ntscFramerate, palFramerate)
         }
@@ -1228,8 +1067,8 @@ object EmulatorBridge {
         val manualFps = targetFps.coerceIn(20, 120).toFloat()
         return listOf(
             targetOp,
-            settingOp("EmuCoreH/GS", "FramerateNTSC", "float", manualFps.toString()),
-            settingOp("EmuCoreH/GS", "FrameratePAL", "float", manualFps.toString())
+            settingOp("EmuCoreH/Runtime", "FramerateNTSC", "float", manualFps.toString()),
+            settingOp("EmuCoreH/Runtime", "FrameratePAL", "float", manualFps.toString())
         )
     }
 

@@ -13,24 +13,20 @@ class CoreMaintenanceTest {
     fun `reset clears regenerable files and keeps user data`() {
         val root = Files.createTempDirectory("core-maintenance").toFile()
         try {
-            val inis = File(root, "inis").apply { mkdirs() }
-            File(inis, "PCSX2.ini").writeText("old settings")
             val cache = File(root, "cache").apply { mkdirs() }
             File(cache, "baked_shaders.bin").writeText("shaders")
             File(File(cache, "achievement_images").apply { mkdirs() }, "badge.png").writeText("badge")
 
             val memcards = File(root, "memcards").apply { mkdirs() }
-            val memoryCard = File(memcards, "card.ps2").apply { writeText("memory card") }
+            val memoryCard = File(memcards, "card.vmu").apply { writeText("memory card") }
             val sstates = File(root, "sstates").apply { mkdirs() }
-            val saveState = File(sstates, "game.p2s").apply { writeText("state") }
+            val saveState = File(sstates, "game.rstate").apply { writeText("state") }
             val resources = File(root, "resources").apply { mkdirs() }
             val patches = File(resources, "patches.zip").apply { writeText("patches") }
 
             val deletedFiles = clearRegenerableCoreState(root)
 
-            assertEquals(3, deletedFiles)
-            assertTrue(inis.isDirectory)
-            assertFalse(File(inis, "PCSX2.ini").exists())
+            assertEquals(2, deletedFiles)
             assertTrue(cache.isDirectory)
             assertFalse(File(cache, "baked_shaders.bin").exists())
             assertFalse(File(cache, "achievement_images").exists())

@@ -167,10 +167,10 @@ enum class GameMenuSectionId(val tab: GameMenuTabId) {
 }
 
 /**
- * Tabs and sections backed by the current PS1 runtime or by frontend-owned state.
+ * Tabs and sections backed by the live Flycast runtime or by frontend-owned state.
  *
- * The remaining enum values are retained solely so preferences imported from the
- * earlier PS2 frontend can be decoded and migrated without crashing. They must
+ * The remaining enum values are retained solely so preferences imported from an
+ * earlier frontend build can be decoded and migrated without crashing. They must
  * not be offered by the EmuCoreH UI until there is a real core implementation.
  */
 val SupportedGameMenuTabs: List<GameMenuTabId> = listOf(

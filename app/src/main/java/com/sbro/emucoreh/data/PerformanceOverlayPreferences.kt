@@ -11,7 +11,7 @@ object PerformanceOverlayMetrics {
     const val QUEUE = 1 shl 7
     const val RESOLUTION = 1 shl 8
     // Keep the bit positions stable so existing user selections migrate from
-    // the old PS2 frontend without resetting the whole overlay configuration.
+    // the earlier frontend build without resetting the whole overlay configuration.
     const val GPU_CORE = 1 shl 10
     const val JIT = 1 shl 11
     const val CDROM = 1 shl 12

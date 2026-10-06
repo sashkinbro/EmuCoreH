@@ -69,7 +69,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.GamepadManager
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
-import com.sbro.emucoreh.data.ps1.Ps1CatalogSummary
+import com.sbro.emucoreh.data.igdb.IgdbCatalogSummary
 import com.sbro.emucoreh.ui.common.GameCoverArt
 import com.sbro.emucoreh.ui.common.EmuCoreHLoadingAnimation
 import com.sbro.emucoreh.ui.common.RequestFocusOnResume
@@ -483,7 +483,7 @@ private fun formatRatingFilter(value: Double): String {
 @Composable
 private fun CatalogGameCard(
     modifier: Modifier = Modifier,
-    game: Ps1CatalogSummary,
+    game: IgdbCatalogSummary,
     onClick: () -> Unit,
     compact: Boolean
 ) {

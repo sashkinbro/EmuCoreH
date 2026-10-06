@@ -5,7 +5,7 @@ package com.sbro.emucoreh.core
 import android.view.Surface
 
 /**
- * JNI surface over the bundled PPSSPP libretro frontend.
+ * JNI surface over the bundled Flycast libretro frontend.
  *
  * The native side drives the core through the libretro API (video, audio,
  * input, environment); the frame loop and pad state stay on the Kotlin side.
@@ -26,7 +26,6 @@ class NativeCoreBridge {
     external fun createSession(): Long
     external fun destroySession(handle: Long)
     external fun nativeSetOption(key: String, value: String)
-    external fun nativeGetOption(key: String): String?
     /** Frontend post-processing effect derived from the selected shader preset. */
     external fun nativeSetShaderEffect(effect: Int)
 
@@ -36,15 +35,13 @@ class NativeCoreBridge {
     // ---------------------------------------------------------------------
     // Content.
     // ---------------------------------------------------------------------
-    external fun loadBios(handle: Long, path: String): Int
     /** Boots the core with no content into the Dreamcast BIOS. */
     external fun loadBiosOnly(handle: Long): Int
     external fun loadDisc(handle: Long, path: String): Int
-    external fun reset(handle: Long): Int
 
     /** Runs one guest frame; audio is pulled by the output stream callback. */
     external fun runFrame(handle: Long)
-    /** 0 normal, 1 fast forward, 2 rewind. */
+    /** 0 normal, 1 fast forward. */
     external fun setTimeControl(mode: Int)
     /**
      * Creates/rebinds the hardware renderer context on the calling thread.
@@ -65,11 +62,10 @@ class NativeCoreBridge {
     external fun getPadState(handle: Long, port: Int): Int
 
     // ---------------------------------------------------------------------
-    // Save states / memory cards.
+    // Save states.
     // ---------------------------------------------------------------------
     external fun saveState(handle: Long, path: String): Int
     external fun loadState(handle: Long, path: String): Int
-    external fun createMemoryCard(path: String): Int
 
     // ---------------------------------------------------------------------
     // Diagnostics.
@@ -82,7 +78,6 @@ class NativeCoreBridge {
      * `{left, top, right, bottom}` (null until a window is attached).
      */
     external fun getPresentRect(): FloatArray?
-    external fun getAvInfo(handle: Long): LongArray?
     /** Emulated vertical refresh in Hz, used for audio-synced frame pacing. */
     external fun getFrameRate(handle: Long): Double
 
@@ -102,14 +97,9 @@ class NativeCoreBridge {
 
     // Compatibility surface used by the app layer. The libretro frontend owns
     // AAudio buffering; cheats go through retro_cheat_set in the native bridge.
-    fun setAudioBufferMs(@Suppress("UNUSED_PARAMETER") milliseconds: Int) = Unit
-
-    /** Loads active GameShark-style codes from a PCSX `.cht` container. */
+    /** Loads active GameShark-style cheat codes staged for the core. */
     external fun loadCheats(path: String)
     external fun clearCheats()
-
-    /** Binds an explicit memory-card image to a slot (null or blank disables it). */
-    external fun setMemoryCardPath(slot: Int, path: String?)
 
     /**
      * Overrides the data root Flycast writes its save data to (null or blank
@@ -170,39 +160,10 @@ class NativeCoreBridge {
     external fun audioOutputStats(handle: Long): LongArray?
 
     // ---------------------------------------------------------------------
-    // Disc metadata read straight from the image (SYSTEM.CNF). The library
-    // layer falls back to filename-derived titles when this returns null.
+    // Disc metadata read straight from the image. The library layer falls
+    // back to filename-derived titles when this returns null.
     // ---------------------------------------------------------------------
-    external fun readGameAsset(path: String, asset: Int): ByteArray?
-    external fun readGameAssetFd(fd: Int, asset: Int): ByteArray?
     external fun getDiscMetadata(path: String): String?
 
     external fun getDiscMetadataFd(fd: Int, offset: Long, size: Long): String?
-
-    // ---------------------------------------------------------------------
-    // Legacy self-test surface retained for the frontend diagnostics screen.
-    // ---------------------------------------------------------------------
-    fun getHostInfo(): String = getSystemInfo()
-    private fun unavailable(@Suppress("UNUSED_PARAMETER") name: String): String =
-        "PPSSPP core: '$name' self-test is not available for the libretro core"
-
-    fun runSmoke(): String = unavailable("smoke")
-    fun runCpuTests(): String = unavailable("cpu")
-    fun runIrqTimerTests(): String = unavailable("irq-timer")
-    fun runDmaTests(): String = unavailable("dma")
-    fun runGteTests(): String = unavailable("gte")
-    fun runGpuTests(): String = unavailable("gpu")
-    fun runSpuMdecTests(): String = unavailable("spu-mdec")
-    fun runCdromSioTests(): String = unavailable("cdrom-sio")
-    fun runJitTests(): String = unavailable("jit")
-    fun runBiosTests(): String = unavailable("bios")
-    fun runOptimizedTests(): String = unavailable("optimized")
-    fun runRegressionTests(): String = unavailable("regression")
-    fun runFinalTests(): String = unavailable("final")
-    fun runDiscLoaderTests(): String = unavailable("disc-loader")
-    fun runAsyncDiscTests(): String = unavailable("async-disc")
-    fun runSavestateFileTests(): String = unavailable("savestate")
-    fun runBootTests(): String = unavailable("boot")
-    fun runGamesBootTests(): String = unavailable("games-boot")
-    fun runHostThreadTests(): String = unavailable("host-thread")
 }

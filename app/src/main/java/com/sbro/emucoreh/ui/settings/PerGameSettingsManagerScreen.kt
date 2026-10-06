@@ -872,7 +872,7 @@ private fun GameSettingsTabContent(
                     // Internal resolution is the app-level per-game setting
                     // (draft.upscaleMultiplier) - the same value the in-game
                     // resolution selector edits. Exposing the raw core option
-                    // (swanstation_GPU_ResolutionScale) here duplicated the
+                    // (reicast_internal_resolution) here duplicated the
                     // setting: the manager showed the catalogue default (1x)
                     // while the game ran the in-game value, and a single edit
                     // here pinned a core-option override that shadowed the
@@ -1637,9 +1637,6 @@ private fun SettingsSnapshot.toPerGameSettings(game: GameItem): PerGameSettings 
         gameTitle = game.title,
         gameSerial = game.serial,
         renderer = renderer,
-        gpuDriverType = gpuDriverType,
-        customDriverPath = customDriverPath,
-        mediatekAngleOpenGl = mediatekAngleOpenGl,
         upscaleMultiplier = upscaleMultiplier,
         aspectRatio = aspectRatio,
         localMultiplayerMode = localMultiplayerMode,
@@ -1682,9 +1679,6 @@ private fun PerGameSettings.resolveAgainst(defaultProfile: PerGameSettings): Per
         gameTitle = gameTitle,
         gameSerial = gameSerial,
         renderer = pick("renderer", renderer, defaultProfile.renderer),
-        gpuDriverType = pick("gpuDriverType", gpuDriverType, defaultProfile.gpuDriverType),
-        customDriverPath = pick("customDriverPath", customDriverPath, defaultProfile.customDriverPath),
-        mediatekAngleOpenGl = pick("mediatekAngleOpenGl", mediatekAngleOpenGl, defaultProfile.mediatekAngleOpenGl),
         upscaleMultiplier = pick("upscaleMultiplier", upscaleMultiplier, defaultProfile.upscaleMultiplier),
         aspectRatio = pick("aspectRatio", aspectRatio, defaultProfile.aspectRatio),
         localMultiplayerMode = pick(

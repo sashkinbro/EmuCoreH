@@ -353,12 +353,8 @@ private fun Int.isRightOverlayCorner(): Boolean {
 fun EmulationScreen(
     gamePath: String? = null,
     bootToBios: Boolean = false,
-    bootSmokeProbe: Boolean = false,
     saveSlot: Int? = null,
-    autotestMode: Boolean = false,
     rendererOverride: Int? = null,
-    gsDumpFrames: Int? = null,
-    gsDumpDelayMs: Int? = null,
     restoredAfterProcessDeath: Boolean = false,
     onExit: (activePlayTimeMs: Long) -> Unit,
     viewModel: EmulationViewModel = viewModel()
@@ -723,11 +719,7 @@ fun EmulationScreen(
     LaunchedEffect(
         gamePath,
         bootToBios,
-        bootSmokeProbe,
-        autotestMode,
         rendererOverride,
-        gsDumpFrames,
-        gsDumpDelayMs,
         restoredAfterProcessDeath
     ) {
         if (restoredAfterProcessDeath) return@LaunchedEffect
@@ -735,11 +727,7 @@ fun EmulationScreen(
             path = gamePath,
             slotToLoad = saveSlot,
             bootToBios = bootToBios,
-            bootSmokeProbe = bootSmokeProbe,
-            autotestMode = autotestMode,
-            rendererOverride = rendererOverride,
-            gsDumpFrames = gsDumpFrames,
-            gsDumpDelayMs = gsDumpDelayMs
+            rendererOverride = rendererOverride
         )
     }
 
@@ -811,7 +799,7 @@ fun EmulationScreen(
         GamepadManager.setEmulationInputEnabled(!gamepadUiActive)
     }
 
-    // The core latches DualShock rumble every frame; forward it to the
+    // The core latches pad rumble every frame; forward it to the
     // connected gamepad or the device vibrator while emulation runs. Polling
     // happens off the main thread because the frame loop holds the runtime
     // session lock for the duration of each frame.
@@ -3710,7 +3698,7 @@ private fun EmulationSidebarMenu(
 
                         // Internal resolution belongs to the app-level per-game
                         // upscale setting (uiState.upscale). Binding this row to
-                        // the raw core option (swanstation_GPU_ResolutionScale)
+                        // the raw core option (reicast_internal_resolution)
                         // persisted changes to the global core-option store, so
                         // they leaked into every game and never appeared in the
                         // game manager.
@@ -4699,8 +4687,6 @@ private fun InGameAchievementsTab() {
             }
 
             state.unsupportedImage -> RaNoticeCard(stringResource(R.string.achievements_unsupported_image))
-
-            state.imageReadError -> RaNoticeCard(stringResource(R.string.achievements_game_unavailable), isError = true)
 
             state.lastError != null -> RaNoticeCard(
                 stringResource(R.string.achievements_error, state.lastError.orEmpty()), isError = true

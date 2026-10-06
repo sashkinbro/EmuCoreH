@@ -1,10 +1,10 @@
-
+// SPDX-FileCopyrightText: 2026 SBRO
+// SPDX-License-Identifier: LicenseRef-EmuCoreH-Proprietary
 package com.sbro.emucoreh.core
 
 import android.content.Context
 import android.util.Log
 import android.view.Surface
-import org.json.JSONArray
 import java.io.File
 import java.io.FileInputStream
 import java.lang.ref.WeakReference
@@ -12,7 +12,6 @@ import androidx.core.net.toUri
 import android.os.ParcelFileDescriptor
 import android.os.Handler
 import android.os.Looper
-import org.json.JSONObject
 import java.security.MessageDigest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -55,16 +54,11 @@ object NativeApp {
     private val timeControlTapPulse = Array(2) { BooleanArray(2) }
     private val _timeControlMode = MutableStateFlow(0)
     val timeControlMode: StateFlow<Int> = _timeControlMode.asStateFlow()
-    private var profilerActive = false
-    private var hangTraceActive = false
-
-    @JvmStatic fun initialize(path: String, apiVer: Int) = Unit
 
     @JvmStatic fun reloadDataRoot(path: String) { dataRootOverride = path.takeIf(String::isNotBlank) }
     @JvmStatic fun setSaveStateIdentityPath(path: String?) {
         saveStateIdentityPath = path?.takeIf(String::isNotBlank)
     }
-    @JvmStatic fun setSystemCaBundlePath(path: String) = Unit
     @JvmStatic fun getGameTitle(path: String): String? {
         val fallback = if (path.startsWith("content://")) {
             contextRef?.get()?.let { DocumentPathResolver.getDisplayName(it, path) }
@@ -105,7 +99,7 @@ object NativeApp {
                 CoreRuntime.bridge.getDiscMetadata(path)
             }
         }.onFailure { error ->
-            Log.w(TAG, "Unable to read PSP game metadata: $path", error)
+            Log.w(TAG, "Unable to read disc metadata: $path", error)
         }.getOrNull()
         val fields = rawMetadata?.split('\n', limit = 3).orEmpty()
         val serial = fields.getOrNull(1).orEmpty().trim()
@@ -142,16 +136,12 @@ object NativeApp {
     }.getOrNull()
     @JvmStatic fun setAudioOutputGain(volume: Int, muted: Boolean) =
         CoreRuntime.setAudioGain(volume, muted)
-    @JvmStatic fun setAudioBufferMs(milliseconds: Int) = runCatching {
-        CoreRuntime.bridge.setAudioBufferMs(milliseconds)
-    }
     @JvmStatic fun setAudioOutputLatencyMs(milliseconds: Int) = runCatching {
         CoreRuntime.bridge.setAudioOutputLatencyMs(milliseconds)
     }
     @JvmStatic fun setAudioLowLatency(enabled: Boolean) = runCatching {
         CoreRuntime.bridge.setAudioLowLatency(enabled)
     }
-    @JvmStatic fun queueGsDump(frames: Int) = Unit
     @JvmStatic @Synchronized fun setPadButton(padIndex: Int, index: Int, range: Int, pressed: Boolean) {
         if (padIndex !in 0..1) return
         // Fast forward only: holding Start (or the dedicated button) speeds the
@@ -175,22 +165,14 @@ object NativeApp {
             dispatchPadAnalog(padIndex)
             return
         }
-        val bit = pspButtonBit(index) ?: return
+        val bit = padButtonBit(index) ?: return
         padButtons[padIndex] = if (pressed) padButtons[padIndex] and (1 shl bit).inv()
         else padButtons[padIndex] or (1 shl bit)
         CoreRuntime.setPadButtons(padIndex, padButtons[padIndex])
     }
-    @JvmStatic fun setInternetLinkTransportReady(ready: Boolean) = Unit
-    @JvmStatic fun resetInternetLinkTransport() = Unit
-    @JvmStatic fun pushInternetLinkFrame(frame: ByteArray): Boolean = false
-    @JvmStatic fun pollInternetLinkFrame(): ByteArray? = null
-    @JvmStatic fun setPadPressureModifierAmount(amountPercent: Int) = Unit
     @JvmStatic fun onHostKeyEvent(keyCode: Int, pressed: Boolean) {
         setPadButton(0, keyCode, 0, pressed)
     }
-    @JvmStatic fun onHostMousePosition(x: Float, y: Float) = Unit
-    @JvmStatic fun onHostMouseButton(button: Int, pressed: Boolean) = Unit
-    @JvmStatic fun onHostMouseWheel(deltaX: Float, deltaY: Float) = Unit
     @JvmStatic fun resetKeyStatus() { resetPadState(0); resetPadState(1) }
     @JvmStatic @Synchronized fun resetPadState(padIndex: Int) {
         if (padIndex !in 0..1) return
@@ -217,13 +199,6 @@ object NativeApp {
     // resolution increase is the 2x "enhanced resolution" buffer.
     @JvmStatic fun getMaxUpscaleMultiplier(renderer: Int): Int =
         if (RendererDefaults.toCoreRenderer(renderer) == RendererDefaults.CORE_SOFTWARE) 1 else UPSCALE_MAX.toInt()
-    @JvmStatic fun renderGpu(value: Int) = Unit
-    @JvmStatic fun setCustomDriverPath(path: String) {
-        CoreRuntime.updateSetting("EmuCoreH/GPU", "CustomDriverPath", path)
-    }
-    @JvmStatic fun setNativeLibraryDir(path: String) = Unit
-    @JvmStatic fun beginSettingsBatch() = Unit
-    @JvmStatic fun endSettingsBatch() = Unit
     @JvmStatic fun setSetting(section: String, key: String, type: String, value: String): Boolean =
         CoreRuntime.updateSetting(section, key, value)
     @JvmStatic fun getSetting(section: String, key: String, type: String): String? = CoreRuntime.settings["$section:$key"]
@@ -236,7 +211,7 @@ object NativeApp {
     }
     @JvmStatic fun setFrameSkip(frames: Int) {
         val clamped = frames.coerceIn(0, 4)
-        CoreRuntime.updateSetting("EmuCoreH/GS", "FrameSkip", clamped.toString())
+        CoreRuntime.updateSetting("EmuCoreH/Runtime", "FrameSkip", clamped.toString())
         runCatching { CoreRuntime.bridge.setFrameSkip(clamped) }
     }
     @JvmStatic fun setDisplayCrop(crop: com.sbro.emucoreh.data.DisplayCrop) {
@@ -246,11 +221,9 @@ object NativeApp {
         }
     }
     @JvmStatic fun setFrameLimitEnabled(enabled: Boolean) =
-        CoreRuntime.updateSetting("EmuCoreH/GS", "FrameLimitEnable", enabled.toString())
-    @JvmStatic fun reloadPatches() = CoreRuntime.reloadCheats()
+        CoreRuntime.updateSetting("EmuCoreH/Runtime", "FrameLimitEnable", enabled.toString())
     @JvmStatic fun loadCheats(path: String) = CoreRuntime.loadCheats(path)
     @JvmStatic fun clearCheats() = CoreRuntime.clearCheats()
-    @JvmStatic fun setMemoryCardPath(slot: Int, path: String?) = CoreRuntime.setMemoryCardPath(slot, path)
     @JvmStatic fun setDataRootOverride(path: String?) = CoreRuntime.setDataRootOverride(path)
     @JvmStatic fun hasDiscMedia(): Boolean = CoreRuntime.hasDiscMedia()
 
@@ -298,22 +271,13 @@ object NativeApp {
 
     @JvmStatic fun restartRenderer(renderer: Int): Boolean = CoreRuntime.restartWithRenderer(renderer)
     @JvmStatic fun changeDisc(path: String): Boolean = CoreRuntime.changeDisc(path)
-    @JvmStatic fun runBootSmokeProbe(path: String, steps: Int): Int = 0
-    @JvmStatic fun runJitExecutableMemorySmokeTest(): Boolean = runCatching {
-        CoreRuntime.bridge.getDiagnostics().contains("\"jit_w_x_ok\": 1")
-    }.getOrDefault(false)
-    @JvmStatic fun runEeFpuDivRoundingSelfTest(): String = "not applicable to R3000A"
-    @JvmStatic fun bootElf(path: String): Boolean = false
-    @JvmStatic fun bootIrx(path: String): Boolean = false
     @JvmStatic fun pause() = CoreRuntime.pause()
     @JvmStatic fun resume() = CoreRuntime.resume()
     @JvmStatic fun shutdown() = CoreRuntime.shutdown()
-    @JvmStatic fun refreshBIOS() = Unit
     @JvmStatic fun hasValidVm(): Boolean = CoreRuntime.isRunning()
     /** Ownership remains after a worker failure until explicit shutdown completes. */
     @JvmStatic fun hasOwnedVm(): Boolean = CoreRuntime.hasSession()
     val runtimeFailure get() = CoreRuntime.failure
-    @JvmStatic fun getGameSerial(): String? = extractPspSerial(saveStatePathSource())
     private fun saveStatePathSource(): String =
         saveStateIdentityPath?.takeIf(String::isNotBlank) ?: currentGamePath
 
@@ -340,70 +304,18 @@ object NativeApp {
         if (path.isBlank()) return null
         val context = getContext() ?: return null
         val directory = EmulatorStorage.saveStatesDir(context, dataRootOverride)
-        val identity = extractPspSerial(path) ?: path.sha256().take(16).uppercase()
+        val identity = extractDiscSerial(path) ?: path.sha256().take(16).uppercase()
         return File(directory, "$identity.${slot.coerceIn(0, 99).toString().padStart(2, '0')}.rstate").absolutePath
     }
     @JvmStatic fun getCurrentSaveStatePath(slot: Int): String? =
         getSaveStatePathForFile(saveStatePathSource(), slot)
     @JvmStatic fun getSaveStateScreenshot(path: String): ByteArray? = null
-    @JvmStatic fun listMemoryCards(): String? {
-        val context = getContext() ?: return "[]"
-        val directory = EmulatorStorage.memoryCardsDir(context, dataRootOverride).apply { mkdirs() }
-        return JSONArray().apply {
-            directory.listFiles().orEmpty().filter(File::isFile).forEach { file ->
-                put(JSONObject()
-                    .put("name", file.name)
-                    .put("path", file.absolutePath)
-                    .put("modifiedTime", file.lastModified())
-                    .put("type", 1)
-                    .put("fileType", if (file.length() == VMU_SIZE_BYTES) 1 else 0)
-                    .put("sizeBytes", file.length())
-                    .put("formatted", file.length() == VMU_SIZE_BYTES))
-            }
-        }.toString()
-    }
-    @JvmStatic fun createMemoryCard(name: String, type: Int, fileType: Int): Boolean {
-        if (type != 1) return false
-        val context = getContext() ?: return false
-        val file = File(EmulatorStorage.memoryCardsDir(context, dataRootOverride), name)
-        if (file.exists()) return false
-        return runCatching {
-            file.parentFile?.mkdirs()
-            CoreRuntime.bridge.createMemoryCard(file.absolutePath) == 0
-        }.getOrDefault(false)
-    }
     @JvmStatic fun convertIsoToChd(inputIsoPath: String): Int = -1
-    @JvmStatic fun startJitProfiler() { profilerActive = true }
-    @JvmStatic fun stopJitProfiler() { profilerActive = false }
-    @JvmStatic fun isJitProfilerActive(): Boolean = profilerActive
-    @JvmStatic fun startHangTrace() { hangTraceActive = true }
-    @JvmStatic fun stopHangTrace() { hangTraceActive = false }
-    @JvmStatic fun isHangTraceActive(): Boolean = hangTraceActive
-    @JvmStatic fun setNativeCrashLogFilePath(path: String) = Unit
 
-    @JvmStatic
-    fun parseMemoryCardList(raw: String?): List<NativeMemoryCardInfo> {
-        if (raw.isNullOrBlank()) return emptyList()
-        return runCatching {
-            val array = JSONArray(raw)
-            buildList {
-                for (index in 0 until array.length()) {
-                    val item = array.optJSONObject(index) ?: continue
-                    add(
-                        NativeMemoryCardInfo(
-                            name = item.optString("name"),
-                            path = item.optString("path"),
-                            modifiedTime = item.optLong("modifiedTime"),
-                            type = item.optInt("type"),
-                            fileType = item.optInt("fileType"),
-                            sizeBytes = item.optLong("sizeBytes"),
-                            formatted = item.optBoolean("formatted")
-                        )
-                    )
-                }
-            }
-        }.getOrDefault(emptyList())
-    }
+    @JvmStatic fun startJitProfiler() = Unit
+    @JvmStatic fun stopJitProfiler() = Unit
+    @JvmStatic fun startHangTrace() = Unit
+    @JvmStatic fun stopHangTrace() = Unit
 
     @JvmStatic
     fun initializeOnce(context: Context) {
@@ -495,7 +407,6 @@ object NativeApp {
             val requiredDirectories = arrayOf(
                 File(root, "cache"),
                 File(root, "resources"),
-                File(root, "inis"),
                 File(root, "sstates"),
                 File(root, "memcards")
             )
@@ -528,7 +439,7 @@ object NativeApp {
             val generation = button.press() ?: return
             if (slot < 2 && timeControlTapPulse[padIndex][slot]) {
                 timeControlTapPulse[padIndex][slot] = false
-                val bit = pspButtonBit(index) ?: return
+                val bit = padButtonBit(index) ?: return
                 padButtons[padIndex] = padButtons[padIndex] or (1 shl bit)
                 CoreRuntime.setPadButtons(padIndex, padButtons[padIndex])
             }
@@ -544,8 +455,8 @@ object NativeApp {
             val generation = button.generation
             updateTimeControl()
             if (wasTap && slot < 2) {
-                // A tap still reaches PSP as a normal Start/Select press.
-                val bit = pspButtonBit(index) ?: return
+                // A tap is still forwarded as a normal Start/Select press.
+                val bit = padButtonBit(index) ?: return
                 timeControlTapPulse[padIndex][slot] = true
                 padButtons[padIndex] = padButtons[padIndex] and (1 shl bit).inv()
                 CoreRuntime.setPadButtons(padIndex, padButtons[padIndex])
@@ -563,7 +474,7 @@ object NativeApp {
     }
 
     private fun updateTimeControl() {
-        // Rewind was removed: the core does not support it.
+        // Rewind is not supported by the core; only fast forward is exposed.
         val fastForward = (0..1).any { pad ->
             timeControlButtons[pad][0].active || timeControlButtons[pad][2].active
         }
@@ -572,7 +483,7 @@ object NativeApp {
         CoreRuntime.setTimeControl(mode)
     }
 
-    private fun pspButtonBit(index: Int): Int? = when (index) {
+    private fun padButtonBit(index: Int): Int? = when (index) {
         109 -> 0  // Select
         106 -> 1  // L3
         107 -> 2  // R3
@@ -619,11 +530,11 @@ object NativeApp {
         CoreRuntime.setPadAnalog(padIndex, lx, ly, rx, ry)
     }
 
-    private fun extractPspSerial(value: String): String? {
+    private fun extractDiscSerial(value: String): String? {
         // Reading game metadata opens the disc image, which is far too heavy
         // for the save-state paths that are computed for every game and slot.
         // Only pay for it when the name can actually carry such a serial.
-        val embedded = if (pspSerialCandidate.containsMatchIn(value)) {
+        val embedded = if (discSerialCandidate.containsMatchIn(value)) {
             contextRef?.get()?.let { context ->
                 runCatching { GameMetadataReader.read(context, value)?.serial }.getOrNull()
             }
@@ -631,7 +542,7 @@ object NativeApp {
             null
         }
         val normalized = (embedded ?: value).uppercase(java.util.Locale.ROOT)
-        val match = pspSerialPattern.find(normalized) ?: return null
+        val match = discSerialPattern.find(normalized) ?: return null
         return "${match.groupValues[1]}-${match.groupValues[2]}"
     }
 
@@ -646,17 +557,6 @@ object NativeApp {
     private const val PAD_SELECT = 109
     private const val TIME_CONTROL_HOLD_MS = 450L
     private const val TIME_CONTROL_TAP_MS = 60L
-    private const val VMU_SIZE_BYTES = 128L * 1024L
-    private val pspSerialCandidate = Regex("\\b[A-Z]{4}[-_. ]?\\d{5}\\b", RegexOption.IGNORE_CASE)
-    private val pspSerialPattern = Regex("\\b([A-Z]{4})[-_. ]?(\\d{5})\\b")
+    private val discSerialCandidate = Regex("\\b[A-Z]{4}[-_. ]?\\d{5}\\b", RegexOption.IGNORE_CASE)
+    private val discSerialPattern = Regex("\\b([A-Z]{4})[-_. ]?(\\d{5})\\b")
 }
-
-data class NativeMemoryCardInfo(
-    val name: String,
-    val path: String,
-    val modifiedTime: Long,
-    val type: Int,
-    val fileType: Int,
-    val sizeBytes: Long,
-    val formatted: Boolean
-)

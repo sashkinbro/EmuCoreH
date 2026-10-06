@@ -103,7 +103,6 @@ struct State {
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     VkFormat swapchain_format = VK_FORMAT_UNDEFINED;
     VkExtent2D swapchain_extent{};
-    VkSurfaceTransformFlagBitsKHR swapchain_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
     std::vector<VkImage> swapchain_images;
     std::vector<VkImageView> swapchain_views;
     std::vector<VkFramebuffer> swapchain_framebuffers;
@@ -1000,7 +999,6 @@ bool CreateSwapchain() {
     }
     g_vk.swapchain_format = format.format;
     g_vk.swapchain_extent = extent;
-    g_vk.swapchain_transform = capabilities.currentTransform;
     g_vk.swapchain_failures = 0;
 
     if ((usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0) {

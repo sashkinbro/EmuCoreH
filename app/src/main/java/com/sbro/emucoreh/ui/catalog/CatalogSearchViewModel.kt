@@ -3,8 +3,8 @@ package com.sbro.emucoreh.ui.catalog
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.sbro.emucoreh.data.ps1.Ps1CatalogRepository
-import com.sbro.emucoreh.data.ps1.Ps1CatalogSummary
+import com.sbro.emucoreh.data.igdb.IgdbCatalogRepository
+import com.sbro.emucoreh.data.igdb.IgdbCatalogSummary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -20,7 +20,7 @@ data class CatalogSearchUiState(
     val isLoadingMore: Boolean = false,
     val hasCatalog: Boolean = false,
     val hasMore: Boolean = false,
-    val results: List<Ps1CatalogSummary> = emptyList(),
+    val results: List<IgdbCatalogSummary> = emptyList(),
     val availableGenres: List<String> = emptyList(),
     val availableYears: List<Int> = emptyList(),
     val selectedGenre: String? = null,
@@ -33,7 +33,7 @@ class CatalogSearchViewModel(application: Application) : AndroidViewModel(applic
         private const val PAGE_SIZE = 60
     }
 
-    private val repository = Ps1CatalogRepository(application)
+    private val repository = IgdbCatalogRepository(application)
     private var refreshJob: Job? = null
     private var loadMoreJob: Job? = null
     private var started = false

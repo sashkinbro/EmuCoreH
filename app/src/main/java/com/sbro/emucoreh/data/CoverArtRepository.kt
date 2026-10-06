@@ -156,7 +156,7 @@ class CoverArtRepository(context: Context) {
         }
         val normalizedSerial = normalizeSerial(serial)
         if (normalizedSerial == null && title.isNullOrBlank()) {
-            Log.w(TAG, "Cannot download cover: no PSP serial or title")
+            Log.w(TAG, "Cannot download cover: no serial or title")
             return null
         }
         val coverBaseUrl = resolveCoverBaseUrl(style)
@@ -251,7 +251,7 @@ class CoverArtRepository(context: Context) {
                 if (missFile.exists()) missFile.delete()
                 result = downloadFromUrl(cover.url, coverFile, missFile, "EmuCoreH covers", cover.sha256)
                 if (result == null && style != AppPreferences.COVER_ART_STYLE_3D) {
-                    result = downloadFromUrl(cover.sourceUrl, coverFile, missFile, "IGDB PSP catalog")
+                    result = downloadFromUrl(cover.sourceUrl, coverFile, missFile, "IGDB Dreamcast catalog")
                 }
             }
         }

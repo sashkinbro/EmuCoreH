@@ -1621,18 +1621,11 @@ object FlycastCoreOptions {
         "reicast_preload_custom_textures",
     )
 
-    fun all(): List<Option> = optionList
-
-    fun categories(): List<Category> = categoryList
-
     fun forCategory(categoryKey: String): List<Option> = optionList.filter { it.category == categoryKey }
 
     fun option(key: String): Option? = optionsByKey[key]
 
     fun isManagedKey(key: String): Boolean = key in managedKeys
-
-    fun categoryLabel(categoryKey: String): String =
-        categoryList.firstOrNull { it.key == categoryKey }?.key ?: categoryKey
 
     /** System options without the network ones, which live in the Network tab. */
     fun systemOptions(): List<Option> = forCategory("system").filterNot { it.key in networkKeys }
@@ -1676,10 +1669,4 @@ object FlycastCoreOptions {
         }
 
     fun gameMenuControlsOptions(): List<Option> = inputOptions()
-
-    /** Options owned by the emulation thread and not persisted per game. */
-    val sessionKeys: Set<String> = setOf(
-        "reicast_frame_skipping",
-        "reicast_auto_skip_frame",
-    )
 }

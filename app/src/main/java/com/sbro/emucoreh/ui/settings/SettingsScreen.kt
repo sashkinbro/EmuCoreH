@@ -285,7 +285,6 @@ fun SettingsScreen(
     onBackClick: (() -> Unit)? = null,
     onOpenLanguageScreen: (() -> Unit)? = null,
     onOpenMemoryCardManager: (() -> Unit)? = null,
-    onOpenGameDbBrowser: (() -> Unit)? = null,
     onOpenControlsLayoutEditor: (() -> Unit)? = null,
     onOpenThemeManager: (() -> Unit)? = null,
     onOpenTouchControlCreator: (() -> Unit)? = null,
@@ -599,7 +598,6 @@ fun SettingsScreen(
                     searchQuery = ""
                 },
                 onOpenMemoryCardManager = onOpenMemoryCardManager,
-                onOpenGameDbBrowser = onOpenGameDbBrowser,
                 onOpenControlsLayoutEditor = onOpenControlsLayoutEditor,
                 onOpenThemeManager = onOpenThemeManager,
                 onOpenTouchControlCreator = onOpenTouchControlCreator,
@@ -1084,7 +1082,6 @@ private fun SettingsContent(
     topInset: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
     onOpenMemoryCardManager: (() -> Unit)? = null,
-    onOpenGameDbBrowser: (() -> Unit)? = null,
     onOpenControlsLayoutEditor: (() -> Unit)? = null,
     onOpenThemeManager: (() -> Unit)? = null,
     onOpenTouchControlCreator: (() -> Unit)? = null

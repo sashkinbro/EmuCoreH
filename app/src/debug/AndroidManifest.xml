@@ -7,17 +7,5 @@
             android:name=".RuntimeTestActivity"
             android:exported="false"
             android:theme="@style/Theme.EmuCoreH" />
-        <activity
-            android:name=".DebugJitSelfTestActivity"
-            android:exported="true"
-            android:theme="@style/Theme.EmuCoreH" />
-        <activity
-            android:name=".DebugAllTestsActivity"
-            android:exported="true"
-            android:theme="@style/Theme.EmuCoreH" />
-        <activity
-            android:name=".DebugGamesBootActivity"
-            android:exported="true"
-            android:theme="@style/Theme.EmuCoreH" />
     </application>
 </manifest>

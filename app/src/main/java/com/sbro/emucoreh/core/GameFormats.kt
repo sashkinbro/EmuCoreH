@@ -17,10 +17,7 @@ object GameFormats {
     /** Multi-disc playlists: the core reads the entries and exposes the discs. */
     val playlistExtensions = setOf("m3u")
 
-    /** Standalone executables (homebrew) supported by the core. */
-    val executableExtensions = setOf("elf")
-
-    val extensions = discExtensions + romExtensions + playlistExtensions + executableExtensions
+    val extensions = discExtensions + romExtensions + playlistExtensions
 
     val archives = setOf("zip", "7z")
 
@@ -51,8 +48,7 @@ object GameFormats {
         "application/zip",
         "audio/x-mpegurl",
         // Providers report legacy Naomi `.lst`/`.dat` sets as plain text.
-        "text/plain",
-        "application/x-elf"
+        "text/plain"
     )
 
     fun isSupportedName(name: String): Boolean = extensionOf(name) in extensions

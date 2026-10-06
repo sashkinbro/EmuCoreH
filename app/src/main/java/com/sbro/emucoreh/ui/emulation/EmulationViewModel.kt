@@ -85,12 +85,6 @@ import kotlin.time.Duration.Companion.milliseconds
 
 private const val BIOS_SESSION_TITLE = "Dreamcast BIOS"
 
-private val PER_GAME_GPU_DRIVER_KEYS = setOf(
-    "gpuDriverType",
-    "customDriverPath",
-    "mediatekAngleOpenGl"
-)
-
 private val PER_GAME_AUDIO_KEYS = setOf(
     "audioVolume",
     "audioMuted",
@@ -242,19 +236,13 @@ data class EmulationUiState(
 private data class EmulationLaunchConfig(
     val biosPath: String?,
     val emulatorDataPath: String?,
-    val memoryCardSlot1: String?,
-    val memoryCardSlot2: String?,
     val renderer: Int,
     val upscaleMultiplier: Float,
-    val gpuDriverType: Int,
-    val customDriverPath: String?,
     val gpuHardwareProfile: Int,
-    val mediatekAngleOpenGl: Boolean,
     val aspectRatio: Int,
     val localMultiplayerMode: Int,
     val displayCrop: DisplayCrop,
     val audioVolume: Int,
-    val audioFastForwardVolume: Int,
     val audioMuted: Boolean,
     val audioOutputLatencyMs: Int,
     val audioMinimalOutputLatency: Boolean,
@@ -369,7 +357,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     private var playTimeSyncJob: Job? = null
     private var lastCloudPlayTimeSyncAtMs: Long = 0L
     private var shouldCountCurrentProfileSession = false
-    // Autotest and boot-smoke VMs may run for minutes, but must never enter persistent player stats.
+    // Sessions that must never enter persistent player stats stay untracked.
     private var shouldTrackCurrentProfilePlayTime = false
     private val playTimeSyncMutex = Mutex()
     init {
@@ -423,7 +411,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             strengthPercent = state.touchHapticsStrength,
             preset = state.touchHapticsPreset
         )
-        NativeApp.setPadPressureModifierAmount(state.pressureModifierAmount.coerceIn(1, 100))
     }
 
     private fun stopHiddenDebugTools(state: EmulationUiState) {
@@ -945,28 +932,18 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         path: String?,
         slotToLoad: Int? = null,
         bootToBios: Boolean = false,
-        bootSmokeProbe: Boolean = false,
-        autotestMode: Boolean = false,
-        rendererOverride: Int? = null,
-        gsDumpFrames: Int? = null,
-        gsDumpDelayMs: Int? = null
+        rendererOverride: Int? = null
     ) {
-        val analyticsLaunchType = when {
-            bootSmokeProbe -> "smoke_test"
-            autotestMode -> "autotest"
-            bootToBios -> "bios"
-            else -> "game"
-        }
         Log.i(
             TAG,
-            "startEmulation requested path=$path bootBios=$bootToBios bootSmoke=$bootSmokeProbe autotest=$autotestMode"
+            "startEmulation requested path=$path bootBios=$bootToBios"
         )
         if (_uiState.value.isStarting) {
             Log.w(TAG, "startEmulation skipped because another start is in progress")
             return
         }
         val normalizedSlotToLoad = slotToLoad?.let { normalizeSaveSlot(it) }
-        val hasPendingStateLoad = !bootToBios && !bootSmokeProbe && normalizedSlotToLoad != null
+        val hasPendingStateLoad = !bootToBios && normalizedSlotToLoad != null
         cancelPendingStart = false
         pausedForBackground = false
         if (pendingPlayTimeSyncMs > 0L) {
@@ -1014,8 +991,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 val config = loadLaunchConfig()
                 val renderer = rendererOverride ?: config.renderer
 
-                // PPSSPP boots without a firmware dump; a configured BIOS is
-                // staged by CoreRuntime when one is present and usable.
+                // Flycast boots without a firmware dump when no BIOS is
+                // installed; a configured dump is staged by DreamcastBios.
 
                 _uiState.value = _uiState.value.copy(
                     statusMessage = "status_applying_config"
@@ -1025,19 +1002,13 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 EmulatorBridge.applyRuntimeConfig(
                     biosPath = config.biosPath,
                     emulatorDataPath = config.emulatorDataPath,
-                    memoryCardSlot1 = config.memoryCardSlot1,
-                    memoryCardSlot2 = config.memoryCardSlot2,
                     renderer = renderer,
                     upscaleMultiplier = config.upscaleMultiplier,
-                    gpuDriverType = config.gpuDriverType,
-                    customDriverPath = config.customDriverPath,
                     gpuHardwareProfile = config.gpuHardwareProfile,
-                    mediatekAngleOpenGl = config.mediatekAngleOpenGl,
                     aspectRatio = config.aspectRatio,
                     localMultiplayerMode = config.localMultiplayerMode,
                     displayCrop = config.displayCrop,
                     audioVolume = config.audioVolume,
-                    audioFastForwardVolume = config.audioFastForwardVolume,
                     audioMuted = config.audioMuted,
                     audioOutputLatencyMs = config.audioOutputLatencyMs,
                     audioMinimalOutputLatency = config.audioMinimalOutputLatency,
@@ -1050,7 +1021,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     shaderChainEnabled = config.shaderChainEnabled,
                     shaderChainPreset = config.shaderChainPreset,
                     pressureModifierAmount = config.pressureModifierAmount,
-                    autotestMode = autotestMode || bootSmokeProbe,
                 )
 
                 _uiState.value = _uiState.value.copy(
@@ -1061,9 +1031,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 val launchPath = when {
                     bootToBios -> ""
                     path.isNullOrBlank() -> null
-                    path.startsWith("content://") && DocumentPathResolver.getDisplayName(getApplication(), path)
-                        .substringAfterLast('.', "").equals("elf", ignoreCase = true) ->
-                            DocumentPathResolver.prepareElfLaunchPath(getApplication(), path)
                     else -> DocumentPathResolver.prepareGameLaunchPath(getApplication(), path)
                 }
 
@@ -1101,27 +1068,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                         cheatsGameKey = null,
                         availableCheats = emptyList()
                     )
-                } else if (autotestMode) {
-                    val safePath = path.orEmpty()
-                    currentGameTitle = File(safePath).nameWithoutExtension.ifBlank { "Autotest ELF" }
-                    currentGameSerial = ""
-                    currentGameRegionLabel = ""
-                    currentGameCoverArtPath = null
-                    currentGameCrc = ""
-                    currentGameSource = "autotest_elf"
-                    pendingPerGameCoreOptions = emptyMap()
-                    shouldCountCurrentProfileSession = false
-                    shouldTrackCurrentProfilePlayTime = false
-                    currentGameIsArcade = false
-                    _uiState.value = _uiState.value.copy(
-                        currentGameTitle = currentGameTitle,
-                        currentGameSubtitle = currentGameSubtitle(),
-                        currentGameCoverPath = currentGameCoverArtPath,
-                        gameSettingsProfileActive = false,
-                        perGameCoreOptions = emptyMap(),
-                        cheatsGameKey = null,
-                        availableCheats = emptyList()
-                    )
                 } else {
                     val safePath = path.orEmpty()
                     val existingProfile = currentGamePath?.let(perGameSettingsRepository::get)
@@ -1145,7 +1091,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                         launchPath?.startsWith("/") == true -> "file"
                         else -> "unknown"
                     }
-                    shouldTrackCurrentProfilePlayTime = !bootSmokeProbe
+                    shouldTrackCurrentProfilePlayTime = true
                     shouldCountCurrentProfileSession = shouldTrackCurrentProfilePlayTime
                     currentGameIsArcade = isArcadeContentPath(launchPath ?: safePath)
                     pendingPerGameCoreOptions = (
@@ -1162,12 +1108,10 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                         perGameCoreOptions = pendingPerGameCoreOptions
                     )
                     syncCurrentGameProfileMetadata()
-                    if (!bootSmokeProbe) {
-                        DiscordIntegration.setPlaying(
-                            title = currentGameTitle,
-                            serial = currentGameSerial.takeIf { it.isNotBlank() }
-                        )
-                    }
+                    DiscordIntegration.setPlaying(
+                        title = currentGameTitle,
+                        serial = currentGameSerial.takeIf { it.isNotBlank() }
+                    )
                 }
                 _uiState.value = _uiState.value.copy(
                     customTouchControls = currentCustomTouchControlsProfile
@@ -1184,7 +1128,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     statusMessage = "status_starting_core"
                 )
                 refreshSaveStateMetadata()
-                if (!autotestMode && !bootSmokeProbe && !bootToBios && !path.isNullOrBlank()) {
+                if (!bootToBios && !path.isNullOrBlank()) {
                     preferences.markGameLaunched(
                         path = path,
                         title = currentGameTitle.ifBlank {
@@ -1338,7 +1282,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 EmulatorBridge.startEmulation(
                     pathToLaunch,
                     saveStateIdentityPath = currentGamePath,
-                    bootSmokeProbe = bootSmokeProbe,
                     allowBiosBoot = bootToBios
                 )
             } catch (error: Exception) {
@@ -1354,16 +1297,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     NativeApp.applyCoreOption(coreKey, coreValue)
                 }
                 syncPadAnalogModeForLaunch()
-            }
-            if (started && gsDumpFrames != null && gsDumpFrames > 0) {
-                val delayMs = gsDumpDelayMs?.coerceAtLeast(0) ?: 0
-                viewModelScope.launch(Dispatchers.IO) {
-                    delay(delayMs.milliseconds)
-                    if (EmulatorBridge.hasValidVm()) {
-                        Log.i(TAG, "Queueing GS dump frames=$gsDumpFrames delayMs=$delayMs")
-                        NativeApp.queueGsDump(gsDumpFrames)
-                    }
-                }
             }
             updateCrashContext(
                 launchState = if (started) "running" else "launch_failed",
@@ -1561,7 +1494,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * Applies a SwanStation core option while a game session is running.
+     * Applies a Flycast core option while a game session is running.
      *
      * Core options edited in-game belong to the running game, so they are stored
      * in that game's profile instead of the global core-option store. A change
@@ -1769,8 +1702,9 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             // and is never the extra D-pad users manage in the layout editor.
             val toggleDpad = updatedLayouts["dpad_toggle"] ?: defaults["dpad_toggle"] ?: OverlayControlLayout()
 
-            // Keep the DualShock: hiding the touch stick only stops stick input,
-            // it must not demote the port to a digital pad (which kills rumble).
+            // Keep the analog pad: hiding the touch stick only stops stick
+            // input, it must not demote the port to a digital pad (which kills
+            // rumble).
             NativeApp.setPadAnalogMode(0, true)
 
             // Two-state cycle for the left stick: stick <-> dedicated second D-pad.
@@ -2371,11 +2305,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 ?: runtimeProfile.touchControlVisualStyle
             val pressEffectOverride = existingProfile?.touchControlPressEffect
                 ?: runtimeProfile.touchControlPressEffect
-            val driverOverrideKeys = when {
-                existingProfile == null -> emptySet()
-                existingProfile.providedKeys == null -> PER_GAME_GPU_DRIVER_KEYS
-                else -> existingProfile.providedKeys.intersect(PER_GAME_GPU_DRIVER_KEYS)
-            }
             val visualOverrideKeys = buildSet {
                 if (visualStyleOverride != null) add("touchControlVisualStyle")
                 if (pressEffectOverride != null) add("touchControlPressEffect")
@@ -2392,7 +2321,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 else -> buildSet<String> {
                     addAll(runtimeProfile.providedKeys)
                     addAll(visualOverrideKeys)
-                    addAll(driverOverrideKeys)
                     addAll(audioOverrideKeys)
                     if (touchControlsLayout != null) add(PER_GAME_TOUCH_CONTROLS_LAYOUT_KEY)
                     if (customTouchControls != null) add(PER_GAME_CUSTOM_TOUCH_CONTROLS_KEY)
@@ -2405,9 +2333,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     touchControlVisualStyle = visualStyleOverride,
                     touchControlPressEffect = pressEffectOverride,
                     coreOptions = existingProfile?.coreOptions ?: runtimeProfile.coreOptions,
-                    gpuDriverType = existingProfile?.gpuDriverType ?: runtimeProfile.gpuDriverType,
-                    customDriverPath = existingProfile?.customDriverPath ?: runtimeProfile.customDriverPath,
-                    mediatekAngleOpenGl = existingProfile?.mediatekAngleOpenGl ?: runtimeProfile.mediatekAngleOpenGl,
                     shaderChainOverrideEnabled = existingProfile?.shaderChainOverrideEnabled,
                     shaderChainPreset = existingProfile?.shaderChainPreset.orEmpty(),
                     audioVolume = if ("audioVolume" in audioOverrideKeys) {
@@ -2497,32 +2422,16 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     private suspend fun loadLaunchConfig(): EmulationLaunchConfig {
         val profile = activePerGameKey()?.let(perGameSettingsRepository::get)
         val settings = preferences.settingsSnapshot.first()
-        val savedGpuDriverType = settings.gpuDriverType
-        val savedCustomDriverPath = settings.customDriverPath
-        // Custom driver support is gone with the CPU-rasterizer-only core; a
-        // legacy custom path is only honored when the file still exists.
-        val resolvedCustomDriverPath = savedCustomDriverPath
-            ?.takeIf { savedGpuDriverType == 1 && File(it).isFile }
-        val resolvedGpuDriverType = if (savedGpuDriverType == 1 && !resolvedCustomDriverPath.isNullOrBlank()) 1 else 0
-        if (savedGpuDriverType == 1 && resolvedGpuDriverType == 1 && resolvedCustomDriverPath != savedCustomDriverPath) {
-            preferences.setCustomDriverPath(resolvedCustomDriverPath)
-        }
-        val mergedConfig = EmulationLaunchConfig(
+        return EmulationLaunchConfig(
             biosPath = settings.biosPath,
             emulatorDataPath = settings.emulatorDataPath,
-            memoryCardSlot1 = null,
-            memoryCardSlot2 = null,
             renderer = settings.renderer,
             upscaleMultiplier = settings.upscaleMultiplier,
-            gpuDriverType = resolvedGpuDriverType,
-            customDriverPath = resolvedCustomDriverPath,
             gpuHardwareProfile = settings.gpuHardwareProfile,
-            mediatekAngleOpenGl = settings.mediatekAngleOpenGl,
             aspectRatio = settings.aspectRatio,
             localMultiplayerMode = settings.localMultiplayerMode,
             displayCrop = settings.displayCrop,
             audioVolume = settings.audioVolume,
-            audioFastForwardVolume = settings.audioFastForwardVolume,
             audioMuted = settings.audioMuted,
             audioOutputLatencyMs = settings.audioOutputLatencyMs,
             audioMinimalOutputLatency = settings.audioMinimalOutputLatency,
@@ -2536,11 +2445,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             shaderChainPreset = settings.shaderChainPreset,
             pressureModifierAmount = settings.pressureModifierAmount,
         ).applyProfile(profile)
-        val mergedDriverPath = mergedConfig.customDriverPath?.takeIf { File(it).isFile }
-        return mergedConfig.copy(
-            gpuDriverType = if (mergedConfig.gpuDriverType == 1 && !mergedDriverPath.isNullOrBlank()) 1 else 0,
-            customDriverPath = mergedDriverPath
-        )
     }
 
     private suspend fun loadLiveRuntimeSnapshot(): LiveRuntimeSnapshot {
@@ -2600,9 +2504,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         }
         return copy(
             renderer = pick("renderer", renderer) { renderer },
-            gpuDriverType = pick("gpuDriverType", gpuDriverType) { gpuDriverType },
-            customDriverPath = pick("customDriverPath", customDriverPath) { customDriverPath },
-            mediatekAngleOpenGl = pick("mediatekAngleOpenGl", mediatekAngleOpenGl) { mediatekAngleOpenGl },
             upscaleMultiplier = pick("upscaleMultiplier", upscaleMultiplier) { upscaleMultiplier },
             aspectRatio = pick("aspectRatio", aspectRatio) { aspectRatio },
             localMultiplayerMode = pick("localMultiplayerMode", localMultiplayerMode) { localMultiplayerMode },
@@ -2794,10 +2695,10 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * Presents a DualShock on both ports. The core keeps it in digital mode
-     * until a game enables analog/rumble, and DualShock is the only controller
-     * class that can drive vibration, so rumble works with touch controls and
-     * gamepads alike.
+     * Presents an analog controller on both ports. The core keeps it in
+     * digital mode until a game enables analog/rumble, and the analog class is
+     * what drives vibration, so rumble works with touch controls and gamepads
+     * alike.
      */
     private fun syncPadAnalogModeForLaunch() {
         NativeApp.setPadAnalogMode(0, true)

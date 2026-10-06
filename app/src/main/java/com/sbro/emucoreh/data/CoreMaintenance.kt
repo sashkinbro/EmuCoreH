@@ -5,7 +5,7 @@ import com.sbro.emucoreh.core.NativeApp
 import java.io.File
 
 /** Core-owned directories that are rebuilt on demand and never contain user data. */
-internal val REGENERABLE_CORE_DIRECTORIES = listOf("inis", "cache")
+internal val REGENERABLE_CORE_DIRECTORIES = listOf("cache")
 
 /** Deletes regenerable core files, keeping the directories and every user file untouched. */
 internal fun clearRegenerableCoreState(dataRoot: File): Int {

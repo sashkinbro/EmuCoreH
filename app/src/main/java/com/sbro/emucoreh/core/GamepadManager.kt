@@ -1267,10 +1267,11 @@ object GamepadManager {
     }
 
     /**
-     * A phone has one low-frequency actuator, while a DualShock 2 has separate large and small
-     * motors. Mapping the binary small motor at full strength turns sustained road/engine effects
-     * into an unnecessarily harsh continuous buzz. Physical controllers retain the original
-     * two-motor intensity; only the phone fallback attenuates the small motor.
+     * A phone has one low-frequency actuator, while a Dreamcast controller has separate large
+     * and small motors. Mapping the binary small motor at full strength turns sustained
+     * road/engine effects into an unnecessarily harsh continuous buzz. Physical controllers
+     * retain the original two-motor intensity; only the phone fallback attenuates the small
+     * motor.
      */
     internal fun resolveRumbleIntensity(
         largeMotor: Float,
