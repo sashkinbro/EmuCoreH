@@ -198,10 +198,7 @@ fun AchievementsScreen(
         if (state.unsupportedImage) {
             item { NoticeCard(text = stringResource(R.string.achievements_unsupported_image)) }
         }
-        if (state.imageReadError) {
-            item { NoticeCard(text = stringResource(R.string.achievements_game_unavailable), isError = true) }
-        }
-        state.lastError?.takeUnless { state.unsupportedImage || state.imageReadError }?.let { error ->
+        state.lastError?.takeUnless { state.unsupportedImage }?.let { error ->
             item { NoticeCard(text = stringResource(R.string.achievements_error, error), isError = true) }
         }
 

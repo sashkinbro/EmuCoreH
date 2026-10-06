@@ -237,8 +237,4 @@ object GameMetadataReader {
         if (area.isBlank()) return null
         return if (area.contains('E') && !area.contains('U') && !area.contains('J')) "PAL" else "NTSC"
     }
-
-    @Suppress("unused")
-    private fun littleInt(bytes: ByteArray, offset: Int): Int = ByteBuffer.wrap(bytes, offset, 4)
-        .order(ByteOrder.LITTLE_ENDIAN).int
 }

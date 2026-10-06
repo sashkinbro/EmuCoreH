@@ -62,7 +62,7 @@ class CloudEmulatorSettingsRepository(context: Context) {
         }
 
         val portable = preferences.exportEmulatorCloudJson()
-        val perGame = sanitizePerGameSettings(perGameSettings.exportJson())
+        val perGame = perGameSettings.exportJson()
         val payloadBytes = portable.toString().toByteArray(StandardCharsets.UTF_8).size +
             perGame.toString().toByteArray(StandardCharsets.UTF_8).size
         require(payloadBytes <= MAX_PAYLOAD_BYTES) { "The emulator profile is too large to sync" }
@@ -106,7 +106,7 @@ class CloudEmulatorSettingsRepository(context: Context) {
             ?: JSONObject().put("profiles", JSONArray())
 
         preferences.importEmulatorCloudJson(portable)
-        perGameSettings.importJson(sanitizePerGameSettings(perGame))
+        perGameSettings.importJson(perGame)
     }
 
     suspend fun delete(profileId: String) {
@@ -117,18 +117,6 @@ class CloudEmulatorSettingsRepository(context: Context) {
     private fun profileCollection(uid: String) = firestore.collection(USERS)
         .document(uid)
         .collection(EMULATOR_PROFILES)
-
-    /** Never move a private local GPU driver path into or out of the cloud. */
-    private fun sanitizePerGameSettings(root: JSONObject): JSONObject {
-        val clean = JSONObject(root.toString())
-        val profiles = clean.optJSONArray("profiles") ?: return clean
-        for (index in 0 until profiles.length()) {
-            val item = profiles.optJSONObject(index) ?: continue
-            item.remove("customDriverPath")
-            item.put("gpuDriverType", 0)
-        }
-        return clean
-    }
 
     private fun JSONObject.toFirestoreValue(): Map<String, Any?> = buildMap {
         keys().forEach { key -> put(key, opt(key).toFirestoreValue()) }

@@ -15,11 +15,7 @@ object GameLaunchShortcut {
     const val EXTRA_GAME_PATH = "com.sbro.emucoreh.extra.GAME_PATH"
     const val EXTRA_SAVE_SLOT = "com.sbro.emucoreh.extra.SAVE_SLOT"
     const val EXTRA_BOOT_BIOS = "com.sbro.emucoreh.extra.BOOT_BIOS"
-    const val EXTRA_BOOT_SMOKE_PROBE = "com.sbro.emucoreh.extra.BOOT_SMOKE_PROBE"
-    const val EXTRA_AUTOTEST_MODE = "com.sbro.emucoreh.extra.AUTOTEST_MODE"
     const val EXTRA_RENDERER = "com.sbro.emucoreh.extra.RENDERER"
-    const val EXTRA_GS_DUMP_FRAMES = "com.sbro.emucoreh.extra.GS_DUMP_FRAMES"
-    const val EXTRA_GS_DUMP_DELAY_MS = "com.sbro.emucoreh.extra.GS_DUMP_DELAY_MS"
 
     // Must match the data scheme declared for MainActivity in AndroidManifest.
     private const val SCHEME = "emucoreh"
@@ -33,11 +29,7 @@ object GameLaunchShortcut {
         val gamePath: String? = null,
         val saveSlot: Int? = null,
         val bootBios: Boolean = false,
-        val bootSmokeProbe: Boolean = false,
-        val autotestMode: Boolean = false,
-        val renderer: Int? = null,
-        val gsDumpFrames: Int? = null,
-        val gsDumpDelayMs: Int? = null
+        val renderer: Int? = null
     )
 
     fun requestPinnedShortcut(
@@ -88,23 +80,13 @@ object GameLaunchShortcut {
         }
         val bootBios = intent.getBooleanExtra(EXTRA_BOOT_BIOS, false) ||
             (data?.scheme == SCHEME && data.host == HOST && data.getQueryParameter("bootBios") == "true")
-        val bootSmokeProbe = intent.getBooleanExtra(EXTRA_BOOT_SMOKE_PROBE, false) ||
-            (data?.scheme == SCHEME && data.host == HOST && data.getQueryParameter("bootSmoke") == "true")
-        val autotestMode = intent.getBooleanExtra(EXTRA_AUTOTEST_MODE, false) ||
-            (data?.scheme == SCHEME && data.host == HOST && data.getQueryParameter("autotest") == "true")
         if (gamePath.isNullOrBlank() && !bootBios) return null
         return LaunchRequest(
             gamePath = gamePath,
             saveSlot = saveSlot,
             bootBios = bootBios,
-            bootSmokeProbe = bootSmokeProbe,
-            autotestMode = autotestMode,
             renderer = optionalIntExtra(intent, EXTRA_RENDERER)
-                ?: optionalIntQuery(data, "renderer"),
-            gsDumpFrames = optionalIntExtra(intent, EXTRA_GS_DUMP_FRAMES)
-                ?: optionalIntQuery(data, "gsDumpFrames"),
-            gsDumpDelayMs = optionalIntExtra(intent, EXTRA_GS_DUMP_DELAY_MS)
-                ?: optionalIntQuery(data, "gsDumpDelayMs")
+                ?: optionalIntQuery(data, "renderer")
         )
     }
 
@@ -115,11 +97,7 @@ object GameLaunchShortcut {
         intent.removeExtra(EXTRA_GAME_PATH_LEGACY)
         intent.removeExtra(EXTRA_SAVE_SLOT)
         intent.removeExtra(EXTRA_BOOT_BIOS)
-        intent.removeExtra(EXTRA_BOOT_SMOKE_PROBE)
-        intent.removeExtra(EXTRA_AUTOTEST_MODE)
         intent.removeExtra(EXTRA_RENDERER)
-        intent.removeExtra(EXTRA_GS_DUMP_FRAMES)
-        intent.removeExtra(EXTRA_GS_DUMP_DELAY_MS)
         if (intent.data?.scheme == SCHEME && intent.data?.host == HOST) {
             intent.data = null
         }
@@ -141,19 +119,6 @@ object GameLaunchShortcut {
     private fun optionalIntQuery(data: Uri?, key: String): Int? {
         if (data?.scheme != SCHEME || data.host != HOST) return null
         return data.getQueryParameter(key)?.toIntOrNull()
-    }
-
-    private fun optionalBooleanExtra(intent: Intent, key: String): Boolean? {
-        return if (intent.hasExtra(key)) intent.getBooleanExtra(key, false) else null
-    }
-
-    private fun optionalBooleanQuery(data: Uri?, key: String): Boolean? {
-        if (data?.scheme != SCHEME || data.host != HOST) return null
-        return when (data.getQueryParameter(key)?.lowercase()) {
-            "true", "1", "yes", "on" -> true
-            "false", "0", "no", "off" -> false
-            else -> null
-        }
     }
 
     private fun normalizeSaveSlot(slot: Int?): Int? {

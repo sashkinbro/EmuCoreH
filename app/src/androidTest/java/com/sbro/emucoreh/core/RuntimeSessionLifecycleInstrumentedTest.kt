@@ -31,7 +31,7 @@ class RuntimeSessionLifecycleInstrumentedTest {
         assertFalse(CoreRuntime.isRunning())
         val previousSettings = CoreRuntime.settings.toMap()
         val previousRenderer = previousSettings["EmuCoreH:Renderer"]
-            ?: previousSettings["EmuCoreH/GS:Renderer"]
+            ?: previousSettings["EmuCoreH/Runtime:Renderer"]
             ?: RendererDefaults.defaultForHardware().toString()
         val rom = File.createTempFile("runtime-rom-", ".bin", context.cacheDir)
         val state = File.createTempFile("runtime-state-", ".rstate", context.cacheDir)
@@ -40,8 +40,9 @@ class RuntimeSessionLifecycleInstrumentedTest {
         val handler = Handler(consumer.looper)
         fun onUi(block: () -> Unit) = instrumentation.runOnMainSync(block)
         try {
-            // Owned MIPS loop continuously changes RAM, making an unwanted
-            // extra guest frame observable in a complete serialized snapshot.
+            // Synthetic boot fixture; only used to satisfy the BIOS folder settings.
+            // Per-frame RAM changes make an unwanted extra guest frame observable
+            // in a complete serialized snapshot.
             val bytes = ByteBuffer.allocate(512 * 1024).order(ByteOrder.LITTLE_ENDIAN)
             listOf(0x3c08a000, 0x24090000, 0x25290001, 0xad090000.toInt(),
                 0x1000fffd, 0).forEach { bytes.putInt(it) }
@@ -52,7 +53,6 @@ class RuntimeSessionLifecycleInstrumentedTest {
             CoreRuntime.initialize(context)
             assertTrue(CoreRuntime.updateSetting("Folders", "Bios", rom.parent!!))
             assertTrue(CoreRuntime.updateSetting("Filenames", "BIOS", rom.name))
-            assertTrue(CoreRuntime.updateSetting("EmuCoreH/GPU", "PGXP", "false"))
             for (restart in 0..1) {
                 assertTrue(CoreRuntime.start("", biosOnly = true))
                 for ((index, renderer) in listOf(RendererDefaults.SOFTWARE,

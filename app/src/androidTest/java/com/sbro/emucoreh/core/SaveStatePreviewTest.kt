@@ -21,7 +21,8 @@ class SaveStatePreviewTest {
             40, 80, 120, 16,
             120, 90, 60, 32,
         ))
-        // GPU readback copies raw RGBA bytes; RGB is opaque even when the PSP alpha is a mask.
+        // GPU readback copies raw RGBA bytes; RGB is opaque even when the
+        // framebuffer alpha is a mask.
         frame.copyPixelsFromBuffer(pixels)
         val bytes = ByteArrayOutputStream().use { output ->
             frame.compress(Bitmap.CompressFormat.PNG, 100, output)

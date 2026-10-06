@@ -5,9 +5,9 @@ import org.junit.Test
 
 class TexturePackLayoutTest {
     @Test fun nestedAssetFoldersArePreserved() {
-        val paths = setOf("pack-main/PSP/TEXTURES/ULES00151/textures.ini",
-            "pack-main/PSP/TEXTURES/ULES00151/textures/ui/icon.png",
-            "pack-main/PSP/TEXTURES/ULES00151/regions/eu.ini", "outside.png")
+        val paths = setOf("pack-main/legacy/TEXTURES/ULES00151/textures.ini",
+            "pack-main/legacy/TEXTURES/ULES00151/textures/ui/icon.png",
+            "pack-main/legacy/TEXTURES/ULES00151/regions/eu.ini", "outside.png")
         assertEquals(listOf("textures.ini", "textures/ui/icon.png", "regions/eu.ini"),
             resolveTexturePackLayout(paths).values.toList())
     }

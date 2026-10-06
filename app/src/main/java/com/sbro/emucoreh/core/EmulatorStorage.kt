@@ -93,14 +93,6 @@ object EmulatorStorage {
         return defaultRoot(context).apply { ensureRootDirectories(this) }
     }
 
-    fun prepareCustomDataRoot(customRootPath: String?): Boolean {
-        val customRoot = customRootPath
-            ?.takeIf { it.isNotBlank() }
-            ?.let(::File)
-            ?: return false
-        return prepareRoot(customRoot)
-    }
-
     fun saveStatesDir(context: Context, customRootPath: String? = null): File =
         File(root(context, customRootPath), "sstates").apply { mkdirs() }
 
@@ -110,10 +102,6 @@ object EmulatorStorage {
     /** Flycast keeps its BIOS, VMU and runtime data under the system directory. */
     fun flycastSystemDir(context: Context): File =
         File(context.filesDir, "flycast/system").apply { mkdirs() }
-
-    /** Default Flycast save directory used when no data root override is set. */
-    fun flycastSaveDir(context: Context): File =
-        File(context.filesDir, "flycast/save").apply { mkdirs() }
 
     /**
      * Flycast resolves replacement textures from `<system>/dc/textures/<game id>`,
@@ -127,9 +115,6 @@ object EmulatorStorage {
 
     fun patchesDir(context: Context, customRootPath: String? = null): File =
         File(root(context, customRootPath), "patches").apply { mkdirs() }
-
-    fun logDir(context: Context, customRootPath: String? = null): File =
-        File(root(context, customRootPath), "logs").apply { mkdirs() }
 
     fun runtimeDirectories(context: Context, customRootPath: String? = null): RuntimeDirectories {
         val root = root(context, customRootPath)

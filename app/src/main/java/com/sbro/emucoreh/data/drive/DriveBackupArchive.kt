@@ -80,17 +80,6 @@ class DriveBackupArchive(private val context: Context) {
 
     private fun portableSettings(json: JSONObject): JSONObject = JSONObject(json.toString()).apply {
         LOCAL_KEYS.forEach(::remove)
-        listOf("memoryCardSlot1", "memoryCardSlot2").forEach { key ->
-            optString(key).takeIf { it.isNotBlank() }?.let { put(key, File(it).name) }
-        }
-    }
-
-    private fun portablePerGame(json: JSONObject): JSONObject = JSONObject(json.toString()).apply {
-        optJSONArray("profiles")?.let { array ->
-            for (i in 0 until array.length()) {
-                array.getJSONObject(i).apply { remove("customDriverPath"); put("gpuDriverType", 0) }
-            }
-        }
     }
 
     private suspend fun exportSettings(): JSONObject = preferences.exportJson()
@@ -119,7 +108,7 @@ class DriveBackupArchive(private val context: Context) {
         }
         val json = sortedMapOf(
             "settings.json" to portableSettings(exportSettings()),
-            "per-game.json" to portablePerGame(perGame.exportJson()),
+            "per-game.json" to perGame.exportJson(),
             "cheats.json" to cheats.exportJson()
         )
         val manifest = JSONObject().put("format", FORMAT).put("schema", 1)
@@ -262,13 +251,8 @@ class DriveBackupArchive(private val context: Context) {
                 LOCAL_KEYS.forEach { key ->
                     if (oldSettings.has(key)) incoming.put(key, oldSettings.get(key)) else incoming.remove(key)
                 }
-                if ("memory-cards" !in categories) {
-                    listOf("memoryCardSlot1", "memoryCardSlot2").forEach { key ->
-                        incoming.put(key, oldSettings.opt(key))
-                    }
-                }
                 importSettings(incoming)
-                if ("settings" in categories) perGame.importJson(portablePerGame(JSONObject(File(stage, "per-game.json").readText())))
+                if ("settings" in categories) perGame.importJson(JSONObject(File(stage, "per-game.json").readText()))
             }
             if ("cheat-files" in categories) cheats.importJson(JSONObject(File(stage, "cheats.json").readText()))
             writeAtomic(journal.baseFile, record.put("committed", true))
@@ -328,7 +312,7 @@ class DriveBackupArchive(private val context: Context) {
         const val FORMAT = "emucoreh-drive-backup"
         val ALL_CATEGORIES = setOf("settings", "memory-cards", "save-states", "cheat-files", "patches", "customization", "textures")
         private val JSON_FILES = setOf("settings.json", "per-game.json", "cheats.json")
-        private val LOCAL_KEYS = setOf("hiddenGamePaths", "biosPath", "gamePath", "gamePaths", "emulatorDataPath", "customDriverPath", "gpuDriverType", "gpuHardwareProfile", "onboardingCompleted", "dev9LocalLinkRoomCode", "dev9LocalLinkPeerId", "dev9LocalLinkAddress", "dev9Dns1", "dev9Dns2", "coverDownloadBaseUrl", "arcadeCoverDownloadBaseUrl")
+        private val LOCAL_KEYS = setOf("hiddenGamePaths", "biosPath", "gamePath", "gamePaths", "emulatorDataPath", "gpuHardwareProfile", "onboardingCompleted", "coverDownloadBaseUrl", "arcadeCoverDownloadBaseUrl")
         private val STYLE_KEYS = setOf("themeMode", "customTheme", "customThemeLibrary", "appFontChoice", "appFontScale", "customFontName", "homeGridScale", "homeBackgroundDim", "homeBackgroundType", "homeBackgroundPreset", "emulationSideArtworkDim", "emulationSideArtwork", "touchControlVisualStyle", "touchControlPressEffect", "gameMenuLayoutStyle", "drawerVisualStyle", "coverArtStyle")
         private const val MAX_JSON_BYTES = 32L * 1024 * 1024
         private const val SPACE_RESERVE = 32L * 1024 * 1024

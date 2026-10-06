@@ -245,7 +245,7 @@ class CheatRepository(private val context: Context) {
         }
     }
 
-    /** PPSSPP CWCheat file matching the active imported cheat selection. */
+    /** Core cheat file matching the active imported cheat selection. */
     fun activeCoreCheatFile(gameKey: String, serial: String?, crc: String?): File? {
         val normalizedCrc = effectiveCrc(crc, serial, normalizeGameKey(gameKey))
         val normalizedSerial = serial?.trim()?.uppercase()?.takeIf { it.isNotBlank() }
@@ -454,12 +454,6 @@ class CheatRepository(private val context: Context) {
 
     private companion object {
         val CHEAT_IO_LOCK = Any()
-
-        val PATCH_LINE_REGEX = Regex(
-            pattern = "patch\\s*=\\s*[0-2]\\s*,\\s*(?:EE|IOP|(?:0x)?[0-9A-Fa-f]+)\\s*,\\s*" +
-                "([0-9A-Fa-f]{8})\\s*,\\s*(byte|short|word|[0-2])\\s*,\\s*([0-9A-Fa-f]+)",
-            option = RegexOption.IGNORE_CASE
-        )
 
         val RAW_CODE_REGEX = Regex("[0-9A-Fa-f]{8}[\\s:+-]+[0-9A-Fa-f]{1,8}")
 

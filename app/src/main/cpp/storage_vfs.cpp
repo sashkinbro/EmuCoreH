@@ -40,7 +40,7 @@ retro_vfs_file_handle *Open(const char *path, unsigned mode, unsigned) {
     if (!path) return nullptr;
     int fd = -1;
     if (IsSaf(path)) {
-        // Selected game resources are read in place. Saves use the ordinary writable memstick paths.
+        // Selected game resources are read in place. Saves use the ordinary writable data root.
         if (mode != RETRO_VFS_FILE_ACCESS_READ) return nullptr;
         JavaScope j;
         if (!j.env || !storageClass) return nullptr;
@@ -56,7 +56,7 @@ retro_vfs_file_handle *Open(const char *path, unsigned mode, unsigned) {
         fd = open(path, flags | O_CLOEXEC, 0666);
     }
     if (fd < 0) return nullptr;
-    // ISO/CSO/CHD/PBP readers require random access. A pipe must fail, never trigger a cache copy.
+    // Disc image readers require random access. A pipe must fail, never trigger a cache copy.
     if (lseek64(fd, 0, SEEK_CUR) < 0) { close(fd); return nullptr; }
     return new retro_vfs_file_handle{fd, path};
 }

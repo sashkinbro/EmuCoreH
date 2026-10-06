@@ -135,7 +135,6 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
                 renderer = audioSettings.renderer,
                 gpuHardwareProfile = GpuHardwareProfiles.detectHardwareProfile(),
                 audioVolume = audioSettings.audioVolume,
-                audioFastForwardVolume = audioSettings.audioFastForwardVolume,
                 audioMuted = audioSettings.audioMuted,
                 audioOutputLatencyMs = audioSettings.audioOutputLatencyMs,
                 audioMinimalOutputLatency = audioSettings.audioMinimalOutputLatency,

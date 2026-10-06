@@ -92,8 +92,6 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="file" android:pathPattern=".*\\.iso" />
                 <data android:scheme="file" android:pathPattern=".*\\.ISO" />
-                <data android:scheme="file" android:pathPattern=".*\\.cso" />
-                <data android:scheme="file" android:pathPattern=".*\\.CSO" />
                 <data android:scheme="file" android:pathPattern=".*\\.chd" />
                 <data android:scheme="file" android:pathPattern=".*\\.CHD" />
                 <data android:scheme="file" android:pathPattern=".*\\.gdi" />
@@ -104,14 +102,6 @@
                 <data android:scheme="file" android:pathPattern=".*\\.CUE" />
                 <data android:scheme="file" android:pathPattern=".*\\.m3u" />
                 <data android:scheme="file" android:pathPattern=".*\\.M3U" />
-                <data android:scheme="file" android:pathPattern=".*\\.pbp" />
-                <data android:scheme="file" android:pathPattern=".*\\.PBP" />
-                <data android:scheme="file" android:pathPattern=".*\\.elf" />
-                <data android:scheme="file" android:pathPattern=".*\\.ELF" />
-                <data android:scheme="file" android:pathPattern=".*\\.prx" />
-                <data android:scheme="file" android:pathPattern=".*\\.PRX" />
-                <data android:scheme="file" android:pathPattern=".*\\.plf" />
-                <data android:scheme="file" android:pathPattern=".*\\.PLF" />
                 <data android:scheme="file" android:pathPattern=".*\\.zip" />
                 <data android:scheme="file" android:pathPattern=".*\\.ZIP" />
                 <data android:scheme="file" android:pathPattern=".*\\.7z" />

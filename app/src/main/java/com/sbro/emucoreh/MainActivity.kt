@@ -344,18 +344,7 @@ open class MainActivity : ComponentActivity() {
             if (GamepadUiInputRouter.handleMotionEvent(event)) return true
         }
         if (event != null && GamepadManager.handleMotionEvent(event)) return true
-        if (event != null && GamepadManager.isEmulationInputEnabled() && handleMouseMotionEvent(event)) return true
         return super.onGenericMotionEvent(event)
-    }
-
-    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
-        if (GamepadManager.isEmulationInputEnabled() && handleMouseMotionEvent(event)) return true
-        return super.dispatchGenericMotionEvent(event)
-    }
-
-    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
-        if (GamepadManager.isEmulationInputEnabled() && handleMouseTouchEvent(event)) return true
-        return super.dispatchTouchEvent(event)
     }
 
     @SuppressLint("GestureBackNavigation")
@@ -396,67 +385,6 @@ open class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_BUTTON_THUMBR -> true
             else -> false
         }
-    }
-
-    private fun handleMouseTouchEvent(event: MotionEvent): Boolean {
-        if (!isMouseEvent(event)) return false
-
-        NativeApp.onHostMousePosition(event.x, event.y)
-
-        return when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN,
-            MotionEvent.ACTION_BUTTON_PRESS -> {
-                dispatchPressedMouseButtons(event.buttonState, true)
-                true
-            }
-            MotionEvent.ACTION_UP,
-            MotionEvent.ACTION_BUTTON_RELEASE,
-            MotionEvent.ACTION_CANCEL -> {
-                dispatchPressedMouseButtons(event.buttonState, false)
-                true
-            }
-            MotionEvent.ACTION_MOVE,
-            MotionEvent.ACTION_HOVER_MOVE -> true
-            else -> false
-        }
-    }
-
-    private fun handleMouseMotionEvent(event: MotionEvent): Boolean {
-        if (!isMouseEvent(event)) return false
-
-        NativeApp.onHostMousePosition(event.x, event.y)
-
-        if (event.actionMasked == MotionEvent.ACTION_SCROLL) {
-            NativeApp.onHostMouseWheel(
-                event.getAxisValue(MotionEvent.AXIS_HSCROLL),
-                event.getAxisValue(MotionEvent.AXIS_VSCROLL)
-            )
-            return true
-        }
-
-        if (event.actionMasked == MotionEvent.ACTION_BUTTON_PRESS || event.actionMasked == MotionEvent.ACTION_BUTTON_RELEASE) {
-            dispatchPressedMouseButtons(event.buttonState, event.actionMasked == MotionEvent.ACTION_BUTTON_PRESS)
-            return true
-        }
-
-        return event.actionMasked == MotionEvent.ACTION_HOVER_MOVE || event.actionMasked == MotionEvent.ACTION_MOVE
-    }
-
-    private fun dispatchPressedMouseButtons(buttonState: Int, pressed: Boolean) {
-        if ((buttonState and MotionEvent.BUTTON_PRIMARY) != 0) {
-            NativeApp.onHostMouseButton(MotionEvent.BUTTON_PRIMARY, pressed)
-        }
-        if ((buttonState and MotionEvent.BUTTON_SECONDARY) != 0) {
-            NativeApp.onHostMouseButton(MotionEvent.BUTTON_SECONDARY, pressed)
-        }
-        if ((buttonState and MotionEvent.BUTTON_TERTIARY) != 0) {
-            NativeApp.onHostMouseButton(MotionEvent.BUTTON_TERTIARY, pressed)
-        }
-    }
-
-    private fun isMouseEvent(event: MotionEvent): Boolean {
-        val source = event.source
-        return (source and android.view.InputDevice.SOURCE_MOUSE) == android.view.InputDevice.SOURCE_MOUSE
     }
 
     private fun KeyEvent.withKeyCode(keyCode: Int): KeyEvent {

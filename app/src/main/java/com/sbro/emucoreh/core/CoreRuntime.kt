@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Process-wide owner of the native libretro session.
  *
- * The bundled PPSSPP core is a libretro singleton; [sessionLock] serialises
+ * The bundled Flycast core is a libretro singleton; [sessionLock] serialises
  * every call that touches it. The Kotlin layer keeps the same per-frame PCM and
  * pad contract as before, so the rest of the app is unchanged.
  */
@@ -51,14 +51,8 @@ internal object CoreRuntime {
     private var saveDirectory = ""
     private var coreAssetsDirectory = ""
 
-    /** Directory the core uses for VMU files and other per-game save data. */
-    val saveDirPath: String get() = saveDirectory
-
     /** Directory holding the shared VMU images (`<system>/dc`). */
     val vmuDirPath: String get() = File(systemDirectory, "dc").apply { mkdirs() }.absolutePath
-
-    /** Directory the core uses for BIOS files and other system data. */
-    val systemDirPath: String get() = systemDirectory
 
     @Volatile private var running = false
     @Volatile private var paused = false
@@ -81,7 +75,7 @@ internal object CoreRuntime {
 
     private val desiredPadButtons = AtomicIntegerArray(IntArray(2) { 0xFFFF })
     private val pendingPadPressEdges = AtomicIntegerArray(2)
-    // A short physical or touch tap can finish before PPSSPP polls input.
+    // A short physical or touch tap can finish before the core polls input.
     // Keep each edge visible for three frontend frames.
     private val padEdgeHoldMask = IntArray(2)
     private val padEdgeHoldFrames = IntArray(2)
@@ -227,7 +221,7 @@ internal object CoreRuntime {
     private fun startSession(gamePath: String, biosOnly: Boolean): Boolean {
         val startupStartedAtNanos = System.nanoTime()
         if (!biosOnly && !isSupportedDiscPath(gamePath)) {
-            Log.e(TAG, "Unsupported PSP image: $gamePath")
+            Log.e(TAG, "Unsupported disc image: $gamePath")
             return false
         }
         val requestedCore = RendererDefaults.toCoreRenderer(requestedRenderer)
@@ -393,7 +387,7 @@ internal object CoreRuntime {
 
     private fun displayAspectRatioPreference(): Int? {
         return settings["EmuCoreH/Display:AspectRatio"]?.toIntOrNull()
-            ?: settings["EmuCoreH/GS:AspectRatio"]?.toIntOrNull()
+            ?: settings["EmuCoreH/Runtime:AspectRatio"]?.toIntOrNull()
     }
 
     private fun pushAspectRatio(type: Int) {
@@ -402,9 +396,9 @@ internal object CoreRuntime {
     }
 
     private fun currentShaderEffect(): Int {
-        val enabled = settings["EmuCoreH/GS:ShaderChainEnabled"]?.toBooleanStrictOrNull() == true
+        val enabled = settings["EmuCoreH/Runtime:ShaderChainEnabled"]?.toBooleanStrictOrNull() == true
         if (!enabled) return RetroArchShaderEffects.NONE
-        return RetroArchShaderEffects.classify(settings["EmuCoreH/GS:ShaderChainPreset"])
+        return RetroArchShaderEffects.classify(settings["EmuCoreH/Runtime:ShaderChainPreset"])
     }
 
     private fun pushShaderEffect() {
@@ -413,8 +407,8 @@ internal object CoreRuntime {
     }
 
     private fun pushShaderPreset() {
-        val enabled = settings["EmuCoreH/GS:ShaderChainEnabled"]?.toBooleanStrictOrNull() == true
-        val preset = settings["EmuCoreH/GS:ShaderChainPreset"].orEmpty()
+        val enabled = settings["EmuCoreH/Runtime:ShaderChainEnabled"]?.toBooleanStrictOrNull() == true
+        val preset = settings["EmuCoreH/Runtime:ShaderChainPreset"].orEmpty()
         runCatching { bridge.nativeSetShaderPreset(if (enabled) preset else "", enabled) }
             .onFailure { Log.w(TAG, "Unable to apply shader preset", it) }
     }
@@ -581,16 +575,6 @@ internal object CoreRuntime {
         sessionLock.withLock { runCatching { bridge.clearCheats() } }
     }
 
-    fun reloadCheats() {
-        val path = lastCheatFilePath ?: return
-        sessionLock.withLock { runCatching { bridge.loadCheats(path) } }
-    }
-
-    fun setMemoryCardPath(slot: Int, path: String?) {
-        if (slot !in 0..1) return
-        runCatching { bridge.setMemoryCardPath(slot, path) }
-    }
-
     fun setDataRootOverride(path: String?) {
         runCatching { bridge.setDataRootOverride(path?.takeIf(String::isNotBlank)) }
             .onFailure { Log.w(TAG, "Unable to set the Flycast data root", it) }
@@ -684,10 +668,8 @@ internal object CoreRuntime {
 
     fun diagnostics(): String = sessionLock.withLock { bridge.getDiagnostics() }
 
-    fun gpuBackendSubmissions(): Long = 0L
-
     fun updateSetting(section: String, key: String, value: String): Boolean {
-        if ((section == "EmuCoreH" || section == "EmuCoreH/GS") && key == "Renderer") {
+        if ((section == "EmuCoreH" || section == "EmuCoreH/Runtime") && key == "Renderer") {
             val renderer = value.toIntOrNull() ?: return false
             requestedRenderer = RendererDefaults.normalizeAndroidRenderer(renderer)
             settings["$section:$key"] = value
@@ -704,7 +686,7 @@ internal object CoreRuntime {
      * understand are simply ignored.
      */
     private fun forwardCoreSetting(section: String, key: String, value: String) {
-        if (section == "EmuCoreH/GS" &&
+        if (section == "EmuCoreH/Runtime" &&
             (key == "ShaderChainEnabled" || key == "ShaderChainPreset")) {
             pushShaderEffect()
             pushShaderPreset()
@@ -720,7 +702,7 @@ internal object CoreRuntime {
                 }?.value ?: return@let null
                 option.key to choice
             }
-            "EmuCoreH/GS:LoadTextureReplacements" ->
+            "EmuCoreH/Runtime:LoadTextureReplacements" ->
                 bool?.let { "reicast_custom_textures" to if (it) "enabled" else "disabled" }
             "EmuCoreH/Display:AspectRatio" -> value.toIntOrNull()?.let { type ->
                 setDisplayAspectRatio(type)
@@ -729,11 +711,6 @@ internal object CoreRuntime {
             else -> null
         }
         target?.let { (coreKey, coreValue) -> bridge.nativeSetOption(coreKey, coreValue) }
-    }
-
-    private fun textureFilterName(filter: Int): String = when (filter) {
-        1 -> "Linear"
-        else -> "Nearest"
     }
 
     private fun publishPerformanceMetrics(fps: Double, frames: Int, frameNanos: Long,
@@ -829,7 +806,7 @@ internal object CoreRuntime {
                     val timeMode = timeControlMode
                     val coreFrameRate = bridge.getFrameRate(session).takeIf { it > 1.0 } ?: 59.94
                     // A manual target rate overrides the console's reported one.
-                    val manualTargetFps = settings["EmuCoreH/GS:TargetFps"]?.toIntOrNull() ?: 0
+                    val manualTargetFps = settings["EmuCoreH/Runtime:TargetFps"]?.toIntOrNull() ?: 0
                     val frameRate = if (manualTargetFps in 20..120) {
                         manualTargetFps.toDouble()
                     } else {
@@ -1020,13 +997,10 @@ internal object CoreRuntime {
         return Rect(left, top, left + width, top + height)
     }
 
-    private const val BIOS_BYTES = 512L * 1024L
     private const val PAD_ANALOG_MODE_BIT = 1 shl 16
     private const val FRAME_PACING_SPIN_NANOS = 2_000_000L
     // App aspect-ratio preference values (mirrors the display settings UI).
     private const val ASPECT_RATIO_STRETCH = 0
     private const val ASPECT_RATIO_AUTO = 1
-    private const val ASPECT_RATIO_4_3 = 2
-    private const val ASPECT_RATIO_16_9 = 3
     private const val ASPECT_RATIO_CUSTOM = 4
 }

@@ -10,7 +10,6 @@ import java.util.Locale
 
 object SetupValidator {
     private val supportedDiscExtensions = GameFormats.extensions
-    private val supportedGameExtensions = supportedDiscExtensions
     private val gameMimeTypes = setOf(
         "application/zip",
         "application/x-7z-compressed",
@@ -22,8 +21,7 @@ object SetupValidator {
         "application/x-gdi",
         "application/x-cdi",
         "application/x-chd",
-        "audio/x-mpegurl",
-        "application/x-elf"
+        "audio/x-mpegurl"
     )
     private const val MAX_GAME_READ_PROBE_FILES = 24
     private const val MAX_GAME_READ_PROBE_DIRECTORIES = 96

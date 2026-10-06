@@ -22,14 +22,14 @@ class RuntimeFailureLifecycleInstrumentedTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val previousSettings = CoreRuntime.settings.toMap()
         val previousRenderer = previousSettings["EmuCoreH:Renderer"]
-            ?: previousSettings["EmuCoreH/GS:Renderer"]
+            ?: previousSettings["EmuCoreH/Runtime:Renderer"]
             ?: RendererDefaults.defaultForHardware().toString()
         val rom = File.createTempFile("failure-rom-", ".bin", context.cacheDir)
         val state = File.createTempFile("failure-state-", ".rstate", context.cacheDir)
         try {
             CoreRuntime.shutdown()
             CoreRuntime.detachSurface()
-            // Owned RAM-increment loop; never load private BIOS/cards/preferences.
+            // Synthetic boot fixture; only used to satisfy the BIOS folder settings.
             val bytes = ByteBuffer.allocate(512 * 1024).order(ByteOrder.LITTLE_ENDIAN)
             listOf(0x3c08a000, 0x24090000, 0x25290001, 0xad090000.toInt(),
                 0x1000fffd, 0).forEach { bytes.putInt(it) }
@@ -38,7 +38,6 @@ class RuntimeFailureLifecycleInstrumentedTest {
             CoreRuntime.initialize(context)
             assertTrue(CoreRuntime.updateSetting("Folders", "Bios", rom.parent!!))
             assertTrue(CoreRuntime.updateSetting("Filenames", "BIOS", rom.name))
-            assertTrue(CoreRuntime.updateSetting("EmuCoreH/GPU", "PGXP", "false"))
             assertTrue(CoreRuntime.updateSetting("EmuCoreH", "Renderer", RendererDefaults.SOFTWARE.toString()))
             assertTrue(EmulatorBridge.startEmulation("", allowBiosBoot = true))
             EmulatorBridge.pause()

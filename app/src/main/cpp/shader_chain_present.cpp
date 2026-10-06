@@ -126,8 +126,8 @@ bool EnsureChain() {
 }
 
 void RestoreState() {
-    // librashader uses samplers and multiple texture units. PPSSPP's next
-    // frame starts with its own GL state, so clear bindings that would leak.
+    // librashader uses samplers and multiple texture units. The core starts
+    // each frame with its own GL state, so clear bindings that would leak.
     for (GLuint unit = 0; unit < 16; ++unit) {
         glActiveTexture(GL_TEXTURE0 + unit);
         glBindTexture(GL_TEXTURE_2D, 0);

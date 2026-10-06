@@ -23,7 +23,7 @@ import com.sbro.emucoreh.data.EmuAchievementState
 import com.sbro.emucoreh.data.ProfileFeedEvent
 import com.sbro.emucoreh.data.ProfileFriendship
 import com.sbro.emucoreh.data.ProfileSocialRepository
-import com.sbro.emucoreh.data.ps1.Ps1CatalogRepository
+import com.sbro.emucoreh.data.igdb.IgdbCatalogRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -76,7 +76,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     private val repository = PlayerProfileRepository(application)
     private val proPurchaseManager = ProPurchaseManager.getInstance(application)
-    private val catalogRepository = Ps1CatalogRepository(application)
+    private val catalogRepository = IgdbCatalogRepository(application)
     private val deviceRepository = ProfileDeviceRepository(application)
     private val cloudSettingsRepository = CloudEmulatorSettingsRepository(application)
     private val achievementRepository = EmuAchievementRepository(application)

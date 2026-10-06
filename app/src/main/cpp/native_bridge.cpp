@@ -3,7 +3,7 @@
 //
 // EmuCoreH libretro frontend for the vendored Flycast core.
 //
-// The core (ppsspp_libretro_android.so, built by the :core-android module
+// The core (flycast_libretro.so, built by the :core-android module
 // from /core) is loaded with dlopen and driven through the libretro C API.
 // This file owns:
 //   * environment negotiation (directories, options, logging, AV info),
@@ -68,7 +68,6 @@ extern "C" void EmuCoreHAchievementsShutdown();
 #endif
 
 namespace core_renderer {
-[[maybe_unused]] constexpr int kSoftware = 0;
 constexpr int kVulkan = 1;
 constexpr int kOpenGl = 2;
 }  // namespace core_renderer
@@ -99,20 +98,14 @@ struct CoreApi {
     void* (*get_memory_data)(unsigned) = nullptr;
     size_t (*get_memory_size)(unsigned) = nullptr;
     void (*set_controller_port_device)(unsigned, unsigned) = nullptr;
-    void (*reset)() = nullptr;
     void (*run)() = nullptr;
     size_t (*serialize_size)() = nullptr;
     bool (*serialize)(void*, size_t) = nullptr;
     bool (*unserialize)(const void*, size_t) = nullptr;
     void (*cheat_reset)() = nullptr;
     void (*cheat_set)(unsigned, bool, const char*) = nullptr;
-    void (*cheat_reload)() = nullptr;
     bool (*load_game)(const retro_game_info*) = nullptr;
     void (*unload_game)() = nullptr;
-    bool (*rewind_step)() = nullptr;
-    bool (*disc_achievement_hash)(const char*, char*) = nullptr;
-    int (*game_asset)(const char*, int, uint8_t*, size_t) = nullptr;
-    int (*game_asset_fd)(int, int, uint8_t*, size_t) = nullptr;
     const char* (*boot_error)() = nullptr;
 };
 
@@ -146,13 +139,10 @@ struct FrontendState {
     // Save directory used when no data root override is configured.
     std::string default_save_dir;
     std::string core_assets_dir;
-    std::string native_library_dir;
 
     // Presentation surface.
     ANativeWindow* window = nullptr;
     int requested_renderer = core_renderer::kOpenGl;
-    int current_window_width = 0;
-    int current_window_height = 0;
     uint32_t window_generation = 0;
 
     // Core option overrides plus the defaults registered by the core.
@@ -225,7 +215,6 @@ struct GlRenderState {
     EGLSurface surface = EGL_NO_SURFACE;
     retro_hw_render_callback hw{};
     bool hw_registered = false;
-    bool pending = false;
     bool ready = false;
     bool failed = false;
     uint32_t window_generation = 0;
@@ -235,7 +224,6 @@ struct GlRenderState {
     GLuint fbo_depth = 0;
     GLsizei fbo_width = 0;
     GLsizei fbo_height = 0;
-    GLsizei fbo_depth_requested = 0;
 };
 
 GlRenderState g_gl;
@@ -257,17 +245,6 @@ bool LoadCoreLocked() {
 
     void* handle = dlopen("flycast_libretro.so", RTLD_NOW | RTLD_LOCAL);
     if (handle == nullptr) {
-        std::string library_dir;
-        {
-            std::lock_guard<std::mutex> lock(g_frontend.mutex);
-            library_dir = g_frontend.native_library_dir;
-        }
-        if (!library_dir.empty()) {
-            const std::string path = library_dir + "/flycast_libretro.so";
-            handle = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
-        }
-    }
-    if (handle == nullptr) {
         LOGE("Unable to load Flycast libretro core: %s", dlerror());
         return false;
     }
@@ -285,23 +262,17 @@ bool LoadCoreLocked() {
     g_core.get_system_info = reinterpret_cast<void (*)(retro_system_info*)>(resolve("retro_get_system_info"));
     g_core.get_system_av_info = reinterpret_cast<void (*)(retro_system_av_info*)>(resolve("retro_get_system_av_info"));
     g_core.get_memory_data = reinterpret_cast<void* (*)(unsigned)>(resolve("retro_get_memory_data"));
-    g_core.disc_achievement_hash = reinterpret_cast<bool (*)(const char*, char*)>(resolve("emucorea_disc_achievement_hash"));
-    g_core.game_asset = reinterpret_cast<int (*)(const char*, int, uint8_t*, size_t)>(resolve("emucorea_game_asset"));
-    g_core.game_asset_fd = reinterpret_cast<int (*)(int, int, uint8_t*, size_t)>(resolve("emucorea_game_asset_fd"));
     g_core.boot_error = reinterpret_cast<const char* (*)()>(resolve("emucorea_boot_error"));
     g_core.get_memory_size = reinterpret_cast<size_t (*)(unsigned)>(resolve("retro_get_memory_size"));
     g_core.set_controller_port_device = reinterpret_cast<void (*)(unsigned, unsigned)>(resolve("retro_set_controller_port_device"));
-    g_core.reset = reinterpret_cast<void (*)()>(resolve("retro_reset"));
     g_core.run = reinterpret_cast<void (*)()>(resolve("retro_run"));
     g_core.serialize_size = reinterpret_cast<size_t (*)()>(resolve("retro_serialize_size"));
     g_core.serialize = reinterpret_cast<bool (*)(void*, size_t)>(resolve("retro_serialize"));
     g_core.unserialize = reinterpret_cast<bool (*)(const void*, size_t)>(resolve("retro_unserialize"));
     g_core.cheat_reset = reinterpret_cast<void (*)()>(resolve("retro_cheat_reset"));
     g_core.cheat_set = reinterpret_cast<void (*)(unsigned, bool, const char*)>(resolve("retro_cheat_set"));
-    g_core.cheat_reload = reinterpret_cast<void (*)()>(resolve("emucorea_cheat_reload"));
     g_core.load_game = reinterpret_cast<bool (*)(const retro_game_info*)>(resolve("retro_load_game"));
     g_core.unload_game = reinterpret_cast<void (*)()>(resolve("retro_unload_game"));
-    g_core.rewind_step = reinterpret_cast<bool (*)()>(resolve("emucorea_rewind_step"));
 
     if (g_core.set_environment == nullptr || g_core.init == nullptr || g_core.load_game == nullptr ||
         g_core.run == nullptr || g_core.get_system_info == nullptr) {
@@ -353,7 +324,6 @@ bool HandleHardwareRender(retro_hw_render_callback* callback) {
     g_gl.hw = *callback;
     g_gl.hw_registered = true;
     g_gl.hw.context_type = callback->context_type;
-    g_gl.pending = true;
     g_gl.ready = false;
     g_gl.failed = false;
     LOGI("Hardware render accepted (context type %d)", static_cast<int>(callback->context_type));
@@ -930,7 +900,6 @@ bool EnsureHardwareContextLocked() {
     }
     g_gl.window_generation = generation;
     g_gl.ready = true;
-    g_gl.pending = false;
 
     if (g_gl.hw_registered && g_gl.hw.context_reset != nullptr) {
         g_gl.hw.context_reset();
@@ -1076,7 +1045,6 @@ void DestroyHardwareRendererContext() {
         g_gl.hw.context_destroy();
     }
     g_gl.ready = false;
-    g_gl.pending = false;
 }
 
 void DestroyHardwareContext() {
@@ -1311,13 +1279,6 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_destroySession(JNIEnv*, jobject, jl
     DestroyHardwareContext();
 }
 
-JNIEXPORT jint JNICALL
-Java_com_sbro_emucoreh_core_NativeCoreBridge_reset(JNIEnv*, jobject, jlong handle) {
-    if (handle == 0 || !g_frontend.game_loaded.load() || g_core.reset == nullptr) return -1;
-    g_core.reset();
-    return 0;
-}
-
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_runFrame(JNIEnv* env, jobject, jlong handle) {
     if (g_frontend.shutdown_requested.load()) {
@@ -1328,15 +1289,6 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_runFrame(JNIEnv* env, jobject, jlon
     }
     if (handle == 0 || !g_frontend.core_initialized.load()) return;
     if (!EnsureHardwareContext()) return;
-    if (g_frontend.time_control.load() == 2 && g_core.rewind_step != nullptr) {
-        static auto last_rewind = std::chrono::steady_clock::time_point{};
-        const auto now = std::chrono::steady_clock::now();
-        if (now - last_rewind >= std::chrono::milliseconds(500)) {
-            const bool queued = g_core.rewind_step();
-            LOGI("Rewind step queued=%d", queued ? 1 : 0);
-            last_rewind = now;
-        }
-    }
     // Flycast updates its AV geometry when internal resolution changes. The
     // render target must grow before the next retro_run(), otherwise 4x and
     // higher frames are clipped to the old (for example 3x) framebuffer.
@@ -1365,7 +1317,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_runFrame(JNIEnv* env, jobject, jlon
 
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_setTimeControl(JNIEnv*, jobject, jint mode) {
-    const int safe_mode = mode >= 0 && mode <= 2 ? mode : 0;
+    const int safe_mode = mode >= 0 && mode <= 1 ? mode : 0;
     g_frontend.time_control.store(safe_mode);
     LOGI("Time control mode=%d", safe_mode);
 }
@@ -1418,16 +1370,6 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeSetOption(JNIEnv* env, jobjec
     if (update_display != nullptr) update_display();
 }
 
-JNIEXPORT jstring JNICALL
-Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeGetOption(JNIEnv* env, jobject, jstring key) {
-    if (key == nullptr) return nullptr;
-    const std::string key_string = ToString(env, key);
-    std::lock_guard<std::mutex> lock(g_frontend.mutex);
-    auto it = g_frontend.options.find(key_string);
-    if (it == g_frontend.options.end()) return nullptr;
-    return env->NewStringUTF(it->second.c_str());
-}
-
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeSetShaderEffect(JNIEnv*, jobject, jint effect) {
     emucoreh::shader_effect::Set(effect);
@@ -1438,13 +1380,6 @@ JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeSetShaderPreset(JNIEnv* env, jobject,
                                                                      jstring path, jboolean enabled) {
     emucoreh::shader_chain::SetPreset(ToString(env, path), enabled == JNI_TRUE);
-}
-
-JNIEXPORT jint JNICALL
-Java_com_sbro_emucoreh_core_NativeCoreBridge_loadBios(JNIEnv*, jobject, jlong handle, jstring) {
-    // Flycast does not need a BIOS image; firmware assets are handled by the
-    // frontend data directory.
-    return handle == 0 ? -1 : 0;
 }
 
 JNIEXPORT jint JNICALL
@@ -1589,16 +1524,6 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_loadState(JNIEnv* env, jobject, jlo
     if (!g_core.unserialize(buffer.data(), buffer.size())) return -3;
     return 0;
 }
-
-JNIEXPORT jint JNICALL
-Java_com_sbro_emucoreh_core_NativeCoreBridge_createMemoryCard(JNIEnv*, jobject, jstring) {
-    // PSP savedata is managed by the core inside the memstick directory; the
-    // legacy PS1 memory-card manager has no native counterpart.
-    return -1;
-}
-
-JNIEXPORT void JNICALL
-Java_com_sbro_emucoreh_core_NativeCoreBridge_setMemoryCardPath(JNIEnv*, jobject, jint, jstring) {}
 
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_setDataRootOverride(JNIEnv* env, jobject,
@@ -1768,53 +1693,14 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeGameSerial(JNIEnv* env, jobje
     return env->NewStringUTF(g_game_serial.c_str());
 }
 
-JNIEXPORT jlongArray JNICALL
-Java_com_sbro_emucoreh_core_NativeCoreBridge_getAvInfo(JNIEnv* env, jobject, jlong handle) {
-    retro_system_av_info info{};
-    if (handle != 0 && LoadCoreLocked() && g_core.get_system_av_info != nullptr) {
-        g_core.get_system_av_info(&info);
-    }
-    jlong values[6] = {
-        static_cast<jlong>(info.geometry.base_width), static_cast<jlong>(info.geometry.base_height),
-        static_cast<jlong>(info.geometry.max_width), static_cast<jlong>(info.geometry.max_height),
-        static_cast<jlong>(info.timing.fps), static_cast<jlong>(info.timing.sample_rate)};
-    jlongArray result = env->NewLongArray(6);
-    if (result != nullptr) env->SetLongArrayRegion(result, 0, 6, values);
-    return result;
-}
-
 JNIEXPORT jboolean JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_hasDiscMedia(JNIEnv*, jobject, jlong handle) {
     return (handle != 0 && g_frontend.game_loaded.load()) ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT jbyteArray JNICALL
-Java_com_sbro_emucoreh_core_NativeCoreBridge_readGameAsset(JNIEnv* env, jobject, jstring path, jint asset) {
-    std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
-    if (!LoadCoreLocked() || !g_core.game_asset) return nullptr;
-    std::vector<uint8_t> bytes(4 * 1024 * 1024);
-    const int size = g_core.game_asset(ToString(env, path).c_str(), asset, bytes.data(), bytes.size());
-    if (size <= 0 || (size_t)size > bytes.size()) return nullptr;
-    jbyteArray result = env->NewByteArray(size);
-    if (result) env->SetByteArrayRegion(result, 0, size, reinterpret_cast<const jbyte*>(bytes.data()));
-    return result;
-}
-
 JNIEXPORT jstring JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_getDiscMetadata(JNIEnv*, jobject, jstring) {
     return nullptr;
-}
-
-JNIEXPORT jbyteArray JNICALL
-Java_com_sbro_emucoreh_core_NativeCoreBridge_readGameAssetFd(JNIEnv* env, jobject, jint fd, jint asset) {
-    std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
-    if (!LoadCoreLocked() || !g_core.game_asset_fd) return nullptr;
-    std::vector<uint8_t> bytes(4 * 1024 * 1024);
-    const int size = g_core.game_asset_fd(fd, asset, bytes.data(), bytes.size());
-    if (size <= 0 || (size_t)size > bytes.size()) return nullptr;
-    jbyteArray result = env->NewByteArray(size);
-    if (result) env->SetByteArrayRegion(result, 0, size, reinterpret_cast<const jbyte*>(bytes.data()));
-    return result;
 }
 
 JNIEXPORT jstring JNICALL

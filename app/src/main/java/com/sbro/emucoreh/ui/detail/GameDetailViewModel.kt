@@ -3,8 +3,8 @@ package com.sbro.emucoreh.ui.detail
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.sbro.emucoreh.data.ps1.Ps1CatalogDetails
-import com.sbro.emucoreh.data.ps1.Ps1CatalogRepository
+import com.sbro.emucoreh.data.igdb.IgdbCatalogDetails
+import com.sbro.emucoreh.data.igdb.IgdbCatalogRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,13 +14,13 @@ import kotlinx.coroutines.launch
 
 data class GameDetailUiState(
     val isLoading: Boolean = false,
-    val catalogDetails: Ps1CatalogDetails? = null,
+    val catalogDetails: IgdbCatalogDetails? = null,
     val isCatalogAvailable: Boolean = false
 )
 
 class GameDetailViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val catalogRepository = Ps1CatalogRepository(application)
+    private val catalogRepository = IgdbCatalogRepository(application)
     private val _uiState = MutableStateFlow(GameDetailUiState())
     val uiState: StateFlow<GameDetailUiState> = _uiState.asStateFlow()
     private var lastCatalogGameId: Long? = null
