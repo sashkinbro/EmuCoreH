@@ -55,13 +55,11 @@ import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.SmartDisplay
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.VideoLibrary
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -87,7 +85,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -107,7 +104,6 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTube
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.GamepadManager
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
-import com.sbro.emucoreh.ui.common.BitmapPathImage
 import com.sbro.emucoreh.ui.common.GameCoverArt
 import com.sbro.emucoreh.ui.common.NavigationBackButton
 import com.sbro.emucoreh.ui.common.RequestFocusOnResume

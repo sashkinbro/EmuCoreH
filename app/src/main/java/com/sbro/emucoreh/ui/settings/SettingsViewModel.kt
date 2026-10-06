@@ -1,4 +1,4 @@
-﻿package com.sbro.emucoreh.ui.settings
+package com.sbro.emucoreh.ui.settings
 
 import android.app.Application
 import android.app.Activity
@@ -10,8 +10,6 @@ import com.sbro.emucoreh.core.AndroidTouchHaptics
 import com.sbro.emucoreh.core.AudioDefaults
 import com.sbro.emucoreh.core.AppUpdateRelease
 import com.sbro.emucoreh.core.AppUpdateRepository
-import com.sbro.emucoreh.core.BiosValidator
-import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.DreamcastBios
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.EmulatorDataLocation
@@ -24,7 +22,6 @@ import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.core.ProProductOffer
 import com.sbro.emucoreh.core.ProPurchaseManager
 import com.sbro.emucoreh.core.ProPurchaseTier
-import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.StorageAccess
 import com.sbro.emucoreh.core.TvInterfaceMode
 import com.sbro.emucoreh.core.UPSCALE_DEFAULT

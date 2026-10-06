@@ -55,7 +55,6 @@ import com.sbro.emucoreh.core.GameLaunchShortcut
 import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.StorageAccess
 import com.sbro.emucoreh.data.AppPreferences
-import com.sbro.emucoreh.data.PerGameSettingsRepository
 import com.sbro.emucoreh.data.SaveStateRepository
 import com.sbro.emucoreh.ui.catalog.CatalogSearchScreen
 import com.sbro.emucoreh.ui.achievements.AchievementsScreen

@@ -63,19 +63,15 @@ object TvUiPolicy {
 
 /** TV layout dimensions. Screens provide their own content padding; no global overscan crop. */
 object TvUiMetrics {
-    @Suppress("UNUSED_PARAMETER")
-    fun safeHorizontalDp(screenWidthDp: Int): Int =
-        0
+    fun safeHorizontalDp(): Int = 0
 
-    @Suppress("UNUSED_PARAMETER")
-    fun safeVerticalDp(screenHeightDp: Int): Int =
-        0
+    fun safeVerticalDp(): Int = 0
 
     fun navigationWidthDp(screenWidthDp: Int): Int =
         (screenWidthDp.coerceAtLeast(1) * 0.30f).roundToInt().coerceIn(248, 360)
 
     fun contentReservedWidthDp(screenWidthDp: Int): Int =
-        safeHorizontalDp(screenWidthDp) * 2 + navigationWidthDp(screenWidthDp)
+        safeHorizontalDp() * 2 + navigationWidthDp(screenWidthDp)
 }
 
 val LocalTvUiEnvironment = staticCompositionLocalOf { TvUiEnvironment() }

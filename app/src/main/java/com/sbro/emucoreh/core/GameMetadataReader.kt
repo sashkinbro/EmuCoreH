@@ -4,8 +4,6 @@ import android.content.Context
 import android.net.Uri
 import java.io.File
 import java.io.RandomAccessFile
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.Locale
 
 /**

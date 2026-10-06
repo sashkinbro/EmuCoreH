@@ -8,7 +8,6 @@ import com.sbro.emucoreh.data.RetroAchievementsCatalog.parseAccountProgress
 import com.sbro.emucoreh.data.RetroAchievementsCatalog.parseGameTitles
 import com.sbro.emucoreh.data.RetroAchievementsCatalog.titleKey
 import com.sbro.emucoreh.data.RetroAchievementsCatalog.titleKeys
-import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder

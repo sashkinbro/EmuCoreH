@@ -3,7 +3,6 @@ package com.sbro.emucoreh.ui.onboarding
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.net.Uri
-import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,7 +44,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -55,14 +53,10 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Gamepad
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Memory
-import androidx.compose.material.icons.rounded.RadioButtonChecked
-import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.SmartDisplay
 import androidx.compose.material.icons.rounded.Star
-import com.sbro.emucoreh.ui.common.AppAlertDialog as AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -121,58 +115,12 @@ import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import com.sbro.emucoreh.ui.common.rememberDebouncedClick
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 import com.sbro.emucoreh.ui.theme.neon.neonButtonShape
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 
 private enum class DeviceChipsetFamily {
     Snapdragon, MediaTek, Exynos, Tensor, Unknown
-}
-
-private data class DeviceChipsetInfo(
-    val family: DeviceChipsetFamily,
-    val manufacturer: String,
-    val socModel: String,
-    val hardware: String,
-    val deviceModel: String
-)
-
-@Suppress("unused")
-private fun detectDeviceChipsetInfo(): DeviceChipsetInfo {
-    val socManufacturer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        Build.SOC_MANUFACTURER
-    } else {
-        ""
-    }
-    val socModel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        Build.SOC_MODEL
-    } else {
-        ""
-    }
-    val hardware = listOf(Build.HARDWARE, Build.BOARD, Build.DEVICE)
-        .filterNot { it.isNullOrBlank() }
-        .joinToString(" / ")
-    val deviceModel = listOf(Build.MANUFACTURER, Build.MODEL)
-        .filterNot { it.isNullOrBlank() }
-        .joinToString(" ")
-    val hints = listOf(socManufacturer, socModel, hardware, deviceModel)
-        .joinToString(" ")
-        .lowercase(Locale.US)
-    val family = when {
-        listOf("qualcomm", "qcom", "snapdragon", "adreno").any(hints::contains) -> DeviceChipsetFamily.Snapdragon
-        listOf("mediatek", "mtk", "mt").any(hints::contains) -> DeviceChipsetFamily.MediaTek
-        listOf("exynos", "samsung").any(hints::contains) -> DeviceChipsetFamily.Exynos
-        listOf("tensor", "gs101", "gs201", "gs301").any(hints::contains) -> DeviceChipsetFamily.Tensor
-        else -> DeviceChipsetFamily.Unknown
-    }
-    return DeviceChipsetInfo(
-        family = family,
-        manufacturer = socManufacturer.ifBlank { Build.MANUFACTURER.orEmpty() },
-        socModel = socModel.ifBlank { Build.BOARD.orEmpty() },
-        hardware = hardware.ifBlank { Build.HARDWARE.orEmpty() },
-        deviceModel = deviceModel
-    )
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
@@ -208,12 +156,12 @@ fun OnboardingScreen(
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val horizontalSystemBarPadding = navigationBarsHorizontalPaddingValues()
     val tvSafeHorizontal = if (tvUiEnabled) {
-        TvUiMetrics.safeHorizontalDp(configuration.screenWidthDp).dp
+        TvUiMetrics.safeHorizontalDp().dp
     } else {
         0.dp
     }
     val tvSafeVertical = if (tvUiEnabled) {
-        TvUiMetrics.safeVerticalDp(configuration.screenHeightDp).dp
+        TvUiMetrics.safeVerticalDp().dp
     } else {
         0.dp
     }
@@ -994,129 +942,6 @@ private fun OnboardingHeroSetup(
 }
 
 @Composable
-private fun OnboardingHeroProfile(
-    modifier: Modifier = Modifier,
-    showSubtitle: Boolean = true
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.widthIn(max = 480.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.onboarding_profile_title),
-            style = MaterialTheme.typography.displaySmall.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.5).sp
-            ),
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-        if (showSubtitle) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.onboarding_profile_subtitle),
-                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun OnboardingHeroCore(
-    modifier: Modifier = Modifier,
-    showSubtitle: Boolean = true
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.widthIn(max = 480.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(112.dp)
-                .clip(neonShape(32.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Memory,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(56.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(28.dp))
-        Text(
-            text = stringResource(R.string.onboarding_core_title),
-            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-        if (showSubtitle) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.onboarding_core_subtitle),
-                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun OnboardingCoreContent(
-    requestInitialFocus: Boolean = false,
-    contentFocusRequester: FocusRequester? = null,
-    modifier: Modifier = Modifier
-) {
-    val coreFocusRequester = contentFocusRequester ?: remember { FocusRequester() }
-    LaunchedEffect(requestInitialFocus) {
-        if (requestInitialFocus) {
-            delay(100.milliseconds)
-            runCatching { coreFocusRequester.requestFocus() }
-        }
-    }
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .focusRequester(coreFocusRequester)
-            .widthIn(max = 520.dp),
-        shape = neonShape(24.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-        tonalElevation = 4.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.onboarding_core_card_title),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = stringResource(R.string.onboarding_core_card_cpu),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = stringResource(R.string.onboarding_core_card_gpu),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = stringResource(R.string.onboarding_core_card_reference),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
-}
-@Composable
 private fun OnboardingPageIndicator(
     currentPage: Int,
     totalPages: Int,
@@ -1572,197 +1397,6 @@ private fun OnboardingSetupScrollHint(
         }
     }
 }
-
-@Composable
-@Suppress("unused")
-private fun ChipsetInfoDialog(
-    chipsetInfo: DeviceChipsetInfo,
-    onDismiss: () -> Unit
-) {
-    val familyLabel = when (chipsetInfo.family) {
-        DeviceChipsetFamily.Snapdragon -> stringResource(R.string.gpu_chipset_snapdragon_title)
-        DeviceChipsetFamily.MediaTek -> stringResource(R.string.gpu_chipset_mediatek_title)
-        DeviceChipsetFamily.Exynos -> stringResource(R.string.settings_device_profile_family_exynos)
-        DeviceChipsetFamily.Tensor -> stringResource(R.string.settings_device_profile_family_tensor)
-        DeviceChipsetFamily.Unknown -> stringResource(R.string.settings_device_profile_family_generic)
-    }
-    val recommendedProfile = when (chipsetInfo.family) {
-        DeviceChipsetFamily.Snapdragon -> "${stringResource(R.string.gpu_chipset_snapdragon_title)} / ${stringResource(R.string.gpu_adreno_title)}"
-        DeviceChipsetFamily.MediaTek -> stringResource(
-            R.string.onboarding_chipset_dialog_recommend_mediatek,
-            stringResource(R.string.gpu_chipset_mediatek_title),
-            stringResource(R.string.gpu_mali_title),
-            stringResource(R.string.gpu_powervr_title)
-        )
-        else -> stringResource(R.string.onboarding_chipset_dialog_recommend_manual)
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Rounded.Info,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        title = {
-            Text(text = stringResource(R.string.onboarding_chipset_dialog_title))
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                ChipsetInfoRow(
-                    label = stringResource(R.string.onboarding_chipset_dialog_family),
-                    value = familyLabel
-                )
-                ChipsetInfoRow(
-                    label = stringResource(R.string.onboarding_chipset_dialog_recommended),
-                    value = recommendedProfile
-                )
-                ChipsetInfoRow(
-                    label = stringResource(R.string.onboarding_chipset_dialog_soc),
-                    value = chipsetInfo.socModel.ifBlank { stringResource(R.string.settings_not_set) }
-                )
-                ChipsetInfoRow(
-                    label = stringResource(R.string.onboarding_chipset_dialog_hardware),
-                    value = chipsetInfo.hardware.ifBlank { stringResource(R.string.settings_not_set) }
-                )
-                ChipsetInfoRow(
-                    label = stringResource(R.string.onboarding_chipset_dialog_device),
-                    value = chipsetInfo.deviceModel.ifBlank { stringResource(R.string.settings_not_set) }
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.onboarding_chipset_dialog_ok))
-            }
-        },
-        shape = neonShape(24.dp)
-    )
-}
-
-@Composable
-private fun ChipsetInfoRow(
-    label: String,
-    value: String
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-@Suppress("unused")
-private fun CompactProfileCard(
-    title: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        shape = neonShape(20.dp),
-        color = if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.11f)
-        } else {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-        },
-        tonalElevation = if (selected) 5.dp else 1.dp,
-        border = androidx.compose.foundation.BorderStroke(
-            if (selected) 2.dp else 1.dp,
-            if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)
-            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f)
-        ),
-        onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = if (selected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
-                contentDescription = null,
-                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp)
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProfileCard(
-    title: String,
-    description: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .gamepadFocusableCard(
-                shape = neonShape(32.dp),
-                interactionSource = interactionSource,
-                addFocusTarget = false,
-                focusHighlightMode = GamepadFocusHighlightMode.Always
-            ),
-        shape = neonShape(32.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-        tonalElevation = if (selected) 6.dp else 2.dp,
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-        ),
-        interactionSource = interactionSource,
-        onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = if (selected) Icons.Rounded.RadioButtonChecked else Icons.Rounded.RadioButtonUnchecked,
-                contentDescription = null,
-                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
 
 @Composable
 private fun SetupCard(

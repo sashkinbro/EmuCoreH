@@ -398,14 +398,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun showStoragePermissionError(application: Application) {
-        android.widget.Toast.makeText(
-            application,
-            com.sbro.emucoreh.R.string.error_storage_permission_not_persisted,
-            android.widget.Toast.LENGTH_LONG
-        ).show()
-    }
-
     fun refreshGames() {
         viewModelScope.launch {
             if (_uiState.value.isLoading || _uiState.value.isRefreshing) return@launch

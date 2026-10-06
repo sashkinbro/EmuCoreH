@@ -49,50 +49,6 @@ object FlycastCoreOptions {
         }
     }
 
-    data class Category(
-        val key: String,
-        @StringRes val labelRes: Int,
-        @StringRes val descriptionRes: Int,
-    )
-
-    private val categoryList: List<Category> = listOf(
-        Category(
-            key = "system",
-            labelRes = R.string.flycast_cat_system_label,
-            descriptionRes = R.string.flycast_cat_system_info,
-        ),
-        Category(
-            key = "video",
-            labelRes = R.string.flycast_cat_video_label,
-            descriptionRes = R.string.flycast_cat_video_info,
-        ),
-        Category(
-            key = "performance",
-            labelRes = R.string.flycast_cat_performance_label,
-            descriptionRes = R.string.flycast_cat_performance_info,
-        ),
-        Category(
-            key = "hacks",
-            labelRes = R.string.flycast_cat_hacks_label,
-            descriptionRes = R.string.flycast_cat_hacks_info,
-        ),
-        Category(
-            key = "input",
-            labelRes = R.string.flycast_cat_input_label,
-            descriptionRes = R.string.flycast_cat_input_info,
-        ),
-        Category(
-            key = "expansions",
-            labelRes = R.string.flycast_cat_expansions_label,
-            descriptionRes = R.string.flycast_cat_expansions_info,
-        ),
-        Category(
-            key = "vmu",
-            labelRes = R.string.flycast_cat_vmu_label,
-            descriptionRes = R.string.flycast_cat_vmu_info,
-        ),
-    )
-
     private val optionList: List<Option> = listOf(
         // system
         Option(
