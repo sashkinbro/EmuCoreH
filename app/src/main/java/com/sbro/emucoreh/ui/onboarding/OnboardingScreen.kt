@@ -166,6 +166,7 @@ fun OnboardingScreen(
         0.dp
     }
     val landscapeSetupScrollState = rememberScrollState()
+    val landscapeContentScrollState = rememberScrollState()
     val landscapeSetupScrollProgress by remember(landscapeSetupScrollState) {
         derivedStateOf {
             if (landscapeSetupScrollState.maxValue > 0) {
@@ -185,6 +186,8 @@ fun OnboardingScreen(
         if (pagerState.currentPage != uiState.currentPage) {
             viewModel.setCurrentPage(pagerState.currentPage)
         }
+        if (!isLandscape) return@LaunchedEffect
+        landscapeContentScrollState.scrollTo(0)
     }
 
     LaunchedEffect(uiState.currentPage) {
@@ -438,37 +441,56 @@ fun OnboardingScreen(
                                     2 -> R.string.onboarding_page_3_subtitle
                                     else -> R.string.onboarding_page_4_subtitle
                                 }
-                                Text(
-                                    text = stringResource(subtitleRes),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        lineHeight = 28.sp,
-                                        fontWeight = FontWeight.Normal,
-                                        letterSpacing = 0.sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center,
+                                Column(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 40.dp)
-                                        .statusBarsPadding()
-                                        .padding(top = 32.dp)
-                                )
+                                        .fillMaxSize()
+                                        .verticalScroll(landscapeContentScrollState)
+                                        .statusBarsPadding(),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = stringResource(subtitleRes),
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            lineHeight = 28.sp,
+                                            fontWeight = FontWeight.Normal,
+                                            letterSpacing = 0.sp
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 40.dp)
+                                            .padding(vertical = 24.dp)
+                                    )
+                                }
                             } else if (page == 3) {
-                                OnboardingProContent(
-                                    isProUnlocked = uiState.isProUnlocked,
-                                    proPrice = uiState.proPrice,
-                                    isProductLoading = uiState.isProProductLoading,
-                                    isPurchaseInProgress = uiState.isProPurchaseInProgress,
-                                    onPurchase = { (context as? Activity)?.let(viewModel::purchasePro) },
-                                    onShowSupportOptions = if (supportOffers.isNotEmpty()) {
-                                        { showProSupportOptions = true }
-                                    } else {
-                                        null
-                                    },
-                                    requestInitialFocus = tvUiEnabled && pagerState.currentPage == page,
-                                    contentFocusRequester = pageContentFocusRequesters[page],
-                                    modifier = Modifier.padding(horizontal = 24.dp)
-                                )
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .verticalScroll(landscapeContentScrollState)
+                                        .statusBarsPadding(),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    OnboardingProContent(
+                                        isProUnlocked = uiState.isProUnlocked,
+                                        proPrice = uiState.proPrice,
+                                        isProductLoading = uiState.isProProductLoading,
+                                        isPurchaseInProgress = uiState.isProPurchaseInProgress,
+                                        onPurchase = { (context as? Activity)?.let(viewModel::purchasePro) },
+                                        onShowSupportOptions = if (supportOffers.isNotEmpty()) {
+                                            { showProSupportOptions = true }
+                                        } else {
+                                            null
+                                        },
+                                        requestInitialFocus = tvUiEnabled && pagerState.currentPage == page,
+                                        contentFocusRequester = pageContentFocusRequesters[page],
+                                        modifier = Modifier
+                                            .padding(horizontal = 24.dp)
+                                            .padding(vertical = 24.dp)
+                                    )
+                                }
                             } else if (page == 4) {
                                 Box(modifier = Modifier.fillMaxSize()) {
                                     Column(
