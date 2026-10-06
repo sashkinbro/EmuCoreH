@@ -28,14 +28,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.FolderZip
 import androidx.compose.material.icons.rounded.Forum
-import androidx.compose.material.icons.rounded.Gamepad
 import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Menu
@@ -203,8 +201,8 @@ fun AdaptiveShell(
     val configuration = LocalConfiguration.current
     val isTabletClass = configuration.smallestScreenWidthDp >= 600
     val isWide = tvUiEnabled || (isTabletClass && configuration.screenWidthDp >= 900)
-    val tvSafeHorizontal = TvUiMetrics.safeHorizontalDp(configuration.screenWidthDp).dp
-    val tvSafeVertical = TvUiMetrics.safeVerticalDp(configuration.screenHeightDp).dp
+    val tvSafeHorizontal = TvUiMetrics.safeHorizontalDp().dp
+    val tvSafeVertical = TvUiMetrics.safeVerticalDp().dp
     val tvNavigationWidth = TvUiMetrics.navigationWidthDp(configuration.screenWidthDp).dp
 
     if (isWide) {

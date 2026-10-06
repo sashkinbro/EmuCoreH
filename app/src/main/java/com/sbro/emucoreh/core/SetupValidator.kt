@@ -9,7 +9,6 @@ import java.io.File
 import java.util.Locale
 
 object SetupValidator {
-    private val supportedDiscExtensions = GameFormats.extensions
     private val gameMimeTypes = setOf(
         "application/zip",
         "application/x-7z-compressed",

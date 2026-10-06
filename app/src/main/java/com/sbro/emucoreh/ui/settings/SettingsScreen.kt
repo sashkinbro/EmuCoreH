@@ -2,7 +2,6 @@ package com.sbro.emucoreh.ui.settings
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
-import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -48,18 +47,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ExitToApp
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.AutoFixHigh
-import androidx.compose.material.icons.rounded.Bolt
-import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudSync
@@ -89,7 +84,6 @@ import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.SaveAs
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.ScreenRotation
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SettingsSuggest
@@ -106,20 +100,6 @@ import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.Wallpaper
 import androidx.compose.material.icons.rounded.WarningAmber
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.Waves
-import androidx.compose.material.icons.rounded.SyncAlt
-import androidx.compose.material.icons.rounded.HighQuality
-import androidx.compose.material.icons.rounded.FlashOn
-import androidx.compose.material.icons.rounded.Texture
-import androidx.compose.material.icons.rounded.CropFree
-import androidx.compose.material.icons.rounded.ArrowLeft
-import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.Straighten
-import androidx.compose.material.icons.rounded.OndemandVideo
-import androidx.compose.material.icons.rounded.ColorLens
-import androidx.compose.material.icons.rounded.ZoomOutMap
-import androidx.compose.material.icons.rounded.Timelapse
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -200,7 +180,6 @@ import com.sbro.emucoreh.data.AppPreferences
 import com.sbro.emucoreh.data.AppPreferences.Companion.FPS_OVERLAY_MODE_DETAILED
 import com.sbro.emucoreh.data.AppPreferences.Companion.FPS_OVERLAY_MODE_SIMPLE
 import com.sbro.emucoreh.data.CheatRepository
-import com.sbro.emucoreh.data.CoverArtRepository
 import com.sbro.emucoreh.data.CustomThemeConfig
 import com.sbro.emucoreh.data.CustomThemeLibrary
 import com.sbro.emucoreh.data.CustomTouchControlLibrary
@@ -226,7 +205,6 @@ import com.sbro.emucoreh.data.SettingsSnapshot
 import com.sbro.emucoreh.data.ShaderPackInstallStage
 import com.sbro.emucoreh.data.TouchControlPressEffect
 import com.sbro.emucoreh.data.TouchControlVisualStyle
-import com.sbro.emucoreh.data.formatDownloadBytes
 import com.sbro.emucoreh.ui.common.EmulationSideArtworkOverlay
 import com.sbro.emucoreh.ui.common.EmulationSideArtworkThumbnail
 import com.sbro.emucoreh.ui.common.EmulatorDataLocationDialog
@@ -272,7 +250,6 @@ import com.sbro.emucoreh.ui.theme.neon.neonChipShape
 import com.sbro.emucoreh.ui.theme.neon.neonCornerAccent
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 import com.sbro.emucoreh.ui.theme.neon.neonShapeCorners
-import java.util.Locale
 
 private enum class SettingsTab {
     General, Graphics, Controls, Emulation, Network, Audio, Library, Customization, GameMenu, Updates, Pro, Arcade, About
@@ -4203,40 +4180,6 @@ internal fun SettingsItem(
     }
 }
 
-@Composable
-private fun CoverUrlExampleRow(
-    label: String,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val shape = neonShape(14.dp)
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .gamepadFocusableCard(
-                shape = shape,
-                interactionSource = interactionSource,
-                addFocusTarget = false
-            )
-            .combinedClickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
-        )
-    }
-}
-
 private data class SettingsSearchEntry(
     val tab: SettingsTab,
     val title: String,
@@ -5730,28 +5673,6 @@ private fun gyroModeOptions(): List<Pair<Int, String>> = listOf(
     AppPreferences.GYRO_MODE_AIM to stringResource(R.string.settings_gyro_aim),
     AppPreferences.GYRO_MODE_STEERING to stringResource(R.string.settings_gyro_steering)
 )
-
-private fun resolveManualTargetFps(currentTargetFps: Int, defaultTargetFps: Int): Int {
-    return when {
-        currentTargetFps > 0 -> currentTargetFps
-        defaultTargetFps > 0 -> defaultTargetFps
-        else -> 60
-    }
-}
-
-private fun formatFramerateHz(value: Float): String {
-    val rounded = kotlin.math.round(value * 100f) / 100f
-    val whole = rounded.toInt()
-    return if (rounded == whole.toFloat()) {
-        "$whole Hz"
-    } else {
-        "$rounded Hz"
-    }
-}
-
-private fun formatSpeedMultiplier(value: Float): String {
-    return "%.2fx".format(java.util.Locale.US, value)
-}
 
 @Composable
 private fun fpsOverlayCornerOptions(): List<Pair<Int, String>> = listOf(

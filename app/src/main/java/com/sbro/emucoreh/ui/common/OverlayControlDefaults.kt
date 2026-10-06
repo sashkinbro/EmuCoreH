@@ -4,24 +4,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 
-val OverlayShoulderTopPadding = 40.dp
-val OverlayBottomAnchorPadding = 24.dp
-val OverlayCenterBottomPadding = 18.dp
-val OverlayRightShoulderGapOffset = 40.dp
-val OverlayRightStickBaseLift = 24.dp
 val OverlayClusterGapLandscape = 32.dp
 val OverlayClusterGapPortrait = 34.dp
 val OverlayActionGapLandscape = 48.dp
 val OverlayActionGapPortrait = 52.dp
 val OverlayPrimaryControlGapLandscape = 24.dp
 val OverlayPrimaryControlGapPortrait = 16.dp
-val OverlayCenterBaseShiftX = 0.dp
 val OverlayCenterInlineGapLandscape = 10.dp
 val OverlayCenterInlineGapPortrait = 12.dp
 val OverlayCenterSelectOpticalNudgeX = (-2).dp
 val OverlayCenterToggleOpticalNudgeY = 0.dp
 val OverlayCenterStartOpticalNudgeX = 2.dp
-val OverlayShoulderVerticalGap = 40.dp
 
 fun overlayInlineGroupOffset(
     widths: List<Dp>,

@@ -1,4 +1,4 @@
-﻿
+
 package com.sbro.emucoreh.ui.emulation
 
 import android.annotation.SuppressLint
@@ -70,7 +70,6 @@ import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Gamepad
-import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -188,7 +187,6 @@ import com.sbro.emucoreh.data.gameMenuSectionsForTab
 import com.sbro.emucoreh.ui.common.CustomControlVisual
 import com.sbro.emucoreh.ui.common.actionDrawableRes
 import com.sbro.emucoreh.ui.common.composeShape
-import com.sbro.emucoreh.ui.common.BitmapPathImage
 import com.sbro.emucoreh.ui.common.EmulationSideArtworkOverlay
 import com.sbro.emucoreh.ui.common.GameCoverArt
 import com.sbro.emucoreh.ui.common.ProvideGamepadMenuAction
@@ -209,7 +207,6 @@ import com.sbro.emucoreh.core.FlycastCoreOptions
 import com.sbro.emucoreh.data.AchievementItem
 import com.sbro.emucoreh.data.RetroAchievementsEvent
 import com.sbro.emucoreh.data.RetroAchievementsRepository
-import com.sbro.emucoreh.data.RetroAchievementsState
 import coil3.compose.AsyncImage
 import com.sbro.emucoreh.ui.theme.GradientEnd
 import com.sbro.emucoreh.ui.theme.GradientStart
@@ -220,7 +217,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.util.Date
-import java.util.Locale
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 import com.sbro.emucoreh.ui.theme.neon.LocalNeonTheme
@@ -5249,65 +5245,6 @@ private fun AnnotatedString.Builder.addLineValueStyle(
         ?: lineEnd
     if (valueStart < valueEnd)
         addStyle(SpanStyle(color = color), valueStart, valueEnd)
-}
-
-@Composable
-private fun LiveChipsSelectionRow(
-    title: String,
-    options: List<Pair<Int, String>>,
-    currentValue: Int,
-    onValueChange: (Int) -> Unit,
-    helpText: String? = null,
-    onResetToDefault: (() -> Unit)? = null
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val context = LocalContext.current
-    val resetToast = stringResource(R.string.settings_reset_to_default_toast)
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 4.dp)
-                .combinedClickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = {},
-                    onLongClick = onResetToDefault?.let {
-                        {
-                            it()
-                            Toast.makeText(context, resetToast, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-            helpText?.let {
-                SettingHelpButton(title = title, description = it)
-            }
-        }
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalViewportBleed(18.dp),
-            contentPadding = PaddingValues(horizontal = 18.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(options) { (value, label) ->
-                FilterChip(
-                    shape = neonChipShape(),
-                    selected = currentValue == value,
-                    onClick = { onValueChange(value) },
-                    label = { Text(text = label) }
-                )
-            }
-        }
-    }
 }
 
 @Composable

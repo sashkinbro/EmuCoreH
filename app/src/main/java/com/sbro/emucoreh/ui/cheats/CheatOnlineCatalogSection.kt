@@ -1,4 +1,4 @@
-﻿package com.sbro.emucoreh.ui.cheats
+package com.sbro.emucoreh.ui.cheats
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue

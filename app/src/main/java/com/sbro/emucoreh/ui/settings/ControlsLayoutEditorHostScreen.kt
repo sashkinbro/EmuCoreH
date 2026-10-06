@@ -24,7 +24,6 @@ import com.sbro.emucoreh.data.CustomTouchControlLibrary
 import com.sbro.emucoreh.data.OverlayControlLayout
 import com.sbro.emucoreh.data.PerGameSettingsRepository
 import com.sbro.emucoreh.data.SettingsSnapshot
-import com.sbro.emucoreh.data.TouchControlsLayoutProfile
 import com.sbro.emucoreh.data.saveTouchControlsLayout
 import com.sbro.emucoreh.data.toTouchControlsLayoutProfile
 import com.sbro.emucoreh.data.withCustomTouchControls

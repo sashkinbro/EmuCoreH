@@ -1,4 +1,4 @@
-﻿package com.sbro.emucoreh.data
+package com.sbro.emucoreh.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
 
 data class RecentGameEntry(
     val path: String,

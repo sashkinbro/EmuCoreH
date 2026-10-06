@@ -267,38 +267,6 @@ fun AppAlertDialog(
     }
 }
 
-/** Compact adaptive variant for short confirmations, with the same branded dialog styling. */
-@Composable
-fun CompactAppAlertDialog(
-    onDismissRequest: () -> Unit,
-    confirmButton: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    dismissButton: (@Composable () -> Unit)? = null,
-    icon: (@Composable () -> Unit)? = null,
-    title: (@Composable () -> Unit)? = null,
-    text: (@Composable () -> Unit)? = null,
-    shape: Shape = neonShape(30.dp),
-    containerColor: Color = MaterialTheme.colorScheme.surface,
-    properties: DialogProperties = DialogProperties(
-        usePlatformDefaultWidth = false,
-        decorFitsSystemWindows = false
-    )
-) {
-    AppAlertDialog(
-        onDismissRequest = onDismissRequest,
-        confirmButton = confirmButton,
-        modifier = modifier,
-        dismissButton = dismissButton,
-        icon = icon,
-        title = title,
-        text = text,
-        shape = shape,
-        containerColor = containerColor,
-        properties = properties,
-        compact = true
-    )
-}
-
 @Composable
 private fun StyledDialogScaffold(
     onDismissRequest: () -> Unit,

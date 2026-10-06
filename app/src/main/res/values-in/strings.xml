@@ -1,12 +1,6 @@
 <resources>
     <string name="emulation_runtime_failure_title">Emulasi dihentikan</string>
     <string name="emulation_runtime_failure_description">Runtime mengalami error dan tidak dapat melanjutkan dengan aman. Keluar dari sesi ini dan mulai ulang game. Renderer tidak diubah secara otomatis.\n\nDetail:\n</string>
-    <string name="onboarding_core_title">Dibuat untuk Dreamcast</string>
-    <string name="onboarding_core_subtitle">Core Flycast libretro dengan recompiler SH4 yang cepat, grafis PowerVR2, dan rendering Vulkan.</string>
-    <string name="onboarding_core_card_title">Arsitektur Dreamcast asli</string>
-    <string name="onboarding_core_card_cpu">CPU SH4 (200 MHz) berjalan melalui recompiler cepat Flycast.</string>
-    <string name="onboarding_core_card_gpu">GPU PowerVR2 dirender melalui Vulkan atau OpenGL.</string>
-    <string name="onboarding_core_card_reference">Tidak diperlukan tingkat pembelian; semua fitur core tersedia.</string>
     <string name="app_name">EmuCoreH</string>
 
     <!-- Navigation -->
@@ -92,15 +86,15 @@
     <string name="emulation_session_restored_unavailable">Sesi emulasi sebelumnya ditutup di latar belakang. Luncurkan game lagi dari pustaka Anda.</string>
     <string name="emulation_show_controls">Tampilkan kontrol</string>
     <string name="emulation_hide_controls">Sembunyikan kontrol</string>
-    <string name="emulation_status_preparing">MempersiapkanРІР‚В¦</string>
-    <string name="emulation_status_checking_bios">Memeriksa file BIOSРІР‚В¦</string>
-    <string name="emulation_status_loading_game">Memuat gameРІР‚В¦</string>
-    <string name="emulation_status_starting_core">Memulai inti emulasiРІР‚В¦</string>
-    <string name="emulation_status_waiting_vm">Menunggu mesin virtualРІР‚В¦</string>
+    <string name="emulation_status_preparing">Mempersiapkan…</string>
+    <string name="emulation_status_checking_bios">Memeriksa file BIOS…</string>
+    <string name="emulation_status_loading_game">Memuat game…</string>
+    <string name="emulation_status_starting_core">Memulai inti emulasi…</string>
+    <string name="emulation_status_waiting_vm">Menunggu mesin virtual…</string>
     <string name="emulation_status_running">Game sedang berjalan</string>
-    <string name="emulation_status_applying_config">Menerapkan pengaturanРІР‚В¦</string>
-    <string name="emulation_status_saving">Menyimpan status cepatРІР‚В¦</string>
-    <string name="emulation_status_loading_state">Memuat status cepatРІР‚В¦</string>
+    <string name="emulation_status_applying_config">Menerapkan pengaturan…</string>
+    <string name="emulation_status_saving">Menyimpan status cepat…</string>
+    <string name="emulation_status_loading_state">Memuat status cepat…</string>
     <string name="emulation_sidebar_title">Menu Game</string>
     <string name="emulation_performance_stats">Hamparan Status</string>
     <string name="emulation_session_tab">Sesi</string>
@@ -156,23 +150,23 @@
     <string name="settings_language_hindi">Hindi</string>
     <string name="settings_language_traditional_chinese">Tiongkok Tradisional</string>
     <string name="settings_language_native_english">English</string>
-    <string name="settings_language_native_ukrainian">Р Р€Р С”РЎР‚Р В°РЎвЂ”Р Р…РЎРѓРЎРЉР С”Р В°</string>
-    <string name="settings_language_native_russian">Р В РЎС“РЎРѓРЎРѓР С”Р С‘Р в„–</string>
-    <string name="settings_language_native_spanish">EspaР“В±ol</string>
-    <string name="settings_language_native_french">FranР“В§ais</string>
+    <string name="settings_language_native_ukrainian">Українська</string>
+    <string name="settings_language_native_russian">Русский</string>
+    <string name="settings_language_native_spanish">Español</string>
+    <string name="settings_language_native_french">Français</string>
     <string name="settings_language_native_german">Deutsch</string>
-    <string name="settings_language_native_portuguese">PortuguР“Р„s</string>
+    <string name="settings_language_native_portuguese">Português</string>
     <string name="settings_language_native_italian">Italiano</string>
-    <string name="settings_language_native_hindi">Р°В¤в„–Р°В¤С—Р°В¤РЃР°ТђРЊР°В¤В¦Р°ТђР‚</string>
-    <string name="settings_language_native_traditional_chinese">Р·в„–РѓР№В«вЂќРґС‘В­Р¶вЂ“вЂЎ</string>
+    <string name="settings_language_native_hindi">हिन्दी</string>
+    <string name="settings_language_native_traditional_chinese">繁體中文</string>
     <string name="settings_language_arabic">Arab</string>
     <string name="settings_language_japanese">Jepang</string>
     <string name="settings_language_korean">Korea</string>
     <string name="settings_language_turkish">Turki</string>
-    <string name="settings_language_native_arabic">РЁВ§Р©вЂћРЁв„–РЁВ±РЁРЃР©Р‰РЁВ©</string>
-    <string name="settings_language_native_japanese">Р¶вЂ”ТђР¶СљВ¬РёР„С›</string>
-    <string name="settings_language_native_korean">РЅвЂўСљРєВµВ­РјвЂ“Т‘</string>
-    <string name="settings_language_native_turkish">TР“СrkР“В§e</string>
+    <string name="settings_language_native_arabic">العربية</string>
+    <string name="settings_language_native_japanese">日本語</string>
+    <string name="settings_language_native_korean">한국어</string>
+    <string name="settings_language_native_turkish">Türkçe</string>
     <string name="settings_renderer">Mode Grafis</string>
     <string name="settings_renderer_vulkan">Vulkan</string>
     <string name="settings_renderer_opengl">OpenGL</string>
@@ -275,7 +269,7 @@
     <string name="settings_orientation_lock_auto">Otomatis</string>
     <string name="settings_orientation_lock_portrait">Potret</string>
     <string name="settings_orientation_lock_landscape">Lanskap</string>
-    <string name="settings_help_orientation_lock">Mengunci orientasi aplikasi di mana saja, termasuk menu dan layar emulasi. Р’В«OtomatisР’В» mengikuti pengaturan rotasi sistem. Р’В«PotretР’В» dan Р’В«LanskapР’В» menahan seluruh aplikasi pada orientasi yang dipilih.</string>
+    <string name="settings_help_orientation_lock">Mengunci orientasi aplikasi di mana saja, termasuk menu dan layar emulasi. «Otomatis» mengikuti pengaturan rotasi sistem. «Potret» dan «Lanskap» menahan seluruh aplikasi pada orientasi yang dipilih.</string>
     <string name="settings_show_fps">Tampilkan penghitung FPS</string>
     <string name="settings_show_fps_desc">Tampilkan kecepatan frame saat bermain.</string>
     <string name="settings_show_recent_games">Tampilkan game terbaru</string>
@@ -352,7 +346,7 @@
     <string name="texture_manager_delete_failed">Tidak dapat menghapus paket tekstur.</string>
     <string name="texture_manager_clear_dumps_success">Dump tekstur dibersihkan.</string>
     <string name="texture_manager_clear_dumps_failed">Tidak dapat membersihkan dump tekstur.</string>
-    <string name="texture_manager_loading">Memuat paket teksturРІР‚В¦</string>
+    <string name="texture_manager_loading">Memuat paket tekstur…</string>
     <string name="texture_manager_options">Opsi Waktu Proses</string>
     <string name="texture_manager_enable_replacements">Muat tekstur pengganti</string>
     <string name="texture_manager_enable_replacements_desc">Muat paket vram-write, texpage, dan texupload dalam format PNG, JPG, TGA, atau BMP dari setiap folder serial game.</string>
@@ -421,9 +415,6 @@
     <string name="settings_speed_hacks">Speedhack</string>
     <string name="settings_rendering_section">Perenderan</string>
     <string name="settings_enable_cheats">Aktifkan Cheat</string>
-    <string name="settings_device_profile_family_exynos">Exynos</string>
-    <string name="settings_device_profile_family_tensor">Tensor</string>
-    <string name="settings_device_profile_family_generic">Android Generik</string>
     <string name="emulation_cheats_title">Cheat</string>
     <string name="emulation_cheats_empty">Tidak ada cheat yang ditemukan untuk game ini.</string>
     <string name="emulation_cheats_group_enable">Aktifkan semua di grup</string>
@@ -484,22 +475,6 @@
     <string name="onboarding_page_3_subtitle">Bangun pustaka game pribadi Anda dengan sampul indah, informasi mendetail, dan akses cepat ke game favorit Anda.</string>
     <string name="onboarding_page_4_title">Siap Bermain</string>
     <string name="onboarding_page_4_subtitle">Pilih folder game dan lokasi data emulator untuk memulai.</string>
-    <string name="onboarding_profile_title">Pilih profil awal Anda</string>
-    <string name="onboarding_profile_subtitle">Aman disarankan untuk sebagian besar perangkat dan game. Cepat dapat meningkatkan kecepatan pada ponsel yang lebih lemah, namun mungkin mengurangi kompatibilitas dan stabilitas.</string>
-    <string name="onboarding_chipset_dialog_title">Prosesor yang terdeteksi</string>
-    <string name="onboarding_chipset_dialog_family">Keluarga</string>
-    <string name="onboarding_chipset_dialog_recommended">Pilihan yang disarankan</string>
-    <string name="onboarding_chipset_dialog_soc">SoC</string>
-    <string name="onboarding_chipset_dialog_hardware">Perangkat Keras</string>
-    <string name="onboarding_chipset_dialog_device">Perangkat</string>
-    <string name="onboarding_chipset_dialog_recommend_mediatek">%1$s / %2$s atau %3$s</string>
-    <string name="onboarding_chipset_dialog_recommend_manual">Pilih opsi terdekat secara manual</string>
-    <string name="onboarding_chipset_dialog_ok">OK</string>
-    <string name="gpu_chipset_snapdragon_title">Snapdragon</string>
-    <string name="gpu_chipset_mediatek_title">MediaTek</string>
-    <string name="gpu_adreno_title">Adreno</string>
-    <string name="gpu_mali_title">Mali</string>
-    <string name="gpu_powervr_title">PowerVR</string>
     <string name="settings_mediatek_notice_title">Kompatibilitas MediaTek</string>
     <string name="settings_mediatek_notice_message">Dukungan MediaTek masih bersifat eksperimental. Crash, artefak grafis, dan perilaku tidak stabil dapat terjadi sementara kami terus meningkatkan kompatibilitas dan performa.\n\nJika mengalami masalah grafis, coba OpenGL dengan ANGLE diaktifkan. Jika masalah berlanjut, gunakan perender Perangkat Lunak.</string>
     <string name="onboarding_title">Bersiaplah untuk bermain</string>
@@ -542,15 +517,7 @@
     <string name="catalog_empty_title">Tidak ada kecocokan ditemukan</string>
     <string name="catalog_empty_body">Coba nama game lain atau frasa penelusuran yang lebih pendek.</string>
     <string name="formats_title">Format yang Didukung</string>
-    <string name="formats_overview_title">Format Game</string>
-    <string name="formats_overview_body">EmuCoreH membuka game Dreamcast dengan core Flycast bawaan.</string>
     <string name="formats_converter_unavailable">Konversi image disk ke CHD tidak tersedia di build ini.</string>
-    <string name="formats_converter_status_idle">Siap memilih image disk.</string>
-    <string name="formats_converter_status_preparing">Menyiapkan image disk yang dipilihРІР‚В¦</string>
-    <string name="formats_converter_status_ready">CHD telah siap. Pilih di mana Anda ingin menyimpannya.</string>
-    <string name="formats_converter_status_saving">Menyimpan CHD yang dikonversiРІР‚В¦</string>
-    <string name="formats_converter_status_done">CHD berhasil disimpan.</string>
-    <string name="formats_converter_status_failed">Konversi tidak selesai.</string>
     <string name="formats_converter_success_title">Konversi Selesai</string>
     <string name="formats_converter_failed_title">Konversi gagal</string>
     <string name="formats_converter_invalid_iso_body">Pilih image disk yang kompatibel untuk konversi.</string>
@@ -584,8 +551,8 @@
     <string name="save_manager_empty_body_all">Buat simpanan di dalam game terlebih dahulu, maka simpanan itu akan muncul di sini.</string>
     <string name="save_manager_empty_body_game">Game ini belum memiliki simpanan apa pun.</string>
     <string name="save_manager_unknown_game">Game tidak diketahui</string>
-    <string name="save_manager_entry_meta">%1$s РІР‚Сћ Slot %2$d</string>
-    <string name="save_manager_entry_meta_auto">%1$s РІР‚Сћ %2$s</string>
+    <string name="save_manager_entry_meta">%1$s • Slot %2$d</string>
+    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
     <string name="save_manager_auto_save_label">Simpan Otomatis</string>
     <string name="save_manager_entry_size">Ukuran: %1$s</string>
     <string name="save_manager_load_action">Muat</string>
@@ -596,8 +563,8 @@
     <string name="save_manager_delete_confirm_body">%1$s, slot %2$d akan dihapus permanen.</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s akan dihapus permanen.</string>
     <string name="save_manager_load_unavailable">File game tidak ditemukan di pustaka</string>
-    <string name="memory_card_meta">%1$s РІР‚Сћ Diperbarui: %2$s</string>
-    <string name="memory_card_loading">Memuat kartu memoriРІР‚В¦</string>
+    <string name="memory_card_meta">%1$s • Diperbarui: %2$s</string>
+    <string name="memory_card_loading">Memuat kartu memori…</string>
     <string name="settings_reset_to_default_toast">Nilai default dikembalikan.</string>
     <string name="shell_game_settings_manager">Manajer Game</string>
     <string name="game_settings_manager_title">Manajer Game</string>
@@ -639,7 +606,6 @@
     <string name="home_game_menu_custom_cover_failed">Gagal menerapkan sampul kustom.</string>
     <string name="save">Simpan</string>
     <string name="delete">Hapus</string>
-    <string name="error_storage_permission_not_persisted">Android tidak memberikan akses permanen ke lokasi ini. Silakan pilih lagi melalui pemilih sistem.</string>
     <string name="settings_touch_haptics_strength">Kekuatan haptik sentuh</string>
     <string name="settings_touch_haptics_test">Uji haptik sentuh</string>
     <string name="settings_touch_haptics_test_desc">Menjalankan kedipan (tick) pendek menggunakan kekuatan haptik sentuh saat ini.</string>
@@ -666,7 +632,7 @@
     <string name="settings_language_indonesian">Bahasa Indonesia</string>
     <string name="settings_language_native_indonesian">Bahasa Indonesia</string>
     <string name="settings_language_persian">Bahasa Persia</string>
-    <string name="settings_language_native_persian">Р©РѓРЁВ§РЁВ±РЁС–Р«РЉ</string>
+    <string name="settings_language_native_persian">فارسی</string>
     <string name="settings_touch_haptics_preset">Sensasi haptik</string>
     <string name="settings_touch_haptics_preset_soft">Lembut</string>
     <string name="settings_touch_haptics_preset_balanced">Seimbang</string>
@@ -676,8 +642,8 @@
     <string name="settings_help_touch_haptics_preset">Lembut menggunakan tekanan halus dan pelepasan yang sangat ringan. Seimbang memberikan tekanan yang jelas dengan pelepasan yang lebih ringan dan merupakan bawaan. Tegas menggunakan pasangan terpendek dan paling tajam untuk ketukan yang presisi. Kuat menggunakan denyut yang lebih dalam dan lebih panjang untuk ponsel dengan motor getaran yang lebih lemah. Penggeser kekuatan mengukur sensasi yang dipilih.</string>
     <string name="settings_gyro_mode">Kontrol giroskop</string>
     <string name="settings_gyro_off">Mati</string>
-    <string name="settings_gyro_aim">Bidik РІР‚вЂќ stik kanan</string>
-    <string name="settings_gyro_steering">Kemudi РІР‚вЂќ stik kiri</string>
+    <string name="settings_gyro_aim">Bidik — stik kanan</string>
+    <string name="settings_gyro_steering">Kemudi — stik kiri</string>
     <string name="settings_gyro_sensitivity">Sensitivitas giroskop</string>
     <string name="settings_gyro_smoothing">Penghalusan giroskop</string>
     <string name="settings_gyro_invert_x">Balikkan giroskop horizontal</string>
@@ -691,7 +657,7 @@
     <string name="settings_help_gyro_invert_x">Membalik sumbu horizontal giroskop. Biarkan nonaktif jika bidikan berputar searah ponsel; aktifkan jika kiri dan kanan terasa terbalik, yang disukai sebagian pemain untuk kontrol kamera.</string>
     <string name="settings_help_gyro_invert_y">Membalik sumbu vertikal giroskop di mode Bidik. Aktifkan jika melihat ke atas dan ke bawah bergerak berlawanan dengan kemiringan ponsel.</string>
     <string name="emulation_help_auto_save">Menyimpan status game saat ini ke slot simpan otomatis secara berkala saat Anda bermain. Ini melindungi progres di sesi panjang, tetapi setiap penyimpanan menulis ke penyimpanan dan bisa menyebabkan tersendat singkat di perangkat lambat. Aktifkan jika Anda tidak bisa sering menyimpan manual; biarkan nonaktif jika memakai save state biasa.</string>
-    <string name="emulation_help_auto_save_interval">Mengatur seberapa sering simpan otomatis berjalan, dalam menit (1РІР‚вЂњ999). Interval pendek melindungi lebih banyak progres tetapi lebih sering menulis ke penyimpanan dan bisa menimbulkan tersendat kecil; interval panjang lebih ringan untuk perangkat dan baterai, tetapi Anda bisa kehilangan lebih banyak jika aplikasi tertutup mendadak.</string>
+    <string name="emulation_help_auto_save_interval">Mengatur seberapa sering simpan otomatis berjalan, dalam menit (1–999). Interval pendek melindungi lebih banyak progres tetapi lebih sering menulis ke penyimpanan dan bisa menimbulkan tersendat kecil; interval panjang lebih ringan untuk perangkat dan baterai, tetapi Anda bisa kehilangan lebih banyak jika aplikasi tertutup mendadak.</string>
     <string name="settings_gyro_unavailable">Perangkat ini tidak memiliki sensor gerak yang diperlukan oleh mode yang dipilih.</string>
     <string name="onboarding_games_selected_count">%1$d folder dipilih. Ketuk untuk menambahkan lagi.</string>
     <string name="settings_game_folders_count">%1$d folder dipilih</string>
@@ -823,7 +789,7 @@
     <string name="feedback_category_other">Lainnya</string>
     <string name="feedback_game_label">Game dari pustaka Anda (opsional)</string>
     <string name="feedback_game_placeholder">Cari berdasarkan judul atau serial, atau ketik game secara manual</string>
-    <string name="feedback_game_loading">Memuat pustaka game AndaРІР‚В¦</string>
+    <string name="feedback_game_loading">Memuat pustaka game Anda…</string>
     <string name="feedback_game_no_matches">Tidak ada game yang cocok</string>
     <string name="feedback_game_library_empty">Tidak ada game dalam cache yang ditemukan. Anda dapat memasukkan judul game atau serial secara manual.</string>
     <string name="feedback_game_clear_selection">Hapus pilihan game</string>
@@ -839,7 +805,7 @@
     <string name="feedback_tip_body">Tambahkan langkah singkat untuk mereproduksi masalah dan lampirkan tangkapan layar, video, log, simpanan, atau file berguna lainnya.</string>
     <string name="feedback_remove_attachment">Hapus lampiran</string>
     <string name="feedback_send">Kirim masukan</string>
-    <string name="feedback_queueing">MenyiapkanРІР‚В¦</string>
+    <string name="feedback_queueing">Menyiapkan…</string>
     <string name="feedback_queued">Masukan diantrekan. Masukan akan dikirim secara otomatis saat jaringan tersedia.</string>
     <string name="feedback_error_message_required">Harap jelaskan masukan Anda terlebih dahulu.</string>
     <string name="feedback_error_too_many_files">Anda memilih terlalu banyak file.</string>
@@ -871,7 +837,7 @@
     <string name="content_select_game">Pilih game dari pustaka Anda</string>
     <string name="content_library_empty">Tidak ada game yang kompatibel di pustaka.</string>
     <string name="content_serial_unknown">Nomor seri tidak diketahui</string>
-    <string name="content_catalog_loading">Memuat katalog daringРІР‚В¦</string>
+    <string name="content_catalog_loading">Memuat katalog daring…</string>
     <string name="content_catalog_failed">Katalog daring tidak dapat dimuat. Periksa koneksi lalu coba lagi.</string>
     <string name="content_catalog_cached">Katalog terakhir yang tersimpan ditampilkan karena versi jaringan tidak tersedia.</string>
     <string name="content_installed">Terpasang</string>
@@ -884,7 +850,7 @@
     <string name="texture_catalog_title">Paket tekstur untuk game Anda</string>
     <string name="texture_catalog_description">Pilih game untuk melihat paket tekstur komunitas yang kompatibel.</string>
     <string name="texture_catalog_no_packs">Belum ada paket tekstur terverifikasi untuk game ini.</string>
-    <string name="texture_catalog_pack_meta">Versi %1$s РІР‚Сћ %2$s РІР‚Сћ %3$d file</string>
+    <string name="texture_catalog_pack_meta">Versi %1$s • %2$s • %3$d file</string>
     <string name="texture_downloads_title">Unduhan</string>
     <string name="texture_download_status_queued">Dalam antrean</string>
     <string name="texture_download_status_downloading">Mengunduh</string>
@@ -895,8 +861,8 @@
     <string name="texture_download_status_completed">Terpasang</string>
     <string name="texture_download_status_failed">Unduhan gagal</string>
     <string name="texture_download_status_cancelled">Dibatalkan</string>
-    <string name="texture_download_progress_detail">%1$s / %2$s РІР‚Сћ %3$s/dtk РІР‚Сћ tersisa %4$s</string>
-    <string name="texture_download_progress_estimating">%1$s / %2$s РІР‚Сћ memperkirakan waktuРІР‚В¦</string>
+    <string name="texture_download_progress_detail">%1$s / %2$s • %3$s/dtk • tersisa %4$s</string>
+    <string name="texture_download_progress_estimating">%1$s / %2$s • memperkirakan waktu…</string>
     <string name="texture_download_retry">Coba lagi</string>
     <string name="content_compatible_game_version_section">Kompatibel dengan versi game ini</string>
     <string name="content_other_game_versions_section">Tersedia untuk versi game lain</string>
@@ -907,13 +873,13 @@
     <string name="cheat_manager_enable">Aktifkan cheat</string>
     <string name="cheat_manager_enable_desc">Menerapkan kode cheat yang diaktifkan saat game dimulai.</string>
     <string name="cheat_manager_import_pnach">Impor file cheat untuk game yang dipilih</string>
-    <string name="cheat_manager_detected_identity">%1$s РІР‚Сћ CRC %2$s</string>
-    <string name="cheat_manager_crc_unavailable">%1$s РІР‚Сћ CRC tidak dapat dideteksi. Revisi dicocokkan berdasarkan nomor seri dan judul.</string>
+    <string name="cheat_manager_detected_identity">%1$s • CRC %2$s</string>
+    <string name="cheat_manager_crc_unavailable">%1$s • CRC tidak dapat dideteksi. Revisi dicocokkan berdasarkan nomor seri dan judul.</string>
     <string name="cheat_manager_import_success">File cheat berhasil diimpor. Pilih cheat yang ingin diaktifkan di bawah.</string>
     <string name="cheat_manager_import_failed">File yang dipilih tidak berisi kode cheat yang didukung.</string>
     <string name="cheat_catalog_install_failed">Paket cheat yang dipilih tidak dapat dipasang.</string>
     <string name="cheat_catalog_install_success">Cheat terpasang. Aktifkan yang Anda inginkan di bawah.</string>
-    <string name="cheat_catalog_pack_meta">%1$d blok cheat РІР‚Сћ %2$s</string>
+    <string name="cheat_catalog_pack_meta">%1$d blok cheat • %2$s</string>
     <string name="cheat_catalog_no_packs">Belum ada paket cheat untuk game ini. Paket yang ditambahkan ke katalog EmuCoreH akan muncul di sini secara otomatis.</string>
     <string name="cheat_catalog_description">Unduh paket cheat terverifikasi untuk game yang dipilih dari katalog EmuCoreH. Paket yang dipasang digabungkan dengan cheat yang sudah tersimpan untuk game ini.</string>
     <string name="cheat_catalog_title">Cheat online</string>
@@ -1134,7 +1100,7 @@
     <string name="settings_language_polish">Polandia</string>
     <string name="settings_language_native_polish">Polski</string>
     <string name="settings_language_czech">Ceko</string>
-    <string name="settings_language_native_czech">Р”РЉeР•РЋtina</string>
+    <string name="settings_language_native_czech">Čeština</string>
     <string name="hub_title">EmuCoreH - Hub</string>
     <string name="hub_tab_news">Berita</string>
     <string name="hub_tab_videos">Video</string>
@@ -1160,7 +1126,7 @@
     <string name="hub_no_search_results">Tidak ada konten yang cocok ditemukan.</string>
     <string name="hub_load_failed">Konten Hub tidak dapat dimuat.</string>
     <string name="hub_article_load_failed">Artikel ini tidak dapat dimuat.</string>
-    <string name="hub_offline_cached">Mode offline Р’В· menampilkan konten tersimpan</string>
+    <string name="hub_offline_cached">Mode offline · menampilkan konten tersimpan</string>
     <string name="hub_language_fallback">Konten ini ditampilkan dalam bahasa Inggris.</string>
     <string name="hub_featured">Unggulan</string>
     <string name="hub_save_image">Simpan gambar</string>
@@ -1174,7 +1140,7 @@
     <string name="hub_featured_only">Hanya unggulan</string>
     <string name="hub_sort_newest">Terbaru lebih dulu</string>
     <string name="hub_sort_oldest">Terlama lebih dulu</string>
-    <string name="hub_sort_title">Judul AРІР‚вЂњZ</string>
+    <string name="hub_sort_title">Judul A–Z</string>
     <string name="hub_filter_all_topics">Semua topik</string>
     <string name="hub_filter_emucorea">EmuCoreH</string>
     <string name="hub_filter_emucorev">EmuCoreHV</string>
@@ -1211,8 +1177,8 @@
     <string name="settings_shader_preset_none">Tidak ada</string>
     <string name="settings_help_shader_preset">Instal paket shader lalu pilih preset .slangp. File terkait tetap disimpan bersama.</string>
     <string name="settings_shader_pack_download">Unduh paket shader resmi</string>
-    <string name="settings_shader_pack_download_desc">RetroArch Slang Shaders Р’В· sekitar 51 MB Р’В· WiРІР‚вЂFi disarankan</string>
-    <string name="settings_shader_pack_working">Memasang paket shaderРІР‚В¦</string>
+    <string name="settings_shader_pack_download_desc">RetroArch Slang Shaders · sekitar 51 MB · Wi‑Fi disarankan</string>
+    <string name="settings_shader_pack_working">Memasang paket shader…</string>
     <string name="settings_shader_pack_import">Impor paket shader</string>
     <string name="settings_shader_pack_import_desc">Pilih .zip berisi file .slangp dan .slang</string>
     <string name="settings_shader_pack_installed">Paket shader terpasang</string>
@@ -1258,7 +1224,7 @@
     <string name="discord_status_unavailable">SDK tidak tersedia dalam build ini</string>
     <string name="discord_status_disconnected">Tidak terhubung</string>
     <string name="discord_status_authorizing">Menunggu otorisasi</string>
-    <string name="discord_status_connecting">MenghubungkanРІР‚В¦</string>
+    <string name="discord_status_connecting">Menghubungkan…</string>
     <string name="discord_status_connected">Terhubung</string>
     <string name="discord_status_failed">Koneksi gagal</string>
     <string name="settings_discord_sdk_unavailable">Discord Social SDK tidak disertakan dalam build ini.</string>
@@ -1320,7 +1286,7 @@
     <string name="achievements_encore_desc">Buka pencapaian lagi dengan progres terpisah.</string>
     <string name="achievements_not_signed_in">Masuk ke RetroAchievements di layar Pencapaian untuk melacak progres.</string>
     <string name="achievements_no_game">Mulai game untuk melihat pencapaiannya di sini.</string>
-    <string name="achievements_loading">Memuat pencapaianРІР‚В¦</string>
+    <string name="achievements_loading">Memuat pencapaian…</string>
     <string name="achievements_mastered">Dituntaskan!</string>
     <string name="achievements_error">Kesalahan RetroAchievements: %1$s</string>
     <string name="achievements_unlocked_header">Terbuka</string>
@@ -1357,20 +1323,6 @@
     <!-- Flycast core options (generated by tools/gen_flycast_options.py) -->
 
     <!-- Flycast core options (generated by tools/gen_flycast_options.py) -->
-    <string name="flycast_cat_system_label">Sistem</string>
-    <string name="flycast_cat_system_info">Konfigurasikan wilayah, bahasa, BIOS, dan pengaturan perangkat keras dasar.</string>
-    <string name="flycast_cat_video_label">Tampilan</string>
-    <string name="flycast_cat_video_info">Konfigurasikan resolusi, transparansi order-independent, dan efek visual.</string>
-    <string name="flycast_cat_performance_label">Performa</string>
-    <string name="flycast_cat_performance_info">Konfigurasikan rendering multithread dan pengaturan lewati frame.</string>
-    <string name="flycast_cat_hacks_label">Hack Emulasi</string>
-    <string name="flycast_cat_hacks_info">Konfigurasikan penggantian layar lebar, kecepatan pemuatan GD-ROM, dan penggantian tekstur.</string>
-    <string name="flycast_cat_input_label">Kontrol</string>
-    <string name="flycast_cat_input_info">Konfigurasikan kontroler dan light gun.</string>
-    <string name="flycast_cat_expansions_label">Slot Ekspansi Kontroler</string>
-    <string name="flycast_cat_expansions_info">Pilih perangkat (VMU, perangkat getar) yang terpasang di setiap slot ekspansi kontroler.</string>
-    <string name="flycast_cat_vmu_label">Unit Memori Visual (VMU)</string>
-    <string name="flycast_cat_vmu_info">Konfigurasikan berkas simpan VMU per game dan pengaturan visibilitas VMU di layar.</string>
     <string name="flycast_choice_color_black">Hitam</string>
     <string name="flycast_choice_color_blue">Biru</string>
     <string name="flycast_choice_color_cyan">Sian</string>
@@ -1846,7 +1798,7 @@
     <string name="flycast_opt_vmu4_screen_opacity_choice_v90">90%</string>
     <string name="flycast_opt_vmu4_screen_opacity_choice_v100">100%</string>
     <string name="vmu_cards_count">Kartu memori: %1$d</string>
-    <string name="vmu_port_slot">Port %1$s Р’В· Slot %2$s</string>
+    <string name="vmu_port_slot">Port %1$s · Slot %2$s</string>
     <string name="vmu_system_memory">Memori sistem</string>
 
     <string name="onboarding_pro_subtitle">Crimson memberikan EmuCoreH tampilan yang lebih gelap, sementara Pro membantu pengembangan terus berjalan.</string>
@@ -1922,11 +1874,11 @@
         <string name="achievement_arcade_debut_description">Jalankan game arcade Naomi atau Atomiswave.</string>
     <string name="achievement_arcade_debut_title">Arcade debut</string>
         <string name="achievement_arcade_library_description">Mainkan %1$d game arcade berbeda.</string>
-    <string name="achievement_arcade_library_title">Arcade collector Р’В· %1$d</string>
+    <string name="achievement_arcade_library_title">Arcade collector · %1$d</string>
         <string name="achievement_arcade_sessions_description">Selesaikan %1$d sesi arcade.</string>
-    <string name="achievement_arcade_sessions_title">Insert coin Р’В· %1$d</string>
+    <string name="achievement_arcade_sessions_title">Insert coin · %1$d</string>
         <string name="achievement_arcade_time_description">Habiskan %1$d menit di game arcade.</string>
-    <string name="achievement_arcade_time_title">Arcade resident Р’В· %1$d min</string>
+    <string name="achievement_arcade_time_title">Arcade resident · %1$d min</string>
     <string name="achievement_bulk_unlocked">%1$d new achievements unlocked</string>
     <string name="achievement_dedicated_description">Spend 10 hours in one game.</string>
     <string name="achievement_dedicated_title">True dedication</string>
@@ -1946,7 +1898,7 @@
     <string name="achievement_hundred_hours_description">Spend 100 hours in games.</string>
     <string name="achievement_hundred_hours_title">Emulation veteran</string>
     <string name="achievement_library_description">Play %1$d different games.</string>
-    <string name="achievement_library_title">Library milestone Р’В· %1$d</string>
+    <string name="achievement_library_title">Library milestone · %1$d</string>
     <string name="achievement_notification_channel">Achievements</string>
     <string name="achievement_one_hour_description">Spend 1 hour in games.</string>
     <string name="achievement_one_hour_title">Getting started</string>
@@ -1955,18 +1907,18 @@
     <string name="achievement_series_description">Play at least %2$d different games from the %1$s series.</string>
     <string name="achievement_series_title">%1$s devotee</string>
     <string name="achievement_sessions_description">Complete %1$d play sessions.</string>
-    <string name="achievement_sessions_title">Always ready Р’В· %1$d</string>
+    <string name="achievement_sessions_title">Always ready · %1$d</string>
     <string name="achievement_single_game_sessions_description">Return to one game for %1$d sessions.</string>
-    <string name="achievement_single_game_sessions_title">Returning champion Р’В· %1$d</string>
+    <string name="achievement_single_game_sessions_title">Returning champion · %1$d</string>
     <string name="achievement_single_game_time_description">Spend %1$d minutes in a single game.</string>
-    <string name="achievement_single_game_time_title">Unshakable focus Р’В· %1$d min</string>
-    <string name="achievement_summary_format">%1$d of %2$d unlocked Р’В· %3$d pts</string>
+    <string name="achievement_single_game_time_title">Unshakable focus · %1$d min</string>
+    <string name="achievement_summary_format">%1$d of %2$d unlocked · %3$d pts</string>
     <string name="achievement_ten_hours_description">Spend 10 hours in games.</string>
     <string name="achievement_ten_hours_title">Regular player</string>
     <string name="achievement_ten_sessions_description">Start 10 play sessions.</string>
     <string name="achievement_ten_sessions_title">One more round</string>
     <string name="achievement_total_time_description">Spend %1$d total minutes in games.</string>
-    <string name="achievement_total_time_title">Time traveler Р’В· %1$d min</string>
+    <string name="achievement_total_time_title">Time traveler · %1$d min</string>
     <string name="achievement_twenty_games_description">Play 20 different games.</string>
     <string name="achievement_twenty_games_title">Game library</string>
     <string name="achievement_unlocked_notification">Achievement unlocked</string>
@@ -1989,7 +1941,7 @@
     <string name="drive_description">Cadangkan pengaturan, kartu memori, status simpan, cheat, dan tampilan ke Drive Anda. Game, BIOS, cache, dan data login tidak disertakan.</string>
     <string name="drive_disconnect">Putuskan</string>
     <string name="drive_disconnect_warning">Pencadangan otomatis akan berhenti. Salinan di Google Drive tetap ada. Anda tidak akan keluar dari profil EmuCoreH.</string>
-    <string name="drive_downloading">Mengunduh cadanganРІР‚В¦</string>
+    <string name="drive_downloading">Mengunduh cadangan…</string>
     <string name="drive_empty">Belum ada cadangan yang selesai.</string>
     <string name="drive_empty_description">Cadangan yang selesai akan muncul di sini. Buat cadangan pertama untuk menyimpan data permainan dan pengaturan di Google Drive Anda.</string>
     <string name="drive_error_auth">Akses Google Drive tidak tersedia. Hubungkan ulang akun Anda.</string>
@@ -2006,14 +1958,14 @@
     <string name="drive_last_backup">Cadangan terakhir yang berhasil</string>
     <string name="drive_manual">Manual</string>
     <string name="drive_open">Buka Google Drive</string>
-    <string name="drive_preparing">Menyiapkan salinan yang amanРІР‚В¦</string>
+    <string name="drive_preparing">Menyiapkan salinan yang aman…</string>
     <string name="drive_private">Cadangan pribadi di akun Google Anda</string>
     <string name="drive_reconnect">Hubungkan ulang Google Drive</string>
     <string name="drive_refresh">Muat ulang</string>
     <string name="drive_restore">Pulihkan</string>
     <string name="drive_restore_warning">Data yang dipilih akan menggantikan file lokal yang sesuai. Salinan pemulihan dibuat terlebih dahulu. Tutup game sebelum memulihkan. Di perangkat lain, pilih kembali game dan BIOS.</string>
     <string name="drive_restored">Pemulihan selesai. Buka ulang layar untuk memuat pengaturan yang dipulihkan.</string>
-    <string name="drive_restoring">Memulihkan dataРІР‚В¦</string>
+    <string name="drive_restoring">Memulihkan data…</string>
     <string name="drive_retention">Simpan %1$d salinan terbaru per perangkat</string>
     <string name="drive_schedule">Cadangan otomatis</string>
     <string name="drive_schedule_note">Android dapat menunda pencadangan. Game diprioritaskan. Data yang tidak berubah tidak dicadangkan ulang secara otomatis.</string>
@@ -2022,11 +1974,11 @@
     <string name="drive_transfer_amount">%1$s dari %2$s</string>
     <string name="drive_transfer_remaining">Sekitar %1$s lagi</string>
     <string name="drive_transfer_speed">%1$s/dtk</string>
-    <string name="drive_uploading">Mengunggah cadanganРІР‚В¦</string>
-    <string name="drive_verifying">Memeriksa integritas cadanganРІР‚В¦</string>
-    <string name="drive_waiting">Menunggu jaringan, baterai, atau operasi lainРІР‚В¦</string>
+    <string name="drive_uploading">Mengunggah cadangan…</string>
+    <string name="drive_verifying">Memeriksa integritas cadangan…</string>
+    <string name="drive_waiting">Menunggu jaringan, baterai, atau operasi lain…</string>
     <string name="drive_wifi">Hanya jaringan tanpa batas data</string>
-    <string name="drive_working">MemprosesРІР‚В¦</string>
+    <string name="drive_working">Memproses…</string>
     <string name="profile_accent_blue">Biru</string>
     <string name="profile_accent_crimson">Merah Tua</string>
     <string name="profile_accent_emerald">Zamrud</string>
@@ -2039,7 +1991,7 @@
     <string name="profile_blocked_title">Blocked players</string>
     <string name="profile_catalog_game_not_found">%1$s belum tersedia di katalog game.</string>
     <string name="profile_cloud_confirm_restore">Confirm restore</string>
-    <string name="profile_cloud_count">Cloud Р’В· %1$d</string>
+    <string name="profile_cloud_count">Cloud · %1$d</string>
     <string name="profile_cloud_delete">Delete cloud profile</string>
     <string name="profile_cloud_deleted">Cloud profile deleted.</string>
     <string name="profile_cloud_description">Simpan hingga 5 profil bernama. Hanya pengaturan emulator dan per-game Anda yang disinkronkan. Game, file BIOS, save state (quick save), file kartu memori, dan driver Anda tetap hanya di perangkat ini.</string>
@@ -2050,7 +2002,7 @@
     <string name="profile_cloud_save_current">Save current settings</string>
     <string name="profile_cloud_saved">Emulator settings saved to your profile.</string>
     <string name="profile_cloud_title">Emulator settings in cloud</string>
-    <string name="profile_cloud_version">App %1$s Р’В· core %2$s</string>
+    <string name="profile_cloud_version">App %1$s · core %2$s</string>
     <string name="profile_create_account">Buat akun</string>
     <string name="profile_customize_pro">Kustomisasi profil Pro</string>
     <string name="profile_customize_pro_accent">Aksen profil</string>
@@ -2059,7 +2011,7 @@
     <string name="profile_customize_pro_games_help">Pilih game yang akan disorot di profil publik Anda.</string>
     <string name="profile_customize_pro_title">Profil Pro</string>
     <string name="profile_device_android">System</string>
-    <string name="profile_device_app_core">App Р’В· core</string>
+    <string name="profile_device_app_core">App · core</string>
     <string name="profile_device_current">This device</string>
     <string name="profile_device_delete">Hapus perangkat</string>
     <string name="profile_device_deleted">Perangkat dihapus</string>
@@ -2071,7 +2023,7 @@
     <string name="profile_device_ram">Memory</string>
     <string name="profile_device_show">Show device</string>
     <string name="profile_device_soc">Processor</string>
-    <string name="profile_devices_count">Devices Р’В· %1$d</string>
+    <string name="profile_devices_count">Devices · %1$d</string>
     <string name="profile_devices_description">Device details use a random app identifier, never a hardware ID. You choose whether one device is visible in your public profile.</string>
     <string name="profile_devices_empty">No registered devices yet.</string>
     <string name="profile_devices_title">Your devices</string>
@@ -2184,15 +2136,15 @@
     <string name="core_update_reset_done">Pengaturan diatur ulang</string>
 
     <!-- Naomi 1-2 arcade tab and setup guide. -->
-    <string name="settings_arcade_tab">Naomi 1РІР‚вЂњ2</string>
-    <string name="naomi_guide_title">Naomi 1РІР‚вЂњ2 / Atomiswave</string>
+    <string name="settings_arcade_tab">Naomi 1–2</string>
+    <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
     <string name="naomi_guide_subtitle">Game Naomi, Naomi 2, dan Atomiswave berjalan dari set ROM MAME.</string>
     <string name="naomi_guide_intro">Simpan setiap set ROM dalam arsipnya sendiri dan tambahkan foldernya ke pustaka. EmuCoreH menemukan BIOS, menjalankan kartrid atau GD-ROM, dan mengunduh sampulnya otomatis.</string>
-    <string name="naomi_guide_step_bios">BIOS РІР‚вЂќ pilih folder berisi set BIOS arcade: naomi.zip untuk Naomi, naomi2.zip untuk Naomi 2, dan awbios.zip untuk Atomiswave. Sebagian game butuh set sendiri, seperti f355bios.zip atau segasp.zip. Dump Dreamcast opsional.</string>
-    <string name="naomi_guide_step_game">Set ROM РІР‚вЂќ gunakan set MAME .zip atau .7z dan nama arsipnya harus MAME ID (misalnya vf4tuned.zip). Game kartrid hanya butuh file ini. Dump lama .lst, .dat, dan .bin juga bisa dibuka.</string>
-    <string name="naomi_guide_step_gdrom">Game GD-ROM РІР‚вЂќ juga butuh disk yang diekstrak dari arsipnya: di samping ikaruga.zip buat folder ikaruga dan taruh gdl-0010.chd sebagai file biasa. CHD yang masih di dalam zip tidak terbaca; dump GDI/CUE disk Naomi tidak berfungsi.</string>
-    <string name="naomi_guide_step_launch">Menjalankan РІР‚вЂќ jalankan set ROM dari pustaka. Jangan jalankan file hasil ekstrak arsip: folder ROM biasa tidak bisa boot.</string>
-    <string name="naomi_guide_step_controls">Kontrol РІР‚вЂќ Select memasukkan koin dan Start memulai game. Di gamepad, L3 membuka menu Test dan R3 menu Service. Mode free play aktif secara default.</string>
-    <string name="naomi_guide_step_covers">Sampul РІР‚вЂќ diunduh dari katalog EmuCoreH berdasarkan nama set ROM. Game tanpa artwork menampilkan kartu berisi namanya.</string>
+    <string name="naomi_guide_step_bios">BIOS — pilih folder berisi set BIOS arcade: naomi.zip untuk Naomi, naomi2.zip untuk Naomi 2, dan awbios.zip untuk Atomiswave. Sebagian game butuh set sendiri, seperti f355bios.zip atau segasp.zip. Dump Dreamcast opsional.</string>
+    <string name="naomi_guide_step_game">Set ROM — gunakan set MAME .zip atau .7z dan nama arsipnya harus MAME ID (misalnya vf4tuned.zip). Game kartrid hanya butuh file ini. Dump lama .lst, .dat, dan .bin juga bisa dibuka.</string>
+    <string name="naomi_guide_step_gdrom">Game GD-ROM — juga butuh disk yang diekstrak dari arsipnya: di samping ikaruga.zip buat folder ikaruga dan taruh gdl-0010.chd sebagai file biasa. CHD yang masih di dalam zip tidak terbaca; dump GDI/CUE disk Naomi tidak berfungsi.</string>
+    <string name="naomi_guide_step_launch">Menjalankan — jalankan set ROM dari pustaka. Jangan jalankan file hasil ekstrak arsip: folder ROM biasa tidak bisa boot.</string>
+    <string name="naomi_guide_step_controls">Kontrol — Select memasukkan koin dan Start memulai game. Di gamepad, L3 membuka menu Test dan R3 menu Service. Mode free play aktif secara default.</string>
+    <string name="naomi_guide_step_covers">Sampul — diunduh dari katalog EmuCoreH berdasarkan nama set ROM. Game tanpa artwork menampilkan kartu berisi namanya.</string>
     <string name="naomi_guide_settings_desc">Petunjuk BIOS, set ROM, GD-ROM, menjalankan, dan kontrol.</string>
 </resources>

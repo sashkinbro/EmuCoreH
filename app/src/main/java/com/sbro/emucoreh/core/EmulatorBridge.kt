@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2026 SBRO
+// SPDX-FileCopyrightText: 2026 SBRO
 // SPDX-License-Identifier: LicenseRef-EmuCoreH-Proprietary
 package com.sbro.emucoreh.core
 
@@ -16,9 +16,7 @@ import com.sbro.emucoreh.data.LearnedSerialRepository
 import com.sbro.emucoreh.ui.common.invalidateCoverImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -53,7 +51,6 @@ object EmulatorBridge {
 
     private val serialDispatcher = Dispatchers.IO.limitedParallelism(1)
     private val serialScope = CoroutineScope(SupervisorJob() + serialDispatcher)
-    private val inputScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Volatile
     var isNativeLoaded: Boolean = false
@@ -312,7 +309,7 @@ object EmulatorBridge {
         NativeApp.setDataRootOverride(runtimeDirectories.root.absolutePath)
 
         val normalizedGpuHardwareProfile = GpuHardwareProfiles.normalize(gpuHardwareProfile)
-        val gpuHardwareProfileOverride = GpuHardwareProfiles.coreOverrideFor(normalizedGpuHardwareProfile)
+        val gpuHardwareProfileOverride = GpuHardwareProfiles.coreOverrideFor()
         NativeApp.setCrashContextString("emu_renderer_name", rendererName(resolvedRenderer))
         NativeApp.setCrashContextString("emu_gpu_profile", gpuHardwareProfileOverride)
         val prefs = AppPreferences(context)

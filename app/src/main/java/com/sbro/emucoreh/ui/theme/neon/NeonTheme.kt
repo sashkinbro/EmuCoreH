@@ -43,7 +43,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
@@ -145,14 +144,6 @@ val LocalNeonTheme = compositionLocalOf { false }
 @Composable
 fun neonShape(size: Dp): Shape = if (LocalNeonTheme.current) {
     CutCornerShape(topEnd = size, bottomStart = size)
-} else {
-    RoundedCornerShape(size)
-}
-
-// Cuts on the right side only (topEnd + bottomEnd) — used by top app bars.
-@Composable
-fun neonShapeRight(size: Dp): Shape = if (LocalNeonTheme.current) {
-    CutCornerShape(topEnd = size, bottomEnd = size)
 } else {
     RoundedCornerShape(size)
 }
@@ -372,77 +363,3 @@ fun NeonCrtOverlay(modifier: Modifier = Modifier) {
     }
 }
 
-// --- Optional per-screen effects, ready for future wiring -----------------------
-
-// Vertical page gradient used behind cyberpunk screens.
-fun neonBackgroundBrush(): Brush = Brush.verticalGradient(
-    listOf(NeonBlack, NeonDark, NeonBlack)
-)
-
-// 40dp tech grid (draw behind screen content).
-@Composable
-fun NeonGridCanvas(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.fillMaxSize()) {
-        val gridSize = 40.dp.toPx()
-        val lineColor = NeonGray.copy(alpha = 0.5f)
-        var x = 0f
-        while (x <= size.width) {
-            drawLine(lineColor, Offset(x, 0f), Offset(x, size.height), 1f)
-            x += gridSize
-        }
-        var y = 0f
-        while (y <= size.height) {
-            drawLine(lineColor, Offset(0f, y), Offset(size.width, y), 1f)
-            y += gridSize
-        }
-    }
-}
-
-// Radial vignette (draw behind screen content).
-@Composable
-fun NeonVignette(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
-                    center = Offset.Unspecified,
-                    radius = 2000f
-                )
-            )
-    )
-}
-
-// Three-layer neon glitch headline, the signature cyberpunk title treatment.
-@Composable
-fun NeonGlitchText(
-    text: String,
-    style: TextStyle,
-    modifier: Modifier = Modifier,
-    color: Color = NeonYellow
-) {
-    val baseStyle = style.copy(color = color)
-    Box(modifier = modifier) {
-        Text(
-            text = text,
-            style = baseStyle.copy(
-                color = NeonBlue.copy(alpha = 0.25f),
-                shadow = Shadow(color = NeonBlue.copy(alpha = 0.9f), blurRadius = 24f)
-            )
-        )
-        Text(
-            text = text,
-            style = baseStyle.copy(
-                color = NeonRed.copy(alpha = 0.18f),
-                shadow = Shadow(color = NeonRed.copy(alpha = 0.8f), blurRadius = 14f)
-            )
-        )
-        Text(
-            text = text,
-            style = baseStyle.copy(
-                shadow = Shadow(color = NeonYellow.copy(alpha = 0.9f), blurRadius = 6f)
-            )
-        )
-    }
-}

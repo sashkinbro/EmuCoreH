@@ -1,10 +1,5 @@
-﻿package com.sbro.emucoreh.ui.settings
+package com.sbro.emucoreh.ui.settings
 
-import android.graphics.Color
-import android.os.Build
-import android.view.Gravity
-import android.view.View
-import android.view.WindowManager
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,7 +13,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.combinedClickable
@@ -26,19 +20,13 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.FolderOpen
@@ -47,7 +35,6 @@ import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Save
 import com.sbro.emucoreh.core.AudioDefaults
 import com.sbro.emucoreh.core.EmulatorBridge
-import com.sbro.emucoreh.core.GpuHardwareProfiles
 import com.sbro.emucoreh.core.RendererDefaults
 import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.buildUpscaleOptions
@@ -57,12 +44,9 @@ import com.sbro.emucoreh.core.CoreOptionStore
 import com.sbro.emucoreh.core.FlycastCoreOptions
 import androidx.compose.material.icons.rounded.Tune
 import com.sbro.emucoreh.ui.common.AppAlertDialog as AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -74,7 +58,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -90,28 +73,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
-import androidx.core.graphics.drawable.toDrawable
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.data.AppPreferences
 import com.sbro.emucoreh.data.DisplayCrop
 import com.sbro.emucoreh.data.GameLibraryCacheRepository
 import com.sbro.emucoreh.data.GameItem
-import com.sbro.emucoreh.data.GameRepository
 import com.sbro.emucoreh.data.PerGameSettings
 import com.sbro.emucoreh.data.PerGameSettingsRepository
 import com.sbro.emucoreh.data.RetroArchShaderPreset
@@ -131,7 +106,6 @@ import com.sbro.emucoreh.ui.theme.ScreenHorizontalPadding
 import com.sbro.emucoreh.ui.theme.neon.LocalNeonTheme
 import com.sbro.emucoreh.ui.theme.neon.NeonSystemBanner
 import org.json.JSONObject
-import java.text.DateFormat
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -1528,7 +1502,6 @@ private fun SliderRow(
 }
 
 @Composable
-@Suppress("unused")
 private fun ManagerActionButton(
     modifier: Modifier = Modifier,
     icon: ImageVector,
