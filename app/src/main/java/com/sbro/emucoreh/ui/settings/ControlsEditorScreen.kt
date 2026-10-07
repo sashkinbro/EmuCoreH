@@ -105,6 +105,7 @@ import com.sbro.emucoreh.ui.common.OverlayDpadClusterArrowScale
 import com.sbro.emucoreh.ui.common.OverlayDpadDirection
 import com.sbro.emucoreh.ui.common.OverlayGroupScaleMember
 import com.sbro.emucoreh.ui.common.scaleOverlayControlGroup
+import com.sbro.emucoreh.ui.common.snapOverlayDragDelta
 import com.sbro.emucoreh.ui.common.VectorAnalogStick
 import com.sbro.emucoreh.ui.common.VectorDpadCluster
 import com.sbro.emucoreh.ui.common.VectorOverlayButton
@@ -1676,6 +1677,19 @@ private fun PreviewLayout(
         modifier = modifier.fillMaxSize()
     ) {
         val gridStepDp = 24.dp
+        // Sub-cell drag remainder per control, kept between drag events so snapping
+        // never swallows slow movements. The drag gesture reports selection on every
+        // event, so the remainder is only cleared when a gesture actually ends.
+        val snapResiduals = remember { mutableMapOf<String, Pair<Float, Float>>() }
+        val selectControl: (String) -> Unit = onSelectControl
+        val commitControl: (String) -> Unit = { id ->
+            snapResiduals.clear()
+            onCommitControlPosition(id)
+        }
+        val commitCustomControl: (String) -> Unit = { id ->
+            snapResiduals.clear()
+            onCommitCustomControlPosition(id)
+        }
         if (showGrid) {
             Box(
                 modifier = Modifier
@@ -1770,20 +1784,23 @@ private fun PreviewLayout(
         }
 
         // Snapping rounds the absolute on-screen position to the grid, not the drag
-        // delta, so a control always lands on a grid intersection no matter where it started.
-        fun snapDeltaPx(currentX: Float, currentY: Float, delta: Pair<Float, Float>): Pair<Float, Float> {
-            if (!snapToGrid) return delta
-            val stepPx = with(density) { gridStepDp.toPx() }
-            if (stepPx <= 0f) return delta
-            val targetX = currentX + delta.first
-            val targetY = currentY + delta.second
-            val snappedX = (targetX / stepPx).roundToInt() * stepPx
-            val snappedY = (targetY / stepPx).roundToInt() * stepPx
-            return (snappedX - currentX) to (snappedY - currentY)
-        }
+        // delta, so a control always lands on a grid intersection no matter where it
+        // started. The shared residual keeps slow drags accumulating instead of being
+        // rounded away on every event.
+        fun snapDeltaPx(controlId: String, currentX: Float, currentY: Float, delta: Pair<Float, Float>): Pair<Float, Float> =
+            snapOverlayDragDelta(
+                residuals = snapResiduals,
+                controlId = controlId,
+                currentX = currentX,
+                currentY = currentY,
+                delta = delta,
+                stepPx = with(density) { gridStepDp.toPx() },
+                enabled = snapToGrid
+            )
 
-        fun snapDelta(currentX: Dp, currentY: Dp, delta: Pair<Float, Float>): Pair<Float, Float> =
+        fun snapDelta(controlId: String, currentX: Dp, currentY: Dp, delta: Pair<Float, Float>): Pair<Float, Float> =
             snapDeltaPx(
+                controlId,
                 with(density) { currentX.toPx() },
                 with(density) { currentY.toPx() },
                 delta
@@ -1800,7 +1817,7 @@ private fun PreviewLayout(
                 controlId,
                 clampOffset(
                     currentOffset = current.offset,
-                    delta = if (applySnap) snapDelta(spec.x, spec.y, delta) else delta,
+                    delta = if (applySnap) snapDelta(controlId, spec.x, spec.y, delta) else delta,
                     baseX = spec.baseX,
                     baseY = spec.baseY,
                     width = spec.width,
@@ -1837,7 +1854,7 @@ private fun PreviewLayout(
                 controlId,
                 clampOffset(
                     currentOffset = current.offset,
-                    delta = snapDelta(spec.x, spec.y, delta),
+                    delta = snapDelta(controlId, spec.x, spec.y, delta),
                     baseX = stickPanelBaseX(spec),
                     baseY = spec.baseY,
                     width = stickPanelWidth(spec),
@@ -1853,7 +1870,7 @@ private fun PreviewLayout(
                 controlId,
                 clampOffset(
                     currentOffset = current.offset,
-                    delta = snapDelta(spec.x + surface.offset.x, spec.y + surface.offset.y, delta),
+                    delta = snapDelta(controlId, spec.x + surface.offset.x, spec.y + surface.offset.y, delta),
                     baseX = spec.x + surface.offset.x,
                     baseY = spec.y + surface.offset.y,
                     width = surface.width,
@@ -1877,6 +1894,7 @@ private fun PreviewLayout(
                 clampOffset(
                     currentOffset = current.offset,
                     delta = snapDelta(
+                        controlId,
                         spec.x + slot.default.first,
                         spec.y + slot.default.second,
                         delta
@@ -1924,12 +1942,18 @@ private fun PreviewLayout(
         fun moveButtonGroup(specs: List<OverlayCanvasButtonSpec>, delta: Pair<Float, Float>) {
             if (specs.isEmpty()) return
             // Snap the whole block by its top-left corner so the members never spread apart.
-            val snappedDelta = snapDelta(specs.minOf { it.x }, specs.minOf { it.y }, delta)
+            val snappedDelta = snapDelta(
+                specs.first().id,
+                specs.minOf { it.x },
+                specs.minOf { it.y },
+                delta
+            )
             val clampedDelta = clampGroupDelta(specs, snappedDelta)
             specs.forEach { spec -> moveButton(spec.id, spec, clampedDelta, applySnap = false) }
         }
 
         fun commitButtonGroup(specs: List<OverlayCanvasButtonSpec>) {
+            snapResiduals.clear()
             onCommitControlPositions(specs.map { it.id })
         }
 
@@ -1989,7 +2013,7 @@ private fun PreviewLayout(
                 id = ControlGroupDpad,
                 bounds = bounds,
                 selected = selectedControlId == ControlGroupDpad,
-                onSelectControl = onSelectControl,
+                onSelectControl = selectControl,
                 onMoveGroupBy = { delta -> moveButtonGroup(dpadGroupSpecs, delta) },
                 onCommitGroupPosition = { commitButtonGroup(dpadGroupSpecs) }
             )
@@ -2000,7 +2024,7 @@ private fun PreviewLayout(
                 id = ControlGroupActions,
                 bounds = bounds,
                 selected = selectedControlId == ControlGroupActions,
-                onSelectControl = onSelectControl,
+                onSelectControl = selectControl,
                 onMoveGroupBy = { delta -> moveButtonGroup(actionGroupSpecs, delta) },
                 onCommitGroupPosition = { commitButtonGroup(actionGroupSpecs) }
             )
@@ -2017,9 +2041,9 @@ private fun PreviewLayout(
                 visualStyle = state.touchControlVisualStyle,
                 pressEffect = state.touchControlPressEffect,
                 selected = selectedControlId == spec.id,
-                onSelectControl = onSelectControl,
+                onSelectControl = selectControl,
                 onMoveControlBy = { id, delta -> moveButton(id, spec, delta) },
-                onCommitControlPosition = onCommitControlPosition,
+                onCommitControlPosition = commitControl,
                 baseZIndex = baseZIndex
             )
         }
@@ -2030,9 +2054,9 @@ private fun PreviewLayout(
                 visualStyle = state.touchControlVisualStyle,
                 pressEffect = state.touchControlPressEffect,
                 selected = selectedControlId == spec.id,
-                onSelectControl = onSelectControl,
+                onSelectControl = selectControl,
                 onMoveControlBy = { id, delta -> moveDpadCluster(id, spec, delta) },
-                onCommitControlPosition = onCommitControlPosition,
+                onCommitControlPosition = commitControl,
                 showDirections = !showIndependentDpad,
                 baseZIndex = if (showIndependentDpad) 0.5f else 1.5f,
                 selectedZBoost = if (showIndependentDpad) 0.5f else 10f
@@ -2059,11 +2083,11 @@ private fun PreviewLayout(
                         visualStyle = state.touchControlVisualStyle,
                         pressEffect = state.touchControlPressEffect,
                         selected = selectedControlId == slot.controlId,
-                        onSelectControl = onSelectControl,
+                        onSelectControl = selectControl,
                         onMoveControlBy = { movedId, delta ->
                             moveDpadClusterButton(movedId, spec, slot, delta)
                         },
-                        onCommitControlPosition = onCommitControlPosition,
+                        onCommitControlPosition = commitControl,
                         baseZIndex = 5f
                     )
                 }
@@ -2081,11 +2105,11 @@ private fun PreviewLayout(
                 visualStyle = state.touchControlVisualStyle,
                 pressEffect = state.touchControlPressEffect,
                 selected = selectedControlId == (replacedStickId ?: spec.id),
-                onSelectControl = onSelectControl,
+                onSelectControl = selectControl,
                 onMoveControlBy = { _, delta ->
                     targetStickSpec?.let { stick -> moveStick(stick.id, stick, delta) }
                 },
-                onCommitControlPosition = onCommitControlPosition,
+                onCommitControlPosition = commitControl,
                 baseZIndex = 2.5f,
                 selectedZBoost = 10f
             )
@@ -2105,9 +2129,9 @@ private fun PreviewLayout(
                 panelWidth = stickPanelWidth(spec),
                 panelX = stickPanelX(spec),
                 baseZIndex = if (spec.visible) 2f else 0.5f,
-                onSelectControl = onSelectControl,
+                onSelectControl = selectControl,
                 onMoveControlBy = { id, delta -> moveStick(id, spec, delta) },
-                onCommitControlPosition = onCommitControlPosition
+                onCommitControlPosition = commitControl
             )
         }
 
@@ -2123,9 +2147,9 @@ private fun PreviewLayout(
                 panelWidth = stickPanelWidth(spec),
                 panelX = stickPanelX(spec),
                 baseZIndex = if (spec.visible) 2f else 0.5f,
-                onSelectControl = onSelectControl,
+                onSelectControl = selectControl,
                 onMoveControlBy = { id, delta -> moveStick(id, spec, delta) },
-                onCommitControlPosition = onCommitControlPosition
+                onCommitControlPosition = commitControl
             )
         }
 
@@ -2146,9 +2170,10 @@ private fun PreviewLayout(
             DraggableControl(
                 id = selectionId,
                 selected = selected,
-                onSelectControl = onSelectControl,
+                onSelectControl = selectControl,
                 onMoveControlBy = { _, delta ->
                     val snapped = snapDeltaPx(
+                        customControlSelectionId(control.id),
                         safeLeftPx + travelX * control.positionX,
                         safeTopPx + travelY * control.positionY,
                         delta
@@ -2159,7 +2184,7 @@ private fun PreviewLayout(
                         (control.positionY + snapped.second / travelY).coerceIn(0f, 1f)
                     )
                 },
-                onCommitControlPosition = { onCommitCustomControlPosition(control.id) },
+                onCommitControlPosition = { commitCustomControl(control.id) },
                 baseZIndex = 4f,
                 modifier = Modifier.offset {
                     IntOffset(
