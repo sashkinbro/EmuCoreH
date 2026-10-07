@@ -183,6 +183,35 @@ class OverlayCanvasResponsiveLayoutTest {
         }
     }
 
+    @Test
+    fun `asymmetric insets keep equal edge padding on both sides`() {
+        val screen = ScreenCase(
+            name = "asymmetric cutout",
+            width = 800.dp,
+            height = 450.dp,
+            leftInset = 40.dp,
+            rightInset = 10.dp
+        )
+        val layout = buildLayout(screen)
+        val dpad = requireNotNull(layout.dpadCluster)
+        val rightActionEdge = layout.actionButtons.maxOf { it.x + it.width }
+        val leftMargin = dpad.x.value
+        val rightMargin = (screen.width - rightActionEdge).value
+
+        assertTrue("the controls must stay clear of the cutout", dpad.x >= screen.leftInset)
+        assertTrue(
+            "the controls must stay clear of the right inset",
+            rightActionEdge <= screen.width - screen.rightInset
+        )
+        assertEquals(
+            "both sides must keep the same edge padding",
+            leftMargin - screen.leftInset.value,
+            rightMargin - screen.rightInset.value,
+            EPSILON
+        )
+        assertTrue("the cutout side must keep the larger margin", leftMargin > rightMargin)
+    }
+
     private fun buildLayout(
         screen: ScreenCase,
         controls: Map<String, OverlayControlLayout> = AppPreferences.defaultOverlayControlLayouts()

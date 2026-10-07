@@ -160,14 +160,12 @@ fun buildOverlayCanvasLayout(
     val edgePadding = (if (isLandscape) 16.dp else 10.dp) * responsiveScale
     // Shoulder buttons used to hug the cutout/system-bar edge, which made the whole
     // controller look top-heavy and uncomfortable to reach on tall phones. Keep a
-    // deliberate, scale-aware breathing zone while still honoring asymmetric insets.
+    // deliberate, scale-aware breathing zone.
     val verticalPadding = (if (isLandscape) 22.dp else 16.dp) * responsiveScale
-    // Keep the controller visually centered even when a landscape camera cutout or
-    // navigation inset exists on only one side. The larger inset is mirrored so the
-    // physical left and right margins remain equal while both sides stay safe.
-    val horizontalSafeInset = maxOf(safeLeftInset, safeRightInset)
-    val edgePadStart = horizontalSafeInset + edgePadding
-    val edgePadEnd = horizontalSafeInset + edgePadding
+    // Each side honors only its own inset: a camera cutout on one edge shifts the
+    // controls next to it without dragging the opposite side inward.
+    val edgePadStart = safeLeftInset + edgePadding
+    val edgePadEnd = safeRightInset + edgePadding
     val edgePadTop = safeTopInset + verticalPadding
     val contentBottom = canvasHeight - safeBottomInset - verticalPadding
     val sectionGap = 12.dp * responsiveScale
@@ -439,7 +437,7 @@ fun buildOverlayCanvasLayout(
         )
     )
 
-    val centerAnchorX = (horizontalSafeInset + canvasWidth - horizontalSafeInset) / 2f + centerAdjustment.first
+    val centerAnchorX = canvasWidth / 2f + centerAdjustment.first
 
     val selectLayout = layoutFor("select")
     val toggleLayout = layoutFor("left_input_toggle")
