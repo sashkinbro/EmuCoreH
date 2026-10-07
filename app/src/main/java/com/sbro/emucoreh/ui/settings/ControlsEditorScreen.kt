@@ -3,6 +3,7 @@ package com.sbro.emucoreh.ui.settings
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -33,7 +34,10 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Grid4x4
+import androidx.compose.material.icons.rounded.GridOn
 import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Visibility
@@ -53,6 +57,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -62,6 +67,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
@@ -97,6 +103,8 @@ import com.sbro.emucoreh.ui.common.OverlayCanvasDpadClusterSpec
 import com.sbro.emucoreh.ui.common.OverlayCanvasStickSpec
 import com.sbro.emucoreh.ui.common.OverlayDpadClusterArrowScale
 import com.sbro.emucoreh.ui.common.OverlayDpadDirection
+import com.sbro.emucoreh.ui.common.OverlayGroupScaleMember
+import com.sbro.emucoreh.ui.common.scaleOverlayControlGroup
 import com.sbro.emucoreh.ui.common.VectorAnalogStick
 import com.sbro.emucoreh.ui.common.VectorDpadCluster
 import com.sbro.emucoreh.ui.common.VectorOverlayButton
@@ -179,9 +187,12 @@ private const val ControlGroupDpad = "group_dpad"
 private const val ControlGroupActions = "group_actions"
 private const val CustomControlIdPrefix = "custom:"
 private const val CustomControlSizeStepDp = 4
+private const val GroupScaleStepPercent = 10
+private const val GroupScaleMinPercent = 50
+private const val GroupScaleMaxPercent = 300
 private val ControlGroupIds = setOf(ControlGroupDpad, ControlGroupActions)
 private val DpadControlIds = setOf("dpad_up", "dpad_down", "dpad_left", "dpad_right")
-private val ActionControlIds = setOf("triangle", "circle", "cross", "square")
+private val ActionControlIds = setOf("a", "b", "x", "y")
 
 private fun customControlSelectionId(controlId: String): String =
     "$CustomControlIdPrefix$controlId"
@@ -268,7 +279,7 @@ private fun controlShapeKindForControlId(controlId: String): ControlShapeKind = 
 }
 
 private fun controlShapeKindForAction(actionId: String): ControlShapeKind = when (actionId) {
-    "triangle", "cross", "square", "circle" -> ControlShapeKind.FACE
+    "a", "b", "x", "y", "triangle", "cross", "square", "circle" -> ControlShapeKind.FACE
     "up", "down", "left", "right" -> ControlShapeKind.DIRECTIONAL
     else -> ControlShapeKind.ROUNDED
 }
@@ -387,6 +398,11 @@ fun ControlsEditorScreen(
     var showCreateComboDialog by remember { mutableStateOf(false) }
     var showControlAdjustPanel by remember { mutableStateOf(false) }
     var deleteCustomCandidate by remember { mutableStateOf<CustomTouchControl?>(null) }
+    var showLayoutGrid by rememberSaveable { mutableStateOf(false) }
+    var snapToGrid by rememberSaveable { mutableStateOf(false) }
+    var groupScalePercent by remember { mutableStateOf(100) }
+    val groupScaleAction = remember { mutableStateOf<((Float) -> Unit)?>(null) }
+    val resetSelectedToast = stringResource(R.string.settings_reset_to_default_toast)
     val defaultLayouts = remember(state.stickScale) { AppPreferences.defaultOverlayControlLayouts(state.stickScale) }
     val selectedLayout = selectedControlId?.let { id ->
         editorControlLayouts[id] ?: defaultLayouts[id] ?: OverlayControlLayout()
@@ -431,6 +447,8 @@ fun ControlsEditorScreen(
 
     LaunchedEffect(selectedControlId) {
         showControlAdjustPanel = false
+        groupScalePercent = 100
+        groupScaleAction.value = null
     }
 
     fun updateCustomControls(transform: (CustomTouchControlLibrary) -> CustomTouchControlLibrary) {
@@ -643,6 +661,70 @@ fun ControlsEditorScreen(
         onSetStickSurfaceMode(controlId, enabled)
     }
 
+    fun setControlOffsetsLocally(offsets: Map<String, Pair<Float, Float>>) {
+        if (offsets.isEmpty()) return
+        val updated = editorControlLayouts.toMutableMap()
+        offsets.forEach { (controlId, offset) ->
+            val current = currentLayoutFor(
+                controlId,
+                if (controlId.contains("stick")) state.stickScale else 100
+            )
+            updated[controlId] = current.copy(offset = offset)
+        }
+        editorControlLayouts = updated
+        onUpdateControlOffsets(offsets)
+    }
+
+    fun applyGroupScale(factor: Float) {
+        groupScaleAction.value?.invoke(factor)
+    }
+
+    fun resetControlLayout(controlId: String) {
+        val default = defaultLayouts[controlId] ?: OverlayControlLayout()
+        editorControlLayouts = editorControlLayouts.toMutableMap().apply { put(controlId, default) }
+        onUpdateControlOffset(controlId, default.offset)
+        onUpdateControlScale(controlId, default.scale)
+        onUpdateControlWidthScale(controlId, default.widthScale)
+        onUpdateControlOpacity(controlId, default.opacity)
+        onUpdateControlSecondaryAction(controlId, default.secondaryActionId)
+        onSetControlVisible(controlId, default.visible)
+        if (controlId == "left_stick" || controlId == "right_stick") {
+            onSetStickSurfaceMode(controlId, default.surfaceOnly)
+        }
+    }
+
+    fun resetSelectedControl() {
+        val selectedId = selectedControlId ?: return
+        val custom = selectedCustomControl
+        if (custom != null) {
+            val defaults = CustomTouchControl()
+            updateCustomControls { library ->
+                library.replacing(
+                    custom.copy(
+                        positionX = defaults.positionX,
+                        positionY = defaults.positionY,
+                        widthDp = defaults.widthDp,
+                        heightDp = defaults.heightDp,
+                        opacity = defaults.opacity,
+                        updatedAtMillis = System.currentTimeMillis()
+                    )
+                )
+            }
+        } else {
+            val ids = when (selectedId) {
+                ControlGroupDpad -> DpadControlIds.toList()
+                ControlGroupActions -> ActionControlIds.toList()
+                else -> listOf(selectedId)
+            }
+            ids.forEach(::resetControlLayout)
+            // Keep the left stick and its toggle D-pad face in sync after a full reset.
+            if (selectedId == "left_stick" || selectedId == "dpad_toggle") {
+                resetControlLayout("dpad_toggle")
+            }
+        }
+        Toast.makeText(context, resetSelectedToast, Toast.LENGTH_SHORT).show()
+    }
+
     BackHandler(onBack = onBackClick)
 
     if (manageActivityOrientation) {
@@ -671,8 +753,13 @@ fun ControlsEditorScreen(
             controlLayouts = editorControlLayouts,
             customControls = editorCustomControls.controls,
             selectedControlId = selectedControlId,
+            showGrid = showLayoutGrid,
+            snapToGrid = snapToGrid,
+            groupScaleAction = groupScaleAction,
             onSelectControl = { selectedControlId = it },
             onSetControlOffset = ::setControlOffsetLocally,
+            onUpdateControlScale = ::setControlScaleLocally,
+            onUpdateControlOffsets = ::setControlOffsetsLocally,
             onCommitControlPosition = ::persistControlPosition,
             onCommitControlPositions = ::persistControlPositions,
             onSetCustomControlPosition = { controlId, x, y ->
@@ -742,6 +829,23 @@ fun ControlsEditorScreen(
                 }
 
                 OutlinedButton(
+                    onClick = { resetSelectedControl() },
+                    enabled = selectedControlId != null,
+                    shape = neonShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White.copy(alpha = 0.08f),
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.testTag("controls_editor_reset_selected")
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.RestartAlt,
+                        contentDescription = stringResource(R.string.controls_editor_reset_selected)
+                    )
+                }
+
+                OutlinedButton(
                     onClick = {
                         val customControl = selectedCustomControl
                         selectedControlId?.let { controlId ->
@@ -755,7 +859,14 @@ fun ControlsEditorScreen(
                                     )
                                 }
                                 controlId !in ControlGroupIds -> {
-                                    setControlVisibleLocally(controlId, !(selectedLayout?.visible ?: true))
+                                    val nextVisible = !(selectedLayout?.visible ?: true)
+                                    setControlVisibleLocally(controlId, nextVisible)
+                                    // The left stick and its toggle D-pad are two faces of
+                                    // the same control: showing one always hides the other.
+                                    when (controlId) {
+                                        "left_stick" -> setControlVisibleLocally("dpad_toggle", !nextVisible)
+                                        "dpad_toggle" -> setControlVisibleLocally("left_stick", !nextVisible)
+                                    }
                                 }
                             }
                         }
@@ -821,7 +932,7 @@ fun ControlsEditorScreen(
                             comboStandardControlId = null
                         }
                     },
-                    enabled = selectedControlId != null && !selectedIsGroup,
+                    enabled = selectedControlId != null,
                     shape = neonShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -866,6 +977,46 @@ fun ControlsEditorScreen(
                     }
                 }
 
+                OutlinedButton(
+                    onClick = { showLayoutGrid = !showLayoutGrid },
+                    shape = neonShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (showLayoutGrid) {
+                            Color(0xFF3565FF).copy(alpha = 0.78f)
+                        } else {
+                            Color.White.copy(alpha = 0.08f)
+                        },
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.testTag("controls_editor_grid_toggle")
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.GridOn,
+                        contentDescription = stringResource(R.string.controls_editor_show_grid)
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = { snapToGrid = !snapToGrid },
+                    shape = neonShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (snapToGrid) {
+                            Color(0xFF3565FF).copy(alpha = 0.78f)
+                        } else {
+                            Color.White.copy(alpha = 0.08f)
+                        },
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.testTag("controls_editor_snap_toggle")
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Grid4x4,
+                        contentDescription = stringResource(R.string.controls_editor_snap_grid)
+                    )
+                }
+
                 Button(
                     onClick = onBackClick,
                     shape = neonShape(16.dp),
@@ -879,14 +1030,41 @@ fun ControlsEditorScreen(
                 }
             }
 
-            selectedControlId?.takeUnless { it in ControlGroupIds }?.let { controlId ->
+            selectedControlId?.let { controlId ->
                 val customControl = selectedCustomControl
                 // A combo is a second action on top of a single one. A D-pad cluster, a stick or
                 // any other control without its own action has nothing to combine, so the card
                 // must stay hidden instead of opening a dialog that falls back to the default
                 // face button.
                 val comboActionSupported = customControl != null || actionIdForControlId(controlId) != null
-                if (showControlAdjustPanel) {
+                if (showControlAdjustPanel && selectedIsGroup) {
+                    AdjustPanel(
+                        title = controlTitle(controlId),
+                        onDismiss = { showControlAdjustPanel = false },
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        AdjustStepper(
+                            valueText = stringResource(
+                                R.string.controls_editor_group_scale_value,
+                                groupScalePercent
+                            ),
+                            minusEnabled = groupScalePercent > GroupScaleMinPercent,
+                            plusEnabled = groupScalePercent < GroupScaleMaxPercent,
+                            onMinus = {
+                                val next = (groupScalePercent - GroupScaleStepPercent)
+                                    .coerceAtLeast(GroupScaleMinPercent)
+                                applyGroupScale(next.toFloat() / groupScalePercent.toFloat())
+                                groupScalePercent = next
+                            },
+                            onPlus = {
+                                val next = (groupScalePercent + GroupScaleStepPercent)
+                                    .coerceAtMost(GroupScaleMaxPercent)
+                                applyGroupScale(next.toFloat() / groupScalePercent.toFloat())
+                                groupScalePercent = next
+                            }
+                        )
+                    }
+                } else if (showControlAdjustPanel) {
                     val scale = selectedLayout?.scale
                         ?: if (controlId.contains("stick")) state.stickScale else 100
                     val isStickPanel = customControl == null &&
@@ -985,7 +1163,7 @@ fun ControlsEditorScreen(
                     }
                 }
 
-                if (!showControlAdjustPanel && comboActionSupported) {
+                if (!selectedIsGroup && !showControlAdjustPanel && comboActionSupported) {
                     Surface(
                         modifier = Modifier.padding(top = 8.dp),
                         color = Color(0xFF111827).copy(alpha = 0.82f),
@@ -1437,7 +1615,12 @@ private fun controlTitle(controlId: String): String = when (controlId) {
     "dpad_left" -> stringResource(R.string.settings_gamepad_action_dpad_left)
     "dpad_right" -> stringResource(R.string.settings_gamepad_action_dpad_right)
     "dpad_cluster" -> "Extra D-pad"
+    "dpad_toggle" -> stringResource(R.string.settings_stick_toggle_button)
     "left_stick" -> "Left Stick"
+    "a" -> stringResource(R.string.settings_gamepad_action_dc_a)
+    "b" -> stringResource(R.string.settings_gamepad_action_dc_b)
+    "x" -> stringResource(R.string.settings_gamepad_action_dc_x)
+    "y" -> stringResource(R.string.settings_gamepad_action_dc_y)
     "triangle" -> stringResource(R.string.settings_gamepad_action_triangle)
     "square" -> stringResource(R.string.settings_gamepad_action_square)
     "circle" -> stringResource(R.string.settings_gamepad_action_circle)
@@ -1462,8 +1645,13 @@ private fun PreviewLayout(
     controlLayouts: Map<String, OverlayControlLayout>,
     customControls: List<CustomTouchControl>,
     selectedControlId: String?,
+    showGrid: Boolean,
+    snapToGrid: Boolean,
+    groupScaleAction: MutableState<((Float) -> Unit)?>,
     onSelectControl: (String) -> Unit,
     onSetControlOffset: (String, Pair<Float, Float>) -> Unit,
+    onUpdateControlScale: (String, Int) -> Unit,
+    onUpdateControlOffsets: (Map<String, Pair<Float, Float>>) -> Unit,
     onCommitControlPosition: (String) -> Unit,
     onCommitControlPositions: (List<String>) -> Unit,
     onSetCustomControlPosition: (String, Float, Float) -> Unit,
@@ -1487,6 +1675,38 @@ private fun PreviewLayout(
     BoxWithConstraints(
         modifier = modifier.fillMaxSize()
     ) {
+        val gridStepDp = 24.dp
+        if (showGrid) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawBehind {
+                        val stepPx = gridStepDp.toPx()
+                        if (stepPx <= 0f) return@drawBehind
+                        var x = stepPx
+                        while (x < size.width) {
+                            drawLine(
+                                color = Color.White.copy(alpha = 0.14f),
+                                start = androidx.compose.ui.geometry.Offset(x, 0f),
+                                end = androidx.compose.ui.geometry.Offset(x, size.height),
+                                strokeWidth = 1f
+                            )
+                            x += stepPx
+                        }
+                        var y = stepPx
+                        while (y < size.height) {
+                            drawLine(
+                                color = Color.White.copy(alpha = 0.14f),
+                                start = androidx.compose.ui.geometry.Offset(0f, y),
+                                end = androidx.compose.ui.geometry.Offset(size.width, y),
+                                strokeWidth = 1f
+                            )
+                            y += stepPx
+                        }
+                    }
+            )
+        }
+
         val layout = buildOverlayCanvasLayout(
             canvasWidth = maxWidth,
             canvasHeight = maxHeight,
@@ -1510,9 +1730,11 @@ private fun PreviewLayout(
 
         val showLeftStick = layout.leftStick?.visible == true
         val showIndependentDpad = layout.dpadCluster?.visible == true
+        val showToggleDpad = layout.toggleDpad?.visible == true
 
         fun shouldShowButton(id: String): Boolean = when (id) {
-            "dpad_up", "dpad_down", "dpad_left", "dpad_right" -> !showLeftStick && !showIndependentDpad
+            "dpad_up", "dpad_down", "dpad_left", "dpad_right" ->
+                !showLeftStick && !showIndependentDpad && !showToggleDpad
             else -> true
         }
 
@@ -1547,13 +1769,38 @@ private fun PreviewLayout(
             return (nextX - baseXPx) to (nextY - baseYPx)
         }
 
-        fun moveButton(controlId: String, spec: OverlayCanvasButtonSpec, delta: Pair<Float, Float>) {
+        // Snapping rounds the absolute on-screen position to the grid, not the drag
+        // delta, so a control always lands on a grid intersection no matter where it started.
+        fun snapDeltaPx(currentX: Float, currentY: Float, delta: Pair<Float, Float>): Pair<Float, Float> {
+            if (!snapToGrid) return delta
+            val stepPx = with(density) { gridStepDp.toPx() }
+            if (stepPx <= 0f) return delta
+            val targetX = currentX + delta.first
+            val targetY = currentY + delta.second
+            val snappedX = (targetX / stepPx).roundToInt() * stepPx
+            val snappedY = (targetY / stepPx).roundToInt() * stepPx
+            return (snappedX - currentX) to (snappedY - currentY)
+        }
+
+        fun snapDelta(currentX: Dp, currentY: Dp, delta: Pair<Float, Float>): Pair<Float, Float> =
+            snapDeltaPx(
+                with(density) { currentX.toPx() },
+                with(density) { currentY.toPx() },
+                delta
+            )
+
+        fun moveButton(
+            controlId: String,
+            spec: OverlayCanvasButtonSpec,
+            delta: Pair<Float, Float>,
+            applySnap: Boolean = true
+        ) {
             val current = controlLayouts[controlId] ?: OverlayControlLayout()
             onSetControlOffset(
                 controlId,
                 clampOffset(
                     currentOffset = current.offset,
-                    delta = delta,
+                    delta = if (applySnap) snapDelta(spec.x, spec.y, delta) else delta,
                     baseX = spec.baseX,
                     baseY = spec.baseY,
                     width = spec.width,
@@ -1590,7 +1837,7 @@ private fun PreviewLayout(
                 controlId,
                 clampOffset(
                     currentOffset = current.offset,
-                    delta = delta,
+                    delta = snapDelta(spec.x, spec.y, delta),
                     baseX = stickPanelBaseX(spec),
                     baseY = spec.baseY,
                     width = stickPanelWidth(spec),
@@ -1606,7 +1853,7 @@ private fun PreviewLayout(
                 controlId,
                 clampOffset(
                     currentOffset = current.offset,
-                    delta = delta,
+                    delta = snapDelta(spec.x + surface.offset.x, spec.y + surface.offset.y, delta),
                     baseX = spec.x + surface.offset.x,
                     baseY = spec.y + surface.offset.y,
                     width = surface.width,
@@ -1629,7 +1876,11 @@ private fun PreviewLayout(
                 controlId,
                 clampOffset(
                     currentOffset = current.offset,
-                    delta = delta,
+                    delta = snapDelta(
+                        spec.x + slot.default.first,
+                        spec.y + slot.default.second,
+                        delta
+                    ),
                     baseX = spec.x + slot.default.first,
                     baseY = spec.y + slot.default.second,
                     width = arrowSize,
@@ -1671,8 +1922,11 @@ private fun PreviewLayout(
         }
 
         fun moveButtonGroup(specs: List<OverlayCanvasButtonSpec>, delta: Pair<Float, Float>) {
-            val clampedDelta = clampGroupDelta(specs, delta)
-            specs.forEach { spec -> moveButton(spec.id, spec, clampedDelta) }
+            if (specs.isEmpty()) return
+            // Snap the whole block by its top-left corner so the members never spread apart.
+            val snappedDelta = snapDelta(specs.minOf { it.x }, specs.minOf { it.y }, delta)
+            val clampedDelta = clampGroupDelta(specs, snappedDelta)
+            specs.forEach { spec -> moveButton(spec.id, spec, clampedDelta, applySnap = false) }
         }
 
         fun commitButtonGroup(specs: List<OverlayCanvasButtonSpec>) {
@@ -1682,6 +1936,53 @@ private fun PreviewLayout(
         val visibleButtonSpecs = layout.allButtons.filter { shouldShowButton(it.id) }
         val actionGroupSpecs = visibleButtonSpecs.filter { it.id in ActionControlIds }
         val dpadGroupSpecs = visibleButtonSpecs.filter { it.id in DpadControlIds }
+
+        // Group scaling needs the live canvas geometry, so the action is published from
+        // here and the adjust panel simply invokes it with a zoom factor.
+        val currentOnUpdateControlScale by rememberUpdatedState(onUpdateControlScale)
+        val currentOnUpdateControlOffsets by rememberUpdatedState(onUpdateControlOffsets)
+        LaunchedEffect(selectedControlId, layout, controlLayouts) {
+            val groupSpecs = when (selectedControlId) {
+                ControlGroupDpad -> dpadGroupSpecs
+                ControlGroupActions -> actionGroupSpecs
+                else -> emptyList()
+            }
+            if (groupSpecs.isEmpty()) {
+                groupScaleAction.value = null
+                return@LaunchedEffect
+            }
+            val canvasWidthPx = with(density) { maxWidth.toPx() }
+            val canvasHeightPx = with(density) { maxHeight.toPx() }
+            groupScaleAction.value = { factor ->
+                val members = groupSpecs.map { spec ->
+                    val control = controlLayouts[spec.id] ?: OverlayControlLayout()
+                    OverlayGroupScaleMember(
+                        controlId = spec.id,
+                        baseX = with(density) { spec.baseX.toPx() },
+                        baseY = with(density) { spec.baseY.toPx() },
+                        offsetX = control.offset.first,
+                        offsetY = control.offset.second,
+                        scale = control.scale,
+                        width = with(density) { spec.width.toPx() },
+                        height = with(density) { spec.height.toPx() }
+                    )
+                }
+                val results = scaleOverlayControlGroup(
+                    members = members,
+                    factor = factor,
+                    minScale = AppPreferences.OVERLAY_CONTROL_SCALE_MIN,
+                    maxScale = AppPreferences.OVERLAY_CONTROL_SCALE_MAX,
+                    canvasWidth = canvasWidthPx,
+                    canvasHeight = canvasHeightPx
+                )
+                results.forEach { result ->
+                    currentOnUpdateControlScale(result.controlId, result.scale)
+                }
+                currentOnUpdateControlOffsets(
+                    results.associate { it.controlId to it.offset }
+                )
+            }
+        }
 
         buttonGroupBounds(dpadGroupSpecs)?.let { bounds ->
             PreviewCanvasButtonGroup(
@@ -1769,9 +2070,31 @@ private fun PreviewLayout(
             }
         }
 
+        // The stick-toggle D-pad represents the switched stick. It is edited as that
+        // stick, so a single position is stored no matter which face is active.
+        val toggleDpadSpec = layout.toggleDpad?.takeIf { it.visible }
+        val replacedStickId = toggleDpadSpec?.replacesStickId
+        toggleDpadSpec?.let { spec ->
+            val targetStickSpec = replacedStickId?.let(layout::stick)
+            PreviewCanvasDpadCluster(
+                spec = spec,
+                visualStyle = state.touchControlVisualStyle,
+                pressEffect = state.touchControlPressEffect,
+                selected = selectedControlId == (replacedStickId ?: spec.id),
+                onSelectControl = onSelectControl,
+                onMoveControlBy = { _, delta ->
+                    targetStickSpec?.let { stick -> moveStick(stick.id, stick, delta) }
+                },
+                onCommitControlPosition = onCommitControlPosition,
+                baseZIndex = 2.5f,
+                selectedZBoost = 10f
+            )
+        }
+
         // Hidden controls stay on the canvas (dimmed) so they can be re-enabled; while
         // hidden they sit below active controls so they never steal their touches.
         layout.leftStick
+            ?.takeIf { it.id != replacedStickId }
             ?.let { spec ->
             PreviewCanvasStick(
                 spec = spec,
@@ -1789,6 +2112,7 @@ private fun PreviewLayout(
         }
 
         layout.rightStick
+            ?.takeIf { it.id != replacedStickId }
             ?.let { spec ->
             PreviewCanvasStick(
                 spec = spec,
@@ -1824,10 +2148,15 @@ private fun PreviewLayout(
                 selected = selected,
                 onSelectControl = onSelectControl,
                 onMoveControlBy = { _, delta ->
+                    val snapped = snapDeltaPx(
+                        safeLeftPx + travelX * control.positionX,
+                        safeTopPx + travelY * control.positionY,
+                        delta
+                    )
                     onSetCustomControlPosition(
                         control.id,
-                        (control.positionX + delta.first / travelX).coerceIn(0f, 1f),
-                        (control.positionY + delta.second / travelY).coerceIn(0f, 1f)
+                        (control.positionX + snapped.first / travelX).coerceIn(0f, 1f),
+                        (control.positionY + snapped.second / travelY).coerceIn(0f, 1f)
                     )
                 },
                 onCommitControlPosition = { onCommitCustomControlPosition(control.id) },

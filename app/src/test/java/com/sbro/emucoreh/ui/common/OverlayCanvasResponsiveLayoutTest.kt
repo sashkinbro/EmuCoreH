@@ -91,6 +91,98 @@ class OverlayCanvasResponsiveLayoutTest {
         assertEquals(defaultStick.y.value, hiddenStick.y.value, EPSILON)
     }
 
+    @Test
+    fun `stick toggle dpad shares the stick position and hides the automatic dpad`() {
+        val screen = ScreenCase("toggle dpad", 800.dp, 450.dp)
+        val visibleStickControls = AppPreferences.defaultOverlayControlLayouts().toMutableMap().apply {
+            this["left_stick"] = requireNotNull(this["left_stick"]).copy(offset = 40f to -20f)
+        }
+        val toggledControls = AppPreferences.defaultOverlayControlLayouts().toMutableMap().apply {
+            this["dpad_cluster"] = requireNotNull(this["dpad_cluster"]).copy(visible = false)
+            this["left_stick"] = requireNotNull(this["left_stick"]).copy(
+                visible = false,
+                offset = 40f to -20f
+            )
+            this["dpad_toggle"] = requireNotNull(this["dpad_toggle"]).copy(visible = true)
+        }
+
+        val visibleLayout = buildLayout(screen, visibleStickControls)
+        val toggledLayout = buildLayout(screen, toggledControls)
+        val stick = requireNotNull(visibleLayout.leftStick)
+        val toggleDpad = requireNotNull(toggledLayout.toggleDpad)
+
+        assertEquals("left_stick", toggleDpad.replacesStickId)
+        assertEquals(stick.x.value, toggleDpad.x.value, EPSILON)
+        assertEquals(stick.y.value, toggleDpad.y.value, EPSILON)
+        assertTrue(
+            "automatic dpad must stay hidden while the toggle dpad is active",
+            toggledLayout.dpadButtons.isEmpty()
+        )
+    }
+
+    @Test
+    fun `scaling the extra dpad does not move the left stick`() {
+        val screen = ScreenCase("scaled extra dpad", 800.dp, 450.dp)
+        val defaults = buildLayout(
+            screen,
+            AppPreferences.defaultOverlayControlLayouts().toMutableMap().apply {
+                this["dpad_cluster"] = requireNotNull(this["dpad_cluster"]).copy(visible = false)
+            }
+        )
+        val scaled = buildLayout(
+            screen,
+            AppPreferences.defaultOverlayControlLayouts().toMutableMap().apply {
+                this["dpad_cluster"] = requireNotNull(this["dpad_cluster"]).copy(scale = 220)
+            }
+        )
+        val defaultStick = requireNotNull(defaults.leftStick)
+        val scaledStick = requireNotNull(scaled.leftStick)
+
+        assertEquals(defaultStick.x.value, scaledStick.x.value, EPSILON)
+        assertEquals(defaultStick.y.value, scaledStick.y.value, EPSILON)
+    }
+
+    @Test
+    fun `scaling the left stick does not move the dpad or action clusters`() {
+        val screen = ScreenCase("scaled stick", 800.dp, 450.dp)
+        val defaults = buildLayout(screen)
+        val scaled = buildLayout(
+            screen,
+            AppPreferences.defaultOverlayControlLayouts().toMutableMap().apply {
+                this["left_stick"] = requireNotNull(this["left_stick"]).copy(scale = 200)
+            }
+        )
+        val defaultDpad = requireNotNull(defaults.dpadCluster)
+        val scaledDpad = requireNotNull(scaled.dpadCluster)
+        val defaultFace = requireNotNull(defaults.button("y"))
+        val scaledFace = requireNotNull(scaled.button("y"))
+
+        assertEquals(defaultDpad.x.value, scaledDpad.x.value, EPSILON)
+        assertEquals(defaultDpad.y.value, scaledDpad.y.value, EPSILON)
+        assertEquals(defaultFace.x.value, scaledFace.x.value, EPSILON)
+        assertEquals(defaultFace.y.value, scaledFace.y.value, EPSILON)
+    }
+
+    @Test
+    fun `scaling a centre button keeps its neighbours on their slots`() {
+        val screen = ScreenCase("scaled centre button", 800.dp, 450.dp)
+        val visibleSelect = AppPreferences.defaultOverlayControlLayouts().toMutableMap().apply {
+            this["select"] = requireNotNull(this["select"]).copy(visible = true)
+        }
+        val defaults = buildLayout(screen, visibleSelect)
+        val scaled = buildLayout(
+            screen,
+            visibleSelect.toMutableMap().apply {
+                this["left_input_toggle"] = requireNotNull(this["left_input_toggle"]).copy(scale = 180)
+            }
+        )
+        listOf("select", "start").forEach { id ->
+            val defaultButton = requireNotNull(defaults.button(id))
+            val scaledButton = requireNotNull(scaled.button(id))
+            assertEquals("$id must keep its slot", defaultButton.x.value, scaledButton.x.value, EPSILON)
+        }
+    }
+
     private fun buildLayout(
         screen: ScreenCase,
         controls: Map<String, OverlayControlLayout> = AppPreferences.defaultOverlayControlLayouts()

@@ -2132,4 +2132,10 @@
     <string name="naomi_guide_step_controls">조작 — Select는 코인을 넣고 Start는 게임을 시작합니다. 게임패드에서 L3는 Test 메뉴, R3는 Service 메뉴를 엽니다. 프리 플레이는 기본으로 켜져 있습니다.</string>
     <string name="naomi_guide_step_covers">커버 — ROM 세트 이름으로 EmuCoreH 카탈로그에서 받아옵니다. 아트워크가 없으면 이름이 적힌 카드가 표시됩니다.</string>
     <string name="naomi_guide_settings_desc">BIOS, ROM 세트, GD-ROM, 실행 및 조작 안내.</string>
+    <string name="settings_fps_metric_version">버전</string>
+    <string name="settings_stick_toggle_button">스틱 전환</string>
+    <string name="controls_editor_reset_selected">선택한 요소 초기화</string>
+    <string name="controls_editor_show_grid">그리드 표시</string>
+    <string name="controls_editor_snap_grid">그리드에 맞추기</string>
+    <string name="controls_editor_group_scale_value">그룹 배율 %1$d%%</string>
 </resources>

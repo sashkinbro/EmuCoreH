@@ -2148,4 +2148,10 @@
     <string name="naomi_guide_step_controls">کنترلها — Select سکه میاندازد و Start بازی را شروع میکند. با دسته، L3 منوی Test و R3 منوی Service را باز میکند. حالت بازی رایگان بهطور پیشفرض روشن است.</string>
     <string name="naomi_guide_step_covers">کاورها — بر اساس نام ست ROM از کاتالوگ EmuCoreH دانلود میشوند. بازیهای بدون تصویر کارتی با نامشان نشان میدهند.</string>
     <string name="naomi_guide_settings_desc">راهنمای BIOS، ست ROM، GD-ROM، اجرا و کنترلها.</string>
+    <string name="settings_fps_metric_version">نسخه</string>
+    <string name="settings_stick_toggle_button">تغییر استیک</string>
+    <string name="controls_editor_reset_selected">بازنشانی عنصر انتخاب‌شده</string>
+    <string name="controls_editor_show_grid">نمایش شبکه</string>
+    <string name="controls_editor_snap_grid">چسبیدن به شبکه</string>
+    <string name="controls_editor_group_scale_value">مقیاس گروه %1$d%%</string>
 </resources>

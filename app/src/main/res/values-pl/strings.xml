@@ -334,7 +334,7 @@
     <string name="settings_fps_overlay_scale_value">%1$d%%</string>
     <string name="settings_help_fps_overlay_scale">Zmienia rozmiar tekstu zarówno dla prostego licznika FPS, jak i szczegółowych statystyk. Większe wartości poszerzają również szczegółową nakładkę, aby uniknąć zawijania tekstu.</string>
     <string name="settings_fps_overlay_metrics">Widoczne statystyki</string>
-    <string name="settings_help_fps_overlay_metrics">Wybierz poszczególne wartości, które znajdą się w szczegółowej nakładce statystyk. Wersje aplikacji, kompilacji i rdzenia są zawsze pokazywane na początku. Model i obciążenie CPU i GPU są odczytywane z urządzenia, gdy jest to możliwe.</string>
+    <string name="settings_help_fps_overlay_metrics">Wybierz poszczególne wartości, które znajdą się w szczegółowej nakładce statystyk. Model i obciążenie CPU i GPU są odczytywane z urządzenia, gdy jest to możliwe.</string>
     <string name="settings_fps_metric_fps">FPS</string>
     <string name="settings_fps_metric_speed">Prędkość</string>
     <string name="settings_fps_metric_renderer">Silnik renderujący</string>
@@ -2154,4 +2154,10 @@
     <string name="naomi_guide_step_controls">Sterowanie — Select wrzuca monetę, Start rozpoczyna grę. Na padzie L3 otwiera menu Test, a R3 menu Service. Tryb free play jest domyślnie włączony.</string>
     <string name="naomi_guide_step_covers">Okładki — pobierane z katalogu EmuCoreH po nazwie zestawu ROM. Bez grafiki pokazuje się karta z nazwą.</string>
     <string name="naomi_guide_settings_desc">Instrukcje: BIOS, zestaw ROM, GD-ROM, uruchamianie i sterowanie.</string>
+    <string name="settings_fps_metric_version">Wersja</string>
+    <string name="settings_stick_toggle_button">Przełączanie drążka</string>
+    <string name="controls_editor_reset_selected">Przywróć wybrany element</string>
+    <string name="controls_editor_show_grid">Pokaż siatkę</string>
+    <string name="controls_editor_snap_grid">Przyciągaj do siatki</string>
+    <string name="controls_editor_group_scale_value">Skala grupy %1$d%%</string>
 </resources>

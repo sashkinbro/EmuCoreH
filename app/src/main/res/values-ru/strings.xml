@@ -2137,4 +2137,10 @@
     <string name="naomi_guide_step_controls">Управление — Select вставляет монету, Start начинает игру. На геймпаде L3 открывает тестовое меню, R3 — сервисное. Режим free play включён по умолчанию.</string>
     <string name="naomi_guide_step_covers">Обложки — загружаются из каталога EmuCoreH по имени ромсета. Для игр без арта показывается карточка с названием.</string>
     <string name="naomi_guide_settings_desc">Инструкция: BIOS, ромсеты, GD-ROM, запуск и управление.</string>
+    <string name="settings_fps_metric_version">Версия</string>
+    <string name="settings_stick_toggle_button">Переключение стика</string>
+    <string name="controls_editor_reset_selected">Сбросить выбранный элемент</string>
+    <string name="controls_editor_show_grid">Показать сетку</string>
+    <string name="controls_editor_snap_grid">Привязать к сетке</string>
+    <string name="controls_editor_group_scale_value">Масштаб группы %1$d%%</string>
 </resources>

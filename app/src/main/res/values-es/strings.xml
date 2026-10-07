@@ -2135,4 +2135,10 @@
     <string name="naomi_guide_step_controls">Controles — Select inserta una moneda y Start comienza la partida. Con mando, L3 abre el menú Test y R3 el menú Service. El modo free play está activado por defecto.</string>
     <string name="naomi_guide_step_covers">Carátulas — se descargan del catálogo de EmuCoreH según el nombre del set ROM. Sin artwork se muestra una tarjeta con el nombre.</string>
     <string name="naomi_guide_settings_desc">Instrucciones de BIOS, set ROM, GD-ROM, inicio y controles.</string>
+    <string name="settings_fps_metric_version">Versión</string>
+    <string name="settings_stick_toggle_button">Alternar stick</string>
+    <string name="controls_editor_reset_selected">Restablecer el elemento seleccionado</string>
+    <string name="controls_editor_show_grid">Mostrar cuadrícula</string>
+    <string name="controls_editor_snap_grid">Ajustar a la cuadrícula</string>
+    <string name="controls_editor_group_scale_value">Escala del grupo %1$d%%</string>
 </resources>

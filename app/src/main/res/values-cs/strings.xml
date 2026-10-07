@@ -337,7 +337,7 @@
     <string name="settings_fps_overlay_scale_value">%1$d%%</string>
     <string name="settings_help_fps_overlay_scale">Změní velikost textu jednoduchého počítadla FPS i podrobných statistik. Větší hodnoty rovněž rozšíří detailní překrytí (overlay), aby se zamezilo zalamování řádků.</string>
     <string name="settings_fps_overlay_metrics">Viditelné statistiky</string>
-    <string name="settings_help_fps_overlay_metrics">Vyberte jednotlivé hodnoty, jež budou zahrnuty do detailního překrytí statistik. Verze aplikace, sestavení (build) a verze jádra jsou vždy na prvním místě. Model a zatížení CPU a GPU se načítají ze zařízení, pokud jsou k dispozici.</string>
+    <string name="settings_help_fps_overlay_metrics">Vyberte jednotlivé hodnoty, jež budou zahrnuty do detailního překrytí statistik. Model a zatížení CPU a GPU se načítají ze zařízení, pokud jsou k dispozici.</string>
     <string name="settings_fps_metric_fps">FPS</string>
     <string name="settings_fps_metric_speed">Rychlost</string>
     <string name="settings_fps_metric_renderer">Renderer</string>
@@ -2154,4 +2154,10 @@
     <string name="naomi_guide_step_controls">Ovládání — Select vhodí minci a Start zahájí hru. Na gamepadu L3 otevře menu Test a R3 menu Service. Režim free play je zapnutý ve výchozím stavu.</string>
     <string name="naomi_guide_step_covers">Obály — stahují se z katalogu EmuCoreH podle názvu ROM sady. Bez grafiky se zobrazí karta s názvem.</string>
     <string name="naomi_guide_settings_desc">Pokyny k BIOSu, ROM sadě, GD-ROM, spuštění a ovládání.</string>
+    <string name="settings_fps_metric_version">Verze</string>
+    <string name="settings_stick_toggle_button">Přepínání páčky</string>
+    <string name="controls_editor_reset_selected">Obnovit vybraný prvek</string>
+    <string name="controls_editor_show_grid">Zobrazit mřížku</string>
+    <string name="controls_editor_snap_grid">Přichytit k mřížce</string>
+    <string name="controls_editor_group_scale_value">Měřítko skupiny %1$d%%</string>
 </resources>

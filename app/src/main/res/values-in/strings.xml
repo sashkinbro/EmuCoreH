@@ -2147,4 +2147,10 @@
     <string name="naomi_guide_step_controls">Kontrol — Select memasukkan koin dan Start memulai game. Di gamepad, L3 membuka menu Test dan R3 menu Service. Mode free play aktif secara default.</string>
     <string name="naomi_guide_step_covers">Sampul — diunduh dari katalog EmuCoreH berdasarkan nama set ROM. Game tanpa artwork menampilkan kartu berisi namanya.</string>
     <string name="naomi_guide_settings_desc">Petunjuk BIOS, set ROM, GD-ROM, menjalankan, dan kontrol.</string>
+    <string name="settings_fps_metric_version">Versi</string>
+    <string name="settings_stick_toggle_button">Alihkan stik</string>
+    <string name="controls_editor_reset_selected">Atur ulang elemen terpilih</string>
+    <string name="controls_editor_show_grid">Tampilkan kisi</string>
+    <string name="controls_editor_snap_grid">Snap ke kisi</string>
+    <string name="controls_editor_group_scale_value">Skala grup %1$d%%</string>
 </resources>

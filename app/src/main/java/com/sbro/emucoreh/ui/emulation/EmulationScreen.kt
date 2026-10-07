@@ -312,6 +312,7 @@ private fun fpsOverlayCornerLiveOptions(): List<LiveSelectionOption> = listOf(
 
 @Composable
 private fun fpsOverlayMetricLiveOptions(): List<Pair<Int, String>> = listOf(
+    PerformanceOverlayMetrics.VERSION to stringResource(R.string.settings_fps_metric_version),
     PerformanceOverlayMetrics.FPS to stringResource(R.string.settings_fps_metric_fps),
     PerformanceOverlayMetrics.SPEED to stringResource(R.string.settings_fps_metric_speed),
     PerformanceOverlayMetrics.RENDERER to stringResource(R.string.settings_fps_metric_renderer),
@@ -436,20 +437,20 @@ fun EmulationScreen(
     }
     val rootNavPadding = WindowInsets.navigationBars.asPaddingValues()
     val overlayLeftSafeInset = maxOf(
-        rootCutoutPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+        gameCutoutPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
         rootNavPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
     )
     val overlayRightSafeInset = maxOf(
-        rootCutoutPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+        gameCutoutPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
         rootNavPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
     )
     val overlayHorizontalSafeInset = maxOf(overlayLeftSafeInset, overlayRightSafeInset)
     val overlayTopSafeInset = maxOf(
-        rootCutoutPadding.calculateTopPadding(),
+        gameCutoutPadding.calculateTopPadding(),
         rootNavPadding.calculateTopPadding()
     )
     val overlayBottomSafeInset = maxOf(
-        rootCutoutPadding.calculateBottomPadding(),
+        gameCutoutPadding.calculateBottomPadding(),
         rootNavPadding.calculateBottomPadding()
     )
 
@@ -1318,6 +1319,18 @@ fun EmulationScreen(
                     onToggleLeftInputMode = viewModel::toggleLeftInputMode,
                     onPadInput = { keyCode, range, pressed ->
                         viewModel.onPadInput(overlayPadIndex, keyCode, range, pressed)
+                    },
+                    // The controls must move with the same safe area the editor uses:
+                    // when the cutout option is off they may be dragged to the screen edge.
+                    safeInsets = if (globalDefaults.respectDisplayCutout) {
+                        PaddingValues(
+                            start = overlayLeftSafeInset,
+                            top = overlayTopSafeInset,
+                            end = overlayRightSafeInset,
+                            bottom = overlayBottomSafeInset
+                        )
+                    } else {
+                        PaddingValues(0.dp)
                     }
                     )
                 } else {
@@ -1998,10 +2011,11 @@ private fun OnScreenControls(
     stickyButtons: Set<String> = emptySet(),
     onToggleLeftInputMode: () -> Unit,
     onPadInput: (Int, Int, Boolean) -> Unit,
-    respectSystemInsets: Boolean = true
+    respectSystemInsets: Boolean = true,
+    safeInsets: PaddingValues? = null
 ) {
     val density = LocalDensity.current
-    val safeDrawingPadding = WindowInsets.safeDrawing.asPaddingValues()
+    val safeDrawingPadding = safeInsets ?: WindowInsets.safeDrawing.asPaddingValues()
     val safeLeft = if (respectSystemInsets) {
         safeDrawingPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
     } else 0.dp
@@ -5356,28 +5370,27 @@ private fun LiveSliderRow(
     }
 
     val displayValue = sliderValue.roundToInt()
+    // Long-pressing the row or the slider itself restores the default value, so the
+    // reset gesture also works on the controls users actually drag.
+    val resetModifier = if (enabled && onResetToDefault != null) {
+        Modifier.combinedClickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = {},
+            onLongClick = {
+                onResetToDefault.invoke()
+                Toast.makeText(context, resetToast, Toast.LENGTH_SHORT).show()
+            }
+        )
+    } else {
+        Modifier
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(
-                    if (enabled) {
-                        Modifier.combinedClickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            onClick = {},
-                            onLongClick = onResetToDefault?.let {
-                                {
-                                    it()
-                                    Toast.makeText(context, resetToast, Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        )
-                    } else {
-                        Modifier
-                    }
-                ),
+                .then(resetModifier),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -5412,22 +5425,24 @@ private fun LiveSliderRow(
                 }
             )
         }
-        Slider(
-            value = sliderValue,
-            onValueChange = { sliderValue = it },
-            onValueChangeFinished = {
-                if (enabled) {
-                    onValueChange(sliderValue)
-                }
-            },
-            valueRange = range,
-            steps = steps,
-            enabled = enabled,
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary
+        Box(modifier = Modifier.then(resetModifier)) {
+            Slider(
+                value = sliderValue,
+                onValueChange = { sliderValue = it },
+                onValueChangeFinished = {
+                    if (enabled) {
+                        onValueChange(sliderValue)
+                    }
+                },
+                valueRange = range,
+                steps = steps,
+                enabled = enabled,
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary
+                )
             )
-        )
+        }
     }
 }
 

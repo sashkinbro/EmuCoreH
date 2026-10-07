@@ -2141,4 +2141,10 @@
     <string name="naomi_guide_step_controls">التحكم — زر Select يُدخل عملة وStart يبدأ اللعبة. مع يد التحكم يفتح L3 قائمة Test وR3 قائمة Service. الوضع المجاني مفعّل افتراضيًا.</string>
     <string name="naomi_guide_step_covers">الأغلفة — تُحمّل من كتالوج EmuCoreH حسب اسم مجموعة ROM. الألعاب بلا صورة تعرض بطاقة بالاسم.</string>
     <string name="naomi_guide_settings_desc">إرشادات BIOS ومجموعة ROM وGD-ROM والتشغيل والتحكم.</string>
+    <string name="settings_fps_metric_version">الإصدار</string>
+    <string name="settings_stick_toggle_button">تبديل العصا</string>
+    <string name="controls_editor_reset_selected">إعادة تعيين العنصر المحدد</string>
+    <string name="controls_editor_show_grid">إظهار الشبكة</string>
+    <string name="controls_editor_snap_grid">الالتقاط إلى الشبكة</string>
+    <string name="controls_editor_group_scale_value">مقياس المجموعة %1$d%%</string>
 </resources>

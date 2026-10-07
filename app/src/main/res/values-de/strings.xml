@@ -2135,4 +2135,10 @@
     <string name="naomi_guide_step_controls">Steuerung — Select wirft eine Münze ein, Start beginnt das Spiel. Am Gamepad öffnet L3 das Testmenü und R3 das Servicemenü. Free Play ist standardmäßig aktiv.</string>
     <string name="naomi_guide_step_covers">Cover — werden anhand des ROM-Set-Namens aus dem EmuCoreH-Katalog geladen. Ohne Artwork erscheint eine Karte mit dem Namen.</string>
     <string name="naomi_guide_settings_desc">Anleitung zu BIOS, ROM-Set, GD-ROM, Start und Steuerung.</string>
+    <string name="settings_fps_metric_version">Version</string>
+    <string name="settings_stick_toggle_button">Stick umschalten</string>
+    <string name="controls_editor_reset_selected">Ausgewähltes Element zurücksetzen</string>
+    <string name="controls_editor_show_grid">Raster anzeigen</string>
+    <string name="controls_editor_snap_grid">Am Raster ausrichten</string>
+    <string name="controls_editor_group_scale_value">Gruppengröße %1$d%%</string>
 </resources>

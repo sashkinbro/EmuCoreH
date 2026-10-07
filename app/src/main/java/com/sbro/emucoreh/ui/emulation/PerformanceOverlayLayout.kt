@@ -127,7 +127,9 @@ internal fun buildPerformanceOverlayLayout(
 
     return PerformanceOverlayLayout(
         mainLines = (
-            listOf(fixedHeaderLine).filter(String::isNotBlank) +
+            listOf(fixedHeaderLine).filter {
+                it.isNotBlank() && PerformanceOverlayMetrics.isEnabled(metricsMask, PerformanceOverlayMetrics.VERSION)
+            } +
                 topLines + processorLines + hardwareLines + audioLines + unknownLines
             ).map(::compactPerformanceOverlayLine),
         bottomLines = bottomLines.map(::compactPerformanceOverlayLine)

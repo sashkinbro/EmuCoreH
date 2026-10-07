@@ -474,11 +474,16 @@ private fun ShelfCoverCard(
     val debouncedClick = rememberDebouncedClick(onClick = onClick)
     val interactionSource = remember { MutableInteractionSource() }
     val showMenu = remember(game.path) { mutableStateOf(false) }
-    val shape = if (isGenerated3dCover(game.coverArtPath)) RectangleShape else neonShape(24.dp)
     val coverAspectRatio = GameCoverAspectRatio
     val horizontalCoverPadding = if (isActive) 6.dp else 8.dp
     val verticalCoverPadding = if (isActive) 6.dp else 4.dp
     val shelfCoverPath = rememberShelfCoverPath(game, isCoverArtDisabled)
+    // Flat covers are plain rectangles so their corners are never clipped.
+    val shape = if (isGenerated3dCover(game.coverArtPath) || !shelfCoverPath.isNullOrBlank()) {
+        RectangleShape
+    } else {
+        neonShape(24.dp)
+    }
     fun dismissMenu(action: () -> Unit) {
         showMenu.value = false
         action()
