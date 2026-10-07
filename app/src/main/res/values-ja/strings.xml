@@ -2132,4 +2132,10 @@
     <string name="naomi_guide_step_controls">操作 — Selectでコインを投入、Startでゲーム開始。ゲームパッドではL3がTestメニュー、R3がServiceメニューです。フリープレイは初期状態で有効です。</string>
     <string name="naomi_guide_step_covers">カバー — ROMセット名でEmuCoreHカタログからダウンロードされます。画像がないゲームは名前入りのカードを表示します。</string>
     <string name="naomi_guide_settings_desc">BIOS、ROMセット、GD-ROM、起動、操作の説明。</string>
+    <string name="settings_fps_metric_version">バージョン</string>
+    <string name="settings_stick_toggle_button">スティック切り替え</string>
+    <string name="controls_editor_reset_selected">選択した要素をリセット</string>
+    <string name="controls_editor_show_grid">グリッドを表示</string>
+    <string name="controls_editor_snap_grid">グリッドに吸着</string>
+    <string name="controls_editor_group_scale_value">グループ倍率 %1$d%%</string>
 </resources>

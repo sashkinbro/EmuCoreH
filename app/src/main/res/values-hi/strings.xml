@@ -2133,4 +2133,10 @@
     <string name="naomi_guide_step_controls">कंट्रोल — Select सिक्का डालता है और Start गेम शुरू करता है। गेमपैड पर L3 Test मेन्यू और R3 Service मेन्यू खोलता है। फ्री प्ले डिफ़ॉल्ट रूप से चालू है।</string>
     <string name="naomi_guide_step_covers">कवर — ROM सेट के नाम से EmuCoreH कैटलॉग से डाउनलोड होते हैं। आर्टवर्क न होने पर नाम वाला कार्ड दिखता है।</string>
     <string name="naomi_guide_settings_desc">BIOS, ROM सेट, GD-ROM, लॉन्च और कंट्रोल के निर्देश।</string>
+    <string name="settings_fps_metric_version">संस्करण</string>
+    <string name="settings_stick_toggle_button">स्टिक बदलें</string>
+    <string name="controls_editor_reset_selected">चयनित तत्व रीसेट करें</string>
+    <string name="controls_editor_show_grid">ग्रिड दिखाएँ</string>
+    <string name="controls_editor_snap_grid">ग्रिड पर स्नैप करें</string>
+    <string name="controls_editor_group_scale_value">समूह स्केल %1$d%%</string>
 </resources>

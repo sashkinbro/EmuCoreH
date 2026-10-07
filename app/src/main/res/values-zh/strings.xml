@@ -2134,4 +2134,10 @@
     <string name="naomi_guide_step_controls">操作 — Select 投币，Start 开始游戏。手柄上 L3 打开 Test 菜单，R3 打开 Service 菜单。免费游玩默认开启。</string>
     <string name="naomi_guide_step_covers">封面 — 按 ROM 集名称从 EmuCoreH 目录下载。没有图片的游戏会显示带名称的卡片。</string>
     <string name="naomi_guide_settings_desc">BIOS、ROM 集、GD-ROM、启动和操作说明。</string>
+    <string name="settings_fps_metric_version">版本</string>
+    <string name="settings_stick_toggle_button">切换摇杆</string>
+    <string name="controls_editor_reset_selected">重置所选元素</string>
+    <string name="controls_editor_show_grid">显示网格</string>
+    <string name="controls_editor_snap_grid">对齐网格</string>
+    <string name="controls_editor_group_scale_value">组缩放 %1$d%%</string>
 </resources>

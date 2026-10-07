@@ -339,8 +339,9 @@
     <string name="settings_fps_overlay_scale_value">%1$d%%</string>
     <string name="settings_help_fps_overlay_scale">Changes the text size of both the simple FPS counter and detailed statistics. Larger values also widen the detailed overlay to reduce wrapping.</string>
     <string name="settings_fps_overlay_metrics">Visible statistics</string>
-    <string name="settings_help_fps_overlay_metrics">Choose the individual values included in the detailed statistics overlay. App, build, and core versions are always shown first. CPU and GPU names with their load are read from the device when available.</string>
+    <string name="settings_help_fps_overlay_metrics">Choose the individual values included in the detailed statistics overlay. CPU and GPU names with their load are read from the device when available.</string>
     <string name="settings_fps_metric_fps">FPS</string>
+    <string name="settings_fps_metric_version">Version</string>
     <string name="settings_fps_metric_speed">Speed</string>
     <string name="settings_fps_metric_renderer">Renderer</string>
     <string name="settings_fps_metric_audio">Audio</string>
@@ -474,6 +475,7 @@
     <string name="settings_gamepad_action_service">Service</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">Left Input Toggle</string>
+    <string name="settings_stick_toggle_button">Stick toggle</string>
     <string name="settings_gamepad_action_pressure">Pressure Modifier</string>
     <string name="settings_gamepad_action_dpad_up">D-Pad Up</string>
     <string name="settings_gamepad_action_dpad_down">D-Pad Down</string>
@@ -571,6 +573,10 @@
     <string name="controls_editor_save_failed">The touch layout could not be saved. Please try again.</string>
     <string name="controls_editor_done">Done</string>
     <string name="controls_editor_opacity_value">Opacity %1$d%%</string>
+    <string name="controls_editor_reset_selected">Reset selected element</string>
+    <string name="controls_editor_show_grid">Show grid</string>
+    <string name="controls_editor_snap_grid">Snap to grid</string>
+    <string name="controls_editor_group_scale_value">Group scale %1$d%%</string>
     <string name="home_search_clear">Clear search</string>
     <string name="settings_backup_section_title">Backup</string>
     <string name="settings_backup_export_title">Backup all settings</string>

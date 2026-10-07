@@ -2135,4 +2135,10 @@
     <string name="naomi_guide_step_controls">Commandes — Select insère une pièce et Start lance la partie. Sur manette, L3 ouvre le menu Test et R3 le menu Service. Le free play est activé par défaut.</string>
     <string name="naomi_guide_step_covers">Jaquettes — téléchargées depuis le catalogue EmuCoreH selon le nom du set ROM. Sans artwork, une carte avec le nom s’affiche.</string>
     <string name="naomi_guide_settings_desc">Instructions : BIOS, set ROM, GD-ROM, lancement et commandes.</string>
+    <string name="settings_fps_metric_version">Version</string>
+    <string name="settings_stick_toggle_button">Basculer le stick</string>
+    <string name="controls_editor_reset_selected">Réinitialiser l\'élément sélectionné</string>
+    <string name="controls_editor_show_grid">Afficher la grille</string>
+    <string name="controls_editor_snap_grid">Aligner sur la grille</string>
+    <string name="controls_editor_group_scale_value">Échelle du groupe %1$d%%</string>
 </resources>
