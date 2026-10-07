@@ -430,6 +430,8 @@ fun EmulationScreen(
         uri?.let(viewModel::swapDisc)
     }
     val rootCutoutPadding = WindowInsets.displayCutout.asPaddingValues()
+    // The option only insets the emulated picture; touch controls and app overlays
+    // always keep clear of the cutout, exactly like the rest of the UI.
     val gameCutoutPadding = if (globalDefaults.respectDisplayCutout) {
         rootCutoutPadding
     } else {
@@ -437,20 +439,20 @@ fun EmulationScreen(
     }
     val rootNavPadding = WindowInsets.navigationBars.asPaddingValues()
     val overlayLeftSafeInset = maxOf(
-        gameCutoutPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+        rootCutoutPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
         rootNavPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
     )
     val overlayRightSafeInset = maxOf(
-        gameCutoutPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+        rootCutoutPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
         rootNavPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
     )
     val overlayHorizontalSafeInset = maxOf(overlayLeftSafeInset, overlayRightSafeInset)
     val overlayTopSafeInset = maxOf(
-        gameCutoutPadding.calculateTopPadding(),
+        rootCutoutPadding.calculateTopPadding(),
         rootNavPadding.calculateTopPadding()
     )
     val overlayBottomSafeInset = maxOf(
-        gameCutoutPadding.calculateBottomPadding(),
+        rootCutoutPadding.calculateBottomPadding(),
         rootNavPadding.calculateBottomPadding()
     )
 
@@ -1320,18 +1322,14 @@ fun EmulationScreen(
                     onPadInput = { keyCode, range, pressed ->
                         viewModel.onPadInput(overlayPadIndex, keyCode, range, pressed)
                     },
-                    // The controls must move with the same safe area the editor uses:
-                    // when the cutout option is off they may be dragged to the screen edge.
-                    safeInsets = if (globalDefaults.respectDisplayCutout) {
-                        PaddingValues(
-                            start = overlayLeftSafeInset,
-                            top = overlayTopSafeInset,
-                            end = overlayRightSafeInset,
-                            bottom = overlayBottomSafeInset
-                        )
-                    } else {
-                        PaddingValues(0.dp)
-                    }
+                    // Controls always avoid the camera cutout and system bars,
+                    // independently of the game image cutout option.
+                    safeInsets = PaddingValues(
+                        start = overlayLeftSafeInset,
+                        top = overlayTopSafeInset,
+                        end = overlayRightSafeInset,
+                        bottom = overlayBottomSafeInset
+                    )
                     )
                 } else {
                     LocalMultiplayerTouchControls(

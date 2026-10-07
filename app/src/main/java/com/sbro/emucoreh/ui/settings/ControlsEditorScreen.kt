@@ -236,6 +236,32 @@ private fun dpadClusterArrowSlots(clusterSize: Dp): List<DpadClusterArrowSlot> =
         DpadClusterArrowSlot(controlId, direction, arrowDefault.x to arrowDefault.y)
     }
 
+// The extra D-pad spec already carries the current offset in x/y, so drag clamping must
+// start from the un-offset base; otherwise the offset is counted twice and the reachable
+// travel is roughly halved.
+internal fun dpadClusterDragBase(spec: OverlayCanvasDpadClusterSpec): Pair<Dp, Dp> =
+    (spec.baseX + spec.surface.offset.x) to (spec.baseY + spec.surface.offset.y)
+
+internal data class NormalizedPositionRange(
+    val min: Float,
+    val max: Float
+)
+
+// Custom controls store normalized positions relative to the safe area. Extending the
+// range beyond [0, 1] lets the editor park a control over the camera cutout while every
+// existing value keeps rendering in exactly the same place.
+internal fun normalizedPositionRange(
+    safeStartPx: Float,
+    safeEndPx: Float,
+    travelPx: Float
+): NormalizedPositionRange {
+    val travel = travelPx.coerceAtLeast(1f)
+    return NormalizedPositionRange(
+        min = -safeStartPx / travel,
+        max = 1f + safeEndPx / travel
+    )
+}
+
 private data class EditorControlGeometry(
     val positionX: Float,
     val positionY: Float,
@@ -493,9 +519,9 @@ fun ControlsEditorScreen(
                     secondaryActionId = selectedLayout?.secondaryActionId,
                     label = CustomTouchControl.defaultLabelFor(actionId),
                     positionX = (geometry.positionX + CustomTouchControl.DEFAULT_DUPLICATE_OFFSET)
-                        .coerceIn(0f, 1f),
+                        .coerceIn(CustomTouchControl.MIN_POSITION, CustomTouchControl.MAX_POSITION),
                     positionY = (geometry.positionY + CustomTouchControl.DEFAULT_DUPLICATE_OFFSET)
-                        .coerceIn(0f, 1f),
+                        .coerceIn(CustomTouchControl.MIN_POSITION, CustomTouchControl.MAX_POSITION),
                     widthDp = geometry.widthDp,
                     heightDp = geometry.heightDp,
                     createdAtMillis = now,
@@ -1768,17 +1794,15 @@ private fun PreviewLayout(
             val heightPx = with(density) { height.toPx() }
             val canvasWidthPx = with(density) { maxWidth.toPx() }
             val canvasHeightPx = with(density) { maxHeight.toPx() }
-            val safeLeftPx = with(density) { safeLeftInset.toPx() }
-            val safeRightPx = with(density) { safeRightInset.toPx() }
-            val safeTopPx = with(density) { safeTop.toPx() }
-            val safeBottomPx = with(density) { safeBottom.toPx() }
+            // Dragging only stops at the physical screen edge: users may deliberately
+            // park a control over the camera cutout or the system bar strip.
             val nextX = (currentX + delta.first).coerceIn(
-                safeLeftPx,
-                (canvasWidthPx - safeRightPx - widthPx).coerceAtLeast(safeLeftPx)
+                0f,
+                (canvasWidthPx - widthPx).coerceAtLeast(0f)
             )
             val nextY = (currentY + delta.second).coerceIn(
-                safeTopPx,
-                (canvasHeightPx - safeBottomPx - heightPx).coerceAtLeast(safeTopPx)
+                0f,
+                (canvasHeightPx - heightPx).coerceAtLeast(0f)
             )
             return (nextX - baseXPx) to (nextY - baseYPx)
         }
@@ -1866,13 +1890,14 @@ private fun PreviewLayout(
         fun moveDpadCluster(controlId: String, spec: OverlayCanvasDpadClusterSpec, delta: Pair<Float, Float>) {
             val current = controlLayouts[controlId] ?: OverlayControlLayout()
             val surface = spec.surface
+            val dragBase = dpadClusterDragBase(spec)
             onSetControlOffset(
                 controlId,
                 clampOffset(
                     currentOffset = current.offset,
                     delta = snapDelta(controlId, spec.x + surface.offset.x, spec.y + surface.offset.y, delta),
-                    baseX = spec.x + surface.offset.x,
-                    baseY = spec.y + surface.offset.y,
+                    baseX = dragBase.first,
+                    baseY = dragBase.second,
                     width = surface.width,
                     height = surface.height
                 )
@@ -2165,6 +2190,8 @@ private fun PreviewLayout(
             val heightPx = with(density) { control.heightDp.dp.toPx() }
             val travelX = (canvasWidthPx - safeLeftPx - safeRightPx - widthPx).coerceAtLeast(1f)
             val travelY = (canvasHeightPx - safeTopPx - safeBottomPx - heightPx).coerceAtLeast(1f)
+            val positionRangeX = normalizedPositionRange(safeLeftPx, safeRightPx, travelX)
+            val positionRangeY = normalizedPositionRange(safeTopPx, safeBottomPx, travelY)
             val selectionId = customControlSelectionId(control.id)
             val selected = selectedControlId == selectionId
             DraggableControl(
@@ -2180,8 +2207,10 @@ private fun PreviewLayout(
                     )
                     onSetCustomControlPosition(
                         control.id,
-                        (control.positionX + snapped.first / travelX).coerceIn(0f, 1f),
-                        (control.positionY + snapped.second / travelY).coerceIn(0f, 1f)
+                        (control.positionX + snapped.first / travelX)
+                            .coerceIn(positionRangeX.min, positionRangeX.max),
+                        (control.positionY + snapped.second / travelY)
+                            .coerceIn(positionRangeY.min, positionRangeY.max)
                     )
                 },
                 onCommitControlPosition = { commitCustomControl(control.id) },
@@ -2269,13 +2298,23 @@ private fun PreviewLayout(
                                 .coerceAtLeast(1f)
                             val travelY = (canvasHeightPx - safeTopPx - safeBottomPx - heightPx)
                                 .coerceAtLeast(1f)
+                            val positionRangeX = normalizedPositionRange(
+                                safeLeftPx,
+                                safeRightPx,
+                                travelX
+                            )
+                            val positionRangeY = normalizedPositionRange(
+                                safeTopPx,
+                                safeBottomPx,
+                                travelY
+                            )
                             EditorControlGeometry(
                                 positionX = (
                                     (with(density) { visualX.toPx() } - safeLeftPx) / travelX
-                                    ).coerceIn(0f, 1f),
+                                    ).coerceIn(positionRangeX.min, positionRangeX.max),
                                 positionY = (
                                     (with(density) { visualY.toPx() } - safeTopPx) / travelY
-                                    ).coerceIn(0f, 1f),
+                                    ).coerceIn(positionRangeY.min, positionRangeY.max),
                                 widthDp = visualWidth.value.roundToInt()
                                     .coerceIn(CustomTouchControl.MIN_SIZE_DP, CustomTouchControl.MAX_SIZE_DP),
                                 heightDp = visualHeight.value.roundToInt()

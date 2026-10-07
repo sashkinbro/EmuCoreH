@@ -3,7 +3,11 @@ package com.sbro.emucoreh.ui.settings
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -17,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.data.AppPreferences
@@ -24,17 +30,42 @@ import com.sbro.emucoreh.data.CustomTouchControlLibrary
 import com.sbro.emucoreh.data.OverlayControlLayout
 import com.sbro.emucoreh.data.PerGameSettingsRepository
 import com.sbro.emucoreh.data.SettingsSnapshot
+import com.sbro.emucoreh.data.TouchControlsLayoutProfile
 import com.sbro.emucoreh.data.saveTouchControlsLayout
 import com.sbro.emucoreh.data.toTouchControlsLayoutProfile
 import com.sbro.emucoreh.data.withCustomTouchControls
 import com.sbro.emucoreh.data.withTouchControlsLayout
-import com.sbro.emucoreh.data.withoutTouchControlsLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+
+internal data class OverlaySafeInsets(
+    val left: Dp,
+    val right: Dp,
+    val top: Dp,
+    val bottom: Dp
+)
+
+// Touch controls always avoid the camera cutout; the "Respect camera cutout"
+// option only insets the emulated picture, never the controls.
+internal fun resolveOverlaySafeInsets(
+    cutoutLeft: Dp,
+    cutoutRight: Dp,
+    cutoutTop: Dp,
+    cutoutBottom: Dp,
+    navigationLeft: Dp,
+    navigationRight: Dp,
+    navigationTop: Dp,
+    navigationBottom: Dp
+): OverlaySafeInsets = OverlaySafeInsets(
+    left = maxOf(cutoutLeft, navigationLeft),
+    right = maxOf(cutoutRight, navigationRight),
+    top = maxOf(cutoutTop, navigationTop),
+    bottom = maxOf(cutoutBottom, navigationBottom)
+)
 
 @Composable
 fun ControlsLayoutEditorHostScreen(
@@ -46,6 +77,18 @@ fun ControlsLayoutEditorHostScreen(
     val context = LocalContext.current
     val preferences = remember(context) { AppPreferences(context) }
     val repository = remember(context) { PerGameSettingsRepository(context) }
+    val cutoutPadding = WindowInsets.displayCutout.asPaddingValues()
+    val navigationPadding = WindowInsets.navigationBars.asPaddingValues()
+    val safeInsets = resolveOverlaySafeInsets(
+        cutoutLeft = cutoutPadding.calculateLeftPadding(LayoutDirection.Ltr),
+        cutoutRight = cutoutPadding.calculateRightPadding(LayoutDirection.Ltr),
+        cutoutTop = cutoutPadding.calculateTopPadding(),
+        cutoutBottom = cutoutPadding.calculateBottomPadding(),
+        navigationLeft = navigationPadding.calculateLeftPadding(LayoutDirection.Ltr),
+        navigationRight = navigationPadding.calculateRightPadding(LayoutDirection.Ltr),
+        navigationTop = navigationPadding.calculateTopPadding(),
+        navigationBottom = navigationPadding.calculateBottomPadding()
+    )
     val scope = rememberCoroutineScope()
     val saveMutex = remember { Mutex() }
     val normalizedGamePath = gamePath?.takeIf { it.isNotBlank() }
@@ -198,6 +241,10 @@ fun ControlsLayoutEditorHostScreen(
         state = state,
         subtitle = subtitle,
         onBackClick = ::finishEditor,
+        overlayLeftSafeInset = safeInsets.left,
+        overlayRightSafeInset = safeInsets.right,
+        overlayTopSafeInset = safeInsets.top,
+        overlayBottomSafeInset = safeInsets.bottom,
         onUpdateControlOffset = { controlId, offset ->
             updateState { current ->
                 val layouts = current.controlLayouts.toMutableMap()
@@ -296,10 +343,14 @@ fun ControlsLayoutEditorHostScreen(
                             preferences.resetControlsLayout()
                         } else {
                             withContext(Dispatchers.IO) {
-                                repository.get(normalizedGamePath)?.let { existing ->
-                                    existing.withoutTouchControlsLayout()?.let(repository::save)
-                                        ?: repository.delete(normalizedGamePath)
-                                }
+                                // Reset to the built-in defaults for this game; dropping the
+                                // override would silently inherit the customized global layout.
+                                repository.get(normalizedGamePath).withTouchControlsLayout(
+                                    gameKey = normalizedGamePath,
+                                    gameTitle = resolvedGameTitle,
+                                    gameSerial = gameSerial,
+                                    layout = TouchControlsLayoutProfile()
+                                ).let(repository::save)
                             }
                         }
                         loadState()

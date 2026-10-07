@@ -60,7 +60,7 @@ android {
         applicationId = "com.sbro.emucoreh"
         minSdk = 26
         targetSdk = 37
-        versionCode = 15
+        versionCode = 16
         versionName = "0.0.4"
 
         buildConfigField("String", "FEEDBACK_ENDPOINT", buildConfigString(feedbackEndpoint))

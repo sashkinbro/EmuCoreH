@@ -24,12 +24,9 @@ internal fun calculateOverlayResponsiveScale(
     isLandscape: Boolean
 ): Float {
     val requested = requestedScale.coerceAtLeast(0.01f)
-    val horizontalSafeInset = maxOf(
-        safeLeftInset.value.coerceAtLeast(0f),
-        safeRightInset.value.coerceAtLeast(0f)
-    )
     val availableWidth = (
-        canvasWidth.value - horizontalSafeInset * 2f
+        canvasWidth.value - safeLeftInset.value.coerceAtLeast(0f) -
+            safeRightInset.value.coerceAtLeast(0f)
         ).coerceAtLeast(1f)
     val availableHeight = (
         canvasHeight.value - safeTopInset.value.coerceAtLeast(0f) -

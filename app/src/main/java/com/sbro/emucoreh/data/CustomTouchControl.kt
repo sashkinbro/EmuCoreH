@@ -65,8 +65,10 @@ data class CustomTouchControl(
     ): CustomTouchControl = copy(
         id = id,
         name = name.trim().take(MAX_NAME_LENGTH).ifEmpty { DEFAULT_NAME },
-        positionX = (positionX + positionOffset).coerceIn(0f, 1f),
-        positionY = (positionY + positionOffset).coerceIn(0f, 1f),
+        positionX = (positionX + positionOffset)
+            .coerceIn(MIN_POSITION, MAX_POSITION),
+        positionY = (positionY + positionOffset)
+            .coerceIn(MIN_POSITION, MAX_POSITION),
         createdAtMillis = nowMillis,
         updatedAtMillis = nowMillis
     )
@@ -84,8 +86,10 @@ data class CustomTouchControl(
                 ?.takeIf(ALLOWED_ACTION_IDS::contains)
                 ?.takeUnless { it == safeActionId },
             label = label.trim().take(MAX_LABEL_LENGTH).ifEmpty { defaultLabelFor(safeActionId) },
-            positionX = positionX.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0.5f,
-            positionY = positionY.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0.5f,
+            positionX = positionX.takeIf(Float::isFinite)
+                ?.coerceIn(MIN_POSITION, MAX_POSITION) ?: 0.5f,
+            positionY = positionY.takeIf(Float::isFinite)
+                ?.coerceIn(MIN_POSITION, MAX_POSITION) ?: 0.5f,
             widthDp = widthDp.coerceIn(MIN_SIZE_DP, MAX_SIZE_DP),
             heightDp = heightDp.coerceIn(MIN_SIZE_DP, MAX_SIZE_DP),
             cornerDp = cornerDp.coerceIn(0, MAX_CORNER_DP),
@@ -133,6 +137,11 @@ data class CustomTouchControl(
         const val MIN_PRESSED_SCALE_PERCENT = 85
         const val MAX_PRESSED_SCALE_PERCENT = 140
         const val DEFAULT_DUPLICATE_OFFSET = 0.05f
+
+        // Positions are normalized to the safe-area span. The range extends past [0, 1]
+        // so a control can be parked over the camera cutout; existing values stay valid.
+        const val MIN_POSITION = -0.5f
+        const val MAX_POSITION = 1.5f
 
         val ALLOWED_ACTION_IDS = setOf(
             "up", "down", "left", "right",
