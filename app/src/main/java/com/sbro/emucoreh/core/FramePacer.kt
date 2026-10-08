@@ -12,8 +12,15 @@ internal class FramePacer {
         if (!framesPerSecond.isFinite() || framesPerSecond <= 0.0) return 0L
         val period = ceil(1_000_000_000.0 / framesPerSecond).toLong()
         if (period != periodNanos) {
+            // Audio batches alternate by a sample due to rounding. Preserve
+            // deadline debt for small changes so scheduler jitter cannot drift.
+            deadlineNanos = if (periodNanos > 0L &&
+                kotlin.math.abs(period - periodNanos) < periodNanos / 20) {
+                deadlineNanos?.plus(period - periodNanos)
+            } else {
+                lastStartNanos?.plus(period)
+            }
             periodNanos = period
-            deadlineNanos = lastStartNanos?.plus(period)
         }
         val earliest = lastStartNanos?.plus(periodNanos / 2) ?: nowNanos
         return (maxOf(deadlineNanos ?: nowNanos, earliest) - nowNanos).coerceAtLeast(0L)

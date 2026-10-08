@@ -68,4 +68,18 @@ class FramePacerTest {
         }
         assertEquals(599 * 16_666_667L + 3_000_000L, now)
     }
+
+    @Test fun audioSampleRoundingDoesNotAccumulateSchedulerJitter() {
+        val pacer = FramePacer()
+        var now = 0L
+        repeat(600) { frame ->
+            val rate = 44100.0 / if (frame % 2 == 0) 735 else 736
+            now += pacer.remainingNanos(now, rate)
+            now += 100_000L
+            pacer.frameStarted(now)
+            now += 3_000_000L
+        }
+        val expected = 599 * 1_000_000_000.0 * 735.5 / 44100 + 3_000_000L
+        assertTrue(kotlin.math.abs(now - expected) < 250_000L)
+    }
 }

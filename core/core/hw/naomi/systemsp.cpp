@@ -2216,7 +2216,7 @@ void SystemSpCart::Init(LoadProgress *progress, std::vector<u8> *digest)
 		}
 		// Force BIOS reload now to get the default eeprom for the correct region
 		naomi_default_eeprom = nullptr;
-		naomi_cart_LoadBios(settings.content.fileName.c_str());
+		naomi_cart_LoadBios(settings.content.path.c_str());
 	}
 	region = config::Region;
 	// Region must be set before loading the eeprom

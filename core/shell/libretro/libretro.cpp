@@ -22,6 +22,7 @@
 #include <sys/time.h>
 #endif
 #include <algorithm>
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <utility>
@@ -187,7 +188,7 @@ static int maxFramebufferWidth;
 static int maxFramebufferHeight;
 static float framebufferAspectRatio = 4.f / 3.f;
 static double fps_current;
-static double fps_spg;
+static std::atomic<double> fps_spg{0.0};
 
 float libretro_expected_audio_samples_per_run;
 unsigned libretro_vsync_swap_interval = 1;
@@ -744,10 +745,17 @@ static void setGameGeometry(retro_game_geometry& geometry)
 	geometry.base_height = 480;
 }
 
+// Console refresh is independent of a game's presentation swap interval.
+extern "C" RETRO_API double flycast_get_refresh_rate()
+{
+	double fps = fps_spg.load();
+	return fps > 0.0 ? fps : 59.945300;
+}
+
 bool setAVInfo(retro_system_av_info& avinfo)
 {
 	double sample_rate = 44100.0;
-	double fps = (fps_spg) ? fps_spg : SPG_CONTROL.isPAL() ? 50.0 : 59.945300;
+	double fps = flycast_get_refresh_rate();
 
 	setGameGeometry(avinfo.geometry);
 	avinfo.timing.sample_rate = sample_rate;
@@ -767,11 +775,11 @@ bool retro_refresh_av_info(double fps)
 {
 	retro_system_av_info avinfo;
 
-	if (first_run || game_data.empty())
-		return false;
-
 	if (fps > 0 && fps < 100)
 		fps_spg = fps;
+
+	if (first_run)
+		return false;
 
 	if (setAVInfo(avinfo))
 	{
@@ -2210,6 +2218,10 @@ static void ReapplyLibretroCheats();
 
 bool retro_load_game(const struct retro_game_info *game)
 {
+	first_run = true;
+	fps_spg = 0.0;
+	fps_current = 0.0;
+	libretro_vsync_swap_interval = 1;
 #if defined(IOS)
 	bool can_jit;
 	if (environ_cb(RETRO_ENVIRONMENT_GET_JIT_CAPABLE, &can_jit) && !can_jit) {
@@ -2267,25 +2279,21 @@ bool retro_load_game(const struct retro_game_info *game)
 
 	update_variables(true);
 
-	char *ext = strrchr(g_base_name, '.');
+	std::string ext = get_file_extension(g_base_name);
+	settings.platform.system = DC_PLATFORM_DREAMCAST;
 
 	{
 		/* Check for extension .lst, .bin, .dat or .zip. If found, we will set the system type
 		 * automatically to Naomi or AtomisWave. */
-		if (ext)
+		if (!ext.empty())
 		{
-			log_cb(RETRO_LOG_INFO, "File extension is: %s\n", ext);
-			if (!strcmp(".lst", ext)
-					|| !strcmp(".bin", ext) || !strcmp(".BIN", ext)
-					|| !strcmp(".dat", ext) || !strcmp(".DAT", ext)
-					|| !strcmp(".zip", ext) || !strcmp(".ZIP", ext)
-					|| !strcmp(".7z", ext) || !strcmp(".7Z", ext))
+			if (log_cb)
+				log_cb(RETRO_LOG_INFO, "File extension is: %s\n", ext.c_str());
+			if (ext == "lst" || ext == "bin" || ext == "dat" || ext == "zip" || ext == "7z")
 			{
 				settings.platform.system = naomi_cart_GetPlatform(game->path);
 				// Users should use the superior format instead, let's warn them
-				if (!strcmp(".lst", ext)
-						|| !strcmp(".bin", ext) || !strcmp(".BIN", ext)
-						|| !strcmp(".dat", ext) || !strcmp(".DAT", ext))
+				if (ext == "lst" || ext == "bin" || ext == "dat")
 				{
 					struct retro_message msg;
 					// Sadly, this callback is only able to display short messages, so we can't give proper explanations...
@@ -2295,7 +2303,7 @@ bool retro_load_game(const struct retro_game_info *game)
 				}
 			}
 			// If m3u playlist found load the paths into array
-			else if (!strcmp(".m3u", ext) || !strcmp(".M3U", ext))
+			else if (ext == "m3u")
 			{
 				if (!read_m3u(game->path))
 				{

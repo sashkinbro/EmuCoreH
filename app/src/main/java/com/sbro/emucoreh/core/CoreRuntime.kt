@@ -714,22 +714,18 @@ internal object CoreRuntime {
     }
 
     private fun publishPerformanceMetrics(fps: Double, frames: Int, frameNanos: Long,
-                                          windowNanos: Long, audioStats: LongArray?,
+                                          timing: EmulationTiming.Metrics?, audioStats: LongArray?,
                                           cpuLoadPercent: Double) {
         if (frames <= 0 || !performanceMetricsEnabled) return
         val softwareRenderer = activeCoreRenderer == RendererDefaults.CORE_SOFTWARE
         val targetFps = activeFrameRate
-        // Games render at their own rate (locked 30/20 fps scenes are common),
-        // so the presented frame rate is not the emulation speed. The audio the
-        // core produces always advances at the console rate, which makes it the
-        // reliable clock; the frame count stays as a fallback for silent content.
-        val speed = audioDerivedSpeedPercent(audioStats, windowNanos)
-            ?: (fps / targetFps * 100.0)
+        val displayFps = timing?.fps ?: fps
+        val speed = timing?.speedPercent ?: (fps / targetFps * 100.0)
         val renderer = RendererDefaults.coreRendererName(activeCoreRenderer)
         val frameMs = frameNanos / frames / 1_000_000.0
         val gpuLoad = if (detailedPerformanceMetrics) GpuLoadReader.loadPercent() else null
         val overlay = buildString {
-            append(String.format(Locale.US, "FPS:%.1f | Speed:%.1f%% | Target:%.2f", fps, speed, targetFps))
+            append(String.format(Locale.US, "FPS:%.1f | Speed:%.1f%% | Target:%.2f", displayFps, speed, targetFps))
             if (detailedPerformanceMetrics) {
                 // The renderer line must end with " HW |" / " SW |" so the
                 // overlay recognises it as the active backend and keeps it on
@@ -745,33 +741,7 @@ internal object CoreRuntime {
                 }
             }
         }
-        performanceMetricsSnapshot = String.format(Locale.US, "%.3f\n%.3f\n%s", fps, speed, overlay)
-    }
-
-    private var lastAudioFrames = -1L
-    private var lastAudioSampleRate = 0
-
-    private fun audioDerivedSpeedPercent(audioStats: LongArray?, windowNanos: Long): Double? {
-        if (audioStats == null || audioStats.size <= 6 || windowNanos <= 0L) return null
-        val sampleRate = audioStats[2].toInt()
-        val producedFrames = audioStats[6]
-        if (sampleRate <= 0 || producedFrames <= 0L) return null
-        val previousFrames = lastAudioFrames
-        val previousRate = lastAudioSampleRate
-        lastAudioFrames = producedFrames
-        lastAudioSampleRate = sampleRate
-        if (previousFrames < 0L || previousRate != sampleRate || producedFrames <= previousFrames) {
-            return null
-        }
-        val emulatedSeconds = (producedFrames - previousFrames).toDouble() / sampleRate
-        val wallSeconds = windowNanos / 1_000_000_000.0
-        if (wallSeconds <= 0.0) return null
-        return emulatedSeconds / wallSeconds * 100.0
-    }
-
-    private fun resetAudioSpeedClock() {
-        lastAudioFrames = -1L
-        lastAudioSampleRate = 0
+        performanceMetricsSnapshot = String.format(Locale.US, "%.3f\n%.3f\n%s", displayFps, speed, overlay)
     }
 
     private fun runLoop(output: NativeAudioOutput) {
@@ -780,6 +750,10 @@ internal object CoreRuntime {
         var metricsFrameTotalNanos = 0L
         var metricsStartCpuMs = android.os.Process.getElapsedCpuTime()
         val framePacer = FramePacer()
+        val timingClock = EmulationTiming()
+        var previousSourceFrames = output.stats()?.getOrNull(5) ?: 0L
+        var lastRunSourceFrames = 0L
+        var sourceSampleRate = 44100L
         var frameStartNanos = 0L
         var previousFrameStartNanos = 0L
         var metricsMaxIntervalNanos = 0L
@@ -794,7 +768,8 @@ internal object CoreRuntime {
                 if (paused) {
                     framePacer.reset()
                     resetMetrics = true
-                    resetAudioSpeedClock()
+                    timingClock.reset()
+                    lastRunSourceFrames = 0L
                     Thread.sleep(8)
                     continue
                 }
@@ -813,19 +788,18 @@ internal object CoreRuntime {
                         coreFrameRate
                     }
                     activeFrameRate = frameRate
-                    // The core lowers its reported frame rate when it notifies the
-                    // frontend about a locked 30/20 fps scene (vsync swap
-                    // interval): each call then advances several console frames
-                    // and carries their audio, so the stream is still real time.
-                    // Only a manual target rate may change the audio speed.
-                    val audioPlaybackRate =
-                        if (manualTargetFps in 20..120) manualTargetFps / coreFrameRate else 1.0
+                    // Manual speed uses console refresh, not the detected scene FPS.
+                    val audioPlaybackRate = EmulationTiming.speedMultiplier(coreFrameRate, manualTargetFps)
                     bridge.setAudioPlaybackRate(audioPlaybackRate)
                     if (frameRate > 1.0) {
+                        // Use the guest time advanced by the previous run. Swap
+                        // interval detection can lag behind scene transitions or
+                        // be disabled; neither should change the console speed.
+                        val runRate = EmulationTiming.pacingRate(coreFrameRate, lastRunSourceFrames, sourceSampleRate)
                         val pacedRate = when (timeMode) {
-                            1 -> frameRate * 3.0
+                            1 -> runRate * audioPlaybackRate * 3.0
                             2 -> 2.0
-                            else -> frameRate
+                            else -> runRate * audioPlaybackRate
                         }
                         // The console speed is anchored to the sound card by the
                         // native audio push back pressure (standalone Flycast
@@ -899,6 +873,14 @@ internal object CoreRuntime {
                     }
                 } ?: if (skippedPausedFrame) continue else break
                 val frameNanos = System.nanoTime() - t0
+                // Recover a disconnected stream in release builds as well.
+                output.bufferedFrames()
+                val audioStats = output.stats()
+                val sampleNanos = System.nanoTime()
+                val sourceFrames = audioStats?.getOrNull(5) ?: previousSourceFrames
+                lastRunSourceFrames = (sourceFrames - previousSourceFrames).coerceAtLeast(0L)
+                previousSourceFrames = sourceFrames
+                sourceSampleRate = audioStats?.getOrNull(8) ?: sourceSampleRate
 
                 if (resetMetrics) {
                     metricsStartNanos = frameStartNanos
@@ -909,6 +891,7 @@ internal object CoreRuntime {
                     metricsMaxCoreNanos = 0L
                     metricsStartCpuMs = android.os.Process.getElapsedCpuTime()
                     resetMetrics = false
+                    timingClock.sample(audioStats, sampleNanos)
                     continue
                 }
                 metricsMaxIntervalNanos = maxOf(metricsMaxIntervalNanos, frameStartNanos - previousFrameStartNanos)
@@ -922,7 +905,7 @@ internal object CoreRuntime {
                     metricsFrames = 0
                     metricsFrameTotalNanos = 0L
                     metricsStartCpuMs = android.os.Process.getElapsedCpuTime()
-                    resetAudioSpeedClock()
+                    timingClock.sample(audioStats, sampleNanos)
                 } else if (now - metricsStartNanos >= 1_000_000_000L) {
                     val elapsed = now - metricsStartNanos
                     val fps = metricsFrames * 1_000_000_000.0 / elapsed
@@ -935,7 +918,7 @@ internal object CoreRuntime {
                         0.0
                     }
                     publishPerformanceMetrics(fps, metricsFrames, metricsFrameTotalNanos,
-                        elapsed, output.stats(), cpuLoad)
+                        timingClock.sample(audioStats, sampleNanos), audioStats, cpuLoad)
                     if (com.sbro.emucoreh.BuildConfig.DEBUG) {
                         Log.d(TAG, "pacing fps=%.1f core=%.1fms queue=%d high=%d silence=%d maxInterval=%.1fms maxCore=%.1fms".format(
                             Locale.US, fps, metricsFrameTotalNanos / metricsFrames / 1_000_000.0,

@@ -246,7 +246,8 @@ static void loadMameRom(const std::string& path, const std::string& fileName, Lo
 	}
 
 	// Load the BIOS
-	naomi_cart_LoadBios(fileName.c_str());
+	// Keep the directory so merged/parent sets can supply their BIOS too.
+	naomi_cart_LoadBios(path.c_str());
 
 	// Now load the cartridge data
 	try {
