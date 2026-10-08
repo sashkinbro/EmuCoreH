@@ -95,6 +95,7 @@ struct CoreApi {
     unsigned (*api_version)() = nullptr;
     void (*get_system_info)(retro_system_info*) = nullptr;
     void (*get_system_av_info)(retro_system_av_info*) = nullptr;
+    double (*get_refresh_rate)() = nullptr;
     void* (*get_memory_data)(unsigned) = nullptr;
     size_t (*get_memory_size)(unsigned) = nullptr;
     void (*set_controller_port_device)(unsigned, unsigned) = nullptr;
@@ -181,6 +182,8 @@ struct FrontendState {
     // the core's audio push blocks, exactly like standalone Flycast. Zero
     // disables the limiter (output closed, paused or unavailable).
     std::atomic<int32_t> audio_pacing_high_water{0};
+    std::atomic<int64_t> audio_source_frames{0};
+    std::atomic<int64_t> video_frames{0};
 
     std::atomic<int> frame_skip{0};
 
@@ -261,6 +264,7 @@ bool LoadCoreLocked() {
     g_core.api_version = reinterpret_cast<unsigned (*)()>(resolve("retro_api_version"));
     g_core.get_system_info = reinterpret_cast<void (*)(retro_system_info*)>(resolve("retro_get_system_info"));
     g_core.get_system_av_info = reinterpret_cast<void (*)(retro_system_av_info*)>(resolve("retro_get_system_av_info"));
+    g_core.get_refresh_rate = reinterpret_cast<double (*)()>(resolve("flycast_get_refresh_rate"));
     g_core.get_memory_data = reinterpret_cast<void* (*)(unsigned)>(resolve("retro_get_memory_data"));
     g_core.boot_error = reinterpret_cast<const char* (*)()>(resolve("emucorea_boot_error"));
     g_core.get_memory_size = reinterpret_cast<size_t (*)(unsigned)>(resolve("retro_get_memory_size"));
@@ -626,6 +630,8 @@ void BlockOnAudioRingHighWater() {
     if (highWater <= 0) return;
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(kAudioBackPressureTimeoutMs);
     for (;;) {
+        if (g_frontend.audio_pacing_high_water.load() <= 0 ||
+            g_frontend.time_control.load() != 0) return;
         size_t queued;
         {
             std::lock_guard<std::mutex> lock(g_frontend.audio_mutex);
@@ -651,6 +657,7 @@ void RetroAudioSampleBatch(const int16_t* data, size_t frames) {
         g_frontend.audio_ring[slot * 2 + 1] = data[i * 2 + 1];
         g_frontend.audio_write_frame = (slot + 1) % capacity;
     }
+    g_frontend.audio_source_frames.fetch_add(frames);
 }
 
 size_t RetroAudioSampleBatchWrapper(const int16_t* data, size_t frames) {
@@ -691,7 +698,8 @@ aaudio_data_callback_result_t AudioDataCallback(AAudioStream*, void* user_data, 
         to_read = output->resampler.Read(g_frontend.audio_ring.data(), capacity,
             g_frontend.audio_read_frame, g_frontend.audio_write_frame,
             static_cast<size_t>(output->pacing_high_water_frames),
-            out, static_cast<size_t>(num_frames), g_frontend.audio_playback_rate.load());
+            out, static_cast<size_t>(num_frames),
+            g_frontend.audio_playback_rate.load() * 44100.0 / output->sample_rate);
         for (size_t i = 0; i < to_read; i++) {
             float frame_gain = gain;
             if (declick > 0) {
@@ -1079,6 +1087,8 @@ void DestroyHardwareContext() {
 
 void RetroVideoRefresh(const void* data, unsigned width, unsigned height, size_t pitch) {
     (void)pitch;
+    // Null callbacks repeat an old image; they are not new game frames.
+    if (data != nullptr) g_frontend.video_frames.fetch_add(1);
     static thread_local int skip_counter = 0;
     const int skip = g_frontend.frame_skip.load();
     if (skip > 0) {
@@ -1681,6 +1691,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_getPresentRect(JNIEnv* env, jobject
 JNIEXPORT jdouble JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_getFrameRate(JNIEnv*, jobject, jlong handle) {
     if (handle == 0 || !LoadCoreLocked() || g_core.get_system_av_info == nullptr) return 60.0;
+    if (g_core.get_refresh_rate != nullptr) return g_core.get_refresh_rate();
     retro_system_av_info info{};
     g_core.get_system_av_info(&info);
     return info.timing.fps > 0.0 ? info.timing.fps : 60.0;
@@ -1800,7 +1811,8 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_createAudioOutput(JNIEnv*, jobject)
     if (stream_capacity > 0) device_buffer = std::min(device_buffer, stream_capacity);
     AAudioStream_setBufferSizeInFrames(output->stream, device_buffer);
     output->device_buffer_frames = device_buffer;
-    output->pacing_high_water_frames = std::min(device_buffer * 4, 6144);
+    output->pacing_high_water_frames = std::min(
+        static_cast<int32_t>(device_buffer * 4 * 44100LL / output->sample_rate), 6144);
     LOGI("AAudio output created: %d Hz, buffer %d frames, high water %d", output->sample_rate,
          output->device_buffer_frames, output->pacing_high_water_frames);
     g_frontend.audio_pacing_high_water.store(output->pacing_high_water_frames);
@@ -1895,18 +1907,26 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_audioOutputPacingHighWaterFrames(JN
 
 JNIEXPORT jlongArray JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_audioOutputStats(JNIEnv* env, jobject, jlong handle) {
-    jlong values[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    jlong values[10] = {};
+    values[5] = g_frontend.audio_source_frames.load();
+    values[8] = 44100; // Flycast's source rate, independent of the AAudio rate.
+    values[9] = g_frontend.video_frames.load();
     if (handle != 0) {
         auto* output = reinterpret_cast<AudioOutput*>(handle);
         values[0] = output->state.load();
         values[1] = output->last_error.load();
         values[2] = output->sample_rate;
-        values[4] = output->queued_frames.load();
+        values[3] = AAudioStream_getFramesPerBurst(output->stream);
+        {
+            std::lock_guard<std::mutex> lock(g_frontend.audio_mutex);
+            values[4] = (g_frontend.audio_write_frame + kAudioRingCapacityFrames -
+                         g_frontend.audio_read_frame) % kAudioRingCapacityFrames;
+        }
         values[6] = output->callback_frames.load();
         values[7] = output->silence_frames.load();
     }
-    jlongArray result = env->NewLongArray(8);
-    if (result != nullptr) env->SetLongArrayRegion(result, 0, 8, values);
+    jlongArray result = env->NewLongArray(10);
+    if (result != nullptr) env->SetLongArrayRegion(result, 0, 10, values);
     return result;
 }
 

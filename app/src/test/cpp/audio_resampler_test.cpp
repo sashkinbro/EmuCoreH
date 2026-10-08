@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <vector>
 
-static void TestClockDrift(double drift, double playbackRate = 1.0) {
+static void TestClockDrift(double drift, double playbackRate = 1.0, double deviceRate = 44100.0) {
     constexpr size_t capacity = 16384;
     std::vector<int16_t> ring(capacity * 2);
     int16_t out[1024 * 2];
@@ -25,12 +25,13 @@ static void TestClockDrift(double drift, double playbackRate = 1.0) {
             }
             nextFrame += 1.0 / (59.94 * playbackRate);
         } else {
-            const auto count = resampler.Read(ring.data(), capacity, read, write, 4096, out, 1024, playbackRate);
+            const auto count = resampler.Read(ring.data(), capacity, read, write, 4096, out, 1024,
+                playbackRate * 44100.0 / deviceRate);
             if (nextCallback > 1.0) assert(count == 1024);
             for (size_t i = 0; i < count; ++i) {
                 assert(out[i * 2] == 12000 && out[i * 2 + 1] == -12000);
             }
-            nextCallback += 1024.0 / (44100.0 * (1.0 + drift));
+            nextCallback += 1024.0 / (deviceRate * (1.0 + drift));
         }
     }
 }
@@ -56,6 +57,9 @@ int main() {
     TestClockDrift(0.008);
     TestClockDrift(0.008, 50.0 / 59.94);
     TestClockDrift(-0.008, 2.0);
+    TestClockDrift(0, 1.0, 48000.0);
+    TestClockDrift(0, 1.0, 96000.0);
+    TestClockDrift(0, 120.0 / 50.0);
     TestUnderrunAndReset();
     std::puts("Audio resampler: drift, ring wrap, underrun and reset passed");
 }

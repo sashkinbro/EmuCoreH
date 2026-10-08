@@ -19,7 +19,7 @@ public:
 
     size_t Read(const int16_t* ring, size_t capacity, size_t& read, size_t write,
                 size_t target, int16_t* out, size_t frames, double baseRatio = 1.0) {
-        baseRatio = std::clamp(baseRatio, 0.25, 2.0);
+        baseRatio = std::clamp(baseRatio, 0.1, 8.0);
         if (baseRatio != base_ratio_) {
             ratio_ = baseRatio;
             base_ratio_ = baseRatio;

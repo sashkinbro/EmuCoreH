@@ -156,7 +156,8 @@ class NativeCoreBridge {
     external fun audioOutputBufferedFrames(handle: Long): Int
     /** Queue level the frame loop keeps the output at for audio-synced pacing. */
     external fun audioOutputPacingHighWaterFrames(handle: Long): Int
-    /** state, error, sample rate, burst, queued, accepted, callback, silence frames. */
+    /** state, error, device Hz, burst, queued, source frames, callback frames,
+     * silence frames, source Hz, new video frames. Source/video totals are monotonic. */
     external fun audioOutputStats(handle: Long): LongArray?
 
     // ---------------------------------------------------------------------
