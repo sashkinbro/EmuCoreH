@@ -2161,4 +2161,9 @@
     <string name="settings_gyro_stick_right">Sağ çubuk</string>
     <string name="settings_gyro_stick_left">Sol çubuk</string>
     <string name="settings_light_gun_aim_touch">Dokunmatik / fare</string>
+    <string name="library_choose_disc">Bir disk seçin</string>
+    <string name="library_disc_number">Disk %1$d</string>
+    <string name="library_disc_count">%1$d disk</string>
+    <string name="library_launch_disc">Başlat</string>
+    <string name="library_disc_file">Disk görüntüsü</string>
 </resources>

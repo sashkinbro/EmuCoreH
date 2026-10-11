@@ -2160,4 +2160,9 @@
     <string name="settings_gyro_stick_right">오른쪽 스틱</string>
     <string name="settings_gyro_stick_left">왼쪽 스틱</string>
     <string name="settings_light_gun_aim_touch">터치 / 마우스</string>
+    <string name="library_choose_disc">디스크 선택</string>
+    <string name="library_disc_number">디스크 %1$d</string>
+    <string name="library_disc_count">디스크 %1$d장</string>
+    <string name="library_launch_disc">실행</string>
+    <string name="library_disc_file">디스크 이미지</string>
 </resources>

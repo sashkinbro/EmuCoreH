@@ -17,9 +17,8 @@ data class GameLibraryCacheSnapshot(
 class GameLibraryCacheRepository(context: Context) {
 
     companion object {
-        // v6: arcade ROM sets are recognised through Flycast's game table, so
-        // libraries scanned by older builds have to be rebuilt.
-        private const val CACHE_SCHEMA_VERSION = 6
+        // v7: retain every physical disc behind grouped library cards.
+        private const val CACHE_SCHEMA_VERSION = 7
 
         fun libraryKey(paths: List<String>): String =
             paths.map(String::trim).filter(String::isNotBlank).distinct().joinToString("\u001F")
@@ -59,29 +58,30 @@ class GameLibraryCacheRepository(context: Context) {
                 val parsedGames = buildList {
                     for (index in 0 until games.length()) {
                         val game = games.optJSONObject(index) ?: continue
-                        val path = game.optString("path")
-                        val fileName = sanitizeCachedFileName(path, game.optString("file_name"))
-                        val serial = game.optString("serial").takeIf { it.isNotBlank() }
-                            ?: learned[LearnedSerialRepository.key(fileName)]
+                        val decoded = game.readCachedGameItem() ?: continue
+                        val path = decoded.path
+                        val fileName = sanitizeCachedFileName(path, decoded.fileName)
+                        val serial = decoded.serial ?: learned[LearnedSerialRepository.key(fileName)]
                         val title = sanitizeCachedTitle(
                             path = path,
                             rawTitle = game.optString("title", fileName),
                             fileName = fileName
                         )
-                        val fileSize = game.optLong("file_size")
                         if (BiosValidator.isLikelyBiosLibraryEntry(fileName, title, serial)) {
                             continue
                         }
                         add(
-                            GameItem(
+                            decoded.copy(
                                 title = title,
-                                path = path,
                                 fileName = fileName,
-                                fileSize = fileSize,
-                                lastModified = game.optLong("last_modified"),
-                                coverArtPath = game.optString("cover_art_path").takeIf { it.isNotBlank() },
                                 serial = serial,
-                                discSize = game.optLong("disc_size").takeIf { it > 0L }
+                                discs = decoded.discs.map { disc ->
+                                    val discName = sanitizeCachedFileName(disc.path, disc.fileName)
+                                    disc.copy(
+                                        fileName = discName,
+                                        serial = disc.serial ?: learned[LearnedSerialRepository.key(discName)]
+                                    )
+                                }
                             )
                         )
                     }
@@ -105,7 +105,9 @@ class GameLibraryCacheRepository(context: Context) {
                     JSONObject()
                 }
 
-                val existingLibraries = rootObject.optJSONArray("libraries") ?: JSONArray()
+                val existingLibraries = if (rootObject.optInt("schema_version") == CACHE_SCHEMA_VERSION) {
+                    rootObject.optJSONArray("libraries") ?: JSONArray()
+                } else JSONArray()
                 val updatedLibraries = JSONArray()
                 for (index in 0 until existingLibraries.length()) {
                     val libraryObject = existingLibraries.optJSONObject(index) ?: continue
@@ -123,18 +125,7 @@ class GameLibraryCacheRepository(context: Context) {
                             "games",
                             JSONArray().apply {
                                 games.forEach { game ->
-                                    put(
-                                        JSONObject().apply {
-                                            put("title", game.title)
-                                            put("path", game.path)
-                                            put("file_name", game.fileName)
-                                            put("file_size", game.fileSize)
-                                            put("disc_size", game.discSize ?: 0L)
-                                            put("last_modified", game.lastModified)
-                                            put("cover_art_path", game.coverArtPath ?: "")
-                                            put("serial", game.serial ?: "")
-                                        }
-                                    )
+                                    put(game.toLibraryCacheJson())
                                 }
                             }
                         )
@@ -178,4 +169,63 @@ class GameLibraryCacheRepository(context: Context) {
             value.startsWith("home:", ignoreCase = true) ||
             value.startsWith("raw:", ignoreCase = true)
     }
+}
+
+/** Cache codecs stay independent of Android document access for round-trip tests. */
+internal fun GameItem.toLibraryCacheJson(): JSONObject = JSONObject().apply {
+    put("title", title)
+    put("path", path)
+    put("file_name", fileName)
+    put("file_size", fileSize)
+    put("disc_size", discSize ?: 0L)
+    put("last_modified", lastModified)
+    put("cover_art_path", coverArtPath ?: "")
+    put("serial", serial ?: "")
+    put("discs", JSONArray().apply {
+        discs.forEach { disc ->
+            put(JSONObject().apply {
+                put("path", disc.path)
+                put("file_name", disc.fileName)
+                put("number", disc.number)
+                put("serial", disc.serial ?: "")
+                put("file_size", disc.fileSize)
+                put("last_modified", disc.lastModified)
+                put("disc_size", disc.discSize ?: 0L)
+            })
+        }
+    })
+}
+
+internal fun JSONObject.readCachedGameItem(): GameItem? {
+    val path = optString("path").takeIf(String::isNotBlank) ?: return null
+    val name = optString("file_name").takeIf(String::isNotBlank) ?: return null
+    val array = optJSONArray("discs")
+    val members = if (array != null) {
+        (0 until array.length()).map { index ->
+            val disc = array.optJSONObject(index)
+            val discPath = disc?.optString("path")?.takeIf(String::isNotBlank)
+            val discName = disc?.optString("file_name")?.takeIf(String::isNotBlank)
+            val number = disc?.optInt("number", 0)?.takeIf { it > 0 }
+            if (disc == null || discPath == null || discName == null || number == null) null else GameDisc(
+                path = discPath,
+                fileName = discName,
+                number = number,
+                serial = disc.optString("serial").takeIf(String::isNotBlank),
+                fileSize = disc.optLong("file_size"),
+                lastModified = disc.optLong("last_modified"),
+                discSize = disc.optLong("disc_size").takeIf { it > 0L }
+            )
+        }.takeIf { members ->
+            members.size >= 2 && members.none { it == null } &&
+                members.map { it?.path }.distinct().size == members.size &&
+                members.map { it?.number }.distinct().size == members.size
+        }?.filterNotNull().orEmpty()
+    } else emptyList()
+    return GameItem(
+        title = optString("title", name), path = path, fileName = name,
+        fileSize = optLong("file_size"), lastModified = optLong("last_modified"),
+        coverArtPath = optString("cover_art_path").takeIf(String::isNotBlank),
+        serial = optString("serial").takeIf(String::isNotBlank),
+        discSize = optLong("disc_size").takeIf { it > 0L }, discs = members
+    )
 }

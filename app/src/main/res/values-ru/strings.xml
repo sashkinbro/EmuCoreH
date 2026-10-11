@@ -2165,4 +2165,9 @@
     <string name="settings_gyro_stick_right">Правый стик</string>
     <string name="settings_gyro_stick_left">Левый стик</string>
     <string name="settings_light_gun_aim_touch">Касание / мышь</string>
+    <string name="library_choose_disc">Выберите диск</string>
+    <string name="library_disc_number">Диск %1$d</string>
+    <string name="library_disc_count">Дисков: %1$d</string>
+    <string name="library_launch_disc">Запустить</string>
+    <string name="library_disc_file">Образ диска</string>
 </resources>

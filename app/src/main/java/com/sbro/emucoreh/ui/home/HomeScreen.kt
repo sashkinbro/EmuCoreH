@@ -137,6 +137,7 @@ import com.sbro.emucoreh.data.GameItem
 import com.sbro.emucoreh.data.HomeBackgroundRepository
 import com.sbro.emucoreh.data.HomeBackgroundType
 import com.sbro.emucoreh.ui.common.GameCoverArt
+import com.sbro.emucoreh.ui.common.GameDiscCountBadge
 import com.sbro.emucoreh.ui.common.GameCoverAspectRatio
 import com.sbro.emucoreh.ui.common.ProSupportOptionsDialog
 import com.sbro.emucoreh.ui.common.EmuCoreHLoadingAnimation
@@ -1521,6 +1522,10 @@ private fun RecentGameCard(
                             }
                         )
                     }
+                    GameDiscCountBadge(
+                        game = game,
+                        modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
+                    )
                 }
         }
         Box(
@@ -1649,6 +1654,10 @@ private fun GameCard(
                         }
                     )
                 }
+                GameDiscCountBadge(
+                    game = game,
+                    modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
+                )
             }
         }
         Box(
@@ -1782,12 +1791,19 @@ private fun GameListCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = formatCompactFileSize(game.discSize ?: game.fileSize),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.align(Alignment.End)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    GameDiscCountBadge(game = game)
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = formatCompactFileSize(game.discSize ?: game.fileSize),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

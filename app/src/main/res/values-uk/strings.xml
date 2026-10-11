@@ -2166,4 +2166,9 @@
     <string name="settings_gyro_stick_right">Правий стік</string>
     <string name="settings_gyro_stick_left">Лівий стік</string>
     <string name="settings_light_gun_aim_touch">Дотик / миша</string>
+    <string name="library_choose_disc">Виберіть диск</string>
+    <string name="library_disc_number">Диск %1$d</string>
+    <string name="library_disc_count">Дисків: %1$d</string>
+    <string name="library_launch_disc">Запустити</string>
+    <string name="library_disc_file">Образ диска</string>
 </resources>

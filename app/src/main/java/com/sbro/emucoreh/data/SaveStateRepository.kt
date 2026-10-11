@@ -587,7 +587,9 @@ class SaveStateRepository(private val context: Context) {
         val libraryPaths = preferences.gamePaths.first()
         val cachedLibraryGames = when {
             libraryPaths.isEmpty() -> emptyList()
-            else -> gameLibraryCacheRepository.loadSnapshot(GameLibraryCacheRepository.libraryKey(libraryPaths)).games
+            else -> flattenLibraryGroups(
+                gameLibraryCacheRepository.loadSnapshot(GameLibraryCacheRepository.libraryKey(libraryPaths)).games
+            )
         }
         val recentGames = preferences.recentGames.first().map { recent ->
             GameItem(
@@ -600,7 +602,7 @@ class SaveStateRepository(private val context: Context) {
                 serial = recent.serial
             )
         }
-        val libraryGames = (recentGames + cachedLibraryGames)
+        val libraryGames = (cachedLibraryGames + recentGames)
             .distinctBy { it.path }
 
         val bySerial = linkedMapOf<String, GameItem>()

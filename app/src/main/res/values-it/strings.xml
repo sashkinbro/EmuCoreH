@@ -2161,4 +2161,9 @@
     <string name="settings_gyro_stick_right">Stick destro</string>
     <string name="settings_gyro_stick_left">Stick sinistro</string>
     <string name="settings_light_gun_aim_touch">Tocco / mouse</string>
+    <string name="library_choose_disc">Scegli un disco</string>
+    <string name="library_disc_number">Disco %1$d</string>
+    <string name="library_disc_count">%1$d dischi</string>
+    <string name="library_launch_disc">Avvia</string>
+    <string name="library_disc_file">Immagine disco</string>
 </resources>

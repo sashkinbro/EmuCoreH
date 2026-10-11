@@ -70,6 +70,7 @@ import com.sbro.emucoreh.core.LocalTvUiEnvironment
 import com.sbro.emucoreh.data.CustomGameCoverRepository
 import com.sbro.emucoreh.data.GameItem
 import com.sbro.emucoreh.ui.common.GameCoverArt
+import com.sbro.emucoreh.ui.common.GameDiscCountBadge
 import com.sbro.emucoreh.ui.common.GameCoverAspectRatio
 import com.sbro.emucoreh.ui.common.RequestFocusOnResume
 import com.sbro.emucoreh.ui.common.gamepadFocusableCard
@@ -542,21 +543,27 @@ private fun ShelfCoverCard(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
-        if (!shelfCoverPath.isNullOrBlank()) {
-            GameCoverArt(
-                coverPath = shelfCoverPath,
-                fallbackTitle = game.title,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = horizontalCoverPadding, vertical = verticalCoverPadding),
-                contentScale = ContentScale.Fit
-            )
-        } else {
-            ShelfMissingCoverCard(
-                title = game.title,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = horizontalCoverPadding, vertical = verticalCoverPadding)
+        Box(Modifier.fillMaxSize()) {
+            if (!shelfCoverPath.isNullOrBlank()) {
+                GameCoverArt(
+                    coverPath = shelfCoverPath,
+                    fallbackTitle = game.title,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = horizontalCoverPadding, vertical = verticalCoverPadding),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                ShelfMissingCoverCard(
+                    title = game.title,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = horizontalCoverPadding, vertical = verticalCoverPadding)
+                )
+            }
+            GameDiscCountBadge(
+                game = game,
+                modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
             )
         }
     }

@@ -14,7 +14,19 @@ import com.sbro.emucoreh.core.GameMetadataReader
 import com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository
 import com.sbro.emucoreh.data.catalog.TitleIndexRepository
 import java.io.File
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.util.Locale
+
+data class GameDisc(
+    val path: String,
+    val fileName: String,
+    val number: Int,
+    val serial: String?,
+    val fileSize: Long,
+    val lastModified: Long,
+    val discSize: Long? = null
+)
 
 data class GameItem(
     val title: String,
@@ -25,7 +37,8 @@ data class GameItem(
     val coverArtPath: String? = null,
     val serial: String? = null,
     /** Total size of every track a multi-file disc image references. */
-    val discSize: Long? = null
+    val discSize: Long? = null,
+    val discs: List<GameDisc> = emptyList()
 )
 
 class GameRepository {
@@ -84,13 +97,14 @@ class GameRepository {
     ): List<GameItem> {
         val dir = File(path)
         if (!dir.exists() || !dir.isDirectory) return emptyList()
-        return scanLocalDirectory(
+        val scanned = scanLocalDirectory(
             dir,
             context,
             cachedGamesByPath,
             shouldAbort,
             preferEnglishTitles
-        ).sortedBy { it.title.lowercase() }
+        ).distinctBy { libraryIdentity(it.path) }
+        return groupLocalDiscs(scanned).sortedBy { it.title.lowercase() }
     }
 
     fun scanDirectoryFromUri(uri: Uri, context: Context): List<GameItem> {
@@ -109,16 +123,19 @@ class GameRepository {
         }
         return runCatching {
             val docFile = DocumentFile.fromTreeUri(context, uri) ?: return@runCatching emptyList()
-            scanDocumentFile(
+            val locations = mutableMapOf<String, ScannedDocumentLocation>()
+            val scanned = scanDocumentFile(
                 docFile,
                 context,
                 cachedGamesByPath,
                 shouldAbort,
                 preferEnglishTitles = preferEnglishTitles,
                 depth = 0,
-                budget = DocumentScanBudget()
-            )
-                .sortedBy { it.title.lowercase() }
+                budget = DocumentScanBudget(),
+                directorySegments = emptyList(),
+                locations = locations
+            ).distinctBy { libraryIdentity(it.path) }
+            groupDocumentDiscs(scanned, locations, context).sortedBy { it.title.lowercase() }
         }.onFailure { error ->
             Log.w(TAG, "Unable to scan document tree: $uri", error)
         }.getOrDefault(emptyList())
@@ -254,7 +271,9 @@ class GameRepository {
         shouldAbort: () -> Boolean,
         preferEnglishTitles: Boolean = false,
         depth: Int,
-        budget: DocumentScanBudget
+        budget: DocumentScanBudget,
+        directorySegments: List<String>,
+        locations: MutableMap<String, ScannedDocumentLocation>
     ): List<GameItem> {
         if (depth > MAX_DOCUMENT_SCAN_DEPTH || !budget.tryEnterDirectory(docFile.uri.toString())) {
             return emptyList()
@@ -288,7 +307,9 @@ class GameRepository {
                                 shouldAbort,
                                 preferEnglishTitles,
                                 depth + 1,
-                                budget
+                                budget,
+                                directorySegments + name,
+                                locations
                             )
                         )
                     }
@@ -332,6 +353,11 @@ class GameRepository {
                     } else {
                         cleanTitle
                     }
+                    locations[uriPath] = ScannedDocumentLocation(
+                        document = file,
+                        parentIdentity = libraryIdentity(docFile.uri.toString()),
+                        segments = directorySegments + name
+                    )
                     items += GameItem(
                         title = title,
                         path = uriPath,
@@ -371,6 +397,89 @@ class GameRepository {
 
         return items
     }
+
+    private fun groupLocalDiscs(games: List<GameItem>): List<GameItem> {
+        val byIdentity = games.associateBy { libraryIdentity(it.path) }
+        val playlists = games.filter { it.fileName.endsWith(".m3u", ignoreCase = true) }
+            .mapNotNull { playlist ->
+                val file = File(playlist.path)
+                val text = readPlaylistFile(file) ?: return@mapNotNull null
+                val references = MultiDiscLibrary.parsePlaylist(text)
+                val members = references.map { reference ->
+                    // A local playlist may use ../ within the scanned library. Canonical
+                    // lookup below only accepts actual files found by this scan.
+                    if (!isRelativePlaylistReference(reference)) null else runCatching {
+                        val target = File(file.parentFile, reference.replace('\\', '/'))
+                        byIdentity[libraryIdentity(target.path)]?.path?.takeIf { target.canRead() }
+                    }.getOrNull()
+                }
+                if (members.any { it == null }) null else playlist.path to members.filterNotNull()
+            }.toMap()
+        val parents = games.associate { game ->
+            game.path to runCatching { File(game.path).canonicalFile.parentFile?.path }.getOrNull().orEmpty()
+        }
+        return MultiDiscLibrary.group(games, playlists, parents)
+    }
+
+    private fun groupDocumentDiscs(
+        games: List<GameItem>,
+        locations: Map<String, ScannedDocumentLocation>,
+        context: Context
+    ): List<GameItem> {
+        val bySegments = games.mapNotNull { game ->
+            locations[game.path]?.segments?.let { it to game.path }
+        }.groupBy({ it.first }, { it.second })
+        val playlists = games.filter { it.fileName.endsWith(".m3u", ignoreCase = true) }
+            .mapNotNull { playlist ->
+                val location = locations[playlist.path] ?: return@mapNotNull null
+                val text = readPlaylistDocument(location.document, context) ?: return@mapNotNull null
+                val members = MultiDiscLibrary.parsePlaylist(text).map { reference ->
+                    val segments = MultiDiscLibrary.resolveRelativeSegments(location.segments.dropLast(1), reference)
+                        ?: return@map null
+                    bySegments[segments]?.singleOrNull()?.takeIf { path ->
+                        locations[path]?.document?.canRead() == true
+                    }
+                }
+                if (members.any { it == null }) null else playlist.path to members.filterNotNull()
+            }.toMap()
+        return MultiDiscLibrary.group(
+            games, playlists, locations.mapValues { it.value.parentIdentity }
+        )
+    }
+
+    private fun isRelativePlaylistReference(reference: String): Boolean {
+        val normalized = reference.replace('\\', '/')
+        return normalized.isNotBlank() && !normalized.startsWith('/') &&
+            !Regex("^[A-Za-z][A-Za-z0-9+.-]*:").containsMatchIn(normalized)
+    }
+
+    private fun readPlaylistFile(file: File): String? = runCatching {
+        if (file.length() > MAX_CONTAINER_BYTES) return@runCatching null
+        file.inputStream().use { it.readPlaylistText() }
+    }.getOrNull()
+
+    private fun readPlaylistDocument(document: DocumentFile, context: Context): String? = runCatching {
+        if (document.length() > MAX_CONTAINER_BYTES) return@runCatching null
+        context.contentResolver.openInputStream(document.uri)?.use { it.readPlaylistText() }
+    }.getOrNull()
+
+    private fun InputStream.readPlaylistText(): String? {
+        val result = ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        while (true) {
+            val count = read(buffer)
+            if (count < 0) break
+            if (result.size().toLong() + count > MAX_CONTAINER_BYTES) return null
+            result.write(buffer, 0, count)
+        }
+        return result.toString(Charsets.UTF_8.name())
+    }
+
+    private data class ScannedDocumentLocation(
+        val document: DocumentFile,
+        val parentIdentity: String,
+        val segments: List<String>
+    )
 
     private fun findLocalCover(path: String, context: Context, serial: String?, title: String?): String? {
         val file = File(path)

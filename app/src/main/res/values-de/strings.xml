@@ -2163,4 +2163,9 @@
     <string name="settings_gyro_stick_right">Rechter Stick</string>
     <string name="settings_gyro_stick_left">Linker Stick</string>
     <string name="settings_light_gun_aim_touch">Touch / Maus</string>
+    <string name="library_choose_disc">Disc auswählen</string>
+    <string name="library_disc_number">Disc %1$d</string>
+    <string name="library_disc_count">%1$d Discs</string>
+    <string name="library_launch_disc">Starten</string>
+    <string name="library_disc_file">Disc-Image</string>
 </resources>

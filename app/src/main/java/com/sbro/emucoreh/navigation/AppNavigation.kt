@@ -55,6 +55,9 @@ import com.sbro.emucoreh.core.GameLaunchShortcut
 import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.StorageAccess
 import com.sbro.emucoreh.data.AppPreferences
+import com.sbro.emucoreh.data.GameItem
+import com.sbro.emucoreh.data.asGameItem
+import com.sbro.emucoreh.data.launchDiscs
 import com.sbro.emucoreh.data.SaveStateRepository
 import com.sbro.emucoreh.ui.catalog.CatalogSearchScreen
 import com.sbro.emucoreh.ui.achievements.AchievementsScreen
@@ -81,6 +84,7 @@ import com.sbro.emucoreh.ui.textures.TextureManagerScreen
 import com.sbro.emucoreh.ui.theme.ThemeManagerScreen
 import com.sbro.emucoreh.ui.common.EmuCoreHLoadingAnimation
 import com.sbro.emucoreh.ui.common.ProvideGamepadUiNavigation
+import com.sbro.emucoreh.ui.common.MultiDiscLaunchDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Alignment
@@ -94,6 +98,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 object HomeRoute
+
+private enum class LibraryDiscAction { START, LOAD_SAVE, MANAGE, SHORTCUT }
 
 @Serializable
 data class GameDetailRoute(val catalogGameId: Long)
@@ -374,6 +380,26 @@ fun AppNavigation(
         }
     }
 
+    var pendingDiscAction by remember { mutableStateOf<Pair<GameItem, LibraryDiscAction>?>(null) }
+    fun performDiscAction(game: GameItem, action: LibraryDiscAction) {
+        when (action) {
+            LibraryDiscAction.START -> navController.navigate(EmulationRoute(gamePath = game.path)) {
+                launchSingleTop = true
+            }
+            LibraryDiscAction.LOAD_SAVE -> navController.navigate(
+                SaveManagerRoute(gamePath = game.path, gameTitle = game.title, gameSerial = game.serial)
+            ) { launchSingleTop = true }
+            LibraryDiscAction.MANAGE -> navController.navigate(GameSettingsManagerRoute(gamePath = game.path)) {
+                launchSingleTop = true
+            }
+            LibraryDiscAction.SHORTCUT -> GameLaunchShortcut.requestPinnedShortcut(context, game)
+        }
+    }
+    fun requestDiscAction(game: GameItem, action: LibraryDiscAction) {
+        if (game.discs.size > 1) pendingDiscAction = game to action
+        else performDiscAction(game, action)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -452,38 +478,38 @@ fun AppNavigation(
                 ) { openDrawer ->
                     HomeScreen(
                         onGameClick = { game ->
-                            navController.navigate(EmulationRoute(gamePath = game.path)) {
-                                launchSingleTop = true
-                            }
+                            requestDiscAction(game, LibraryDiscAction.START)
                         },
                         onContinueGame = { game ->
-                            val saveSlot = saveStateRepository.findLatestSlot(game.path, game.serial)
-                            if (saveSlot == null) {
-                                Toast.makeText(context, continueUnavailableMessage, Toast.LENGTH_SHORT).show()
-                                return@HomeScreen
-                            }
-                            navController.navigate(EmulationRoute(gamePath = game.path, saveSlot = saveSlot)) {
-                                launchSingleTop = true
+                            scope.launch {
+                                val saved = withContext(Dispatchers.IO) {
+                                    val history = preferences.recentGames.first().map { it.path }
+                                    val candidates = (listOf(game.copy(discs = emptyList())) +
+                                        game.launchDiscs().map { it.asGameItem(game) }).distinctBy { it.path }
+                                    candidates.flatMap { candidate ->
+                                        saveStateRepository.listSlots(candidate.path, candidate.serial)
+                                            .filter { it.exists }
+                                            .map { slot -> Triple(candidate, slot.slot, slot.lastModified) }
+                                    }.sortedWith(compareByDescending<Triple<GameItem, Int, Long>> { it.third }
+                                        .thenBy { history.indexOf(it.first.path).let { index ->
+                                            if (index < 0) Int.MAX_VALUE else index
+                                        } }).firstOrNull()
+                                }
+                                if (saved == null) {
+                                    Toast.makeText(context, continueUnavailableMessage, Toast.LENGTH_SHORT).show()
+                                } else navController.navigate(
+                                    EmulationRoute(gamePath = saved.first.path, saveSlot = saved.second)
+                                ) { launchSingleTop = true }
                             }
                         },
                         onLoadSaveClick = { game ->
-                            navController.navigate(
-                                SaveManagerRoute(
-                                    gamePath = game.path,
-                                    gameTitle = game.title,
-                                    gameSerial = game.serial
-                                )
-                            ) {
-                                launchSingleTop = true
-                            }
+                            requestDiscAction(game, LibraryDiscAction.LOAD_SAVE)
                         },
                         onManageGameClick = { game ->
-                            navController.navigate(GameSettingsManagerRoute(gamePath = game.path)) {
-                                launchSingleTop = true
-                            }
+                            requestDiscAction(game, LibraryDiscAction.MANAGE)
                         },
                         onCreateShortcutClick = { game ->
-                            GameLaunchShortcut.requestPinnedShortcut(context, game)
+                            requestDiscAction(game, LibraryDiscAction.SHORTCUT)
                         },
                         onMenuClick = openDrawer,
                         onShelfModeChanged = { isShelfMode ->
@@ -1048,6 +1074,24 @@ fun AppNavigation(
                     onBackClick = { navController.popBackStack() }
                 )
             }
+        }
+
+        pendingDiscAction?.let { (group, action) ->
+            val confirmLabel = when (action) {
+                LibraryDiscAction.START -> stringResource(R.string.library_launch_disc)
+                LibraryDiscAction.LOAD_SAVE -> stringResource(R.string.home_game_menu_load_save)
+                LibraryDiscAction.MANAGE -> stringResource(R.string.home_game_menu_manager)
+                LibraryDiscAction.SHORTCUT -> stringResource(R.string.home_game_menu_shortcut)
+            }
+            MultiDiscLaunchDialog(
+                game = group,
+                onLaunch = { disc ->
+                    pendingDiscAction = null
+                    performDiscAction(disc.asGameItem(group), action)
+                },
+                onDismiss = { pendingDiscAction = null },
+                confirmLabel = confirmLabel
+            )
         }
 
         LaunchedEffect(navController, startupDestination, launchIntentVersion) {

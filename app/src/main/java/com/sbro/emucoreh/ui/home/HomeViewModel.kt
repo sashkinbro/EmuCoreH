@@ -24,6 +24,9 @@ import com.sbro.emucoreh.data.CoreMaintenanceRepository
 import com.sbro.emucoreh.data.CoreUpdateResetAction
 import com.sbro.emucoreh.data.CustomGameCoverRepository
 import com.sbro.emucoreh.data.GameItem
+import com.sbro.emucoreh.data.MultiDiscLibrary
+import com.sbro.emucoreh.data.flattenLibraryGroups
+import com.sbro.emucoreh.data.recentLibraryGroups
 import com.sbro.emucoreh.data.GameLibraryCacheRepository
 import com.sbro.emucoreh.data.GameLibraryCacheSnapshot
 import com.sbro.emucoreh.data.GameRepository
@@ -497,8 +500,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         return@withLock
                     }
                     val context = getApplication<Application>()
-                    val cachedByPath = cachedGames.associateBy { it.path }
-                    val scannedGames = paths.flatMap { path ->
+                    val cachedByPath = flattenLibraryGroups(cachedGames).associateBy { it.path }
+                    val scannedGames = MultiDiscLibrary.group(paths.flatMap { path ->
                         if (path.startsWith("content://")) {
                             repository.scanDirectoryFromUri(
                                 path.toUri(), context, cachedByPath,
@@ -512,7 +515,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                                 preferEnglishTitles = preferEnglishGameTitles
                             )
                         }
-                    }.distinctBy { GameRepository.libraryIdentity(it.path) }
+                    }.distinctBy { GameRepository.libraryIdentity(it.path) })
                         .sortedBy { it.title.lowercase() }
                     if (EmulatorBridge.isVmActive()) {
                         queueDeferredLibraryWork(
@@ -699,7 +702,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             query.isBlank() ||
                 normalizeSearchToken(game.title).contains(query) ||
                 normalizeSearchToken(game.fileName).contains(query) ||
-                normalizeSearchToken(game.serial).contains(query)
+                normalizeSearchToken(game.serial).contains(query) ||
+                game.discs.any { disc -> normalizeSearchToken(disc.fileName).contains(query) ||
+                    normalizeSearchToken(disc.serial).contains(query) }
             )
         }
         val sorted = when (state.sortOption) {
@@ -728,14 +733,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     .thenBy { normalizeSortToken(it.title) }
             )
         }
-        val gamesByPath = allGames.associateBy { it.path }
-        val recentGames = recentEntries.mapNotNull { entry ->
-            gamesByPath[entry.path]
-        }.filter { game ->
+        val recentGames = recentLibraryGroups(allGames, recentEntries.map { it.path }).filter { game ->
             query.isBlank() ||
                 normalizeSearchToken(game.title).contains(query) ||
                 normalizeSearchToken(game.fileName).contains(query) ||
-                normalizeSearchToken(game.serial).contains(query)
+                normalizeSearchToken(game.serial).contains(query) ||
+                game.discs.any { disc -> normalizeSearchToken(disc.fileName).contains(query) ||
+                    normalizeSearchToken(disc.serial).contains(query) }
         }.takeIf { state.showRecentGames }.orEmpty()
         _uiState.value = _uiState.value.copy(
             games = sorted,

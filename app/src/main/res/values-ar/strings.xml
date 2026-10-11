@@ -2169,4 +2169,9 @@
     <string name="settings_gyro_stick_right">العصا اليمنى</string>
     <string name="settings_gyro_stick_left">العصا اليسرى</string>
     <string name="settings_light_gun_aim_touch">اللمس / الفأرة</string>
+    <string name="library_choose_disc">اختر قرصًا</string>
+    <string name="library_disc_number">القرص %1$d</string>
+    <string name="library_disc_count">عدد الأقراص: %1$d</string>
+    <string name="library_launch_disc">تشغيل</string>
+    <string name="library_disc_file">صورة القرص</string>
 </resources>

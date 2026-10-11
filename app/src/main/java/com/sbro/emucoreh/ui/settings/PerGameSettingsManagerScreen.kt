@@ -90,6 +90,7 @@ import com.sbro.emucoreh.data.AppPreferences
 import com.sbro.emucoreh.data.DisplayCrop
 import com.sbro.emucoreh.data.GameLibraryCacheRepository
 import com.sbro.emucoreh.data.GameItem
+import com.sbro.emucoreh.data.flattenLibraryGroups
 import com.sbro.emucoreh.data.PerGameSettings
 import com.sbro.emucoreh.data.PerGameSettingsRepository
 import com.sbro.emucoreh.data.RetroArchShaderPreset
@@ -226,7 +227,11 @@ fun PerGameSettingsManagerScreen(
         libraryGames = withContext(Dispatchers.IO) {
             val readableRoots = rootPaths.filter { SetupValidator.hasCoreReadableGameFile(context, it) }
             readableRoots.takeIf { it.isNotEmpty() }
-                ?.let { libraryCacheRepository.loadSnapshot(GameLibraryCacheRepository.libraryKey(it), preferEnglishTitles).games }
+                ?.let {
+                    flattenLibraryGroups(
+                        libraryCacheRepository.loadSnapshot(GameLibraryCacheRepository.libraryKey(it), preferEnglishTitles).games
+                    )
+                }
                 .orEmpty()
         }
     }
