@@ -5461,15 +5461,14 @@ internal fun ChoiceSection(
                 )
             }
         }
-        Row(
+        LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .tvFocusGroup()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .tvFocusGroup(),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            options.forEach { (value, label) ->
+            items(options) { (value, label) ->
                 val optionInteractionSource = remember { MutableInteractionSource() }
                 FilterChip(
                     modifier = Modifier.tvGamepadFocusableCard(
@@ -5482,7 +5481,7 @@ internal fun ChoiceSection(
                     onClick = { onSelect(value) },
                     interactionSource = optionInteractionSource,
                     colors = premiumFilterChipColors(),
-                    label = { Text(text = label, maxLines = 1) }
+                    label = { Text(text = label) }
                 )
             }
         }
@@ -5581,15 +5580,14 @@ private fun CoreStringChoiceSection(
                 )
             }
         }
-        Row(
+        LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .tvFocusGroup()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .tvFocusGroup(),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            options.forEach { (value, label) ->
+            items(options) { (value, label) ->
                 val optionInteractionSource = remember { MutableInteractionSource() }
                 FilterChip(
                     modifier = Modifier.tvGamepadFocusableCard(
@@ -5602,7 +5600,7 @@ private fun CoreStringChoiceSection(
                     onClick = { onSelect(value) },
                     interactionSource = optionInteractionSource,
                     colors = premiumFilterChipColors(),
-                    label = { Text(text = label, maxLines = 1) }
+                    label = { Text(text = label) }
                 )
             }
         }
@@ -5666,15 +5664,14 @@ private fun BitmaskChoiceSection(
                 )
             }
         }
-        Row(
+        LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .tvFocusGroup()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .tvFocusGroup(),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            options.forEach { (metric, label) ->
+            items(options) { (metric, label) ->
                 val optionInteractionSource = remember { MutableInteractionSource() }
                 FilterChip(
                     modifier = Modifier.tvGamepadFocusableCard(
@@ -5687,7 +5684,7 @@ private fun BitmaskChoiceSection(
                     onClick = { onToggle(metric) },
                     interactionSource = optionInteractionSource,
                     colors = premiumFilterChipColors(),
-                    label = { Text(text = label, maxLines = 1) }
+                    label = { Text(text = label) }
                 )
             }
         }

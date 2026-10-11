@@ -109,6 +109,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -203,6 +204,7 @@ import com.sbro.emucoreh.ui.common.VectorDpadCluster
 import com.sbro.emucoreh.ui.common.VectorOverlayButton
 import com.sbro.emucoreh.ui.common.buildOverlayCanvasLayout
 import com.sbro.emucoreh.ui.common.gamepadFocusableCard
+import com.sbro.emucoreh.ui.common.fullBleedScrollViewport
 import com.sbro.emucoreh.ui.common.rememberDebouncedClick
 import com.sbro.emucoreh.ui.common.tvFocusGroup
 import com.sbro.emucoreh.ui.settings.arcadeDeviceOptions
@@ -310,6 +312,8 @@ private data class LiveSelectionOption(
     val icon: ImageVector? = null,
     val contentDescription: String = label.orEmpty()
 )
+
+private val LocalGameMenuContentInset = staticCompositionLocalOf { 0.dp }
 
 @Composable
 private fun fpsOverlayCornerLiveOptions(): List<LiveSelectionOption> = listOf(
@@ -1868,8 +1872,10 @@ fun EmulationScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Row(
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fullBleedScrollViewport(18.dp)
+                                .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 18.dp)
                                 .tvFocusGroup(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -4360,8 +4366,11 @@ private fun GameMenuContentColumn(
             .padding(horizontal = horizontalPadding, vertical = verticalPadding)
             .padding(bottom = bottomPadding),
         verticalArrangement = Arrangement.spacedBy(sectionSpacing),
-        content = content
-    )
+    ) {
+        CompositionLocalProvider(LocalGameMenuContentInset provides horizontalPadding) {
+            content()
+        }
+    }
 }
 
 @Composable
@@ -4886,6 +4895,7 @@ private fun LiveSelectionRow(
     helpText: String? = null,
     onResetToDefault: (() -> Unit)? = null
 ) {
+    val contentInset = LocalGameMenuContentInset.current
     val interactionSource = remember { MutableInteractionSource() }
     val context = LocalContext.current
     val resetToast = stringResource(R.string.settings_reset_to_default_toast)
@@ -4917,15 +4927,14 @@ private fun LiveSelectionRow(
                 SettingHelpButton(title = title, description = it)
             }
         }
-        Row(
+        LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .tvFocusGroup(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fullBleedScrollViewport(contentInset),
+            contentPadding = PaddingValues(horizontal = contentInset),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            options.forEach { option ->
+            items(options, key = { it.value }) { option ->
                 LiveSelectionChip(
                     option = option,
                     selected = option.value == currentValue,
@@ -5288,12 +5297,13 @@ private fun LiveSelectionChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val iconOnly = option.icon != null && option.label.isNullOrBlank()
     FilterChip(
         shape = neonChipShape(),
         modifier = modifier,
         selected = selected,
         onClick = onClick,
-        leadingIcon = option.icon?.let { icon ->
+        leadingIcon = option.icon?.takeUnless { iconOnly }?.let { icon ->
             {
                 Icon(
                     imageVector = icon,
@@ -5303,13 +5313,23 @@ private fun LiveSelectionChip(
             }
         },
         label = {
-            Text(
-                text = option.label.orEmpty(),
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Clip
-            )
+            if (option.label.isNullOrBlank() && option.icon != null) {
+                Icon(
+                    imageVector = option.icon,
+                    contentDescription = option.contentDescription,
+                    tint = if (selected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(18.dp)
+                )
+            } else {
+                Text(
+                    text = option.label.orEmpty(),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Clip
+                )
+            }
         }
     )
 }
@@ -5549,6 +5569,7 @@ private fun LiveBitmaskChoiceRow(
     helpText: String? = null,
     onResetToDefault: (() -> Unit)? = null
 ) {
+    val contentInset = LocalGameMenuContentInset.current
     val interactionSource = remember { MutableInteractionSource() }
     val context = LocalContext.current
     val resetToast = stringResource(R.string.settings_reset_to_default_toast)
@@ -5580,18 +5601,19 @@ private fun LiveBitmaskChoiceRow(
                 SettingHelpButton(title = title, description = it)
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .tvFocusGroup(),
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fullBleedScrollViewport(contentInset),
+            contentPadding = PaddingValues(horizontal = contentInset),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            options.forEach { (metric, label) ->
+            items(options) { (metric, label) ->
                 FilterChip(
                     shape = neonChipShape(),
                     selected = PerformanceOverlayMetrics.isEnabled(selectedMask, metric),
                     onClick = { onToggle(metric) },
-                    label = { Text(text = label, maxLines = 1, softWrap = false) }
+                    label = { Text(text = label) }
                 )
             }
         }

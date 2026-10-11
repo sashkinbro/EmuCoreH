@@ -1404,16 +1404,15 @@ private fun SelectionRow(
                 SettingHelpButton(title = title, description = it)
             }
         }
-        Row(
+        LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .sectionContentFullBleed(GameSettingsSectionContentPadding)
-                .tvFocusGroup()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = GameSettingsSectionContentPadding),
+                .tvFocusGroup(),
+            contentPadding = PaddingValues(horizontal = GameSettingsSectionContentPadding),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            options.forEach { (value, label) ->
+            items(options, key = { it.first }) { (value, label) ->
                 val optionInteractionSource = remember { MutableInteractionSource() }
                 FilterChip(
                     modifier = Modifier.tvGamepadFocusableCard(
@@ -1424,7 +1423,7 @@ private fun SelectionRow(
                     selected = selectedValue == value,
                     onClick = { onSelected(value) },
                     interactionSource = optionInteractionSource,
-                    label = { Text(label, maxLines = 1) }
+                    label = { Text(label) }
                 )
             }
         }

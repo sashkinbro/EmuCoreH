@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.data.CustomTouchControl
 import com.sbro.emucoreh.data.CustomTouchControlContent
@@ -151,11 +153,14 @@ fun ActionSelector(
     excludedActionId: String? = null,
     allowNone: Boolean = false,
     testTagPrefix: String? = null,
+    horizontalContentPadding: Dp = 0.dp,
     onSelect: (String?) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth()
+            .fullBleedScrollViewport(horizontalContentPadding)
             .horizontalScroll(rememberScrollState())
+            .padding(horizontal = horizontalContentPadding)
             .tvFocusGroup(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {

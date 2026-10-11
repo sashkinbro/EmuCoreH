@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -52,6 +53,9 @@ import androidx.compose.ui.window.DialogProperties
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
 import com.sbro.emucoreh.ui.theme.neon.neonShape
+
+/** The actual responsive card inset, for rows whose viewport reaches the dialog edge. */
+internal val LocalDialogContentHorizontalPadding = staticCompositionLocalOf { 0.dp }
 
 @Composable
 fun SettingHelpButton(
@@ -432,7 +436,9 @@ private fun StyledDialogScaffold(
                     }
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f))
-                    content()
+                    CompositionLocalProvider(LocalDialogContentHorizontalPadding provides contentHorizontalPadding) {
+                        content()
+                    }
                 }
             }
         }

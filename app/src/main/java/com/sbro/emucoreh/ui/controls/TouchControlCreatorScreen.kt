@@ -70,6 +70,7 @@ import com.sbro.emucoreh.data.CustomTouchControlLibrary
 import com.sbro.emucoreh.data.CustomTouchControlPressMode
 import com.sbro.emucoreh.data.CustomTouchControlShape
 import com.sbro.emucoreh.ui.common.ActionSelector
+import com.sbro.emucoreh.ui.common.fullBleedScrollViewport
 import com.sbro.emucoreh.ui.common.tvFocusGroup
 import com.sbro.emucoreh.ui.common.CustomControlVisual
 import com.sbro.emucoreh.ui.common.ScreenTopBar
@@ -523,6 +524,7 @@ fun TouchControlCreatorScreen(
                 )
                 ActionSelector(
                     selectedActionId = draft.actionId,
+                    horizontalContentPadding = 18.dp,
                     onSelect = { action ->
                         action?.let { selectedAction ->
                             updateDraft {
@@ -547,7 +549,9 @@ fun TouchControlCreatorScreen(
             CreatorSection(title = stringResource(R.string.touch_control_creator_content)) {
                 Row(
                     modifier = Modifier.fillMaxWidth()
+                        .fullBleedScrollViewport(18.dp)
                         .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 18.dp)
                         .tvFocusGroup(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -604,7 +608,9 @@ fun TouchControlCreatorScreen(
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth()
+                        .fullBleedScrollViewport(18.dp)
                         .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 18.dp)
                         .tvFocusGroup(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -1119,7 +1125,9 @@ private fun CreatorColorEditor(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth()
+                            .fullBleedScrollViewport(14.dp)
                             .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 14.dp)
                             .tvFocusGroup(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {

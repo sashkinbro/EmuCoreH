@@ -1483,6 +1483,7 @@ private fun ComboActionDialog(
                     if (primaryEditable) {
                         ActionSelector(
                             selectedActionId = actionId,
+                        horizontalContentPadding = 20.dp,
                             testTagPrefix = "controls_editor_combo_primary",
                             onSelect = { selected ->
                                 selected?.let { action ->
@@ -1505,6 +1506,7 @@ private fun ComboActionDialog(
                 ) {
                     ActionSelector(
                         selectedActionId = secondaryActionId,
+                        horizontalContentPadding = 20.dp,
                         excludedActionId = actionId,
                         allowNone = true,
                         testTagPrefix = "controls_editor_combo_secondary",
