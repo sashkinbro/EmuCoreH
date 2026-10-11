@@ -6,8 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -70,6 +70,7 @@ import com.sbro.emucoreh.data.CustomTouchControlLibrary
 import com.sbro.emucoreh.data.CustomTouchControlPressMode
 import com.sbro.emucoreh.data.CustomTouchControlShape
 import com.sbro.emucoreh.ui.common.ActionSelector
+import com.sbro.emucoreh.ui.common.tvFocusGroup
 import com.sbro.emucoreh.ui.common.CustomControlVisual
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.actionLabel
@@ -163,7 +164,6 @@ private enum class ControlStylePreset(val titleRes: Int) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TouchControlCreatorScreen(
     initialLibrary: CustomTouchControlLibrary,
@@ -481,7 +481,7 @@ fun TouchControlCreatorScreen(
                         FilterChip(
                             selected = selectedEditorCategory == category,
                             onClick = { selectedEditorCategory = category },
-                            label = { Text(stringResource(category.titleRes)) },
+                            label = { Text(stringResource(category.titleRes), maxLines = 1, softWrap = false) },
                             leadingIcon = if (selectedEditorCategory == category) {
                                 { Icon(Icons.Rounded.Check, contentDescription = null) }
                             } else {
@@ -545,17 +545,18 @@ fun TouchControlCreatorScreen(
         if (selectedEditorCategory == ControlEditorCategory.CONTENT) {
             item {
             CreatorSection(title = stringResource(R.string.touch_control_creator_content)) {
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .tvFocusGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(
                         selected = draft.content == CustomTouchControlContent.SYMBOL,
                         onClick = {
                             updateDraft { it.copy(content = CustomTouchControlContent.SYMBOL) }
                         },
-                        label = { Text(stringResource(R.string.touch_control_creator_content_symbol)) },
+                        label = { Text(stringResource(R.string.touch_control_creator_content_symbol), maxLines = 1, softWrap = false) },
                         shape = creatorControlShape()
                     )
                     FilterChip(
@@ -563,7 +564,7 @@ fun TouchControlCreatorScreen(
                         onClick = {
                             updateDraft { it.copy(content = CustomTouchControlContent.TEXT) }
                         },
-                        label = { Text(stringResource(R.string.touch_control_creator_content_text)) },
+                        label = { Text(stringResource(R.string.touch_control_creator_content_text), maxLines = 1, softWrap = false) },
                         shape = creatorControlShape()
                     )
                     FilterChip(
@@ -571,7 +572,7 @@ fun TouchControlCreatorScreen(
                         onClick = {
                             updateDraft { it.copy(content = CustomTouchControlContent.NONE) }
                         },
-                        label = { Text(stringResource(R.string.touch_control_creator_content_none)) },
+                        label = { Text(stringResource(R.string.touch_control_creator_content_none), maxLines = 1, softWrap = false) },
                         shape = creatorControlShape()
                     )
                 }
@@ -601,15 +602,17 @@ fun TouchControlCreatorScreen(
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold
                 )
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .tvFocusGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     CustomTouchControlShape.entries.forEach { shape ->
                         FilterChip(
                             selected = draft.shape == shape,
                             onClick = { updateDraft { it.copy(shape = shape) } },
-                            label = { Text(stringResource(shape.titleRes())) },
+                            label = { Text(stringResource(shape.titleRes()), maxLines = 1, softWrap = false) },
                             shape = neonShape(14.dp)
                         )
                     }
@@ -736,7 +739,7 @@ fun TouchControlCreatorScreen(
                         onClick = {
                             updateDraft { it.copy(pressMode = CustomTouchControlPressMode.HOLD) }
                         },
-                        label = { Text(stringResource(R.string.touch_control_creator_press_hold)) },
+                        label = { Text(stringResource(R.string.touch_control_creator_press_hold), maxLines = 1, softWrap = false) },
                         shape = creatorControlShape(),
                         modifier = Modifier.weight(1f)
                     )
@@ -745,7 +748,7 @@ fun TouchControlCreatorScreen(
                         onClick = {
                             updateDraft { it.copy(pressMode = CustomTouchControlPressMode.TOGGLE) }
                         },
-                        label = { Text(stringResource(R.string.touch_control_creator_press_toggle)) },
+                        label = { Text(stringResource(R.string.touch_control_creator_press_toggle), maxLines = 1, softWrap = false) },
                         shape = creatorControlShape(),
                         modifier = Modifier.weight(1f)
                     )
@@ -1114,9 +1117,11 @@ private fun CreatorColorEditor(
                     modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .tvFocusGroup(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         listOf(
                             0xFF0D1117.toInt(),

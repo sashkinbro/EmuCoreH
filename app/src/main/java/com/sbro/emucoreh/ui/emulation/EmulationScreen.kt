@@ -26,6 +26,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,7 +37,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -109,6 +109,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -126,7 +127,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -160,6 +162,8 @@ import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.AudioDefaults
 import com.sbro.emucoreh.core.AndroidTouchHaptics
 import com.sbro.emucoreh.core.AndroidGyroscopeInput
+import com.sbro.emucoreh.core.ArcadeInputPolicy
+import com.sbro.emucoreh.core.LightGunAimGeometry
 import com.sbro.emucoreh.core.AndroidTouchHaptics.ButtonPhase
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.NativeApp
@@ -201,6 +205,9 @@ import com.sbro.emucoreh.ui.common.buildOverlayCanvasLayout
 import com.sbro.emucoreh.ui.common.gamepadFocusableCard
 import com.sbro.emucoreh.ui.common.rememberDebouncedClick
 import com.sbro.emucoreh.ui.common.tvFocusGroup
+import com.sbro.emucoreh.ui.settings.arcadeDeviceOptions
+import com.sbro.emucoreh.ui.settings.gyroStickTargetOptions
+import com.sbro.emucoreh.ui.settings.lightGunAimSourceOptions
 import com.sbro.emucoreh.ui.settings.ControlsEditorScreen
 import com.sbro.emucoreh.ui.settings.toControlsEditorState
 import com.sbro.emucoreh.core.FlycastCoreOptions
@@ -230,7 +237,9 @@ private val DISC_SWAP_MIME_TYPES = arrayOf(
     "application/x-iso9660-image",
     "application/x-cd-image",
     "application/x-chd",
-    "application/gzip"
+    "application/x-cdi",
+    "application/x-gdi",
+    "application/x-cue"
 )
 
 private object PadKey {
@@ -477,52 +486,192 @@ fun EmulationScreen(
     val overlayPadIndex = touchPadIndex ?: 0
     val currentOverlayPadIndex by rememberUpdatedState(overlayPadIndex)
     val currentActivePlayTimeMs by rememberUpdatedState(uiState.activePlayTimeMs)
-    val gyroController = remember(context) {
-        AndroidGyroscopeInput(context) { emittedMode, x, y ->
-            val targetRightStick = emittedMode == AppPreferences.GYRO_MODE_AIM
-            updateAnalogStick(
-                x = x,
-                y = y,
-                upKey = if (targetRightStick) PadKey.RIGHT_STICK_UP else PadKey.LEFT_STICK_UP,
-                rightKey = if (targetRightStick) PadKey.RIGHT_STICK_RIGHT else PadKey.LEFT_STICK_RIGHT,
-                downKey = if (targetRightStick) PadKey.RIGHT_STICK_DOWN else PadKey.LEFT_STICK_DOWN,
-                leftKey = if (targetRightStick) PadKey.RIGHT_STICK_LEFT else PadKey.LEFT_STICK_LEFT,
-                onPadInput = { key, range, pressed -> viewModel.onPadInput(currentOverlayPadIndex, key, range, pressed) }
+    var hostResumed by remember(lifecycleOwner) {
+        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+    }
+    val arcadeInputMode by produceState(initialValue = -1, key1 = uiState.isRunning) {
+        value = -1
+        if (uiState.isRunning) {
+            while (isActive) {
+                value = withContext(Dispatchers.Default) { NativeApp.getArcadeInputMode() }
+                delay(250L)
+            }
+        }
+    }
+    val gunPorts = remember(arcadeInputMode, uiState.arcadeDevice1, uiState.arcadeDevice2) {
+        (0..1).filterTo(mutableSetOf()) { port ->
+            ArcadeInputPolicy.isLightGun(
+                if (port == 0) uiState.arcadeDevice1 else uiState.arcadeDevice2,
+                arcadeInputMode
             )
         }
     }
-    DisposableEffect(
-        lifecycleOwner,
-        uiState.isRunning,
-        uiState.gyroMode,
-        uiState.gyroSensitivity,
-        uiState.gyroSmoothing,
-        uiState.gyroInvertX,
-        uiState.gyroInvertY
-    ) {
-        fun startGyro() {
-            if (uiState.isRunning && uiState.gyroMode != AppPreferences.GYRO_MODE_OFF) {
-                gyroController.start(
-                    mode = uiState.gyroMode,
-                    sensitivityPercent = uiState.gyroSensitivity,
-                    smoothingPercent = uiState.gyroSmoothing,
-                    invertX = uiState.gyroInvertX,
-                    invertY = uiState.gyroInvertY
-                )
-            }
+    val arcadeInputActive = uiState.isRunning && hostResumed && !uiState.isPaused &&
+        !uiState.showMenu && !showControlsEditor && !showExitDialog && !exitDispatched &&
+        !showGamepadMappingDialog && !showQuickSaveDialog && !showQuickLoadDialog &&
+        !showAutoSaveLoadDialog
+    val currentGunPorts by rememberUpdatedState(gunPorts)
+    val currentArcadeInputActive by rememberUpdatedState(arcadeInputActive)
+    val currentGyroStickTarget by rememberUpdatedState(uiState.gyroStickTarget)
+    val currentLightGunAimSource by rememberUpdatedState(uiState.lightGunAimSource)
+    val physicalGunSticks by GamepadManager.lightGunStickByPad.collectAsState()
+    val currentPhysicalGunSticks by rememberUpdatedState(physicalGunSticks)
+    val touchGunSticks = remember { mutableStateMapOf<Int, Offset>() }
+    // Each port keeps its own absolute aim; a P1 input never supplies a P2 fallback.
+    val gunAim = remember { mutableMapOf<Int, Offset>() }
+    fun publishGunAim(port: Int, x: Float, y: Float, offscreen: Boolean = false) {
+        if (port !in currentGunPorts) return
+        val aim = Offset(x.coerceIn(0f, 1f), y.coerceIn(0f, 1f))
+        gunAim[port] = aim
+        NativeApp.setLightGunAim(port, aim.x, aim.y, offscreen)
+    }
+    fun releaseGunInputs(ports: Set<Int>) {
+        ports.forEach { port ->
+            NativeApp.resetLightGunInput(port)
         }
+        touchGunSticks.clear()
+    }
+    fun dispatchScreenPadInput(port: Int, key: Int, range: Int, pressed: Boolean) {
+        if (key in NativeApp.PAD_GUN_TRIGGER..NativeApp.PAD_GUN_RECALIBRATE &&
+            pressed && (!currentArcadeInputActive || port !in currentGunPorts)) return
+        viewModel.onPadInput(port, key, range, pressed)
+    }
+    val gyroController = remember(context) {
+        AndroidGyroscopeInput(
+            context,
+            onAnalog = { emittedMode, x, y ->
+                if (currentArcadeInputActive && currentOverlayPadIndex !in currentGunPorts) {
+                    val targetRightStick = emittedMode == AppPreferences.GYRO_MODE_AIM &&
+                        currentGyroStickTarget == 0
+                    updateAnalogStick(
+                        x = x, y = y,
+                        upKey = if (targetRightStick) PadKey.RIGHT_STICK_UP else PadKey.LEFT_STICK_UP,
+                        rightKey = if (targetRightStick) PadKey.RIGHT_STICK_RIGHT else PadKey.LEFT_STICK_RIGHT,
+                        downKey = if (targetRightStick) PadKey.RIGHT_STICK_DOWN else PadKey.LEFT_STICK_DOWN,
+                        leftKey = if (targetRightStick) PadKey.RIGHT_STICK_LEFT else PadKey.LEFT_STICK_LEFT,
+                        onPadInput = { key, range, pressed ->
+                            viewModel.onPadInput(currentOverlayPadIndex, key, range, pressed)
+                        }
+                    )
+                }
+            },
+            onLightGunAim = { x, y ->
+                if (currentArcadeInputActive && currentLightGunAimSource == 0) {
+                    publishGunAim(currentOverlayPadIndex, x, y)
+                }
+            }
+        )
+    }
+    DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> startGyro()
-                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> gyroController.stop()
+                Lifecycle.Event.ON_RESUME -> hostResumed = true
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> {
+                    hostResumed = false
+                    gyroController.stop()
+                    releaseGunInputs(currentGunPorts)
+                }
                 else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) startGyro()
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    DisposableEffect(
+        arcadeInputActive, gunPorts, overlayPadIndex, uiState.gyroMode,
+        uiState.gyroStickTarget, uiState.gyroSensitivity, uiState.gyroSmoothing,
+        uiState.gyroInvertX, uiState.gyroInvertY, uiState.lightGunAimSource
+    ) {
+        val port = overlayPadIndex
+        val targetGun = port in gunPorts
+        val sensorMode = if (targetGun && uiState.lightGunAimSource == 0) {
+            AppPreferences.GYRO_MODE_LIGHT_GUN
+        } else if (targetGun || uiState.gyroMode == AppPreferences.GYRO_MODE_LIGHT_GUN) {
+            AppPreferences.GYRO_MODE_OFF
+        } else uiState.gyroMode
+        if (arcadeInputActive && sensorMode != AppPreferences.GYRO_MODE_OFF) {
+            gyroController.start(
+                mode = sensorMode,
+                sensitivityPercent = uiState.gyroSensitivity,
+                smoothingPercent = uiState.gyroSmoothing,
+                invertX = uiState.gyroInvertX,
+                invertY = uiState.gyroInvertY
+            )
+        }
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
             gyroController.stop()
+            releaseGunInputs(gunPorts)
+            // Sensor ownership can change from either stick to a gun while held.
+            listOf(PadKey.LEFT_STICK_UP, PadKey.LEFT_STICK_RIGHT, PadKey.LEFT_STICK_DOWN,
+                PadKey.LEFT_STICK_LEFT, PadKey.RIGHT_STICK_UP, PadKey.RIGHT_STICK_RIGHT,
+                PadKey.RIGHT_STICK_DOWN, PadKey.RIGHT_STICK_LEFT).forEach { key ->
+                viewModel.onPadInput(port, key, 0, false)
+            }
+        }
+    }
+    LaunchedEffect(uiState.arcadeDevice1, uiState.arcadeDevice2, uiState.isRunning) {
+        NativeApp.setArcadeControllerDevice(0, uiState.arcadeDevice1)
+        NativeApp.setArcadeControllerDevice(1, uiState.arcadeDevice2)
+    }
+    LaunchedEffect(gunPorts, arcadeInputActive, arcadeInputMode, uiState.lightGunAimSource) {
+        GamepadManager.setLightGunPorts(if (arcadeInputActive) gunPorts else emptySet(), uiState.lightGunAimSource)
+        GamepadManager.setArcadeModeActive(arcadeInputActive && arcadeInputMode > 0)
+    }
+    LaunchedEffect(uiState.isRunning, uiState.lightGunCursorEnabled) {
+        NativeApp.setLightGunCursorEnabled(uiState.isRunning && uiState.lightGunCursorEnabled)
+    }
+    LaunchedEffect(gunPorts, overlayPadIndex, uiState.lightGunAimSource, uiState.isRunning) {
+        touchGunSticks.clear()
+        gunAim.clear()
+        if (uiState.isRunning) {
+            gunPorts.forEach { port -> publishGunAim(port, 0.5f, 0.5f) }
+            gyroController.recalibrate()
+        }
+    }
+    LaunchedEffect(Unit) {
+        var previous = NativeApp.lightGunRecenterRequests.value
+        NativeApp.lightGunRecenterRequests.collect { requests ->
+            requests.forEachIndexed { port, count ->
+                if (count != previous.getOrNull(port) && port in currentGunPorts) {
+                    publishGunAim(port, 0.5f, 0.5f)
+                    touchGunSticks.remove(port)
+                    if (port == currentOverlayPadIndex) gyroController.recalibrate()
+                }
+            }
+            previous = requests
+        }
+    }
+    LaunchedEffect(gunPorts, arcadeInputActive, uiState.lightGunAimSource) {
+        if (!arcadeInputActive || uiState.lightGunAimSource !in 1..2 || gunPorts.isEmpty()) {
+            return@LaunchedEffect
+        }
+        var lastFrame = 0L
+        while (isActive) {
+            withFrameNanos { now ->
+                val dt = if (lastFrame == 0L) 0f else
+                    ((now - lastFrame) / 1_000_000_000f).coerceIn(0f, 0.05f)
+                lastFrame = now
+                gunPorts.forEach { port ->
+                    val physical = currentPhysicalGunSticks[port]
+                    val vector = if (physical != null && (physical.first != 0f || physical.second != 0f)) {
+                        Offset(physical.first, physical.second)
+                    } else touchGunSticks[port] ?: Offset.Zero
+                    if (vector != Offset.Zero) {
+                        val aim = gunAim[port] ?: Offset(0.5f, 0.5f)
+                        publishGunAim(port, aim.x + vector.x * dt * 0.65f,
+                            aim.y + vector.y * dt * 0.65f)
+                    }
+                }
+            }
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            gyroController.stop()
+            releaseGunInputs(currentGunPorts)
+            GamepadManager.setLightGunPorts(emptySet())
+            GamepadManager.setArcadeModeActive(false)
+            NativeApp.setLightGunCursorEnabled(false)
         }
     }
     var showGamepadIndicator by remember { mutableStateOf(gamepadConnected) }
@@ -794,8 +943,9 @@ fun EmulationScreen(
         }
     }
 
-    LaunchedEffect(gamepadUiActive) {
-        GamepadManager.setEmulationInputEnabled(!gamepadUiActive)
+    LaunchedEffect(gamepadUiActive, uiState.isRunning, uiState.isPaused, hostResumed) {
+        GamepadManager.setEmulationInputEnabled(!gamepadUiActive && uiState.isRunning &&
+            !uiState.isPaused && hostResumed)
     }
 
     // The core latches pad rumble every frame; forward it to the
@@ -867,7 +1017,31 @@ fun EmulationScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    var rootWindowOrigin by remember { mutableStateOf(Offset.Zero) }
+    var surfaceWindowOrigin by remember { mutableStateOf(Offset.Zero) }
+    val currentNativeDrawRect by rememberUpdatedState(nativeDisplayDrawRect)
+    val currentRootWindowOrigin by rememberUpdatedState(rootWindowOrigin)
+    val currentSurfaceWindowOrigin by rememberUpdatedState(surfaceWindowOrigin)
+    val currentPublishPointerAim by rememberUpdatedState<(Offset) -> Boolean>({ position ->
+        val rect = currentNativeDrawRect
+        if (rect == null || !currentArcadeInputActive || currentOverlayPadIndex !in currentGunPorts) {
+            false
+        } else {
+            val surfacePosition = position + currentRootWindowOrigin - currentSurfaceWindowOrigin
+            val aim = LightGunAimGeometry.fromWindow(surfacePosition.x, surfacePosition.y, rect)
+            publishGunAim(currentOverlayPadIndex, aim.x, aim.y, aim.offscreen)
+            true
+        }
+    })
+    Box(modifier = Modifier.fillMaxSize()
+        .onGloballyPositioned { rootWindowOrigin = it.positionInWindow() }
+        .lightGunPointerInput(
+            enabled = arcadeInputActive && overlayPadIndex in gunPorts && uiState.lightGunAimSource == 3,
+            port = overlayPadIndex,
+            onAim = { currentPublishPointerAim(it) },
+            onButton = { port, key, pressed -> NativeApp.setPadButton(port, key, 0, pressed) }
+        )
+    ) {
         // Game surface
         val surfaceGeneration = presentationSurfaceGeneration
         key(surfaceGeneration) {
@@ -910,6 +1084,7 @@ fun EmulationScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(gameCutoutPadding)
+                    .onGloballyPositioned { surfaceWindowOrigin = it.positionInWindow() }
             )
         }
 
@@ -1300,7 +1475,7 @@ fun EmulationScreen(
                     invertRightStickHorizontal = uiState.invertRightStickHorizontal,
                     rightStickUpToR2 = uiState.gamepadRightStickUpToR2,
                     rightStickDownToL2 = uiState.gamepadRightStickDownToL2,
-                    touchscreenRightStick = uiState.touchscreenRightStick,
+                    touchscreenRightStick = uiState.touchscreenRightStick && overlayPadIndex !in gunPorts,
                     touchscreenRightStickSensitivity = uiState.touchscreenRightStickSensitivity / 100f,
                     touchHaptics = uiState.touchHaptics,
                     touchHapticsPreset = uiState.touchHapticsPreset,
@@ -1308,6 +1483,10 @@ fun EmulationScreen(
                     visualStyle = uiState.touchControlVisualStyle,
                     pressEffect = uiState.touchControlPressEffect,
                     customControls = uiState.customTouchControls.controls,
+                    lightGunAimSource = if (overlayPadIndex in gunPorts) uiState.lightGunAimSource else -1,
+                    onLightGunStickAim = { x, y ->
+                        if (currentArcadeInputActive) touchGunSticks[overlayPadIndex] = Offset(x, y)
+                    },
                     dpadOffset = uiState.dpadOffset,
                     lstickOffset = uiState.lstickOffset,
                     rstickOffset = uiState.rstickOffset,
@@ -1320,7 +1499,7 @@ fun EmulationScreen(
                     stickyButtons = uiState.stickyButtons,
                     onToggleLeftInputMode = viewModel::toggleLeftInputMode,
                     onPadInput = { keyCode, range, pressed ->
-                        viewModel.onPadInput(overlayPadIndex, keyCode, range, pressed)
+                        dispatchScreenPadInput(overlayPadIndex, keyCode, range, pressed)
                     },
                     // Controls always avoid the camera cutout and system bars,
                     // independently of the game image cutout option.
@@ -1341,7 +1520,11 @@ fun EmulationScreen(
                         scaleFactor = scaleFactor,
                         alpha = alpha,
                         onToggleLeftInputMode = viewModel::toggleLeftInputMode,
-                        onPadInput = viewModel::onPadInput
+                        onPadInput = ::dispatchScreenPadInput,
+                        gunPorts = gunPorts,
+                        onLightGunStickAim = { port, x, y ->
+                            if (currentArcadeInputActive) touchGunSticks[port] = Offset(x, y)
+                        }
                     )
                 }
             }
@@ -1442,6 +1625,8 @@ fun EmulationScreen(
                 EmulationSidebarMenu(
                     uiState = uiState,
                     gamepadConnected = gamepadConnected,
+                    lightGunActive = overlayPadIndex in gunPorts,
+                    arcadeInputMode = arcadeInputMode,
                     currentGamePath = gamePath,
                     globalDefaults = globalDefaults,
                     overlayDefaults = overlayDefaults,
@@ -1473,6 +1658,16 @@ fun EmulationScreen(
                     onSetOverlayOpacity = { viewModel.setOverlayOpacity(it) },
                     onSetHideOverlayOnGamepad = { viewModel.setHideOverlayOnGamepad(it) },
                     onSetKeepScreenOn = { viewModel.setKeepScreenOn(it) },
+                    onSetGyroMode = viewModel::setGyroMode,
+                    onSetGyroSensitivity = viewModel::setGyroSensitivity,
+                    onSetGyroSmoothing = viewModel::setGyroSmoothing,
+                    onSetGyroInvertX = viewModel::setGyroInvertX,
+                    onSetGyroInvertY = viewModel::setGyroInvertY,
+                    onSetGyroStickTarget = viewModel::setGyroStickTarget,
+                    onSetLightGunAimSource = viewModel::setLightGunAimSource,
+                    onSetLightGunCursorEnabled = viewModel::setLightGunCursorEnabled,
+                    onSetArcadeDevice1 = viewModel::setArcadeDevice1,
+                    onSetArcadeDevice2 = viewModel::setArcadeDevice2,
                     onSetStickScale = { viewModel.setStickScale(it) },
                     onSetLeftStickSensitivity = { viewModel.setLeftStickSensitivity(it) },
                     onSetRightStickSensitivity = { viewModel.setRightStickSensitivity(it) },
@@ -1672,13 +1867,18 @@ fun EmulationScreen(
                             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .tvFocusGroup(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             listOf(0, 1).forEach { padIndex ->
                                 FilterChip(
                                     shape = neonChipShape(),
                                     selected = selectedGamepadPadIndex == padIndex,
                                     onClick = { selectedGamepadPadIndex = padIndex },
-                                    label = { Text(gamepadPlayerLabel(padIndex)) }
+                                    label = { Text(gamepadPlayerLabel(padIndex), maxLines = 1, softWrap = false) }
                                 )
                             }
                         }
@@ -1841,7 +2041,9 @@ private fun LocalMultiplayerTouchControls(
     scaleFactor: Float,
     alpha: Float,
     onToggleLeftInputMode: () -> Unit,
-    onPadInput: (Int, Int, Int, Boolean) -> Unit
+    onPadInput: (Int, Int, Int, Boolean) -> Unit,
+    gunPorts: Set<Int>,
+    onLightGunStickAim: (Int, Float, Float) -> Unit
 ) {
     val sideBySide = mode == AppPreferences.LOCAL_MULTIPLAYER_SIDE_BY_SIDE
     val (firstPad, secondPad) = localMultiplayerPadOrder(mode)
@@ -1855,7 +2057,9 @@ private fun LocalMultiplayerTouchControls(
                 scaleFactor = scaleFactor * 0.58f,
                 alpha = alpha,
                 onToggleLeftInputMode = onToggleLeftInputMode,
-                onPadInput = onPadInput
+                onPadInput = onPadInput,
+                gunPorts = gunPorts,
+                onLightGunStickAim = onLightGunStickAim
             )
             Box(
                 modifier = Modifier
@@ -1870,7 +2074,9 @@ private fun LocalMultiplayerTouchControls(
                 scaleFactor = scaleFactor * 0.58f,
                 alpha = alpha,
                 onToggleLeftInputMode = onToggleLeftInputMode,
-                onPadInput = onPadInput
+                onPadInput = onPadInput,
+                gunPorts = gunPorts,
+                onLightGunStickAim = onLightGunStickAim
             )
         }
     } else {
@@ -1882,7 +2088,9 @@ private fun LocalMultiplayerTouchControls(
                 scaleFactor = scaleFactor * 0.50f,
                 alpha = alpha,
                 onToggleLeftInputMode = onToggleLeftInputMode,
-                onPadInput = onPadInput
+                onPadInput = onPadInput,
+                gunPorts = gunPorts,
+                onLightGunStickAim = onLightGunStickAim
             )
             HorizontalDivider(color = Color.White.copy(alpha = 0.16f))
             LocalMultiplayerTouchZone(
@@ -1892,7 +2100,9 @@ private fun LocalMultiplayerTouchControls(
                 scaleFactor = scaleFactor * 0.50f,
                 alpha = alpha,
                 onToggleLeftInputMode = onToggleLeftInputMode,
-                onPadInput = onPadInput
+                onPadInput = onPadInput,
+                gunPorts = gunPorts,
+                onLightGunStickAim = onLightGunStickAim
             )
         }
     }
@@ -1914,7 +2124,9 @@ private fun LocalMultiplayerTouchZone(
     scaleFactor: Float,
     alpha: Float,
     onToggleLeftInputMode: () -> Unit,
-    onPadInput: (Int, Int, Int, Boolean) -> Unit
+    onPadInput: (Int, Int, Int, Boolean) -> Unit,
+    gunPorts: Set<Int>,
+    onLightGunStickAim: (Int, Float, Float) -> Unit
 ) {
     Box(modifier = modifier) {
         OnScreenControls(
@@ -1931,7 +2143,7 @@ private fun LocalMultiplayerTouchZone(
             invertRightStickHorizontal = uiState.invertRightStickHorizontal,
             rightStickUpToR2 = uiState.gamepadRightStickUpToR2,
             rightStickDownToL2 = uiState.gamepadRightStickDownToL2,
-            touchscreenRightStick = uiState.touchscreenRightStick,
+            touchscreenRightStick = uiState.touchscreenRightStick && padIndex !in gunPorts,
             touchscreenRightStickSensitivity = uiState.touchscreenRightStickSensitivity / 100f,
             touchHaptics = uiState.touchHaptics,
             touchHapticsPreset = uiState.touchHapticsPreset,
@@ -1939,6 +2151,8 @@ private fun LocalMultiplayerTouchZone(
             visualStyle = uiState.touchControlVisualStyle,
             pressEffect = uiState.touchControlPressEffect,
             customControls = uiState.customTouchControls.controls,
+            lightGunAimSource = if (padIndex in gunPorts) uiState.lightGunAimSource else -1,
+            onLightGunStickAim = { x, y -> onLightGunStickAim(padIndex, x, y) },
             dpadOffset = uiState.dpadOffset,
             lstickOffset = uiState.lstickOffset,
             rstickOffset = uiState.rstickOffset,
@@ -1997,6 +2211,8 @@ private fun OnScreenControls(
     visualStyle: TouchControlVisualStyle = TouchControlVisualStyle.CLASSIC,
     pressEffect: TouchControlPressEffect = TouchControlPressEffect.GROW,
     customControls: List<CustomTouchControl> = emptyList(),
+    lightGunAimSource: Int = -1,
+    onLightGunStickAim: (Float, Float) -> Unit = { _, _ -> },
     dpadOffset: Pair<Float, Float>,
     lstickOffset: Pair<Float, Float>,
     rstickOffset: Pair<Float, Float>,
@@ -2025,6 +2241,7 @@ private fun OnScreenControls(
     val context = LocalContext.current
     val hapticView = LocalView.current
     val currentOnPadInput by rememberUpdatedState(onPadInput)
+    val currentOnLightGunStickAim by rememberUpdatedState(onLightGunStickAim)
     var touchL2Pressed by remember { mutableStateOf(false) }
     var touchR2Pressed by remember { mutableStateOf(false) }
 
@@ -2107,10 +2324,14 @@ private fun OnScreenControls(
         "circle" -> { pressed -> onPadInput(PadKey.CIRCLE, 0, pressed) }
         "select" -> { pressed -> onPadInput(PadKey.SELECT, 0, pressed) }
         // Arcade service switches: Coin, Test and Service.
-        "coin" -> { pressed -> onPadInput(PadKey.SELECT, 0, pressed) }
-        "test" -> { pressed -> onPadInput(PadKey.L3, 0, pressed) }
-        "service" -> { pressed -> onPadInput(PadKey.R3, 0, pressed) }
+        "coin" -> { pressed -> onPadInput(NativeApp.PAD_ARCADE_COIN, 0, pressed) }
+        "test" -> { pressed -> onPadInput(NativeApp.PAD_ARCADE_TEST, 0, pressed) }
+        "service" -> { pressed -> onPadInput(NativeApp.PAD_ARCADE_SERVICE, 0, pressed) }
         "start" -> { pressed -> onPadInput(PadKey.START, 0, pressed) }
+        "gun_trigger" -> { pressed -> onPadInput(NativeApp.PAD_GUN_TRIGGER, 0, pressed) }
+        "gun_pedal" -> { pressed -> onPadInput(NativeApp.PAD_GUN_PEDAL, 0, pressed) }
+        "gun_reload" -> { pressed -> onPadInput(NativeApp.PAD_GUN_RELOAD, 0, pressed) }
+        "gun_recalibrate" -> { pressed -> onPadInput(NativeApp.PAD_GUN_RECALIBRATE, 0, pressed) }
         "fast_forward" -> { pressed -> onPadInput(126, 0, pressed) }
         "pressure" -> { pressed -> onPadInput(PadKey.PRESSURE, 0, pressed) }
         "l3" -> { pressed -> onPadInput(PadKey.L3, 0, pressed) }
@@ -2331,6 +2552,15 @@ private fun OnScreenControls(
         }
 
         layout.leftStick?.takeIf { it.visible }?.let { stick ->
+            DisposableEffect(lightGunAimSource) {
+                onDispose {
+                    if (lightGunAimSource == 1) currentOnLightGunStickAim(0f, 0f)
+                    listOf(PadKey.LEFT_STICK_UP, PadKey.LEFT_STICK_RIGHT,
+                        PadKey.LEFT_STICK_DOWN, PadKey.LEFT_STICK_LEFT).forEach { key ->
+                        currentOnPadInput(key, 0, false)
+                    }
+                }
+            }
             val panelWidth = stickPanelWidth(stick)
             VectorAnalogStick(
                 analogSize = stick.size,
@@ -2341,7 +2571,12 @@ private fun OnScreenControls(
                 visualStyle = visualStyle,
                 pressEffect = pressEffect,
                 onValueChange = { x, y ->
-                    updateAnalogStick(
+                    if (lightGunAimSource == 1) {
+                        onLightGunStickAim(
+                            ((if (invertLeftStickHorizontal) -x else x) * leftStickSensitivity).coerceIn(-1f, 1f),
+                            ((if (invertLeftStick) -y else y) * leftStickSensitivity).coerceIn(-1f, 1f)
+                        )
+                    } else updateAnalogStick(
                         x = if (invertLeftStickHorizontal) -x else x,
                         y = if (invertLeftStick) -y else y,
                         sensitivity = leftStickSensitivity,
@@ -2359,6 +2594,15 @@ private fun OnScreenControls(
         }
 
         layout.rightStick?.takeIf { it.visible }?.let { stick ->
+            DisposableEffect(lightGunAimSource) {
+                onDispose {
+                    if (lightGunAimSource == 2) currentOnLightGunStickAim(0f, 0f)
+                    listOf(PadKey.RIGHT_STICK_UP, PadKey.RIGHT_STICK_RIGHT,
+                        PadKey.RIGHT_STICK_DOWN, PadKey.RIGHT_STICK_LEFT).forEach { key ->
+                        currentOnPadInput(key, 0, false)
+                    }
+                }
+            }
             val panelWidth = stickPanelWidth(stick)
             VectorAnalogStick(
                 analogSize = stick.size,
@@ -2370,7 +2614,12 @@ private fun OnScreenControls(
                 pressEffect = pressEffect,
                 visualY = rightStickTriggerVisualY,
                 onValueChange = { x, y ->
-                    updateRightAnalogStick(
+                    if (lightGunAimSource == 2) {
+                        onLightGunStickAim(
+                            ((if (invertRightStickHorizontal) -x else x) * rightStickSensitivity).coerceIn(-1f, 1f),
+                            ((if (invertRightStick) -y else y) * rightStickSensitivity).coerceIn(-1f, 1f)
+                        )
+                    } else updateRightAnalogStick(
                         x = if (invertRightStickHorizontal) -x else x,
                         y = if (invertRightStick) -y else y,
                         sensitivity = rightStickSensitivity,
@@ -2712,6 +2961,8 @@ private fun formatPlayTime(milliseconds: Long): String {
 private fun EmulationSidebarMenu(
     uiState: EmulationUiState,
     gamepadConnected: Boolean,
+    lightGunActive: Boolean,
+    arcadeInputMode: Int,
     currentGamePath: String?,
     globalDefaults: SettingsSnapshot,
     overlayDefaults: OverlayLayoutSnapshot,
@@ -2743,6 +2994,16 @@ private fun EmulationSidebarMenu(
     onSetOverlayOpacity: (Int) -> Unit,
     onSetHideOverlayOnGamepad: (Boolean) -> Unit,
     onSetKeepScreenOn: (Boolean) -> Unit,
+    onSetGyroMode: (Int) -> Unit,
+    onSetGyroSensitivity: (Int) -> Unit,
+    onSetGyroSmoothing: (Int) -> Unit,
+    onSetGyroInvertX: (Boolean) -> Unit,
+    onSetGyroInvertY: (Boolean) -> Unit,
+    onSetGyroStickTarget: (Int) -> Unit,
+    onSetLightGunAimSource: (Int) -> Unit,
+    onSetLightGunCursorEnabled: (Boolean) -> Unit,
+    onSetArcadeDevice1: (Int) -> Unit,
+    onSetArcadeDevice2: (Int) -> Unit,
     onSetStickScale: (Int) -> Unit,
     onSetLeftStickSensitivity: (Int) -> Unit,
     onSetRightStickSensitivity: (Int) -> Unit,
@@ -2961,14 +3222,16 @@ private fun EmulationSidebarMenu(
                             }
                         }
 
-                        MenuButton(
-                            icon = Icons.Rounded.Album,
-                            text = stringResource(R.string.emulation_swap_disc),
-                            onClick = onSwapDisc,
-                            enabled = !uiState.isActionInProgress,
-                            showProgress = uiState.actionLabel == "swapping_disc",
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.34f)
-                        )
+                        if (arcadeInputMode <= 0 && !currentGamePath.isNullOrBlank()) {
+                            MenuButton(
+                                icon = Icons.Rounded.Album,
+                                text = stringResource(R.string.emulation_swap_disc),
+                                onClick = onSwapDisc,
+                                enabled = !uiState.isActionInProgress,
+                                showProgress = uiState.actionLabel == "swapping_disc",
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.34f)
+                            )
+                        }
 
                         val visibleSessionSections = gameMenuSectionsForTab(
                             GameMenuTabId.SESSION,
@@ -3324,6 +3587,99 @@ private fun EmulationSidebarMenu(
                             onResetToDefault = { onSetKeepScreenOn(globalDefaults.keepScreenOn) }
                         )
 
+                        LiveSelectionRow(
+                            title = stringResource(R.string.settings_arcade_device_player_1),
+                            options = arcadeDeviceOptions().map { (value, label) -> LiveSelectionOption(value, label) },
+                            currentValue = uiState.arcadeDevice1,
+                            onValueChange = onSetArcadeDevice1,
+                            onResetToDefault = { onSetArcadeDevice1(globalDefaults.arcadeDevice1) }
+                        )
+                        LiveSelectionRow(
+                            title = stringResource(R.string.settings_arcade_device_player_2),
+                            options = arcadeDeviceOptions().map { (value, label) -> LiveSelectionOption(value, label) },
+                            currentValue = uiState.arcadeDevice2,
+                            onValueChange = onSetArcadeDevice2,
+                            onResetToDefault = { onSetArcadeDevice2(globalDefaults.arcadeDevice2) }
+                        )
+                        LiveSelectionRow(
+                            title = stringResource(R.string.settings_gyro_mode),
+                            options = listOf(
+                                LiveSelectionOption(AppPreferences.GYRO_MODE_OFF, stringResource(R.string.settings_gyro_off)),
+                                LiveSelectionOption(AppPreferences.GYRO_MODE_AIM, stringResource(
+                                    if (uiState.gyroStickTarget == 0) R.string.settings_gyro_aim
+                                    else R.string.settings_gyro_aim_left)),
+                                LiveSelectionOption(AppPreferences.GYRO_MODE_STEERING, stringResource(R.string.settings_gyro_steering)),
+                                LiveSelectionOption(AppPreferences.GYRO_MODE_LIGHT_GUN, stringResource(R.string.settings_gyro_mode_light_gun))
+                            ),
+                            currentValue = uiState.gyroMode,
+                            onValueChange = onSetGyroMode,
+                            helpText = stringResource(R.string.settings_help_gyro_mode),
+                            onResetToDefault = { onSetGyroMode(globalDefaults.gyroMode) }
+                        )
+                        if (uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
+                            LiveSelectionRow(
+                                title = stringResource(R.string.settings_gyro_stick),
+                                options = gyroStickTargetOptions().map { (value, label) -> LiveSelectionOption(value, label) },
+                                currentValue = uiState.gyroStickTarget,
+                                onValueChange = onSetGyroStickTarget,
+                                onResetToDefault = { onSetGyroStickTarget(globalDefaults.gyroStickTarget) }
+                            )
+                        }
+                        LiveSelectionRow(
+                            title = stringResource(R.string.settings_light_gun_aim),
+                            options = lightGunAimSourceOptions().map { (value, label) -> LiveSelectionOption(value, label) },
+                            currentValue = uiState.lightGunAimSource,
+                            onValueChange = onSetLightGunAimSource,
+                            onResetToDefault = { onSetLightGunAimSource(globalDefaults.lightGunAimSource) }
+                        )
+                        SettingsToggle(
+                            title = stringResource(R.string.settings_light_gun_cursor),
+                            checked = uiState.lightGunCursorEnabled,
+                            onCheckedChange = onSetLightGunCursorEnabled,
+                            helpText = stringResource(R.string.settings_light_gun_cursor_desc),
+                            onResetToDefault = { onSetLightGunCursorEnabled(globalDefaults.lightGunCursorEnabled) }
+                        )
+                        val sensorMode = if (lightGunActive && uiState.lightGunAimSource == 0) {
+                            AppPreferences.GYRO_MODE_LIGHT_GUN
+                        } else if (lightGunActive || uiState.gyroMode == AppPreferences.GYRO_MODE_LIGHT_GUN) {
+                            AppPreferences.GYRO_MODE_OFF
+                        } else uiState.gyroMode
+                        val sensorControlsVisible = sensorMode != AppPreferences.GYRO_MODE_OFF &&
+                            (sensorMode != AppPreferences.GYRO_MODE_LIGHT_GUN || uiState.lightGunAimSource == 0)
+                        if (sensorControlsVisible) {
+                            if (!AndroidGyroscopeInput.isModeAvailable(LocalContext.current, sensorMode)) {
+                                Text(stringResource(R.string.settings_gyro_unavailable),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            LiveSliderRow(
+                                title = stringResource(R.string.settings_gyro_sensitivity),
+                                valueLabelForValue = { "$it%" },
+                                value = uiState.gyroSensitivity.toFloat(), range = 25f..300f, steps = 10,
+                                onValueChange = { onSetGyroSensitivity(it.roundToInt()) },
+                                onResetToDefault = { onSetGyroSensitivity(globalDefaults.gyroSensitivity) }
+                            )
+                            LiveSliderRow(
+                                title = stringResource(R.string.settings_gyro_smoothing),
+                                valueLabelForValue = { "$it%" },
+                                value = uiState.gyroSmoothing.toFloat(), range = 0f..90f, steps = 8,
+                                onValueChange = { onSetGyroSmoothing(it.roundToInt()) },
+                                onResetToDefault = { onSetGyroSmoothing(globalDefaults.gyroSmoothing) }
+                            )
+                            SettingsToggle(
+                                title = stringResource(R.string.settings_gyro_invert_x),
+                                checked = uiState.gyroInvertX, onCheckedChange = onSetGyroInvertX,
+                                onResetToDefault = { onSetGyroInvertX(globalDefaults.gyroInvertX) }
+                            )
+                            if (sensorMode != AppPreferences.GYRO_MODE_STEERING) {
+                                SettingsToggle(
+                                    title = stringResource(R.string.settings_gyro_invert_y),
+                                    checked = uiState.gyroInvertY, onCheckedChange = onSetGyroInvertY,
+                                    onResetToDefault = { onSetGyroInvertY(globalDefaults.gyroInvertY) }
+                                )
+                            }
+                        }
+
                         CoreOptionRows(
                             options = FlycastCoreOptions.gameMenuControlsOptions(),
                             version = coreOptionsVersion,
@@ -3567,8 +3923,6 @@ private fun EmulationSidebarMenu(
                             options = fpsOverlayCornerLiveOptions(),
                             currentValue = uiState.fpsOverlayCorner,
                             onValueChange = onSetFpsOverlayCorner,
-                            allowWrap = false,
-                            horizontalScrolling = true,
                             helpText = stringResource(R.string.settings_help_fps_overlay_position),
                             onResetToDefault = { onSetFpsOverlayCorner(globalDefaults.fpsOverlayCorner) }
                         )
@@ -3699,7 +4053,6 @@ private fun EmulationSidebarMenu(
                             ),
                             currentValue = uiState.renderer,
                             onValueChange = onSetRenderer,
-                            allowWrap = false,
                             helpText = stringResource(R.string.settings_help_renderer),
                             onResetToDefault = { onSetRenderer(globalDefaults.renderer) }
                         )
@@ -3718,8 +4071,6 @@ private fun EmulationSidebarMenu(
                             ).map { (value, label) -> LiveSelectionOption(value, label) },
                             currentValue = upscaleMultiplierValue(uiState.upscale),
                             onValueChange = { onSetUpscale(upscaleKeyToMultiplier(it)) },
-                            allowWrap = false,
-                            horizontalScrolling = true,
                             helpText = stringResource(R.string.settings_help_upscale),
                             onResetToDefault = { onSetUpscale(globalDefaults.upscaleMultiplier) }
                         )
@@ -3739,7 +4090,6 @@ private fun EmulationSidebarMenu(
                             ),
                             currentValue = uiState.aspectRatio,
                             onValueChange = onSetAspectRatio,
-                            allowWrap = false,
                             helpText = stringResource(R.string.settings_help_aspect_ratio),
                             onResetToDefault = { onSetAspectRatio(globalDefaults.aspectRatio) }
                         )
@@ -3751,8 +4101,6 @@ private fun EmulationSidebarMenu(
                             },
                             currentValue = uiState.displayCrop.presetPixels,
                             onValueChange = { onSetDisplayCrop(DisplayCrop.uniform(it)) },
-                            allowWrap = false,
-                            horizontalScrolling = true,
                             helpText = stringResource(R.string.settings_display_crop_desc),
                             onResetToDefault = { onSetDisplayCrop(globalDefaults.displayCrop) }
                         )
@@ -4402,6 +4750,10 @@ private fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
     "l3" -> R.string.settings_gamepad_action_l3
     "r3" -> R.string.settings_gamepad_action_r3
     "select" -> R.string.settings_gamepad_action_select
+    "gun_trigger" -> R.string.settings_gamepad_action_gun_trigger
+    "gun_pedal" -> R.string.settings_gamepad_action_gun_pedal
+    "gun_reload" -> R.string.settings_gamepad_action_gun_reload
+    "gun_recalibrate" -> R.string.settings_gamepad_action_gun_recalibrate
     "coin" -> R.string.settings_gamepad_action_coin
     "test" -> R.string.settings_gamepad_action_test
     "service" -> R.string.settings_gamepad_action_service
@@ -4531,8 +4883,6 @@ private fun LiveSelectionRow(
     options: List<LiveSelectionOption>,
     currentValue: Int,
     onValueChange: (Int) -> Unit,
-    allowWrap: Boolean = true,
-    horizontalScrolling: Boolean = false,
     helpText: String? = null,
     onResetToDefault: (() -> Unit)? = null
 ) {
@@ -4567,84 +4917,20 @@ private fun LiveSelectionRow(
                 SettingHelpButton(title = title, description = it)
             }
         }
-        if (allowWrap) {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                options.forEach { option ->
-                    LiveSelectionChip(
-                        option = option,
-                        selected = option.value == currentValue,
-                        onClick = { onValueChange(option.value) }
-                    )
-                }
-            }
-        } else if (horizontalScrolling) {
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalViewportBleed(18.dp),
-                contentPadding = PaddingValues(horizontal = 18.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(options, key = { it.value }) { option ->
-                    LiveSelectionChip(
-                        option = option,
-                        selected = option.value == currentValue,
-                        onClick = { onValueChange(option.value) }
-                    )
-                }
-            }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                options.forEach { option ->
-                    val selected = option.value == currentValue
-                    Surface(
-                        modifier = Modifier.weight(1f),
-                        onClick = { onValueChange(option.value) },
-                        shape = neonShape(12.dp),
-                        color = if (selected) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
-                        },
-                        border = BorderStroke(
-                            1.dp,
-                            if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
-                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-                        )
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 6.dp, vertical = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (option.icon != null) {
-                                Icon(
-                                    imageVector = option.icon,
-                                    contentDescription = option.contentDescription,
-                                    tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            } else {
-                                Text(
-                                    text = option.label.orEmpty(),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Clip,
-                                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-                }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .tvFocusGroup(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            options.forEach { option ->
+                LiveSelectionChip(
+                    option = option,
+                    selected = option.value == currentValue,
+                    onClick = { onValueChange(option.value) }
+                )
             }
         }
     }
@@ -4970,9 +5256,6 @@ private fun CoreOptionRows(
         val title = stringResource(option.labelRes)
         val help = stringResource(option.descriptionRes).takeIf { it.isNotBlank() }
         val choiceLabels = option.choices.map { stringResource(it.labelRes) }
-        // Equal-width chips clip long labels; fall back to a horizontally
-        // scrollable row whenever the labels cannot fit their share of the row.
-        val labelsOverflow = choiceLabels.any { it.length > 30 / option.choices.size }
         if (option.isBooleanToggle) {
             SettingsToggle(
                 title = title,
@@ -4991,8 +5274,6 @@ private fun CoreOptionRows(
                 onValueChange = { index ->
                     values.getOrNull(index)?.let { onValueChange(option.key, it) }
                 },
-                allowWrap = false,
-                horizontalScrolling = option.choices.size > 4 || labelsOverflow,
                 helpText = help,
                 onResetToDefault = { onValueChange(option.key, option.defaultValue) }
             )
@@ -5299,35 +5580,21 @@ private fun LiveBitmaskChoiceRow(
                 SettingHelpButton(title = title, description = it)
             }
         }
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalViewportBleed(18.dp),
-            contentPadding = PaddingValues(horizontal = 18.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .tvFocusGroup(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(options) { (metric, label) ->
+            options.forEach { (metric, label) ->
                 FilterChip(
                     shape = neonChipShape(),
                     selected = PerformanceOverlayMetrics.isEnabled(selectedMask, metric),
                     onClick = { onToggle(metric) },
-                    label = { Text(text = label) }
+                    label = { Text(text = label, maxLines = 1, softWrap = false) }
                 )
             }
         }
-    }
-}
-
-private fun Modifier.horizontalViewportBleed(inset: Dp): Modifier = layout { measurable, constraints ->
-    val insetPx = inset.roundToPx()
-    val expandedMaxWidth = if (constraints.hasBoundedWidth) {
-        constraints.maxWidth + (insetPx * 2)
-    } else {
-        constraints.maxWidth
-    }
-    val placeable = measurable.measure(constraints.copy(maxWidth = expandedMaxWidth))
-    layout(constraints.maxWidth, placeable.height) {
-        placeable.placeRelative(-insetPx, 0)
     }
 }
 

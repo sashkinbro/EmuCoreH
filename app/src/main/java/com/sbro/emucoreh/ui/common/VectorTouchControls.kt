@@ -136,6 +136,10 @@ fun overlayDrawableForControl(controlId: String): Int? = when (controlId) {
     "coin" -> R.drawable.ic_controller_select_button
     "test" -> R.drawable.ic_controller_l3_button
     "service" -> R.drawable.ic_controller_r3_button
+    "gun_trigger" -> R.drawable.ic_controller_gun_trigger_button
+    "gun_pedal" -> R.drawable.ic_controller_gun_pedal_button
+    "gun_reload" -> R.drawable.ic_controller_gun_reload_button
+    "gun_recalibrate" -> R.drawable.ic_controller_gun_recalibrate_button
     "left_input_toggle" -> R.drawable.ic_controller_analog_button
     "pressure" -> R.drawable.ic_controller_pressure_modifier
     else -> null
@@ -207,6 +211,10 @@ fun VectorOverlayButton(
         drawableRes == R.drawable.ic_controller_down_button ||
         drawableRes == R.drawable.ic_controller_left_button ||
         drawableRes == R.drawable.ic_controller_right_button
+    val isGunButton = drawableRes == R.drawable.ic_controller_gun_trigger_button ||
+        drawableRes == R.drawable.ic_controller_gun_pedal_button ||
+        drawableRes == R.drawable.ic_controller_gun_reload_button ||
+        drawableRes == R.drawable.ic_controller_gun_recalibrate_button
     val styleShape = when (visualStyle) {
         TouchControlVisualStyle.CLASSIC -> shape
         TouchControlVisualStyle.LEGACY -> if (isFaceButton) CircleShape else RoundedCornerShape(if (isShoulderButton) 16.dp else 12.dp)
@@ -329,7 +337,7 @@ fun VectorOverlayButton(
             }
             else -> Unit
         }
-        if (visualStyle == TouchControlVisualStyle.CLASSIC) {
+        if (visualStyle == TouchControlVisualStyle.CLASSIC || isGunButton) {
             Image(
                 painter = painterResource(drawableRes),
                 contentDescription = null,

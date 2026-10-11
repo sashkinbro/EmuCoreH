@@ -20,6 +20,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -1454,18 +1455,64 @@ private fun SettingsContent(
                         )
                         ChoiceSection(
                             title = stringResource(R.string.settings_gyro_mode),
-                            options = gyroModeOptions(),
+                            options = gyroModeOptions(uiState.gyroStickTarget),
                             selectedValue = uiState.gyroMode,
                             onSelect = viewModel::setGyroMode,
                             helpText = stringResource(R.string.settings_help_gyro_mode),
                             onResetToDefault = { viewModel.setGyroMode(defaults.gyroMode) }
                         )
-                        if (uiState.gyroMode != AppPreferences.GYRO_MODE_OFF &&
-                            !AndroidGyroscopeInput.isModeAvailable(context, uiState.gyroMode)
+                        if (uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
+                            ChoiceSection(
+                                title = stringResource(R.string.settings_gyro_stick),
+                                options = gyroStickTargetOptions(),
+                                selectedValue = uiState.gyroStickTarget,
+                                onSelect = viewModel::setGyroStickTarget,
+                                onResetToDefault = { viewModel.setGyroStickTarget(defaults.gyroStickTarget) }
+                            )
+                        }
+                        ChoiceSection(
+                            title = stringResource(R.string.settings_arcade_device_player_1),
+                            options = arcadeDeviceOptions(),
+                            selectedValue = uiState.arcadeDevice1,
+                            onSelect = viewModel::setArcadeDevice1,
+                            onResetToDefault = { viewModel.setArcadeDevice1(defaults.arcadeDevice1) }
+                        )
+                        ChoiceSection(
+                            title = stringResource(R.string.settings_arcade_device_player_2),
+                            options = arcadeDeviceOptions(),
+                            selectedValue = uiState.arcadeDevice2,
+                            onSelect = viewModel::setArcadeDevice2,
+                            onResetToDefault = { viewModel.setArcadeDevice2(defaults.arcadeDevice2) }
+                        )
+                        ChoiceSection(
+                            title = stringResource(R.string.settings_light_gun_aim),
+                            options = lightGunAimSourceOptions(),
+                            selectedValue = uiState.lightGunAimSource,
+                            onSelect = viewModel::setLightGunAimSource,
+                            onResetToDefault = { viewModel.setLightGunAimSource(defaults.lightGunAimSource) }
+                        )
+                        ToggleItem(
+                            icon = Icons.Rounded.Gamepad,
+                            title = stringResource(R.string.settings_light_gun_cursor),
+                            subtitle = stringResource(R.string.settings_light_gun_cursor_desc),
+                            checked = uiState.lightGunCursorEnabled,
+                            onCheckedChange = viewModel::setLightGunCursorEnabled,
+                            helpText = stringResource(R.string.settings_help_light_gun_cursor),
+                            onResetToDefault = { viewModel.setLightGunCursorEnabled(defaults.lightGunCursorEnabled) }
+                        )
+                        val gunUsesGyro = uiState.lightGunAimSource == AppPreferences.LIGHT_GUN_AIM_GYRO
+                        val sensorControlsVisible = gunUsesGyro ||
+                            uiState.gyroMode == AppPreferences.GYRO_MODE_AIM ||
+                            uiState.gyroMode == AppPreferences.GYRO_MODE_STEERING
+                        val sensorMode = if (uiState.gyroMode == AppPreferences.GYRO_MODE_OFF && gunUsesGyro) {
+                            AppPreferences.GYRO_MODE_LIGHT_GUN
+                        } else uiState.gyroMode
+                        if (sensorControlsVisible &&
+                            !AndroidGyroscopeInput.isModeAvailable(context, sensorMode)
                         ) {
                             SettingsInlineNote(text = stringResource(R.string.settings_gyro_unavailable))
                         }
-                        if (uiState.gyroMode != AppPreferences.GYRO_MODE_OFF) {
+                        if (sensorControlsVisible) {
                             SliderItem(
                                 icon = Icons.Rounded.ScreenRotation,
                                 title = stringResource(R.string.settings_gyro_sensitivity),
@@ -1499,7 +1546,7 @@ private fun SettingsContent(
                                 helpText = stringResource(R.string.settings_help_gyro_invert_x),
                                 onResetToDefault = { viewModel.setGyroInvertX(defaults.gyroInvertX) }
                             )
-                            if (uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
+                            if (gunUsesGyro || uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
                                 ToggleItem(
                                     icon = Icons.Rounded.SwapVert,
                                     title = stringResource(R.string.settings_gyro_invert_y),
@@ -4240,6 +4287,12 @@ private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
         entry(SettingsTab.Controls, R.string.settings_touch_haptics_strength),
         entry(SettingsTab.Controls, R.string.settings_touch_haptics_test),
         entry(SettingsTab.Controls, R.string.settings_gyro_mode),
+        entry(SettingsTab.Controls, R.string.settings_gyro_mode_light_gun),
+        entry(SettingsTab.Controls, R.string.settings_gyro_stick),
+        entry(SettingsTab.Controls, R.string.settings_arcade_device_player_1),
+        entry(SettingsTab.Controls, R.string.settings_arcade_device_player_2),
+        entry(SettingsTab.Controls, R.string.settings_light_gun_aim),
+        entry(SettingsTab.Controls, R.string.settings_light_gun_cursor),
         entry(SettingsTab.Controls, R.string.settings_gyro_sensitivity),
         entry(SettingsTab.Controls, R.string.settings_gyro_smoothing),
         entry(SettingsTab.Controls, R.string.settings_gamepad_stick_deadzone),
@@ -5408,14 +5461,15 @@ internal fun ChoiceSection(
                 )
             }
         }
-        LazyRow(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .tvFocusGroup(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+                .tvFocusGroup()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(options) { (value, label) ->
+            options.forEach { (value, label) ->
                 val optionInteractionSource = remember { MutableInteractionSource() }
                 FilterChip(
                     modifier = Modifier.tvGamepadFocusableCard(
@@ -5428,7 +5482,7 @@ internal fun ChoiceSection(
                     onClick = { onSelect(value) },
                     interactionSource = optionInteractionSource,
                     colors = premiumFilterChipColors(),
-                    label = { Text(text = label) }
+                    label = { Text(text = label, maxLines = 1) }
                 )
             }
         }
@@ -5527,14 +5581,15 @@ private fun CoreStringChoiceSection(
                 )
             }
         }
-        LazyRow(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .tvFocusGroup(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+                .tvFocusGroup()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(options) { (value, label) ->
+            options.forEach { (value, label) ->
                 val optionInteractionSource = remember { MutableInteractionSource() }
                 FilterChip(
                     modifier = Modifier.tvGamepadFocusableCard(
@@ -5547,7 +5602,7 @@ private fun CoreStringChoiceSection(
                     onClick = { onSelect(value) },
                     interactionSource = optionInteractionSource,
                     colors = premiumFilterChipColors(),
-                    label = { Text(text = label) }
+                    label = { Text(text = label, maxLines = 1) }
                 )
             }
         }
@@ -5611,14 +5666,15 @@ private fun BitmaskChoiceSection(
                 )
             }
         }
-        LazyRow(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .tvFocusGroup(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+                .tvFocusGroup()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(options) { (metric, label) ->
+            options.forEach { (metric, label) ->
                 val optionInteractionSource = remember { MutableInteractionSource() }
                 FilterChip(
                     modifier = Modifier.tvGamepadFocusableCard(
@@ -5631,7 +5687,7 @@ private fun BitmaskChoiceSection(
                     onClick = { onToggle(metric) },
                     interactionSource = optionInteractionSource,
                     colors = premiumFilterChipColors(),
-                    label = { Text(text = label) }
+                    label = { Text(text = label, maxLines = 1) }
                 )
             }
         }
@@ -5668,10 +5724,13 @@ private fun touchHapticsPresetOptions(): List<Pair<Int, String>> = listOf(
 )
 
 @Composable
-private fun gyroModeOptions(): List<Pair<Int, String>> = listOf(
+private fun gyroModeOptions(stickTarget: Int = AppPreferences.GYRO_STICK_RIGHT): List<Pair<Int, String>> = listOf(
     AppPreferences.GYRO_MODE_OFF to stringResource(R.string.settings_gyro_off),
-    AppPreferences.GYRO_MODE_AIM to stringResource(R.string.settings_gyro_aim),
-    AppPreferences.GYRO_MODE_STEERING to stringResource(R.string.settings_gyro_steering)
+    AppPreferences.GYRO_MODE_AIM to stringResource(
+        if (stickTarget == AppPreferences.GYRO_STICK_LEFT) R.string.settings_gyro_aim_left else R.string.settings_gyro_aim
+    ),
+    AppPreferences.GYRO_MODE_STEERING to stringResource(R.string.settings_gyro_steering),
+    AppPreferences.GYRO_MODE_LIGHT_GUN to stringResource(R.string.settings_gyro_mode_light_gun)
 )
 
 @Composable
@@ -5710,6 +5769,10 @@ private fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
     "coin" -> R.string.settings_gamepad_action_coin
     "test" -> R.string.settings_gamepad_action_test
     "service" -> R.string.settings_gamepad_action_service
+    "gun_trigger" -> R.string.settings_gamepad_action_gun_trigger
+    "gun_pedal" -> R.string.settings_gamepad_action_gun_pedal
+    "gun_reload" -> R.string.settings_gamepad_action_gun_reload
+    "gun_recalibrate" -> R.string.settings_gamepad_action_gun_recalibrate
     "start" -> R.string.settings_gamepad_action_start
     "left_input_toggle" -> R.string.settings_gamepad_action_left_input_toggle
     "pressure" -> R.string.settings_gamepad_action_pressure

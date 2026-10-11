@@ -113,6 +113,7 @@ constexpr char slash = '/';
 #include "libretro_core_option_defines.h"
 #include "libretro_core_options.h"
 #include "vmu_xhair.h"
+#include "arcade_input.h"
 
 extern void retro_audio_init(void);
 extern void retro_audio_deinit(void);
@@ -746,6 +747,27 @@ static void setGameGeometry(retro_game_geometry& geometry)
 }
 
 // Console refresh is independent of a game's presentation swap interval.
+static std::atomic<int> frontend_input_mode{-1};
+std::atomic<bool> emucoreh_lightgun_cursor_visible{true};
+static std::array<std::atomic<unsigned>, 4> frontend_cabinet_buttons{};
+static unsigned previous_cabinet_buttons[4]{};
+
+extern "C" RETRO_API void flycast_set_cabinet_buttons(unsigned port, unsigned buttons)
+{
+	if (port < 4)
+		frontend_cabinet_buttons[port].store(buttons & 3);
+}
+
+extern "C" RETRO_API int flycast_get_input_mode()
+{
+	return frontend_input_mode.load();
+}
+
+extern "C" RETRO_API void flycast_set_lightgun_cursor_visible(bool visible)
+{
+	emucoreh_lightgun_cursor_visible.store(visible);
+}
+
 extern "C" RETRO_API double flycast_get_refresh_rate()
 {
 	double fps = fps_spg.load();
@@ -1659,6 +1681,10 @@ static uint32_t map_gamepad_button(unsigned device, unsigned id)
 		break;
 
 	case DC_PLATFORM_SYSTEMSP:
+		if (device == RETRO_DEVICE_LIGHTGUN) {
+			const int joypadId = emucoreh::SystemSpGunJoypadId(id);
+			return joypadId >= 0 ? systemsp_joymap[joypadId] : 0;
+		}
 		joymap = systemsp_joymap;
 		joymap_size = std::size(systemsp_joymap);
 		break;
@@ -2218,6 +2244,11 @@ static void ReapplyLibretroCheats();
 
 bool retro_load_game(const struct retro_game_info *game)
 {
+	frontend_input_mode = -1;
+	for (unsigned port = 0; port < 4; port++) {
+		frontend_cabinet_buttons[port] = 0;
+		previous_cabinet_buttons[port] = 0;
+	}
 	first_run = true;
 	fps_spg = 0.0;
 	fps_current = 0.0;
@@ -2439,6 +2470,9 @@ bool retro_load_game(const struct retro_game_info *game)
 	haveCardReader = card_reader::readerAvailable();
 	dreampotato::update();
 	refresh_devices(true);
+	// Capture game capabilities before frontend controller overrides. Replacing
+	// a Dreamcast pad with a gun must not turn automatic detection into feedback.
+	frontend_input_mode = settings.input.lightgunGame ? 2 : (settings.platform.isArcade() ? 1 : 0);
 
 	// System may have changed - have to update hidden core options
 	set_variable_visibility();
@@ -2453,6 +2487,7 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 
 void retro_unload_game()
 {
+	frontend_input_mode = -1;
 	INFO_LOG(COMMON, "Flycast unloading game");
 	emu.unloadGame();
 	dreampotato::term();
@@ -2664,8 +2699,12 @@ unsigned retro_get_region()
 // Controller
 void retro_set_controller_port_device(unsigned in_port, unsigned device)
 {
-	if (device_type[in_port] != (int)device && in_port < MAPLE_PORTS)
+	if (in_port < MAPLE_PORTS && device_type[in_port] != (int)device)
 	{
+		// A gun polls fewer keys than a pad; release keys the next device never polls.
+		kcode[in_port] = ~0u;
+		joyx[in_port] = joyy[in_port] = joyrx[in_port] = joyry[in_port] = 0;
+		lt[in_port] = rt[in_port] = 0;
 		devices_need_refresh = true;
 		device_type[in_port] = device;
 		switch (device)
@@ -2984,7 +3023,14 @@ static void UpdateInputStateNaomi(u32 port)
 			setDeviceButtonState(port, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_AUX_B);
 			setDeviceButtonState(port, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_AUX_C);
 			setDeviceButtonState(port, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_START);
-			setDeviceButtonState(port, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_SELECT);
+			setDeviceButton(port, map_gamepad_button(RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_SELECT),
+				emucoreh::FilterCoinPress(input_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SELECT),
+					select_pressed[port], coin_inserted, coin_limit));
+			// Cabinet switches are independent of the connected player device.
+			if (allow_service_buttons)
+				setDeviceButtonState(port, RETRO_DEVICE_JOYPAD, RETRO_DEVICE_ID_JOYPAD_L3);
+			if (settings.platform.isNaomi() || allow_service_buttons)
+				setDeviceButtonState(port, RETRO_DEVICE_JOYPAD, RETRO_DEVICE_ID_JOYPAD_R3);
 			setDeviceButtonState(port, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP);
 			setDeviceButtonState(port, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN);
 			setDeviceButtonState(port, RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT);
@@ -2995,10 +3041,7 @@ static void UpdateInputStateNaomi(u32 port)
 			if (input_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_RELOAD))
 			{
 				force_offscreen = true;
-				if (settings.platform.isAtomiswave())
-					kcode[port] &= ~AWAVE_TRIGGER_KEY;
-				else
-					kcode[port] &= ~NAOMI_BTN0_KEY;
+				kcode[port] &= ~map_gamepad_button(RETRO_DEVICE_LIGHTGUN, RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
 			}
 
 			if (force_offscreen || input_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN))
@@ -3095,19 +3138,9 @@ static void UpdateInputStateNaomi(u32 port)
 						setDeviceButtonStateFromBitmap(ret, port, RETRO_DEVICE_JOYPAD, RETRO_DEVICE_ID_JOYPAD_L);
 					break;
 				case RETRO_DEVICE_ID_JOYPAD_SELECT:
-					if (ret & (1 << id) && !select_pressed[port])
-					{
-						if ((coin_limit && coin_inserted < coin_limit) || !coin_limit)
-						{
-							select_pressed[port] = true;
-							coin_inserted++;
-						}
-
-						if (!select_pressed[port])
-							ret &= ~(1 << id);
-					}
-					else if (!(ret & (1 << id)) && select_pressed[port])
-						select_pressed[port] = false;
+					if (!emucoreh::FilterCoinPress((ret & (1 << id)) != 0,
+						select_pressed[port], coin_inserted, coin_limit))
+						ret &= ~(1 << id);
 
 					setDeviceButtonStateFromBitmap(ret, port, RETRO_DEVICE_JOYPAD, id);
 					break;
@@ -3194,6 +3227,16 @@ static void UpdateInputStateNaomi(u32 port)
 		}
 		break;
 	}
+
+	// Explicit cabinet switches are independent of legacy L3/R3 remapping.
+	const unsigned cabinet = frontend_cabinet_buttons[port].load();
+	const uint32_t testKey = settings.platform.isAtomiswave() ? AWAVE_TEST_KEY
+		: settings.platform.isSystemSP() ? DC_DPAD2_DOWN : NAOMI_TEST_KEY;
+	const uint32_t serviceKey = settings.platform.isAtomiswave() ? AWAVE_SERVICE_KEY
+		: settings.platform.isSystemSP() ? DC_DPAD2_UP : NAOMI_SERVICE_KEY;
+	kcode[port] = emucoreh::ApplyCabinetSwitches(kcode[port], testKey, serviceKey,
+		cabinet, previous_cabinet_buttons[port]);
+	previous_cabinet_buttons[port] = cabinet;
 
 	// Avoid Left+Right or Up+Down buttons being pressed together as this crashes some games
 	if (settings.platform.isAtomiswave())

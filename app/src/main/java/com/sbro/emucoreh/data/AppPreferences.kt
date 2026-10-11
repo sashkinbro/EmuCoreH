@@ -113,6 +113,11 @@ data class SettingsSnapshot(
     val touchHapticsPreset: Int = AppPreferences.DEFAULT_TOUCH_HAPTICS_PRESET,
     val touchHapticsStrength: Int = AppPreferences.DEFAULT_TOUCH_HAPTICS_STRENGTH,
     val gyroMode: Int = AppPreferences.GYRO_MODE_OFF,
+    val gyroStickTarget: Int = 0,
+    val lightGunAimSource: Int = 0,
+    val lightGunCursorEnabled: Boolean = true,
+    val arcadeDevice1: Int = 0,
+    val arcadeDevice2: Int = 0,
     val gyroSensitivity: Int = AppPreferences.DEFAULT_GYRO_SENSITIVITY,
     val gyroSmoothing: Int = AppPreferences.DEFAULT_GYRO_SMOOTHING,
     val gyroInvertX: Boolean = false,
@@ -267,6 +272,16 @@ class AppPreferences(private val context: Context) {
         const val GYRO_MODE_OFF = 0
         const val GYRO_MODE_AIM = 1
         const val GYRO_MODE_STEERING = 2
+        const val GYRO_MODE_LIGHT_GUN = 3
+        const val GYRO_STICK_RIGHT = 0
+        const val GYRO_STICK_LEFT = 1
+        const val LIGHT_GUN_AIM_GYRO = 0
+        const val LIGHT_GUN_AIM_LEFT_STICK = 1
+        const val LIGHT_GUN_AIM_RIGHT_STICK = 2
+        const val LIGHT_GUN_AIM_TOUCH = 3
+        const val ARCADE_DEVICE_AUTO = 0
+        const val ARCADE_DEVICE_CONTROLLER = 1
+        const val ARCADE_DEVICE_LIGHT_GUN = 2
         const val DEFAULT_GYRO_SENSITIVITY = 100
         const val DEFAULT_GYRO_SMOOTHING = 45
         const val COVER_ART_STYLE_DISABLED = -1
@@ -307,6 +322,11 @@ class AppPreferences(private val context: Context) {
             "coin" to OverlayControlLayout(scale = 80, visible = false),
             "test" to OverlayControlLayout(scale = 80, visible = false),
             "service" to OverlayControlLayout(scale = 80, visible = false),
+            "gun_trigger" to OverlayControlLayout(scale = 80, visible = false),
+            "gun_pedal" to OverlayControlLayout(scale = 80, visible = false),
+            "gun_reload" to OverlayControlLayout(scale = 80, visible = false),
+            "gun_recalibrate" to OverlayControlLayout(scale = 80, visible = false),
+
             "left_input_toggle" to OverlayControlLayout(scale = 80, visible = true),
             "start" to OverlayControlLayout(scale = 80),
             "fast_forward" to OverlayControlLayout(scale = 80, visible = false)
@@ -429,6 +449,11 @@ class AppPreferences(private val context: Context) {
         private val TOUCH_HAPTICS_PRESET = intPreferencesKey("touch_haptics_preset")
         private val TOUCH_HAPTICS_STRENGTH = intPreferencesKey("touch_haptics_strength")
         private val GYRO_MODE = intPreferencesKey("gyro_mode")
+        private val GYRO_STICK_TARGET = intPreferencesKey("gyro_stick_target")
+        private val LIGHT_GUN_AIM_SOURCE = intPreferencesKey("light_gun_aim_source")
+        private val LIGHT_GUN_CURSOR_ENABLED = booleanPreferencesKey("light_gun_cursor_enabled")
+        private val ARCADE_DEVICE_1 = intPreferencesKey("arcade_device1")
+        private val ARCADE_DEVICE_2 = intPreferencesKey("arcade_device2")
         private val GYRO_SENSITIVITY = intPreferencesKey("gyro_sensitivity")
         private val GYRO_SMOOTHING = intPreferencesKey("gyro_smoothing")
         private val GYRO_INVERT_X = booleanPreferencesKey("gyro_invert_x")
@@ -482,7 +507,8 @@ class AppPreferences(private val context: Context) {
             "overlayOpacity", "overlayShow", "racingMode", "stickyButtons", "touchscreenRightStick",
             "touchscreenRightStickSensitivity", "touchHaptics", "touchHapticsPreset",
             "touchHapticsStrength", "gyroMode", "gyroSensitivity", "gyroSmoothing",
-            "gyroInvertX", "gyroInvertY", "gamepadStickDeadzone", "gamepadLeftStickSensitivity",
+            "gyroInvertX", "gyroInvertY", "gyroStickTarget", "lightGunAimSource",
+            "lightGunCursorEnabled", "arcadeDevice1", "arcadeDevice2", "gamepadStickDeadzone", "gamepadLeftStickSensitivity",
             "gamepadRightStickSensitivity", "gamepadRightStickUpToR2", "gamepadRightStickDownToL2",
             "gamepadButtonHaptics", "pressureModifierAmount", "textureReplacementsEnabled",
             "textureReplacementsAsync", "textureReplacementsPrecache", "textureDumpingEnabled",
@@ -1349,7 +1375,12 @@ class AppPreferences(private val context: Context) {
                 touchHaptics = prefs[TOUCH_HAPTICS] ?: false,
                 touchHapticsPreset = (prefs[TOUCH_HAPTICS_PRESET] ?: DEFAULT_TOUCH_HAPTICS_PRESET).coerceIn(TOUCH_HAPTICS_PRESET_SOFT, TOUCH_HAPTICS_PRESET_STRONG),
                 touchHapticsStrength = (prefs[TOUCH_HAPTICS_STRENGTH] ?: DEFAULT_TOUCH_HAPTICS_STRENGTH).coerceIn(10, 100),
-                gyroMode = (prefs[GYRO_MODE] ?: GYRO_MODE_OFF).coerceIn(GYRO_MODE_OFF, GYRO_MODE_STEERING),
+                gyroMode = (prefs[GYRO_MODE] ?: GYRO_MODE_OFF).coerceIn(GYRO_MODE_OFF, GYRO_MODE_LIGHT_GUN),
+                gyroStickTarget = (prefs[GYRO_STICK_TARGET] ?: 0).coerceIn(0, 1),
+                lightGunAimSource = (prefs[LIGHT_GUN_AIM_SOURCE] ?: 0).coerceIn(0, 3),
+                lightGunCursorEnabled = (prefs[LIGHT_GUN_CURSOR_ENABLED] ?: true),
+                arcadeDevice1 = (prefs[ARCADE_DEVICE_1] ?: 0).coerceIn(0, 2),
+                arcadeDevice2 = (prefs[ARCADE_DEVICE_2] ?: 0).coerceIn(0, 2),
                 gyroSensitivity = (prefs[GYRO_SENSITIVITY] ?: DEFAULT_GYRO_SENSITIVITY).coerceIn(25, 300),
                 gyroSmoothing = (prefs[GYRO_SMOOTHING] ?: DEFAULT_GYRO_SMOOTHING).coerceIn(0, 90),
                 gyroInvertX = prefs[GYRO_INVERT_X] ?: false,
@@ -1521,8 +1552,18 @@ class AppPreferences(private val context: Context) {
         context.dataStore.edit { it[TOUCH_HAPTICS_STRENGTH] = value.coerceIn(10, 100) }
     }
 
-    val gyroMode: Flow<Int> = context.dataStore.data.map { (it[GYRO_MODE] ?: GYRO_MODE_OFF).coerceIn(GYRO_MODE_OFF, GYRO_MODE_STEERING) }
-    suspend fun setGyroMode(value: Int) { context.dataStore.edit { it[GYRO_MODE] = value.coerceIn(GYRO_MODE_OFF, GYRO_MODE_STEERING) } }
+    val gyroMode: Flow<Int> = context.dataStore.data.map { (it[GYRO_MODE] ?: GYRO_MODE_OFF).coerceIn(GYRO_MODE_OFF, GYRO_MODE_LIGHT_GUN) }
+    suspend fun setGyroMode(value: Int) { context.dataStore.edit { it[GYRO_MODE] = value.coerceIn(GYRO_MODE_OFF, GYRO_MODE_LIGHT_GUN) } }
+    val gyroStickTarget: Flow<Int> = context.dataStore.data.map { (it[GYRO_STICK_TARGET] ?: 0).coerceIn(0, 1) }
+    suspend fun setGyroStickTarget(value: Int) { context.dataStore.edit { it[GYRO_STICK_TARGET] = value.coerceIn(0, 1) } }
+    val lightGunAimSource: Flow<Int> = context.dataStore.data.map { (it[LIGHT_GUN_AIM_SOURCE] ?: 0).coerceIn(0, 3) }
+    suspend fun setLightGunAimSource(value: Int) { context.dataStore.edit { it[LIGHT_GUN_AIM_SOURCE] = value.coerceIn(0, 3) } }
+    val lightGunCursorEnabled: Flow<Boolean> = context.dataStore.data.map { (it[LIGHT_GUN_CURSOR_ENABLED] ?: true) }
+    suspend fun setLightGunCursorEnabled(value: Boolean) { context.dataStore.edit { it[LIGHT_GUN_CURSOR_ENABLED] = value } }
+    val arcadeDevice1: Flow<Int> = context.dataStore.data.map { (it[ARCADE_DEVICE_1] ?: 0).coerceIn(0, 2) }
+    suspend fun setArcadeDevice1(value: Int) { context.dataStore.edit { it[ARCADE_DEVICE_1] = value.coerceIn(0, 2) } }
+    val arcadeDevice2: Flow<Int> = context.dataStore.data.map { (it[ARCADE_DEVICE_2] ?: 0).coerceIn(0, 2) }
+    suspend fun setArcadeDevice2(value: Int) { context.dataStore.edit { it[ARCADE_DEVICE_2] = value.coerceIn(0, 2) } }
     val gyroSensitivity: Flow<Int> = context.dataStore.data.map { (it[GYRO_SENSITIVITY] ?: DEFAULT_GYRO_SENSITIVITY).coerceIn(25, 300) }
     suspend fun setGyroSensitivity(value: Int) { context.dataStore.edit { it[GYRO_SENSITIVITY] = value.coerceIn(25, 300) } }
     val gyroSmoothing: Flow<Int> = context.dataStore.data.map { (it[GYRO_SMOOTHING] ?: DEFAULT_GYRO_SMOOTHING).coerceIn(0, 90) }
@@ -2186,8 +2227,9 @@ class AppPreferences(private val context: Context) {
     suspend fun setGamepadBinding(padIndex: Int, actionId: String, keyCode: Int) {
         context.dataStore.edit { prefs ->
             updateGamepadBindingsForPad(prefs, padIndex) { updated ->
-                updated.entries.removeAll { it.value == keyCode }
-                updated[actionId] = keyCode
+                val assigned = GamepadBindingRules.assign(updated, actionId, keyCode)
+                updated.clear()
+                updated.putAll(assigned)
             }
         }
     }
@@ -2672,7 +2714,12 @@ class AppPreferences(private val context: Context) {
             put("touchHaptics", prefs[TOUCH_HAPTICS] ?: false)
             put("touchHapticsPreset", (prefs[TOUCH_HAPTICS_PRESET] ?: DEFAULT_TOUCH_HAPTICS_PRESET).coerceIn(TOUCH_HAPTICS_PRESET_SOFT, TOUCH_HAPTICS_PRESET_STRONG))
             put("touchHapticsStrength", (prefs[TOUCH_HAPTICS_STRENGTH] ?: DEFAULT_TOUCH_HAPTICS_STRENGTH).coerceIn(10, 100))
-            put("gyroMode", (prefs[GYRO_MODE] ?: GYRO_MODE_OFF).coerceIn(GYRO_MODE_OFF, GYRO_MODE_STEERING))
+            put("gyroMode", (prefs[GYRO_MODE] ?: GYRO_MODE_OFF).coerceIn(GYRO_MODE_OFF, GYRO_MODE_LIGHT_GUN))
+            put("arcadeDevice2", (prefs[ARCADE_DEVICE_2] ?: 0).coerceIn(0, 2))
+            put("arcadeDevice1", (prefs[ARCADE_DEVICE_1] ?: 0).coerceIn(0, 2))
+            put("lightGunCursorEnabled", (prefs[LIGHT_GUN_CURSOR_ENABLED] ?: true))
+            put("lightGunAimSource", (prefs[LIGHT_GUN_AIM_SOURCE] ?: 0).coerceIn(0, 3))
+            put("gyroStickTarget", (prefs[GYRO_STICK_TARGET] ?: 0).coerceIn(0, 1))
             put("gyroSensitivity", (prefs[GYRO_SENSITIVITY] ?: DEFAULT_GYRO_SENSITIVITY).coerceIn(25, 300))
             put("gyroSmoothing", (prefs[GYRO_SMOOTHING] ?: DEFAULT_GYRO_SMOOTHING).coerceIn(0, 90))
             put("gyroInvertX", prefs[GYRO_INVERT_X] ?: false)
@@ -2917,7 +2964,12 @@ class AppPreferences(private val context: Context) {
             prefs[TOUCH_HAPTICS] = json.optBoolean("touchHaptics", false)
             prefs[TOUCH_HAPTICS_PRESET] = json.optInt("touchHapticsPreset", DEFAULT_TOUCH_HAPTICS_PRESET).coerceIn(TOUCH_HAPTICS_PRESET_SOFT, TOUCH_HAPTICS_PRESET_STRONG)
             prefs[TOUCH_HAPTICS_STRENGTH] = json.optInt("touchHapticsStrength", DEFAULT_TOUCH_HAPTICS_STRENGTH).coerceIn(10, 100)
-            prefs[GYRO_MODE] = json.optInt("gyroMode", GYRO_MODE_OFF).coerceIn(GYRO_MODE_OFF, GYRO_MODE_STEERING)
+            prefs[GYRO_MODE] = json.optInt("gyroMode", GYRO_MODE_OFF).coerceIn(GYRO_MODE_OFF, GYRO_MODE_LIGHT_GUN)
+            prefs[ARCADE_DEVICE_2] = json.optInt("arcadeDevice2", 0).coerceIn(0, 2)
+            prefs[ARCADE_DEVICE_1] = json.optInt("arcadeDevice1", 0).coerceIn(0, 2)
+            prefs[LIGHT_GUN_CURSOR_ENABLED] = json.optBoolean("lightGunCursorEnabled", true)
+            prefs[LIGHT_GUN_AIM_SOURCE] = json.optInt("lightGunAimSource", 0).coerceIn(0, 3)
+            prefs[GYRO_STICK_TARGET] = json.optInt("gyroStickTarget", 0).coerceIn(0, 1)
             prefs[GYRO_SENSITIVITY] = json.optInt("gyroSensitivity", DEFAULT_GYRO_SENSITIVITY).coerceIn(25, 300)
             prefs[GYRO_SMOOTHING] = json.optInt("gyroSmoothing", DEFAULT_GYRO_SMOOTHING).coerceIn(0, 90)
             prefs[GYRO_INVERT_X] = json.optBoolean("gyroInvertX", false)

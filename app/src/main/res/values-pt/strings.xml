@@ -637,7 +637,7 @@
     <string name="settings_gyro_invert_x_desc">Inverte o movimento para a esquerda e para a direita.</string>
     <string name="settings_gyro_invert_y">Inverter giroscópio vertical</string>
     <string name="settings_gyro_invert_y_desc">Inverte o movimento de mira para cima e para baixo.</string>
-    <string name="settings_help_gyro_mode">"Mira" converte a velocidade de rotação do telefone no analógico direito para o controle da câmera em jogos de tiro e retorna automaticamente ao centro quando o telefone para de se mover. "Direção" converte a inclinação do telefone no analógico esquerdo para jogos de corrida e calibra o ângulo atual como o centro quando o jogo começa. O modo selecionado é usado apenas enquanto um jogo está em execução e requer o sensor de movimento correspondente.</string>
+    <string name="settings_help_gyro_mode">Mira converte a rotação do telefone em movimento do analógico para controlar a câmera. Direção usa a inclinação do telefone como analógico esquerdo. A pistola de luz usa a fonte de mira escolhida abaixo; um analógico físico ou na tela não precisa de sensor de movimento. Jogos de arcade com pistola de luz a ativam automaticamente.</string>
     <string name="settings_help_gyro_sensitivity">Controla a força com que o movimento do telefone desvia o analógico emulado. Ajustes específicos por jogo são recomendados, pois os jogos usam diferentes curvas de resposta para câmera e direção.</string>
     <string name="settings_help_gyro_smoothing">Filtra o ruído do sensor e o tremor da mão. Valores mais baixos reagem mais rápido; valores mais altos parecem mais estáveis, mas adicionam um pouco de latência.</string>
     <string name="settings_help_upscale">Renderiza o jogo em uma resolução interna maior e depois escala a imagem para a tela. Valores altos deixam os jogos 3D bem mais nítidos, mas exigem muito da GPU, então títulos pesados podem perder quadros ou esquentar. Aumente aos poucos observando o contador de FPS: Nativo para o melhor desempenho, 2x como bom equilíbrio na maioria dos celulares e valores maiores só em aparelhos potentes ou jogos simples.</string>
@@ -2141,4 +2141,26 @@
     <string name="controls_editor_show_grid">Mostrar grelha</string>
     <string name="controls_editor_snap_grid">Ajustar à grelha</string>
     <string name="controls_editor_group_scale_value">Escala do grupo %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Gatilho pistola de luz</string>
+    <string name="settings_gamepad_action_gun_pedal">Pedal pistola de luz</string>
+    <string name="settings_gamepad_action_gun_reload">Recarregar pistola de luz</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Recalibrar pistola de luz</string>
+    <string name="settings_gyro_mode_light_gun">Pistola de luz</string>
+    <string name="settings_gyro_stick">Analógico do giroscópio</string>
+    <string name="settings_light_gun_aim">Mira da pistola de luz</string>
+    <string name="settings_light_gun_aim_gyro">Giroscópio</string>
+    <string name="settings_light_gun_cursor">Mostrar mira</string>
+    <string name="settings_light_gun_cursor_desc">Desenha um ponto onde a pistola de luz aponta.</string>
+    <string name="settings_help_light_gun_cursor">Desative se o jogo já desenha a própria mira.</string>
+    <string name="settings_gyro_aim_left">Mirar - analógico esquerdo</string>
+    <string name="settings_arcade_device_player_1">Dispositivo do jogador 1</string>
+    <string name="settings_arcade_device_player_2">Dispositivo do jogador 2</string>
+    <string name="settings_arcade_device_auto">Automático</string>
+    <string name="settings_arcade_device_gamepad">Controle</string>
+    <string name="settings_arcade_device_light_gun">Pistola de luz</string>
+    <string name="settings_gyro_stick_right">Analógico direito</string>
+    <string name="settings_gyro_stick_left">Analógico esquerdo</string>
+    <string name="settings_light_gun_aim_touch">Toque / mouse</string>
 </resources>

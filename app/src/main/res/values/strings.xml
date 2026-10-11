@@ -682,7 +682,7 @@
     <string name="settings_gyro_invert_x_desc">Reverses left and right motion.</string>
     <string name="settings_gyro_invert_y">Invert vertical gyro</string>
     <string name="settings_gyro_invert_y_desc">Reverses up and down aiming motion.</string>
-    <string name="settings_help_gyro_mode">Aim converts phone rotation speed into the right analog stick for camera control in shooters and automatically returns to center when the phone stops moving. Steering converts the phone’s held tilt into the left analog stick for racing games and calibrates the current angle as center when gameplay starts. The selected mode is used only while a game is running and requires the corresponding motion sensor.</string>
+    <string name="settings_help_gyro_mode">Aim converts phone rotation into an analog stick for camera control. Steering uses the phone’s tilt as the left stick. Light gun uses the aim source selected below; a physical or on-screen stick needs no motion sensor. Arcade light-gun games enable the gun automatically.</string>
     <string name="settings_help_gyro_sensitivity">Controls how strongly phone movement deflects the emulated analog stick. Per-game overrides are recommended because games use different camera and steering response curves.</string>
     <string name="settings_help_gyro_smoothing">Filters sensor noise and hand shake. Lower values react faster; higher values feel steadier but add a small amount of latency.</string>
     <string name="settings_help_upscale">Renders the game at a higher internal resolution and then scales the image to your screen. Higher values make 3D games look much sharper and cleaner, but they load the GPU heavily, so demanding titles may drop frames or get hot. Raise it step by step while watching the FPS counter: use Native for the best performance, 2x for a good balance on most phones, and higher values only on powerful devices or in simple games.</string>
@@ -2164,4 +2164,26 @@
     <string name="naomi_guide_step_controls">Controls — Select inserts a coin and Start begins the game. With a gamepad, L3 opens the Test menu and R3 the Service menu. Free play is on by default.</string>
     <string name="naomi_guide_step_covers">Covers — artwork is downloaded from the EmuCoreH catalogue by ROM set name. Titles without artwork show a card with their name.</string>
     <string name="naomi_guide_settings_desc">BIOS, ROM set, GD-ROM, launch and control instructions.</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Light Gun Trigger</string>
+    <string name="settings_gamepad_action_gun_pedal">Light Gun Pedal</string>
+    <string name="settings_gamepad_action_gun_reload">Light Gun Reload</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Light Gun Recalibrate</string>
+    <string name="settings_gyro_mode_light_gun">Light gun</string>
+    <string name="settings_gyro_stick">Gyro stick</string>
+    <string name="settings_light_gun_aim">Light gun aim</string>
+    <string name="settings_light_gun_aim_gyro">Gyroscope</string>
+    <string name="settings_light_gun_cursor">Show aim cursor</string>
+    <string name="settings_light_gun_cursor_desc">Draws a dot where the light gun points.</string>
+    <string name="settings_help_light_gun_cursor">Turn off if the game already draws its own reticle.</string>
+    <string name="settings_gyro_aim_left">Aim - left stick</string>
+    <string name="settings_arcade_device_player_1">Player 1 device</string>
+    <string name="settings_arcade_device_player_2">Player 2 device</string>
+    <string name="settings_arcade_device_auto">Automatic</string>
+    <string name="settings_arcade_device_gamepad">Controller</string>
+    <string name="settings_arcade_device_light_gun">Light gun</string>
+    <string name="settings_gyro_stick_right">Right stick</string>
+    <string name="settings_gyro_stick_left">Left stick</string>
+    <string name="settings_light_gun_aim_touch">Touch / mouse</string>
 </resources>

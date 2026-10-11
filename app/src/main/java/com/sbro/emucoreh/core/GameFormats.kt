@@ -53,6 +53,9 @@ object GameFormats {
 
     fun isSupportedName(name: String): Boolean = extensionOf(name) in extensions
 
+    /** A replacement GD-ROM image; arcade ROMs and playlists require a new launch. */
+    fun isDiscImageName(name: String): Boolean = extensionOf(name) in discExtensions
+
     /**
      * The library hides raw tracks, but a file picked for a direct launch may
      * be any content the core accepts, including a lone `.bin`.

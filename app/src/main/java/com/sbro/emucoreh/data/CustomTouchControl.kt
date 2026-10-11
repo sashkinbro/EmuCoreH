@@ -150,7 +150,8 @@ data class CustomTouchControl(
             "l1", "l2", "r1", "r2", "l3", "r3",
             "select", "start", "fast_forward",
             // Arcade service switches (Naomi/Atomiswave).
-            "coin", "test", "service"
+            "coin", "test", "service",
+            "gun_trigger", "gun_pedal", "gun_reload", "gun_recalibrate"
         )
 
         fun defaultLabelFor(actionId: String): String = when (actionId) {
@@ -171,6 +172,10 @@ data class CustomTouchControl(
             "coin" -> "COIN"
             "test" -> "TEST"
             "service" -> "SRV"
+            "gun_trigger" -> "FIRE"
+            "gun_pedal" -> "PEDAL"
+            "gun_reload" -> "RELOAD"
+            "gun_recalibrate" -> "CENTER"
             "start" -> "START"
             "fast_forward" -> "≫"
             else -> "X"

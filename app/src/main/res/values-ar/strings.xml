@@ -635,7 +635,7 @@
     <string name="settings_gyro_invert_x_desc">يعكس الحركة يمينًا ويسارًا.</string>
     <string name="settings_gyro_invert_y">عكس الجيروسكوب العمودي</string>
     <string name="settings_gyro_invert_y_desc">يعكس حركة التصويب لأعلى ولأسفل.</string>
-    <string name="settings_help_gyro_mode">يحول "التصويب" سرعة دوران الهاتف إلى العصا التناظرية اليمنى للتحكم في الكاميرا في ألعاب التصويب ويعود تلقائيًا إلى المركز عندما يتوقف الهاتف عن الحركة. يحول "التوجيه" إمالة الهاتف إلى العصا التناظرية اليسرى لألعاب السباق ويعاير الزاوية الحالية كمركز عند بدء اللعب. يُستخدم الوضع المحدد فقط أثناء تشغيل اللعبة ويتطلب مستشعر الحركة المقابل.</string>
+    <string name="settings_help_gyro_mode">يحوّل وضع التصويب دوران الهاتف إلى حركة عصا تحكم تناظرية للكاميرا. يستخدم وضع التوجيه إمالة الهاتف كالعصا اليسرى. يستخدم المسدس الضوئي مصدر التصويب المحدد أدناه؛ ولا تحتاج العصا الفعلية أو المعروضة على الشاشة إلى مستشعر حركة. تُفعّل ألعاب المسدس الضوئي الأركيد هذا الوضع تلقائيًا.</string>
     <string name="settings_help_gyro_sensitivity">يتحكم في مدى قوة تأثير حركة الهاتف على العصا التناظرية المحاكية. يُوصى بتخصيص الإعدادات لكل لعبة لأن الألعاب تستخدم منحنيات استجابة مختلفة للكاميرا والتوجيه.</string>
     <string name="settings_help_gyro_smoothing">يصفي ضوضاء المستشعر واهتزاز اليد. تتفاعل القيم الأقل بشكل أسرع؛ وتشعر القيم الأعلى بثبات أكبر ولكنها تضيف مقدارًا صغيرًا من التأخير.</string>
     <string name="settings_help_upscale">يعرض اللعبة بدقة داخلية أعلى ثم يوسّع الصورة لتناسب الشاشة. القيم العالية تجعل الألعاب ثلاثية الأبعاد أكثر وضوحًا بكثير، لكنها تُحمّل GPU بشدة، لذا قد تفقد الألعاب الثقيلة الإطارات أو تسخن. ارفع القيمة تدريجيًا مع مراقبة عدّاد FPS: الأصلية لأفضل أداء، و2x توازن جيد على معظم الهواتف، والقيم الأعلى فقط على الأجهزة القوية أو الألعاب البسيطة.</string>
@@ -2147,4 +2147,26 @@
     <string name="controls_editor_show_grid">إظهار الشبكة</string>
     <string name="controls_editor_snap_grid">الالتقاط إلى الشبكة</string>
     <string name="controls_editor_group_scale_value">مقياس المجموعة %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">زناد المسدس الضوئي</string>
+    <string name="settings_gamepad_action_gun_pedal">دواسة المسدس الضوئي</string>
+    <string name="settings_gamepad_action_gun_reload">إعادة تلقيم المسدس الضوئي</string>
+    <string name="settings_gamepad_action_gun_recalibrate">معايرة المسدس الضوئي</string>
+    <string name="settings_gyro_mode_light_gun">مسدس ضوئي</string>
+    <string name="settings_gyro_stick">عصا الجيروسكوب</string>
+    <string name="settings_light_gun_aim">تصويب المسدس الضوئي</string>
+    <string name="settings_light_gun_aim_gyro">الجيروسكوب</string>
+    <string name="settings_light_gun_cursor">إظهار مؤشر التصويب</string>
+    <string name="settings_light_gun_cursor_desc">يرسم نقطة حيث يشير المسدس الضوئي.</string>
+    <string name="settings_help_light_gun_cursor">أوقفه إذا كانت اللعبة ترسم مؤشرها الخاص.</string>
+    <string name="settings_gyro_aim_left">التصويب - العصا اليسرى</string>
+    <string name="settings_arcade_device_player_1">جهاز اللاعب 1</string>
+    <string name="settings_arcade_device_player_2">جهاز اللاعب 2</string>
+    <string name="settings_arcade_device_auto">تلقائي</string>
+    <string name="settings_arcade_device_gamepad">وحدة تحكم</string>
+    <string name="settings_arcade_device_light_gun">مسدس ضوئي</string>
+    <string name="settings_gyro_stick_right">العصا اليمنى</string>
+    <string name="settings_gyro_stick_left">العصا اليسرى</string>
+    <string name="settings_light_gun_aim_touch">اللمس / الفأرة</string>
 </resources>

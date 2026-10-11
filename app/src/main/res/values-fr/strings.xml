@@ -637,7 +637,7 @@
     <string name="settings_gyro_invert_x_desc">Inverse les mouvements de gauche à droite.</string>
     <string name="settings_gyro_invert_y">Inverser le gyroscope vertical</string>
     <string name="settings_gyro_invert_y_desc">Inverse les mouvements de visée de haut en bas.</string>
-    <string name="settings_help_gyro_mode">Le mode "Visée" convertit la vitesse de rotation du téléphone vers le joystick analogique droit pour contrôler la caméra dans les jeux de tir et retourne automatiquement au centre lorsque le téléphone s\'arrête. Le mode "Direction" convertit l\'inclinaison du téléphone vers le joystick analogique gauche pour les jeux de course et calibre l\'angle actuel comme centre au lancement du jeu. Le mode sélectionné n\'est actif que pendant qu\'un jeu est en cours et nécessite le capteur de mouvement correspondant.</string>
+    <string name="settings_help_gyro_mode">La visée transforme la rotation du téléphone en mouvement du stick analogique pour contrôler la caméra. La direction utilise son inclinaison comme stick gauche. Le pistolet optique utilise la source de visée choisie ci-dessous ; un stick physique ou virtuel ne nécessite aucun capteur de mouvement. Les jeux arcade de tir optique activent le pistolet automatiquement.</string>
     <string name="settings_help_gyro_sensitivity">Contrôle la force avec laquelle le mouvement du téléphone fait dévier le joystick analogique émulé. Il est recommandé de personnaliser ce réglage pour chaque jeu, car les jeux utilisent des courbes de réponse de caméra et de direction différentes.</string>
     <string name="settings_help_gyro_smoothing">Filtre le bruit du capteur et les tremblements de la main. Des valeurs plus faibles réagissent plus rapidement ; des valeurs plus élevées offrent plus de stabilité mais ajoutent une légère latence.</string>
     <string name="settings_help_upscale">Rend le jeu à une résolution interne plus élevée, puis met l’image à l’échelle de l’écran. Des valeurs élevées rendent les jeux 3D beaucoup plus nets, mais sollicitent fortement le GPU : les titres exigeants peuvent perdre des images ou chauffer. Augmentez par paliers en surveillant le compteur FPS : Native pour les meilleures performances, 2x pour un bon équilibre sur la plupart des téléphones, et plus haut uniquement sur un appareil puissant ou dans des jeux simples.</string>
@@ -2141,4 +2141,26 @@
     <string name="controls_editor_show_grid">Afficher la grille</string>
     <string name="controls_editor_snap_grid">Aligner sur la grille</string>
     <string name="controls_editor_group_scale_value">Échelle du groupe %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Gâchette pistolet optique</string>
+    <string name="settings_gamepad_action_gun_pedal">Pédale pistolet optique</string>
+    <string name="settings_gamepad_action_gun_reload">Rechargement pistolet optique</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Recalibrage pistolet optique</string>
+    <string name="settings_gyro_mode_light_gun">Pistolet optique</string>
+    <string name="settings_gyro_stick">Stick gyroscopique</string>
+    <string name="settings_light_gun_aim">Viser au pistolet optique</string>
+    <string name="settings_light_gun_aim_gyro">Gyroscope</string>
+    <string name="settings_light_gun_cursor">Afficher le viseur</string>
+    <string name="settings_light_gun_cursor_desc">Dessine un point là où pointe le pistolet optique.</string>
+    <string name="settings_help_light_gun_cursor">Désactive si le jeu dessine déjà son propre réticule.</string>
+    <string name="settings_gyro_aim_left">Viser - stick gauche</string>
+    <string name="settings_arcade_device_player_1">Périphérique du joueur 1</string>
+    <string name="settings_arcade_device_player_2">Périphérique du joueur 2</string>
+    <string name="settings_arcade_device_auto">Automatique</string>
+    <string name="settings_arcade_device_gamepad">Manette</string>
+    <string name="settings_arcade_device_light_gun">Pistolet optique</string>
+    <string name="settings_gyro_stick_right">Stick droit</string>
+    <string name="settings_gyro_stick_left">Stick gauche</string>
+    <string name="settings_light_gun_aim_touch">Tactile / souris</string>
 </resources>

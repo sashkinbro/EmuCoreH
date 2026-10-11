@@ -653,7 +653,7 @@
     <string name="settings_gyro_invert_x_desc">Міняє місцями рухи вліво та вправо.</string>
     <string name="settings_gyro_invert_y">Інвертувати гіроскоп по вертикалі</string>
     <string name="settings_gyro_invert_y_desc">Міняє місцями рух прицілювання вгору та вниз.</string>
-    <string name="settings_help_gyro_mode">«Прицілювання» перетворює швидкість обертання телефону на рух правого аналогового стіка для керування камерою в шутерах і автоматично повертається в центр, коли телефон перестає рухатися. «Кермо» перетворює нахил телефону на рух лівого аналогового стіка для гоночних ігор і калібрує поточний кут як центральний на початку гри. Вибраний режим використовується лише під час роботи гри і вимагає наявності відповідного датчика руху.</string>
+    <string name="settings_help_gyro_mode">Прицілювання перетворює обертання телефону на рух аналогового стіка для керування камерою. Кермо використовує нахил телефону як лівий стік. Світловий пістолет використовує вибране нижче джерело прицілювання; фізичному або екранному стіку не потрібен датчик руху. Аркадні ігри зі світловим пістолетом вмикають його автоматично.</string>
     <string name="settings_help_gyro_sensitivity">Керує тим, наскільки сильно рух телефону відхиляє емульований аналоговий стік. Рекомендується налаштовувати цей параметр для кожної гри окремо, оскільки ігри використовують різні криві відгуку для камери та кермування.</string>
     <string name="settings_help_gyro_smoothing">Фільтрує шум датчика та тремтіння рук. Менші значення реагують швидше; більші значення здаються стабільнішими, але додають невелику затримку.</string>
     <string name="settings_help_upscale">Рендерить гру у вищій внутрішній роздільності, а потім масштабує зображення до екрана. Вищі значення роблять 3D-ігри значно чіткішими, але сильно навантажують GPU, тож вимогливі ігри можуть втрачати кадри або перегріватися. Підвищуйте поступово, стежачи за лічильником FPS: «Нативна» — для найкращої продуктивності, 2x — оптимальний баланс для більшості телефонів, а вищі значення — лише на потужних пристроях або в простих іграх.</string>
@@ -2144,4 +2144,26 @@
     <string name="controls_editor_show_grid">Показати сітку</string>
     <string name="controls_editor_snap_grid">Прив\'язувати до сітки</string>
     <string name="controls_editor_group_scale_value">Масштаб групи %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Курок світлового пістолета</string>
+    <string name="settings_gamepad_action_gun_pedal">Педаль світлового пістолета</string>
+    <string name="settings_gamepad_action_gun_reload">Перезарядка світлового пістолета</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Калібрування світлового пістолета</string>
+    <string name="settings_gyro_mode_light_gun">Світловий пістолет</string>
+    <string name="settings_gyro_stick">Стік гіроскопа</string>
+    <string name="settings_light_gun_aim">Приціл світлового пістолета</string>
+    <string name="settings_light_gun_aim_gyro">Гіроскоп</string>
+    <string name="settings_light_gun_cursor">Показувати приціл</string>
+    <string name="settings_light_gun_cursor_desc">Малює крапку там, куди наводить світловий пістолет.</string>
+    <string name="settings_help_light_gun_cursor">Вимкни, якщо гра сама малює приціл.</string>
+    <string name="settings_gyro_aim_left">Прицілювання — лівий стік</string>
+    <string name="settings_arcade_device_player_1">Пристрій гравця 1</string>
+    <string name="settings_arcade_device_player_2">Пристрій гравця 2</string>
+    <string name="settings_arcade_device_auto">Автоматично</string>
+    <string name="settings_arcade_device_gamepad">Геймпад</string>
+    <string name="settings_arcade_device_light_gun">Світловий пістолет</string>
+    <string name="settings_gyro_stick_right">Правий стік</string>
+    <string name="settings_gyro_stick_left">Лівий стік</string>
+    <string name="settings_light_gun_aim_touch">Дотик / миша</string>
 </resources>

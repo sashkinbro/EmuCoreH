@@ -19,6 +19,23 @@ import kotlinx.coroutines.flow.asStateFlow
 
 object NativeApp {
 
+    const val PAD_GUN_TRIGGER = 135
+    const val PAD_GUN_PEDAL = 136
+    const val PAD_GUN_RELOAD = 137
+    const val PAD_GUN_RECALIBRATE = 138
+    const val PAD_ARCADE_COIN = 139
+    const val PAD_ARCADE_TEST = 140
+    const val PAD_ARCADE_SERVICE = 141
+    private val _lightGunRecenterRequests = MutableStateFlow(listOf(0, 0))
+    val lightGunRecenterRequests = _lightGunRecenterRequests.asStateFlow()
+
+    @JvmStatic fun getArcadeInputMode(): Int = CoreRuntime.getArcadeInputMode()
+    @JvmStatic fun setArcadeControllerDevice(port: Int, device: Int) = CoreRuntime.setArcadeControllerDevice(port, device)
+    @JvmStatic fun setLightGunAim(port: Int, x: Float, y: Float, offscreen: Boolean = false) =
+        CoreRuntime.setLightGunAim(port, x, y, offscreen)
+    @JvmStatic fun setLightGunCursorEnabled(enabled: Boolean) = CoreRuntime.setLightGunCursorEnabled(enabled)
+    @JvmStatic fun resetLightGunInput(port: Int) = CoreRuntime.resetLightGunInput(port)
+
     private const val TAG = "NativeApp"
     @JvmStatic
     val hasNativeTools: Boolean
@@ -144,6 +161,23 @@ object NativeApp {
     }
     @JvmStatic @Synchronized fun setPadButton(padIndex: Int, index: Int, range: Int, pressed: Boolean) {
         if (padIndex !in 0..1) return
+        if (index in PAD_GUN_TRIGGER..PAD_GUN_RELOAD) {
+            CoreRuntime.setLightGunButton(padIndex, index - PAD_GUN_TRIGGER, pressed)
+            return
+        }
+        if (index in PAD_ARCADE_COIN..PAD_ARCADE_SERVICE) {
+            CoreRuntime.setLightGunButton(padIndex, index - PAD_ARCADE_COIN + 3, pressed)
+            return
+        }
+        if (index == PAD_GUN_RECALIBRATE) {
+            if (pressed) {
+                CoreRuntime.setLightGunAim(padIndex, .5f, .5f, false)
+                _lightGunRecenterRequests.value = _lightGunRecenterRequests.value.mapIndexed { port, value ->
+                    if (port == padIndex) value + 1 else value
+                }
+            }
+            return
+        }
         // Fast forward only: holding Start (or the dedicated button) speeds the
         // emulation up. The core has no rewind support, so it is not exposed.
         if (index == PAD_START || index == PAD_FAST_FORWARD) {
@@ -181,8 +215,7 @@ object NativeApp {
         updateTimeControl()
         padButtons[padIndex] = 0xFFFF
         padAnalogHalfAxes[padIndex].fill(0)
-        CoreRuntime.setPadButtons(padIndex, 0xFFFF)
-        CoreRuntime.setPadAnalog(padIndex, 128, 128, 128, 128)
+        CoreRuntime.resetPadInput(padIndex)
     }
 
     @JvmStatic fun setPadAnalogMode(padIndex: Int, enabled: Boolean): Boolean {

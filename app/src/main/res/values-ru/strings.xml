@@ -637,7 +637,7 @@
     <string name="settings_gyro_invert_x_desc">Меняет местами движения влево и вправо.</string>
     <string name="settings_gyro_invert_y">Инвертировать гироскоп по вертикали</string>
     <string name="settings_gyro_invert_y_desc">Меняет местами движения прицеливания вверх и вниз.</string>
-    <string name="settings_help_gyro_mode">«Прицеливание» преобразует скорость вращения телефона в движение правого аналогового стика для управления камерой в шутерах и автоматически возвращается в центр, когда телефон перестает двигаться. «Руль» преобразует наклон телефона в движение левого аналогового стика для гоночных игр и калибрует текущий угол как центральный в начале игры. Выбранный режим используется только во время работы игры и требует наличия соответствующего датчика движения.</string>
+    <string name="settings_help_gyro_mode">Прицеливание преобразует вращение телефона в движение аналогового стика для управления камерой. Руль использует наклон телефона как левый стик. Световой пистолет использует выбранный ниже источник прицеливания; физическому или экранному стику датчик движения не нужен. Аркадные игры со световым пистолетом включают его автоматически.</string>
     <string name="settings_help_gyro_sensitivity">Управляет тем, насколько сильно движение телефона отклоняет эмулируемый аналоговый стик. Рекомендуется настраивать этот параметр для каждой игры отдельно, поскольку в играх используются разные кривые отклика для камеры и руля.</string>
     <string name="settings_help_gyro_smoothing">Фильтрует шум датчика и дрожание рук. Более низкие значения реагируют быстрее; более высокие значения кажутся более стабильными, но добавляют небольшую задержку.</string>
     <string name="settings_help_upscale">Рендерит игру во внутреннем разрешении выше и затем масштабирует изображение под экран. Высокие значения делают 3D-игры заметно чётче, но сильно нагружают GPU, поэтому требовательные игры могут терять кадры или перегреваться. Повышайте постепенно, следя за счётчиком FPS: «Нативное» — для лучшей производительности, 2x — хороший баланс для большинства телефонов, а выше — только на мощных устройствах или в простых играх.</string>
@@ -2143,4 +2143,26 @@
     <string name="controls_editor_show_grid">Показать сетку</string>
     <string name="controls_editor_snap_grid">Привязать к сетке</string>
     <string name="controls_editor_group_scale_value">Масштаб группы %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Курок светового пистолета</string>
+    <string name="settings_gamepad_action_gun_pedal">Педаль светового пистолета</string>
+    <string name="settings_gamepad_action_gun_reload">Перезарядка светового пистолета</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Калибровка светового пистолета</string>
+    <string name="settings_gyro_mode_light_gun">Световой пистолет</string>
+    <string name="settings_gyro_stick">Стик гироскопа</string>
+    <string name="settings_light_gun_aim">Прицел светового пистолета</string>
+    <string name="settings_light_gun_aim_gyro">Гироскоп</string>
+    <string name="settings_light_gun_cursor">Показывать прицел</string>
+    <string name="settings_light_gun_cursor_desc">Рисует точку там, куда наводит световой пистолет.</string>
+    <string name="settings_help_light_gun_cursor">Отключи, если игра сама рисует прицел.</string>
+    <string name="settings_gyro_aim_left">Прицеливание — левый стик</string>
+    <string name="settings_arcade_device_player_1">Устройство игрока 1</string>
+    <string name="settings_arcade_device_player_2">Устройство игрока 2</string>
+    <string name="settings_arcade_device_auto">Автоматически</string>
+    <string name="settings_arcade_device_gamepad">Геймпад</string>
+    <string name="settings_arcade_device_light_gun">Световой пистолет</string>
+    <string name="settings_gyro_stick_right">Правый стик</string>
+    <string name="settings_gyro_stick_left">Левый стик</string>
+    <string name="settings_light_gun_aim_touch">Касание / мышь</string>
 </resources>

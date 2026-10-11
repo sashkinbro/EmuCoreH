@@ -29,6 +29,11 @@ data class PerGameSettings(
     val touchHaptics: Boolean = false,
     val touchHapticsPreset: Int = AppPreferences.DEFAULT_TOUCH_HAPTICS_PRESET,
     val gyroMode: Int = AppPreferences.GYRO_MODE_OFF,
+    val gyroStickTarget: Int = 0,
+    val lightGunAimSource: Int = 0,
+    val lightGunCursorEnabled: Boolean = true,
+    val arcadeDevice1: Int = 0,
+    val arcadeDevice2: Int = 0,
     val gyroSensitivity: Int = AppPreferences.DEFAULT_GYRO_SENSITIVITY,
     val gyroSmoothing: Int = AppPreferences.DEFAULT_GYRO_SMOOTHING,
     val gyroInvertX: Boolean = false,
@@ -165,7 +170,7 @@ class PerGameSettingsRepository(context: Context) {
     }
 }
 
-private fun JSONObject.toPerGameSettings(): PerGameSettings {
+internal fun JSONObject.toPerGameSettings(): PerGameSettings {
     val providedKeys = keys().asSequence().toSet()
     return PerGameSettings(
         gameKey = optString("gameKey"),
@@ -208,7 +213,12 @@ private fun JSONObject.toPerGameSettings(): PerGameSettings {
         touchHaptics = optBoolean("touchHaptics", false),
         touchHapticsPreset = optInt("touchHapticsPreset", AppPreferences.DEFAULT_TOUCH_HAPTICS_PRESET)
             .coerceIn(AppPreferences.TOUCH_HAPTICS_PRESET_SOFT, AppPreferences.TOUCH_HAPTICS_PRESET_STRONG),
-        gyroMode = optInt("gyroMode", AppPreferences.GYRO_MODE_OFF).coerceIn(AppPreferences.GYRO_MODE_OFF, AppPreferences.GYRO_MODE_STEERING),
+        gyroMode = optInt("gyroMode", AppPreferences.GYRO_MODE_OFF).coerceIn(AppPreferences.GYRO_MODE_OFF, AppPreferences.GYRO_MODE_LIGHT_GUN),
+        gyroStickTarget = optInt("gyroStickTarget", 0).coerceIn(0, 1),
+        lightGunAimSource = optInt("lightGunAimSource", 0).coerceIn(0, 3),
+        lightGunCursorEnabled = optBoolean("lightGunCursorEnabled", true),
+        arcadeDevice1 = optInt("arcadeDevice1", 0).coerceIn(0, 2),
+        arcadeDevice2 = optInt("arcadeDevice2", 0).coerceIn(0, 2),
         gyroSensitivity = optInt("gyroSensitivity", AppPreferences.DEFAULT_GYRO_SENSITIVITY).coerceIn(25, 300),
         gyroSmoothing = optInt("gyroSmoothing", AppPreferences.DEFAULT_GYRO_SMOOTHING).coerceIn(0, 90),
         gyroInvertX = optBoolean("gyroInvertX", false),
@@ -268,7 +278,7 @@ private fun JSONObject.toPerGameSettings(): PerGameSettings {
     )
 }
 
-private fun PerGameSettings.toJson(): JSONObject {
+internal fun PerGameSettings.toJson(): JSONObject {
     return JSONObject().apply {
         put("gameKey", gameKey)
         put("gameTitle", gameTitle)
@@ -298,6 +308,11 @@ private fun PerGameSettings.toJson(): JSONObject {
         }
         if (shouldWrite("touchHaptics")) put("touchHaptics", touchHaptics)
         if (shouldWrite("touchHapticsPreset")) put("touchHapticsPreset", touchHapticsPreset)
+        if (shouldWrite("gyroStickTarget")) put("gyroStickTarget", gyroStickTarget)
+        if (shouldWrite("lightGunAimSource")) put("lightGunAimSource", lightGunAimSource)
+        if (shouldWrite("lightGunCursorEnabled")) put("lightGunCursorEnabled", lightGunCursorEnabled)
+        if (shouldWrite("arcadeDevice1")) put("arcadeDevice1", arcadeDevice1)
+        if (shouldWrite("arcadeDevice2")) put("arcadeDevice2", arcadeDevice2)
         if (shouldWrite("gyroMode")) put("gyroMode", gyroMode)
         if (shouldWrite("gyroSensitivity")) put("gyroSensitivity", gyroSensitivity)
         if (shouldWrite("gyroSmoothing")) put("gyroSmoothing", gyroSmoothing)

@@ -650,7 +650,7 @@
     <string name="settings_gyro_invert_x_desc">Membalikkan gerakan kiri dan kanan.</string>
     <string name="settings_gyro_invert_y">Balikkan giroskop vertikal</string>
     <string name="settings_gyro_invert_y_desc">Membalikkan gerakan membidik ke atas dan ke bawah.</string>
-    <string name="settings_help_gyro_mode">"Bidik" mengubah kecepatan rotasi ponsel ke stik analog kanan untuk kontrol kamera dalam game penembak dan otomatis kembali ke tengah saat ponsel berhenti bergerak. "Kemudi" mengubah kemiringan ponsel ke stik analog kiri untuk game balap dan mengkalibrasi sudut saat ini sebagai titik tengah saat permainan dimulai. Mode yang dipilih hanya digunakan saat game berjalan dan memerlukan sensor gerak yang sesuai.</string>
+    <string name="settings_help_gyro_mode">Bidik mengubah putaran ponsel menjadi gerakan stik analog untuk mengendalikan kamera. Kemudi memakai kemiringan ponsel sebagai stik kiri. Pistol cahaya memakai sumber bidikan yang dipilih di bawah; stik fisik atau di layar tidak memerlukan sensor gerak. Game arkade pistol cahaya mengaktifkannya secara otomatis.</string>
     <string name="settings_help_gyro_sensitivity">Mengontrol seberapa kuat pergerakan ponsel menyimpangkan stik analog yang diemulasi. Pengaturan khusus per game disarankan karena game menggunakan kurva respons kamera dan kemudi yang berbeda.</string>
     <string name="settings_help_gyro_smoothing">Memfilter gangguan sensor dan getaran tangan. Nilai yang lebih rendah bereaksi lebih cepat; nilai yang lebih tinggi terasa lebih stabil tetapi menambah sedikit penundaan (latensi).</string>
     <string name="settings_help_upscale">Merender game pada resolusi internal lebih tinggi lalu menskalakan gambar ke layar. Nilai tinggi membuat game 3D jauh lebih tajam, tetapi sangat membebani GPU, sehingga game berat bisa kehilangan bingkai atau memanas. Naikkan bertahap sambil memantau penghitung FPS: Native untuk performa terbaik, 2x seimbang di sebagian besar ponsel, dan lebih tinggi hanya di perangkat bertenaga atau game ringan.</string>
@@ -2153,4 +2153,26 @@
     <string name="controls_editor_show_grid">Tampilkan kisi</string>
     <string name="controls_editor_snap_grid">Snap ke kisi</string>
     <string name="controls_editor_group_scale_value">Skala grup %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Pemicu pistol cahaya</string>
+    <string name="settings_gamepad_action_gun_pedal">Pedal pistol cahaya</string>
+    <string name="settings_gamepad_action_gun_reload">Muat ulang pistol cahaya</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Kalibrasi ulang pistol cahaya</string>
+    <string name="settings_gyro_mode_light_gun">Pistol cahaya</string>
+    <string name="settings_gyro_stick">Stik giroskop</string>
+    <string name="settings_light_gun_aim">Bidikan pistol cahaya</string>
+    <string name="settings_light_gun_aim_gyro">Giroskop</string>
+    <string name="settings_light_gun_cursor">Tampilkan kursor bidik</string>
+    <string name="settings_light_gun_cursor_desc">Menggambar titik di tempat pistol cahaya membidik.</string>
+    <string name="settings_help_light_gun_cursor">Matikan jika gim sudah menggambar retikelnya sendiri.</string>
+    <string name="settings_gyro_aim_left">Bidik - stik kiri</string>
+    <string name="settings_arcade_device_player_1">Perangkat pemain 1</string>
+    <string name="settings_arcade_device_player_2">Perangkat pemain 2</string>
+    <string name="settings_arcade_device_auto">Otomatis</string>
+    <string name="settings_arcade_device_gamepad">Kontroler</string>
+    <string name="settings_arcade_device_light_gun">Pistol cahaya</string>
+    <string name="settings_gyro_stick_right">Stik kanan</string>
+    <string name="settings_gyro_stick_left">Stik kiri</string>
+    <string name="settings_light_gun_aim_touch">Sentuhan / mouse</string>
 </resources>

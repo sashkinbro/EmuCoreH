@@ -635,7 +635,7 @@
     <string name="settings_gyro_invert_x_desc">बाएँ और दाएँ गति को उलट देता है।</string>
     <string name="settings_gyro_invert_y">लंबवत जाइरो को उल्टा करें</string>
     <string name="settings_gyro_invert_y_desc">ऊपर और नीचे निशाना लगाने की गति को उलट देता है。</string>
-    <string name="settings_help_gyro_mode">"निशाना" शूटर गेम में कैमरा नियंत्रण के लिए फ़ोन के घूमने की गति को दाएँ एनालॉग स्टिक में बदल देता है और फ़ोन के रुकने पर स्वचालित रूप से केंद्र में वापस आ जाता है। "स्टीयरिंग" रेसिंग गेम के लिए फ़ोन के झुकाव को बाएँ एनालॉग स्टिक में बदल देता है और गेमप्ले शुरू होने पर वर्तमान कोण को केंद्र के रूप में कैलिब्रेट करता है। चुना गया मोड केवल गेम चलने के दौरान उपयोग किया जाता है और इसके लिए संबंधित मोशन सेंसर की आवश्यकता होती है。</string>
+    <string name="settings_help_gyro_mode">निशाना साधने पर फ़ोन का घुमाव कैमरा नियंत्रण के लिए एनालॉग स्टिक की गति बन जाता है। स्टीयरिंग में फ़ोन का झुकाव बाएँ स्टिक की तरह काम करता है। लाइट गन नीचे चुने गए निशाने के स्रोत का उपयोग करती है; भौतिक या स्क्रीन पर मौजूद स्टिक को मोशन सेंसर की ज़रूरत नहीं होती। आर्केड लाइट गन गेम इसे अपने आप चालू करते हैं।</string>
     <string name="settings_help_gyro_sensitivity">यह नियंत्रित करता है कि फ़ोन की गति एम्यूलेटेड एनालॉग स्टिक को कितनी मजबूती से विक्षेपित करती है। प्रति-गेम सेटिंग की अनुशंसा की जाती है क्योंकि गेम अलग-अलग कैमरा और स्टीयरिंग रिस्पॉन्स कर्व्स का उपयोग करते हैं。</string>
     <string name="settings_help_gyro_smoothing">सेंसर शोर और हाथ के कांपने को फ़िल्टर करता है। कम मान तेज़ी से प्रतिक्रिया करते हैं; उच्च मान अधिक स्थिर महसूस होते हैं लेकिन थोड़ी सी देरी (लेटेंसी) जोड़ते हैं。</string>
     <string name="settings_help_upscale">गेम को उच्च आंतरिक रिज़ॉल्यूशन पर रेंडर करता है और फिर छवि को स्क्रीन पर स्केल करता है। ऊँचे मान 3D गेम को काफ़ी साफ़ और तेज़ दिखाते हैं, लेकिन GPU पर भारी पड़ते हैं, इसलिए भारी गेम में फ़्रेम गिर सकते हैं या डिवाइस गर्म हो सकता है। FPS काउंटर देखते हुए धीरे-धीरे बढ़ाएँ: सर्वोत्तम प्रदर्शन के लिए नेटिव, ज़्यादातर फ़ोन पर संतुलन के लिए 2x, और इससे ऊपर केवल शक्तिशाली डिवाइस या साधारण गेम में।</string>
@@ -2139,4 +2139,26 @@
     <string name="controls_editor_show_grid">ग्रिड दिखाएँ</string>
     <string name="controls_editor_snap_grid">ग्रिड पर स्नैप करें</string>
     <string name="controls_editor_group_scale_value">समूह स्केल %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">लाइट गन ट्रिगर</string>
+    <string name="settings_gamepad_action_gun_pedal">लाइट गन पेडल</string>
+    <string name="settings_gamepad_action_gun_reload">लाइट गन रीलोड</string>
+    <string name="settings_gamepad_action_gun_recalibrate">लाइट गन रीकैलिब्रेट</string>
+    <string name="settings_gyro_mode_light_gun">लाइट गन</string>
+    <string name="settings_gyro_stick">जायरो स्टिक</string>
+    <string name="settings_light_gun_aim">लाइट गन निशाना</string>
+    <string name="settings_light_gun_aim_gyro">जायरोस्कोप</string>
+    <string name="settings_light_gun_cursor">निशाना कर्सर दिखाएं</string>
+    <string name="settings_light_gun_cursor_desc">लाइट गन जहां इशारा करती है वहां बिंदु बनाता है।</string>
+    <string name="settings_help_light_gun_cursor">बंद करें अगर गेम खुद निशाना दिखाता है।</string>
+    <string name="settings_gyro_aim_left">निशाना - बायां स्टिक</string>
+    <string name="settings_arcade_device_player_1">खिलाड़ी 1 का उपकरण</string>
+    <string name="settings_arcade_device_player_2">खिलाड़ी 2 का उपकरण</string>
+    <string name="settings_arcade_device_auto">स्वचालित</string>
+    <string name="settings_arcade_device_gamepad">कंट्रोलर</string>
+    <string name="settings_arcade_device_light_gun">लाइट गन</string>
+    <string name="settings_gyro_stick_right">दायाँ स्टिक</string>
+    <string name="settings_gyro_stick_left">बायाँ स्टिक</string>
+    <string name="settings_light_gun_aim_touch">टच / माउस</string>
 </resources>

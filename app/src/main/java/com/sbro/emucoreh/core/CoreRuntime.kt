@@ -80,6 +80,11 @@ internal object CoreRuntime {
     private val padEdgeHoldMask = IntArray(2)
     private val padEdgeHoldFrames = IntArray(2)
     private val pendingPadAnalog = AtomicIntegerArray(IntArray(2) { 0x80808080.toInt() })
+    private val lightGunInputs = Array(2) { LightGunInputState() }
+    private val requestedInputDevices = AtomicIntegerArray(2)
+    private val appliedInputDevices = IntArray(2) { -1 }
+    @Volatile private var arcadeInputMode = -1
+    @Volatile private var lightGunCursorEnabled = true
 
     private class FrameTask(
         val block: () -> Boolean,
@@ -248,7 +253,10 @@ internal object CoreRuntime {
 
         currentGamePath = gamePath
         currentBiosOnly = biosOnly
+        arcadeInputMode = -1
         for (port in 0..1) {
+            lightGunInputs[port].reset()
+            appliedInputDevices[port] = -1
             desiredPadButtons.set(port, 0xFFFF)
             pendingPadPressEdges.set(port, 0)
             padEdgeHoldMask[port] = 0
@@ -325,6 +333,11 @@ internal object CoreRuntime {
         val upscale = settings["EmuCoreH/Display:Upscale"]?.toFloatOrNull()
             ?: settings["EmuCoreH:UpscaleMultiplier"]?.toFloatOrNull()
         upscale?.let(::pushInternalResolution)
+        // These frontend defaults intentionally differ from standalone Flycast.
+        // Publish them too, so a fresh gun profile displays the configured cursor.
+        listOf("reicast_lightgun1_crosshair", "reicast_lightgun2_crosshair").forEach { key ->
+            bridge.nativeSetOption(key, coreOptionValue(key) ?: "disabled")
+        }
         // Explicit user choices from the settings / game manager / in-game menu
         // win over every derived default.
         CoreOptionStore.persistedEntries().forEach { (key, value) ->
@@ -434,8 +447,11 @@ internal object CoreRuntime {
             "The frame worker cannot synchronously shut itself down"
         }
         running = false
+        arcadeInputMode = -1
         setTimeControl(0)
         for (port in 0..1) {
+            lightGunInputs[port].reset()
+            appliedInputDevices[port] = -1
             desiredPadButtons.set(port, 0xFFFF)
             pendingPadPressEdges.set(port, 0)
             padEdgeHoldMask[port] = 0
@@ -474,8 +490,16 @@ internal object CoreRuntime {
     }
 
     fun changeDisc(path: String): Boolean {
-        if (!isSupportedDiscPath(path)) return false
-        return sessionLock.withLock { session != 0L && loadDisc(session, path) == 0 }
+        if (!isSupportedDiscPath(path, replacementOnly = true)) return false
+        val app = context ?: return false
+        val preparedPath = if (path.startsWith("content://")) {
+            SafStorageBridge.prepare(app, path) ?: return false
+        } else path
+        return runOnFrameThread {
+            sessionLock.withLock {
+                session != 0L && bridge.changeDisc(session, preparedPath) == 0
+            }
+        }
     }
 
     fun saveState(path: String): Boolean {
@@ -593,6 +617,41 @@ internal object CoreRuntime {
         }
         return true
     }
+
+    /** A context change cancels taps; ordinary button release preserves them. */
+    fun resetPadInput(port: Int) = sessionLock.withLock {
+        if (port !in 0..1) return@withLock
+        desiredPadButtons.set(port, 0xFFFF)
+        pendingPadPressEdges.set(port, 0)
+        padEdgeHoldMask[port] = 0
+        padEdgeHoldFrames[port] = 0
+        pendingPadAnalog.set(port, 0x80808080.toInt())
+        lightGunInputs[port].reset(recenter = false)
+    }
+
+    fun getArcadeInputMode(): Int = arcadeInputMode
+
+    fun setArcadeControllerDevice(port: Int, device: Int) {
+        if (port !in 0..1) return
+        val normalized = device.coerceIn(0, 2)
+        if (requestedInputDevices.getAndSet(port, normalized) != normalized) {
+            lightGunInputs[port].reset()
+        }
+    }
+
+    fun setLightGunAim(port: Int, x: Float, y: Float, offscreen: Boolean) {
+        if (port in 0..1) lightGunInputs[port].setAim(x, y, offscreen)
+    }
+
+    fun setLightGunButton(port: Int, bit: Int, pressed: Boolean) {
+        if (port in 0..1) lightGunInputs[port].setButton(bit, pressed)
+    }
+
+    fun resetLightGunInput(port: Int) {
+        if (port in 0..1) lightGunInputs[port].reset(recenter = false)
+    }
+
+    fun setLightGunCursorEnabled(enabled: Boolean) { lightGunCursorEnabled = enabled }
 
     fun setPadAnalog(port: Int, lx: Int, ly: Int, rx: Int, ry: Int): Boolean {
         if (port !in 0..1) return false
@@ -825,6 +884,13 @@ internal object CoreRuntime {
                         null
                     } else {
                         for (port in 0..1) {
+                            val device = if (ArcadeInputPolicy.isLightGun(requestedInputDevices.get(port), arcadeInputMode)) 4 else 1
+                            if (appliedInputDevices[port] != device) {
+                                bridge.setControllerDevice(session, port, device)
+                                appliedInputDevices[port] = device
+                            }
+                            val gun = lightGunInputs[port].nextFrame()
+                            bridge.setLightGunState(session, port, gun.aim.x, gun.aim.y, gun.buttons, gun.aim.offscreen)
                             // Preserve a tap that began and ended between two
                             // guest frames, including cores that poll input
                             // less often than the frontend presents frames.
@@ -851,7 +917,9 @@ internal object CoreRuntime {
                         frameStartNanos = System.nanoTime()
                         framePacer.frameStarted(frameStartNanos)
                         val coreStartNanos = System.nanoTime()
+                        bridge.setLightGunCursorEnabled(lightGunCursorEnabled)
                         bridge.runFrame(session)
+                        arcadeInputMode = bridge.getArcadeInputMode(session)
                         val elapsed = System.nanoTime() - coreStartNanos
                         bridge.getDisplayRect(session)
                             ?.takeIf { it.size == 4 && it[2] > 0 && it[3] > 0 }
@@ -964,11 +1032,11 @@ internal object CoreRuntime {
         session != 0L && runCatching { bridge.hasDiscMedia(session) }.getOrDefault(false)
     }
 
-    private fun isSupportedDiscPath(path: String): Boolean {
+    private fun isSupportedDiscPath(path: String, replacementOnly: Boolean = false): Boolean {
         val name = if (path.startsWith("content://")) {
             context?.let { DocumentPathResolver.getDisplayName(it, path) } ?: return false
         } else path
-        return GameFormats.isLaunchableName(name)
+        return if (replacementOnly) GameFormats.isDiscImageName(name) else GameFormats.isLaunchableName(name)
     }
 
     private fun fitRect(containerWidth: Int, containerHeight: Int, contentWidth: Int, contentHeight: Int): Rect {

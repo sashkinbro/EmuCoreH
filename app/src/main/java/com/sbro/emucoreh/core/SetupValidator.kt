@@ -147,7 +147,7 @@ object SetupValidator {
     }
 
     internal fun isSupportedDiscImageName(displayName: String?): Boolean =
-        GameFormats.isSupportedName(displayName.orEmpty())
+        GameFormats.isDiscImageName(displayName.orEmpty())
 
     private fun isLaunchPathReadable(context: Context, rawGamePath: String): Boolean {
         if (rawGamePath.startsWith("content://")) {

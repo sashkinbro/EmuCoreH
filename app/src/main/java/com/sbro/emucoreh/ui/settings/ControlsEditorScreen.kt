@@ -1657,6 +1657,10 @@ private fun controlTitle(controlId: String): String = when (controlId) {
     "coin" -> stringResource(R.string.settings_gamepad_action_coin)
     "test" -> stringResource(R.string.settings_gamepad_action_test)
     "service" -> stringResource(R.string.settings_gamepad_action_service)
+    "gun_trigger" -> stringResource(R.string.settings_gamepad_action_gun_trigger)
+    "gun_pedal" -> stringResource(R.string.settings_gamepad_action_gun_pedal)
+    "gun_reload" -> stringResource(R.string.settings_gamepad_action_gun_reload)
+    "gun_recalibrate" -> stringResource(R.string.settings_gamepad_action_gun_recalibrate)
     "left_input_toggle" -> stringResource(R.string.settings_gamepad_action_left_input_toggle)
     "pressure" -> stringResource(R.string.settings_gamepad_action_pressure)
     "start" -> stringResource(R.string.settings_gamepad_action_start)
@@ -2058,7 +2062,7 @@ private fun PreviewLayout(
         visibleButtonSpecs.forEach { spec ->
             val baseZIndex = when (spec.id) {
                 "select", "left_input_toggle", "pressure", "start", "l3", "r3",
-                "coin", "test", "service" -> 3f
+                "coin", "test", "service", "gun_trigger", "gun_pedal", "gun_reload", "gun_recalibrate" -> 3f
                 else -> 1f
             }
             PreviewCanvasButton(

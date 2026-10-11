@@ -637,7 +637,7 @@
     <string name="settings_gyro_invert_x_desc">反转左右移动方向。</string>
     <string name="settings_gyro_invert_y">反转垂直陀螺仪</string>
     <string name="settings_gyro_invert_y_desc">反转上下瞄准移动方向。</string>
-    <string name="settings_help_gyro_mode">“瞄准”将手机的旋转速度转换为射击游戏中的右摇杆来控制视角，并在手机停止移动时自动回中。“转向”将手机的倾斜角度转换为赛车游戏中的左摇杆，并在游戏开始时将当前角度校准为中心点。所选模式仅在游戏运行时生效，并且需要相应的运动传感器。</string>
+    <string name="settings_help_gyro_mode">瞄准将手机旋转转换为控制视角的摇杆动作。转向将手机倾斜用作左摇杆。光枪使用下方选择的瞄准输入；实体摇杆或屏幕摇杆无需运动传感器。街机光枪游戏会自动启用光枪。</string>
     <string name="settings_help_gyro_sensitivity">控制手机移动对模拟摇杆产生的偏移强度。由于不同游戏具有不同的视角和转向响应曲线，建议为每个游戏单独设置。</string>
     <string name="settings_help_gyro_smoothing">过滤传感器噪声和手部抖动。数值越低反应越快；数值越高感觉越稳定，但会增加少许延迟。</string>
     <string name="settings_help_upscale">以更高的內部解析度渲染遊戲，再將畫面縮放至螢幕。數值越高，3D 遊戲越銳利，但 GPU 負載也越大，重度遊戲可能掉幀或過熱。請一邊看著 FPS 計數器一邊逐步調高：原生可獲得最佳效能，2x 在大多數手機上最平衡，更高數值只建議用於高效能裝置或簡單遊戲。</string>
@@ -2140,4 +2140,26 @@
     <string name="controls_editor_show_grid">显示网格</string>
     <string name="controls_editor_snap_grid">对齐网格</string>
     <string name="controls_editor_group_scale_value">组缩放 %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">光枪扳机</string>
+    <string name="settings_gamepad_action_gun_pedal">光枪踏板</string>
+    <string name="settings_gamepad_action_gun_reload">光枪装弹</string>
+    <string name="settings_gamepad_action_gun_recalibrate">光枪重新校准</string>
+    <string name="settings_gyro_mode_light_gun">光枪</string>
+    <string name="settings_gyro_stick">陀螺仪摇杆</string>
+    <string name="settings_light_gun_aim">光枪瞄准</string>
+    <string name="settings_light_gun_aim_gyro">陀螺仪</string>
+    <string name="settings_light_gun_cursor">显示瞄准光标</string>
+    <string name="settings_light_gun_cursor_desc">在光枪指向的位置绘制一个点。</string>
+    <string name="settings_help_light_gun_cursor">如果游戏自带准星，请关闭。</string>
+    <string name="settings_gyro_aim_left">瞄准 - 左摇杆</string>
+    <string name="settings_arcade_device_player_1">玩家 1 裝置</string>
+    <string name="settings_arcade_device_player_2">玩家 2 裝置</string>
+    <string name="settings_arcade_device_auto">自動</string>
+    <string name="settings_arcade_device_gamepad">控制器</string>
+    <string name="settings_arcade_device_light_gun">光線槍</string>
+    <string name="settings_gyro_stick_right">右搖桿</string>
+    <string name="settings_gyro_stick_left">左搖桿</string>
+    <string name="settings_light_gun_aim_touch">觸控 / 滑鼠</string>
 </resources>

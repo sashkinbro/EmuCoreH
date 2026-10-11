@@ -6,6 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,6 +36,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Save
 import com.sbro.emucoreh.core.AudioDefaults
+import com.sbro.emucoreh.core.AndroidGyroscopeInput
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.RendererDefaults
 import com.sbro.emucoreh.core.SetupValidator
@@ -1165,17 +1168,70 @@ private fun GameSettingsTabContent(
                     )
                     SelectionRow(
                         title = stringResource(R.string.settings_gyro_mode),
-                        options = gyroModeOptions(),
+                        options = gyroModeOptions(draft.gyroStickTarget),
                         selectedValue = draft.gyroMode,
                         onSelected = { onDraftChange(draft.copy(gyroMode = it)) },
                         helpText = stringResource(R.string.settings_help_gyro_mode),
                         onResetToDefault = { onDraftChange(draft.copy(gyroMode = defaultProfile.gyroMode)) }
                     )
-                    if (draft.gyroMode != AppPreferences.GYRO_MODE_OFF) {
+                    if (draft.gyroMode == AppPreferences.GYRO_MODE_AIM) {
+                        SelectionRow(
+                            title = stringResource(R.string.settings_gyro_stick),
+                            options = gyroStickTargetOptions(),
+                            selectedValue = draft.gyroStickTarget,
+                            onSelected = { onDraftChange(draft.copy(gyroStickTarget = it)) },
+                            onResetToDefault = { onDraftChange(draft.copy(gyroStickTarget = defaultProfile.gyroStickTarget)) }
+                        )
+                    }
+                    SelectionRow(
+                        title = stringResource(R.string.settings_arcade_device_player_1),
+                        options = arcadeDeviceOptions(),
+                        selectedValue = draft.arcadeDevice1,
+                        onSelected = { onDraftChange(draft.copy(arcadeDevice1 = it)) },
+                        onResetToDefault = { onDraftChange(draft.copy(arcadeDevice1 = defaultProfile.arcadeDevice1)) }
+                    )
+                    SelectionRow(
+                        title = stringResource(R.string.settings_arcade_device_player_2),
+                        options = arcadeDeviceOptions(),
+                        selectedValue = draft.arcadeDevice2,
+                        onSelected = { onDraftChange(draft.copy(arcadeDevice2 = it)) },
+                        onResetToDefault = { onDraftChange(draft.copy(arcadeDevice2 = defaultProfile.arcadeDevice2)) }
+                    )
+                    SelectionRow(
+                        title = stringResource(R.string.settings_light_gun_aim),
+                        options = lightGunAimSourceOptions(),
+                        selectedValue = draft.lightGunAimSource,
+                        onSelected = { onDraftChange(draft.copy(lightGunAimSource = it)) },
+                        onResetToDefault = { onDraftChange(draft.copy(lightGunAimSource = defaultProfile.lightGunAimSource)) }
+                    )
+                    ToggleRow(
+                        title = stringResource(R.string.settings_light_gun_cursor),
+                        checked = draft.lightGunCursorEnabled,
+                        onCheckedChange = { onDraftChange(draft.copy(lightGunCursorEnabled = it)) },
+                        helpText = stringResource(R.string.settings_help_light_gun_cursor),
+                        onResetToDefault = { onDraftChange(draft.copy(lightGunCursorEnabled = defaultProfile.lightGunCursorEnabled)) }
+                    )
+                    val gunUsesGyro = draft.lightGunAimSource == AppPreferences.LIGHT_GUN_AIM_GYRO
+                    val sensorControlsVisible = gunUsesGyro ||
+                        draft.gyroMode == AppPreferences.GYRO_MODE_AIM ||
+                        draft.gyroMode == AppPreferences.GYRO_MODE_STEERING
+                    val sensorMode = if (draft.gyroMode == AppPreferences.GYRO_MODE_OFF && gunUsesGyro) {
+                        AppPreferences.GYRO_MODE_LIGHT_GUN
+                    } else draft.gyroMode
+                    if (sensorControlsVisible &&
+                        !AndroidGyroscopeInput.isModeAvailable(LocalContext.current, sensorMode)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_gyro_unavailable),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (sensorControlsVisible) {
                         SliderRow(stringResource(R.string.settings_gyro_sensitivity), draft.gyroSensitivity.toFloat(), "${draft.gyroSensitivity}%", 25f..300f, 10, { onDraftChange(draft.copy(gyroSensitivity = it.roundToInt())) }, helpText = stringResource(R.string.settings_help_gyro_sensitivity), onResetToDefault = { onDraftChange(draft.copy(gyroSensitivity = defaultProfile.gyroSensitivity)) })
                         SliderRow(stringResource(R.string.settings_gyro_smoothing), draft.gyroSmoothing.toFloat(), "${draft.gyroSmoothing}%", 0f..90f, 8, { onDraftChange(draft.copy(gyroSmoothing = it.roundToInt())) }, helpText = stringResource(R.string.settings_help_gyro_smoothing), onResetToDefault = { onDraftChange(draft.copy(gyroSmoothing = defaultProfile.gyroSmoothing)) })
                         ToggleRow(stringResource(R.string.settings_gyro_invert_x), draft.gyroInvertX, { onDraftChange(draft.copy(gyroInvertX = it)) }, helpText = stringResource(R.string.settings_help_gyro_invert_x), onResetToDefault = { onDraftChange(draft.copy(gyroInvertX = defaultProfile.gyroInvertX)) })
-                        if (draft.gyroMode == AppPreferences.GYRO_MODE_AIM) {
+                        if (gunUsesGyro || draft.gyroMode == AppPreferences.GYRO_MODE_AIM) {
                             ToggleRow(stringResource(R.string.settings_gyro_invert_y), draft.gyroInvertY, { onDraftChange(draft.copy(gyroInvertY = it)) }, helpText = stringResource(R.string.settings_help_gyro_invert_y), onResetToDefault = { onDraftChange(draft.copy(gyroInvertY = defaultProfile.gyroInvertY)) })
                         }
                     }
@@ -1348,15 +1404,16 @@ private fun SelectionRow(
                 SettingHelpButton(title = title, description = it)
             }
         }
-        LazyRow(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .sectionContentFullBleed(GameSettingsSectionContentPadding)
-                .tvFocusGroup(),
-            contentPadding = PaddingValues(horizontal = GameSettingsSectionContentPadding),
+                .tvFocusGroup()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = GameSettingsSectionContentPadding),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(options, key = { it.first }) { (value, label) ->
+            options.forEach { (value, label) ->
                 val optionInteractionSource = remember { MutableInteractionSource() }
                 FilterChip(
                     modifier = Modifier.tvGamepadFocusableCard(
@@ -1367,7 +1424,7 @@ private fun SelectionRow(
                     selected = selectedValue == value,
                     onClick = { onSelected(value) },
                     interactionSource = optionInteractionSource,
-                    label = { Text(label) }
+                    label = { Text(label, maxLines = 1) }
                 )
             }
         }
@@ -1594,10 +1651,13 @@ private fun touchHapticsPresetOptions(): List<Pair<Int, String>> = listOf(
 )
 
 @Composable
-private fun gyroModeOptions(): List<Pair<Int, String>> = listOf(
+private fun gyroModeOptions(stickTarget: Int = AppPreferences.GYRO_STICK_RIGHT): List<Pair<Int, String>> = listOf(
     AppPreferences.GYRO_MODE_OFF to stringResource(R.string.settings_gyro_off),
-    AppPreferences.GYRO_MODE_AIM to stringResource(R.string.settings_gyro_aim),
-    AppPreferences.GYRO_MODE_STEERING to stringResource(R.string.settings_gyro_steering)
+    AppPreferences.GYRO_MODE_AIM to stringResource(
+        if (stickTarget == AppPreferences.GYRO_STICK_LEFT) R.string.settings_gyro_aim_left else R.string.settings_gyro_aim
+    ),
+    AppPreferences.GYRO_MODE_STEERING to stringResource(R.string.settings_gyro_steering),
+    AppPreferences.GYRO_MODE_LIGHT_GUN to stringResource(R.string.settings_gyro_mode_light_gun)
 )
 
 private fun normalizeManagerRenderer(renderer: Int): Int {
@@ -1623,6 +1683,11 @@ private fun SettingsSnapshot.toPerGameSettings(game: GameItem): PerGameSettings 
         touchHaptics = touchHaptics,
         touchHapticsPreset = touchHapticsPreset,
         gyroMode = gyroMode,
+        gyroStickTarget = gyroStickTarget,
+        lightGunAimSource = lightGunAimSource,
+        lightGunCursorEnabled = lightGunCursorEnabled,
+        arcadeDevice1 = arcadeDevice1,
+        arcadeDevice2 = arcadeDevice2,
         gyroSensitivity = gyroSensitivity,
         gyroSmoothing = gyroSmoothing,
         gyroInvertX = gyroInvertX,
@@ -1644,7 +1709,7 @@ private fun SettingsSnapshot.toPerGameSettings(game: GameItem): PerGameSettings 
     )
 }
 
-private fun PerGameSettings.resolveAgainst(defaultProfile: PerGameSettings): PerGameSettings {
+internal fun PerGameSettings.resolveAgainst(defaultProfile: PerGameSettings): PerGameSettings {
     val keys = providedKeys ?: return copy(providedKeys = null)
     fun <T> pick(key: String, current: T, fallback: T): T = if (key in keys) current else fallback
     return defaultProfile.copy(
@@ -1673,6 +1738,11 @@ private fun PerGameSettings.resolveAgainst(defaultProfile: PerGameSettings): Per
         touchHaptics = pick("touchHaptics", touchHaptics, defaultProfile.touchHaptics),
         touchHapticsPreset = pick("touchHapticsPreset", touchHapticsPreset, defaultProfile.touchHapticsPreset),
         gyroMode = pick("gyroMode", gyroMode, defaultProfile.gyroMode),
+        gyroStickTarget = pick("gyroStickTarget", gyroStickTarget, defaultProfile.gyroStickTarget),
+        lightGunAimSource = pick("lightGunAimSource", lightGunAimSource, defaultProfile.lightGunAimSource),
+        lightGunCursorEnabled = pick("lightGunCursorEnabled", lightGunCursorEnabled, defaultProfile.lightGunCursorEnabled),
+        arcadeDevice1 = pick("arcadeDevice1", arcadeDevice1, defaultProfile.arcadeDevice1),
+        arcadeDevice2 = pick("arcadeDevice2", arcadeDevice2, defaultProfile.arcadeDevice2),
         gyroSensitivity = pick("gyroSensitivity", gyroSensitivity, defaultProfile.gyroSensitivity),
         gyroSmoothing = pick("gyroSmoothing", gyroSmoothing, defaultProfile.gyroSmoothing),
         gyroInvertX = pick("gyroInvertX", gyroInvertX, defaultProfile.gyroInvertX),

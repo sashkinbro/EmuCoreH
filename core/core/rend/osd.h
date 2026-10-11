@@ -18,6 +18,9 @@
 
 #include "types.h"
 #include "cfg/option.h"
+#ifdef LIBRETRO
+#include <atomic>
+#endif
 
 // VMUs
 extern u32 vmu_lcd_data[8][48 * 32];
@@ -32,6 +35,11 @@ std::pair<float, float> getCrosshairPosition(int playerNum);
 
 static inline bool crosshairNeeded(int port)
 {
+#ifdef LIBRETRO
+	extern std::atomic<bool> emucoreh_lightgun_cursor_visible;
+	if (!emucoreh_lightgun_cursor_visible.load())
+		return false;
+#endif
 	if (port < 0 || port >= 4)
 		return false;
 	if (config::CrosshairColor[port] == 0)

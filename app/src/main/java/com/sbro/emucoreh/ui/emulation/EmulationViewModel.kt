@@ -177,6 +177,11 @@ data class EmulationUiState(
     val touchHapticsPreset: Int = AppPreferences.DEFAULT_TOUCH_HAPTICS_PRESET,
     val touchHapticsStrength: Int = AppPreferences.DEFAULT_TOUCH_HAPTICS_STRENGTH,
     val gyroMode: Int = AppPreferences.GYRO_MODE_OFF,
+    val gyroStickTarget: Int = 0,
+    val lightGunAimSource: Int = 0,
+    val lightGunCursorEnabled: Boolean = true,
+    val arcadeDevice1: Int = 0,
+    val arcadeDevice2: Int = 0,
     val gyroSensitivity: Int = AppPreferences.DEFAULT_GYRO_SENSITIVITY,
     val gyroSmoothing: Int = AppPreferences.DEFAULT_GYRO_SMOOTHING,
     val gyroInvertX: Boolean = false,
@@ -277,6 +282,11 @@ private data class LiveRuntimeSnapshot(
     val touchControlVisualStyle: TouchControlVisualStyle,
     val touchControlPressEffect: TouchControlPressEffect,
     val gyroMode: Int,
+    val gyroStickTarget: Int,
+    val lightGunAimSource: Int,
+    val lightGunCursorEnabled: Boolean,
+    val arcadeDevice1: Int,
+    val arcadeDevice2: Int,
     val gyroSensitivity: Int,
     val gyroSmoothing: Int,
     val gyroInvertX: Boolean,
@@ -689,6 +699,12 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
         viewModelScope.launch { preferences.gyroMode.collect { value -> applyGlobalRuntimePreferenceUpdate { it.copy(gyroMode = value) } } }
+        viewModelScope.launch { preferences.gyroStickTarget.collect { value -> applyGlobalRuntimePreferenceUpdate { it.copy(gyroStickTarget = value) } } }
+        viewModelScope.launch { preferences.lightGunAimSource.collect { value -> applyGlobalRuntimePreferenceUpdate { it.copy(lightGunAimSource = value) } } }
+        viewModelScope.launch { preferences.lightGunCursorEnabled.collect { value -> applyGlobalRuntimePreferenceUpdate { it.copy(lightGunCursorEnabled = value) } } }
+        viewModelScope.launch { preferences.arcadeDevice1.collect { value -> applyGlobalRuntimePreferenceUpdate { it.copy(arcadeDevice1 = value) } } }
+        viewModelScope.launch { preferences.arcadeDevice2.collect { value -> applyGlobalRuntimePreferenceUpdate { it.copy(arcadeDevice2 = value) } } }
+
         viewModelScope.launch { preferences.gyroSensitivity.collect { value -> applyGlobalRuntimePreferenceUpdate { it.copy(gyroSensitivity = value) } } }
         viewModelScope.launch { preferences.gyroSmoothing.collect { value -> applyGlobalRuntimePreferenceUpdate { it.copy(gyroSmoothing = value) } } }
         viewModelScope.launch { preferences.gyroInvertX.collect { value -> applyGlobalRuntimePreferenceUpdate { it.copy(gyroInvertX = value) } } }
@@ -1173,6 +1189,11 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     touchControlVisualStyle = liveRuntime.touchControlVisualStyle,
                     touchControlPressEffect = liveRuntime.touchControlPressEffect,
                     gyroMode = liveRuntime.gyroMode,
+                    gyroStickTarget = liveRuntime.gyroStickTarget,
+                    lightGunAimSource = liveRuntime.lightGunAimSource,
+                    lightGunCursorEnabled = liveRuntime.lightGunCursorEnabled,
+                    arcadeDevice1 = liveRuntime.arcadeDevice1,
+                    arcadeDevice2 = liveRuntime.arcadeDevice2,
                     gyroSensitivity = liveRuntime.gyroSensitivity,
                     gyroSmoothing = liveRuntime.gyroSmoothing,
                     gyroInvertX = liveRuntime.gyroInvertX,
@@ -1417,9 +1438,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             val context = getApplication<Application>()
             val displayName = DocumentPathResolver.getDisplayName(context, uri.toString())
             val readable = runCatching {
-                context.contentResolver.openFileDescriptor(uri, "r")?.use { descriptor ->
-                    descriptor.statSize != 0L
-                } ?: false
+                context.contentResolver.openFileDescriptor(uri, "r")?.use { true } ?: false
             }.getOrDefault(false)
 
             if (!SetupValidator.isSupportedDiscImageName(displayName) || !readable) {
@@ -1450,7 +1469,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             }
 
-            // VMManager restores the old image when opening the selected image fails.
+            // The Flycast disc-control adapter restores the old image on failure.
             // Either way the tray cycle must continue, so close the menu and resume.
             runCatching { EmulatorBridge.resume() }
             pausedForBackground = false
@@ -1642,6 +1661,96 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             preferences.setInvertRightStickHorizontal(enabled)
             _uiState.value = _uiState.value.copy(invertRightStickHorizontal = enabled)
+        }
+    }
+
+    fun setGyroStickTarget(value: Int) {
+        viewModelScope.launch {
+            val normalized = value.coerceIn(0, 1)
+            persistRuntimeState(_uiState.value.copy(gyroStickTarget = normalized)) {
+                preferences.setGyroStickTarget(normalized)
+            }
+        }
+    }
+
+    fun setLightGunAimSource(value: Int) {
+        viewModelScope.launch {
+            val normalized = value.coerceIn(0, 3)
+            persistRuntimeState(_uiState.value.copy(lightGunAimSource = normalized)) {
+                preferences.setLightGunAimSource(normalized)
+            }
+        }
+    }
+
+    fun setLightGunCursorEnabled(value: Boolean) {
+        viewModelScope.launch {
+            val normalized = value
+            persistRuntimeState(_uiState.value.copy(lightGunCursorEnabled = normalized)) {
+                preferences.setLightGunCursorEnabled(normalized)
+            }
+        }
+    }
+
+    fun setArcadeDevice1(value: Int) {
+        viewModelScope.launch {
+            val normalized = value.coerceIn(0, 2)
+            persistRuntimeState(_uiState.value.copy(arcadeDevice1 = normalized)) {
+                preferences.setArcadeDevice1(normalized)
+            }
+        }
+    }
+
+    fun setArcadeDevice2(value: Int) {
+        viewModelScope.launch {
+            val normalized = value.coerceIn(0, 2)
+            persistRuntimeState(_uiState.value.copy(arcadeDevice2 = normalized)) {
+                preferences.setArcadeDevice2(normalized)
+            }
+        }
+    }
+
+    fun setGyroMode(value: Int) {
+        viewModelScope.launch {
+            val normalized = value.coerceIn(0, 3)
+            persistRuntimeState(_uiState.value.copy(gyroMode = normalized)) {
+                preferences.setGyroMode(normalized)
+            }
+        }
+    }
+
+    fun setGyroSensitivity(value: Int) {
+        viewModelScope.launch {
+            val normalized = value.coerceIn(25, 300)
+            persistRuntimeState(_uiState.value.copy(gyroSensitivity = normalized)) {
+                preferences.setGyroSensitivity(normalized)
+            }
+        }
+    }
+
+    fun setGyroSmoothing(value: Int) {
+        viewModelScope.launch {
+            val normalized = value.coerceIn(0, 90)
+            persistRuntimeState(_uiState.value.copy(gyroSmoothing = normalized)) {
+                preferences.setGyroSmoothing(normalized)
+            }
+        }
+    }
+
+    fun setGyroInvertX(value: Boolean) {
+        viewModelScope.launch {
+            val normalized = value
+            persistRuntimeState(_uiState.value.copy(gyroInvertX = normalized)) {
+                preferences.setGyroInvertX(normalized)
+            }
+        }
+    }
+
+    fun setGyroInvertY(value: Boolean) {
+        viewModelScope.launch {
+            val normalized = value
+            persistRuntimeState(_uiState.value.copy(gyroInvertY = normalized)) {
+                preferences.setGyroInvertY(normalized)
+            }
         }
     }
 
@@ -2472,6 +2581,11 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             touchControlVisualStyle = settings.touchControlVisualStyle,
             touchControlPressEffect = settings.touchControlPressEffect,
             gyroMode = settings.gyroMode,
+            gyroStickTarget = settings.gyroStickTarget,
+            lightGunAimSource = settings.lightGunAimSource,
+            lightGunCursorEnabled = settings.lightGunCursorEnabled,
+            arcadeDevice1 = settings.arcadeDevice1,
+            arcadeDevice2 = settings.arcadeDevice2,
             gyroSensitivity = settings.gyroSensitivity,
             gyroSmoothing = settings.gyroSmoothing,
             gyroInvertX = settings.gyroInvertX,
@@ -2544,6 +2658,11 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             touchControlVisualStyle = profile.touchControlVisualStyle ?: touchControlVisualStyle,
             touchControlPressEffect = profile.touchControlPressEffect ?: touchControlPressEffect,
             gyroMode = pick("gyroMode", gyroMode) { gyroMode },
+            gyroStickTarget = pick("gyroStickTarget", gyroStickTarget) { gyroStickTarget },
+            lightGunAimSource = pick("lightGunAimSource", lightGunAimSource) { lightGunAimSource },
+            lightGunCursorEnabled = pick("lightGunCursorEnabled", lightGunCursorEnabled) { lightGunCursorEnabled },
+            arcadeDevice1 = pick("arcadeDevice1", arcadeDevice1) { arcadeDevice1 },
+            arcadeDevice2 = pick("arcadeDevice2", arcadeDevice2) { arcadeDevice2 },
             gyroSensitivity = pick("gyroSensitivity", gyroSensitivity) { gyroSensitivity },
             gyroSmoothing = pick("gyroSmoothing", gyroSmoothing) { gyroSmoothing },
             gyroInvertX = pick("gyroInvertX", gyroInvertX) { gyroInvertX },
@@ -2613,6 +2732,11 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             touchControlVisualStyle = touchControlVisualStyle.takeIf { it != settings.touchControlVisualStyle },
             touchControlPressEffect = touchControlPressEffect.takeIf { it != settings.touchControlPressEffect },
             gyroMode = gyroMode,
+            gyroStickTarget = gyroStickTarget,
+            lightGunAimSource = lightGunAimSource,
+            lightGunCursorEnabled = lightGunCursorEnabled,
+            arcadeDevice1 = arcadeDevice1,
+            arcadeDevice2 = arcadeDevice2,
             gyroSensitivity = gyroSensitivity,
             gyroSmoothing = gyroSmoothing,
             gyroInvertX = gyroInvertX,
@@ -2656,6 +2780,12 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         if (profile.touchControlVisualStyle != null) add("touchControlVisualStyle")
         if (profile.touchControlPressEffect != null) add("touchControlPressEffect")
         if (gyroMode != settings.gyroMode) add("gyroMode")
+        if (gyroStickTarget != settings.gyroStickTarget) add("gyroStickTarget")
+        if (lightGunAimSource != settings.lightGunAimSource) add("lightGunAimSource")
+        if (lightGunCursorEnabled != settings.lightGunCursorEnabled) add("lightGunCursorEnabled")
+        if (arcadeDevice1 != settings.arcadeDevice1) add("arcadeDevice1")
+        if (arcadeDevice2 != settings.arcadeDevice2) add("arcadeDevice2")
+
         if (gyroSensitivity != settings.gyroSensitivity) add("gyroSensitivity")
         if (gyroSmoothing != settings.gyroSmoothing) add("gyroSmoothing")
         if (gyroInvertX != settings.gyroInvertX) add("gyroInvertX")

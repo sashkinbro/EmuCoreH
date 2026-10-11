@@ -650,7 +650,7 @@
     <string name="settings_gyro_invert_x_desc">حرکت به چپ و راست را معکوس می‌کند.</string>
     <string name="settings_gyro_invert_y">معکوس کردن ژیروسکوپ عمودی</string>
     <string name="settings_gyro_invert_y_desc">حرکت هدف‌گیری به بالا و پایین را معکوس می‌کند.</string>
-    <string name="settings_help_gyro_mode">«هدف‌گیری» سرعت چرخش گوشی را به استیک آنالوگ راست برای کنترل دوربین در بازی‌های تیراندازی تبدیل می‌کند و با توقف حرکت گوشی به‌طور خودکار به مرکز برمی‌گردد. «فرمان» شیب نگه‌داشته‌شده گوشی را برای بازی‌های مسابقه‌ای به استیک آنالوگ چپ تبدیل می‌کند و هنگام شروع بازی، زاویه فعلی را به‌عنوان مرکز کالیبره می‌کند. حالت انتخاب‌شده فقط هنگام اجرای بازی استفاده می‌شود و به حسگر حرکتی مربوطه نیاز دارد.</string>
+    <string name="settings_help_gyro_mode">حالت نشانه‌گیری چرخش گوشی را به حرکت استیک آنالوگ برای کنترل دوربین تبدیل می‌کند. حالت فرمان از شیب گوشی به‌عنوان استیک چپ استفاده می‌کند. تفنگ نوری از منبع نشانه‌گیری انتخاب‌شده در پایین استفاده می‌کند؛ استیک فیزیکی یا روی صفحه به حسگر حرکتی نیاز ندارد. بازی‌های آرکید تفنگ نوری آن را به‌طور خودکار فعال می‌کنند.</string>
     <string name="settings_help_gyro_sensitivity">میزان تأثیر حرکت گوشی بر انحراف استیک آنالوگ شبیه‌سازی‌شده را کنترل می‌کند. تنظیمات مجزا برای هر بازی توصیه می‌شود زیرا بازی‌ها از منحنی‌های پاسخ‌دهی متفاوتی برای دوربین و فرمان استفاده می‌کنند.</string>
     <string name="settings_help_gyro_smoothing">نویز حسگر و لرزش دست را فیلتر می‌کند. مقادیر پایین‌تر سریع‌تر واکنش نشان می‌دهند؛ مقادیر بالاتر پایدارتر احساس می‌شوند اما مقدار کمی تأخیر اضافه می‌کنند.</string>
     <string name="settings_help_upscale">بازی را با وضوح داخلی بالاتر رندر می‌کند و سپس تصویر را به اندازه صفحه مقیاس می‌دهد. مقادیر بالاتر بازی‌های سه‌بعدی را بسیار واضح‌تر می‌کند، اما GPU را به‌شدت درگیر می‌کند؛ بنابراین بازی‌های سنگین ممکن است فریم از دست بدهند یا داغ شوند. با زیر نظر گرفتن شمارنده FPS مرحله‌به‌مرحله افزایش دهید: Native برای بهترین کارایی، 2x توازن خوب در بیشتر گوشی‌ها و مقادیر بالاتر فقط روی دستگاه‌های قدرتمند یا بازی‌های ساده.</string>
@@ -2154,4 +2154,26 @@
     <string name="controls_editor_show_grid">نمایش شبکه</string>
     <string name="controls_editor_snap_grid">چسبیدن به شبکه</string>
     <string name="controls_editor_group_scale_value">مقیاس گروه %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">ماشه تفنگ نوری</string>
+    <string name="settings_gamepad_action_gun_pedal">پدال تفنگ نوری</string>
+    <string name="settings_gamepad_action_gun_reload">خشاب‌گذاری تفنگ نوری</string>
+    <string name="settings_gamepad_action_gun_recalibrate">کالیبراسیون تفنگ نوری</string>
+    <string name="settings_gyro_mode_light_gun">تفنگ نوری</string>
+    <string name="settings_gyro_stick">استیک ژیروسکوپ</string>
+    <string name="settings_light_gun_aim">نشانه‌گیری تفنگ نوری</string>
+    <string name="settings_light_gun_aim_gyro">ژیروسکوپ</string>
+    <string name="settings_light_gun_cursor">نمایش نشانگر نشانه‌گیری</string>
+    <string name="settings_light_gun_cursor_desc">نقطه‌ای را در محل نشانه‌گیری تفنگ نوری می‌کشد.</string>
+    <string name="settings_help_light_gun_cursor">اگر بازی خودش نشانگر دارد، خاموش کنید.</string>
+    <string name="settings_gyro_aim_left">نشانه‌گیری - استیک چپ</string>
+    <string name="settings_arcade_device_player_1">دستگاه بازیکن 1</string>
+    <string name="settings_arcade_device_player_2">دستگاه بازیکن 2</string>
+    <string name="settings_arcade_device_auto">خودکار</string>
+    <string name="settings_arcade_device_gamepad">دستهٔ بازی</string>
+    <string name="settings_arcade_device_light_gun">تفنگ نوری</string>
+    <string name="settings_gyro_stick_right">آنالوگ راست</string>
+    <string name="settings_gyro_stick_left">آنالوگ چپ</string>
+    <string name="settings_light_gun_aim_touch">لمس / ماوس</string>
 </resources>

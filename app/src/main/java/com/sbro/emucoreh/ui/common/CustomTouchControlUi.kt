@@ -5,8 +5,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -68,6 +70,10 @@ fun actionLabel(actionId: String): String = stringResource(when (actionId) {
     "coin" -> R.string.settings_gamepad_action_coin
     "test" -> R.string.settings_gamepad_action_test
     "service" -> R.string.settings_gamepad_action_service
+    "gun_trigger" -> R.string.settings_gamepad_action_gun_trigger
+    "gun_pedal" -> R.string.settings_gamepad_action_gun_pedal
+    "gun_reload" -> R.string.settings_gamepad_action_gun_reload
+    "gun_recalibrate" -> R.string.settings_gamepad_action_gun_recalibrate
     "start" -> R.string.settings_gamepad_action_start
     "fast_forward" -> R.string.emulation_fast_forward
     else -> R.string.settings_gamepad_section
@@ -139,7 +145,6 @@ fun CustomControlVisual(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ActionSelector(
     selectedActionId: String?,
@@ -148,15 +153,17 @@ fun ActionSelector(
     testTagPrefix: String? = null,
     onSelect: (String?) -> Unit
 ) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .tvFocusGroup(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (allowNone) {
             FilterChip(
                 selected = selectedActionId == null,
                 onClick = { onSelect(null) },
-                label = { Text(stringResource(R.string.touch_control_creator_none)) },
+                label = { Text(stringResource(R.string.touch_control_creator_none), maxLines = 1, softWrap = false) },
                 leadingIcon = if (selectedActionId == null) {
                     { Icon(Icons.Rounded.Check, contentDescription = null) }
                 } else {
@@ -173,7 +180,7 @@ fun ActionSelector(
                 FilterChip(
                     selected = selectedActionId == action,
                     onClick = { onSelect(action) },
-                    label = { Text(actionLabel(action)) },
+                    label = { Text(actionLabel(action), maxLines = 1, softWrap = false) },
                     leadingIcon = if (selectedActionId == action) {
                         { Icon(Icons.Rounded.Check, contentDescription = null) }
                     } else {

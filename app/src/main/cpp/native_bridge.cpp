@@ -13,6 +13,8 @@
 //   * save-state (retro_serialize) file IO.
 #include <jni.h>
 #include "audio_resampler.h"
+#include "disc_control.h"
+#include "light_gun_input.h"
 #include "storage_vfs.h"
 
 #include <android/log.h>
@@ -96,6 +98,9 @@ struct CoreApi {
     void (*get_system_info)(retro_system_info*) = nullptr;
     void (*get_system_av_info)(retro_system_av_info*) = nullptr;
     double (*get_refresh_rate)() = nullptr;
+    int (*get_input_mode)() = nullptr;
+    void (*set_lightgun_cursor_visible)(bool) = nullptr;
+    void (*set_cabinet_buttons)(unsigned, unsigned) = nullptr;
     void* (*get_memory_data)(unsigned) = nullptr;
     size_t (*get_memory_size)(unsigned) = nullptr;
     void (*set_controller_port_device)(unsigned, unsigned) = nullptr;
@@ -151,6 +156,8 @@ struct FrontendState {
     std::unordered_map<std::string, CoreOption> registered_options;
     std::atomic<bool> options_dirty{false};
     retro_core_options_update_display_callback update_display_callback{};
+    // Negotiated during environment setup; snapshot before invoking core callbacks.
+    retro_disk_control_ext_callback disk_control{};
 
     // Last frame geometry reported by the core.
     unsigned frame_width = 0;
@@ -196,6 +203,7 @@ struct FrontendState {
     std::atomic<uint16_t> pad_buttons[2]{{0xFFFF}, {0xFFFF}};
     std::atomic<int16_t> pad_analog[2][4]{};
     std::atomic<bool> pad_analog_mode[2]{{false}, {false}};
+    emucoreh::LightGunState lightgun[2]; // Accessed on the core frame thread only.
 
     std::atomic<bool> core_initialized{false};
     std::atomic<bool> game_loaded{false};
@@ -265,6 +273,9 @@ bool LoadCoreLocked() {
     g_core.get_system_info = reinterpret_cast<void (*)(retro_system_info*)>(resolve("retro_get_system_info"));
     g_core.get_system_av_info = reinterpret_cast<void (*)(retro_system_av_info*)>(resolve("retro_get_system_av_info"));
     g_core.get_refresh_rate = reinterpret_cast<double (*)()>(resolve("flycast_get_refresh_rate"));
+    g_core.get_input_mode = reinterpret_cast<int (*)()>(resolve("flycast_get_input_mode"));
+    g_core.set_lightgun_cursor_visible = reinterpret_cast<void (*)(bool)>(resolve("flycast_set_lightgun_cursor_visible"));
+    g_core.set_cabinet_buttons = reinterpret_cast<void (*)(unsigned, unsigned)>(resolve("flycast_set_cabinet_buttons"));
     g_core.get_memory_data = reinterpret_cast<void* (*)(unsigned)>(resolve("retro_get_memory_data"));
     g_core.boot_error = reinterpret_cast<const char* (*)()>(resolve("emucorea_boot_error"));
     g_core.get_memory_size = reinterpret_cast<size_t (*)(unsigned)>(resolve("retro_get_memory_size"));
@@ -394,6 +405,31 @@ bool EnvironmentCallback(unsigned cmd, void* data) {
             auto version = static_cast<unsigned*>(data);
             if (version == nullptr) return false;
             *version = 2;
+            return true;
+        }
+        case RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION: {
+            auto version = static_cast<unsigned*>(data);
+            if (version == nullptr) return false;
+            *version = 1;
+            return true;
+        }
+        case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE: {
+            auto callback = static_cast<const retro_disk_control_callback*>(data);
+            if (callback == nullptr) return false;
+            std::lock_guard<std::mutex> lock(g_frontend.mutex);
+            g_frontend.disk_control = {
+                callback->set_eject_state, callback->get_eject_state,
+                callback->get_image_index, callback->set_image_index,
+                callback->get_num_images, callback->replace_image_index,
+                callback->add_image_index, nullptr, nullptr, nullptr
+            };
+            return true;
+        }
+        case RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE: {
+            auto callback = static_cast<const retro_disk_control_ext_callback*>(data);
+            if (callback == nullptr) return false;
+            std::lock_guard<std::mutex> lock(g_frontend.mutex);
+            g_frontend.disk_control = *callback;
             return true;
         }
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2: {
@@ -530,7 +566,6 @@ bool EnvironmentCallback(unsigned cmd, void* data) {
         case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
             return GetStorageVfs(static_cast<retro_vfs_interface_info *>(data));
         case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
-        case RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION:
         default:
             return false;
     }
@@ -1132,6 +1167,16 @@ void RetroVideoRefresh(const void* data, unsigned width, unsigned height, size_t
 //   10 L1, 11 R1, 12 Triangle, 13 Circle, 14 Cross, 15 Square.
 int16_t RetroInputState(unsigned port, unsigned device, unsigned index, unsigned id) {
     if (port > 1) return 0;
+    if (device == RETRO_DEVICE_LIGHTGUN) {
+        auto gun = g_frontend.lightgun[port];
+        const auto aim = emucoreh::MapVisibleGunAim(gun.x, gun.y,
+            g_frontend.frame_width, g_frontend.frame_height,
+            g_frontend.crop_left.load(), g_frontend.crop_top.load(),
+            g_frontend.crop_right.load(), g_frontend.crop_bottom.load());
+        gun.x = aim.first;
+        gun.y = aim.second;
+        return emucoreh::ReadLightGun(gun, g_frontend.pad_buttons[port].load(), id);
+    }
     auto pressed = [port](int bit) { return (g_frontend.pad_buttons[port].load() & (1u << bit)) == 0; };
 
     if (device == RETRO_DEVICE_JOYPAD) {
@@ -1156,7 +1201,7 @@ int16_t RetroInputState(unsigned port, unsigned device, unsigned index, unsigned
         if (pressed(1)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_L3;
         if (pressed(2)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_R3;
         if (pressed(3)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_START;
-        if (pressed(0)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_SELECT;
+        if (pressed(0) || (g_frontend.lightgun[port].buttons & 8) != 0) active |= 1u << RETRO_DEVICE_ID_JOYPAD_SELECT;
         if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return static_cast<int16_t>(active);
         if (id < 16) return (active & (1u << id)) != 0 ? 1 : 0;
         return 0;
@@ -1239,6 +1284,10 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_createSession(JNIEnv*, jobject) {
     std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
     if (!LoadCoreLocked()) return 0;
     if (!g_frontend.core_initialized.load()) {
+        {
+            std::lock_guard<std::mutex> state_lock(g_frontend.mutex);
+            g_frontend.disk_control = {};
+        }
         g_core.set_environment(EnvironmentCallback);
         g_core.set_video_refresh(RetroVideoRefresh);
         g_core.set_audio_sample(RetroAudioSample);
@@ -1285,6 +1334,10 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_destroySession(JNIEnv*, jobject, jl
     if (g_frontend.core_initialized.load()) {
         if (g_core.deinit != nullptr) g_core.deinit();
         g_frontend.core_initialized.store(false);
+    }
+    {
+        std::lock_guard<std::mutex> state_lock(g_frontend.mutex);
+        g_frontend.disk_control = {};
     }
     DestroyHardwareContext();
 }
@@ -1463,6 +1516,30 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_loadDisc(JNIEnv* env, jobject, jlon
     return 0;
 }
 
+JNIEXPORT jint JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_changeDisc(JNIEnv* env, jobject, jlong handle, jstring path) {
+    if (handle == 0 || path == nullptr) return emucoreh::kDiscInvalidPath;
+    const std::string path_string = ToString(env, path);
+    if (path_string.empty()) return emucoreh::kDiscInvalidPath;
+
+    // The frontend dispatches this on the frame thread; the lifecycle lock also
+    // prevents session teardown from invalidating a negotiated callback table.
+    std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
+    if (handle != reinterpret_cast<jlong>(&g_frontend) || g_core.handle == nullptr ||
+        !g_frontend.core_initialized.load() || !g_frontend.game_loaded.load()) return -2;
+    if (g_core.get_input_mode != nullptr && g_core.get_input_mode() > 0) return -3;
+
+    retro_disk_control_ext_callback callbacks{};
+    {
+        std::lock_guard<std::mutex> state_lock(g_frontend.mutex);
+        callbacks = g_frontend.disk_control;
+    }
+    const int result = emucoreh::ChangeDisc(callbacks, path_string);
+    if (result == emucoreh::kDiscChanged) LOGI("Changed disc: %s", path_string.c_str());
+    else LOGW("Disc change failed: %d", result);
+    return result;
+}
+
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_setPadButtons(JNIEnv*, jobject, jlong handle,
                                                            jint port, jint buttons) {
@@ -1489,6 +1566,31 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_setPadAnalogMode(JNIEnv*, jobject, 
                                                               jboolean enabled) {
     if (handle == 0 || port < 0 || port > 1) return;
     g_frontend.pad_analog_mode[port].store(enabled == JNI_TRUE);
+}
+
+JNIEXPORT void JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_setControllerDevice(JNIEnv*, jobject, jlong handle,
+                                                               jint port, jint device) {
+    if (handle == 0 || port < 0 || port > 1 || g_core.set_controller_port_device == nullptr) return;
+    g_core.set_controller_port_device(port, device == RETRO_DEVICE_LIGHTGUN ? RETRO_DEVICE_LIGHTGUN : RETRO_DEVICE_JOYPAD);
+}
+
+JNIEXPORT void JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_setLightGunState(JNIEnv*, jobject, jlong handle,
+    jint port, jfloat x, jfloat y, jint buttons, jboolean offscreen) {
+    if (handle == 0 || port < 0 || port > 1) return;
+    g_frontend.lightgun[port] = {x, y, static_cast<unsigned>(buttons & 63), offscreen == JNI_TRUE};
+    if (g_core.set_cabinet_buttons != nullptr) g_core.set_cabinet_buttons(port, (buttons >> 4) & 3);
+}
+
+JNIEXPORT jint JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_getArcadeInputMode(JNIEnv*, jobject, jlong handle) {
+    return handle != 0 && g_core.get_input_mode != nullptr ? g_core.get_input_mode() : -1;
+}
+
+JNIEXPORT void JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_setLightGunCursorEnabled(JNIEnv*, jobject, jboolean enabled) {
+    if (g_core.set_lightgun_cursor_visible != nullptr) g_core.set_lightgun_cursor_visible(enabled == JNI_TRUE);
 }
 
 JNIEXPORT jint JNICALL

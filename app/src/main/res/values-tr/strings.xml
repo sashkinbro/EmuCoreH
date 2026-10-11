@@ -635,7 +635,7 @@
     <string name="settings_gyro_invert_x_desc">Sol ve sağ hareketi tersine çevirir.</string>
     <string name="settings_gyro_invert_y">Dikey jiroskopu ters çevir</string>
     <string name="settings_gyro_invert_y_desc">Yukarı ve aşağı nişan alma hareketini tersine çevirir.</string>
-    <string name="settings_help_gyro_mode">"Nişan alma", nişancı oyunlarında kamera kontrolü için telefonun dönüş hızını sağ analog çubuğa dönüştürür ve telefon hareket etmeyi bıraktığında otomatik olarak merkeze döner. "Direksiyon", yarış oyunları için telefonun eğimini sol analog çubuğa dönüştürür ve oyun başladığında mevcut açıyı merkez olarak kalibre eder. Seçilen mod yalnızca oyun çalışırken kullanılır ve ilgili hareket sensörünü gerektirir.</string>
+    <string name="settings_help_gyro_mode">Nişan alma, telefonun dönüşünü kamera kontrolü için analog çubuk hareketine dönüştürür. Direksiyon, telefonun eğimini sol çubuk olarak kullanır. Işık tabancası aşağıda seçilen nişan kaynağını kullanır; fiziksel veya ekrandaki çubuk hareket sensörü gerektirmez. Arcade ışık tabancası oyunları bu modu otomatik olarak etkinleştirir.</string>
     <string name="settings_help_gyro_sensitivity">Telefon hareketinin emüle edilmiş analog çubuğu ne kadar güçlü saptıracağını kontrol eder. Oyunlar farklı kamera ve direksiyon tepki eğrileri kullandığından, oyuna özel ayarlamalar önerilir.</string>
     <string name="settings_help_gyro_smoothing">Sensör gürültüsünü ve el titremesini filtreler. Daha düşük değerler daha hızlı tepki verir; daha yüksek değerler daha dengeli hissettirir ancak az miktarda gecikme ekler.</string>
     <string name="settings_help_upscale">Oyunu daha yüksek dahili çözünürlükte oluşturur ve görüntüyü ekrana ölçekler. Yüksek değerler 3B oyunları belirgin şekilde netleştirir ancak GPU\'yu çok yorar; ağır oyunlar kare kaybedebilir veya ısınabilir. FPS sayacını izleyerek kademeli artırın: En iyi performans için Yerel, çoğu telefonda iyi denge için 2x, daha yükseği yalnızca güçlü cihazlarda veya basit oyunlarda.</string>
@@ -2139,4 +2139,26 @@
     <string name="controls_editor_show_grid">Kılavuzu göster</string>
     <string name="controls_editor_snap_grid">Kılavuza yapıştır</string>
     <string name="controls_editor_group_scale_value">Grup ölçeği %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Işık tabancası tetiği</string>
+    <string name="settings_gamepad_action_gun_pedal">Işık tabancası pedalı</string>
+    <string name="settings_gamepad_action_gun_reload">Işık tabancası şarjör</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Işık tabancası kalibrasyon</string>
+    <string name="settings_gyro_mode_light_gun">Işık tabancası</string>
+    <string name="settings_gyro_stick">Jiroskop çubuğu</string>
+    <string name="settings_light_gun_aim">Işık tabancası nişanı</string>
+    <string name="settings_light_gun_aim_gyro">Jiroskop</string>
+    <string name="settings_light_gun_cursor">Nişangahı göster</string>
+    <string name="settings_light_gun_cursor_desc">Işık tabancasının baktığı yere bir nokta çizer.</string>
+    <string name="settings_help_light_gun_cursor">Oyun kendi nişangahını çiziyorsa kapat.</string>
+    <string name="settings_gyro_aim_left">Nişan - sol çubuk</string>
+    <string name="settings_arcade_device_player_1">Oyuncu 1 aygıtı</string>
+    <string name="settings_arcade_device_player_2">Oyuncu 2 aygıtı</string>
+    <string name="settings_arcade_device_auto">Otomatik</string>
+    <string name="settings_arcade_device_gamepad">Oyun kumandası</string>
+    <string name="settings_arcade_device_light_gun">Işık tabancası</string>
+    <string name="settings_gyro_stick_right">Sağ çubuk</string>
+    <string name="settings_gyro_stick_left">Sol çubuk</string>
+    <string name="settings_light_gun_aim_touch">Dokunmatik / fare</string>
 </resources>

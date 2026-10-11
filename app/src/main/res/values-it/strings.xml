@@ -635,7 +635,7 @@
     <string name="settings_gyro_invert_x_desc">Inverte il movimento a destra e a sinistra.</string>
     <string name="settings_gyro_invert_y">Inverti giroscopio verticale</string>
     <string name="settings_gyro_invert_y_desc">Inverte il movimento di mira verso l\'alto e verso il basso.</string>
-    <string name="settings_help_gyro_mode">"Mira" converte la velocità di rotazione del telefono nella levetta analogica destra per il controllo della telecamera negli sparatutto e torna automaticamente al centro quando il telefono si ferma. "Sterzo" converte l\'inclinazione del telefono nella levetta analogica sinistra per i giochi di corsa e calibra l\'angolo corrente come centro all\'avvio del gioco. La modalità selezionata viene utilizzata solo durante l\'esecuzione di un gioco e richiede il sensore di movimento corrispondente.</string>
+    <string name="settings_help_gyro_mode">Mira trasforma la rotazione del telefono nel movimento di uno stick analogico per controllare la telecamera. Sterzo usa la sua inclinazione come stick sinistro. La pistola ottica usa la sorgente di mira scelta qui sotto; uno stick fisico o sullo schermo non richiede sensori di movimento. I giochi arcade con pistola ottica la attivano automaticamente.</string>
     <string name="settings_help_gyro_sensitivity">Controlla la forza con cui il movimento del telefono devia la levetta analogica emulata. Si consigliano regolazioni per ogni singolo gioco poiché i titoli utilizzano curve di risposta della telecamera e dello sterzo differenti.</string>
     <string name="settings_help_gyro_smoothing">Filtra il rumore del sensore e il tremolio della mano. Valori più bassi reagiscono più velocemente; valori più alti risultano più stabili ma aggiungono una leggera latenza.</string>
     <string name="settings_help_upscale">Renderizza il gioco a una risoluzione interna più alta e poi adatta l\'immagine allo schermo. Valori alti rendono i giochi 3D molto più nitidi, ma caricano molto la GPU, quindi i titoli pesanti possono perdere fotogrammi o surriscaldarsi. Aumenta poco alla volta osservando il contatore FPS: Nativa per le migliori prestazioni, 2x come buon compromesso sulla maggior parte dei telefoni, valori più alti solo su dispositivi potenti o in giochi semplici.</string>
@@ -2139,4 +2139,26 @@
     <string name="controls_editor_show_grid">Mostra griglia</string>
     <string name="controls_editor_snap_grid">Aggancia alla griglia</string>
     <string name="controls_editor_group_scale_value">Scala gruppo %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Grilletto pistola ottica</string>
+    <string name="settings_gamepad_action_gun_pedal">Pedale pistola ottica</string>
+    <string name="settings_gamepad_action_gun_reload">Ricarica pistola ottica</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Ricalibra pistola ottica</string>
+    <string name="settings_gyro_mode_light_gun">Pistola ottica</string>
+    <string name="settings_gyro_stick">Stick giroscopio</string>
+    <string name="settings_light_gun_aim">Mira pistola ottica</string>
+    <string name="settings_light_gun_aim_gyro">Giroscopio</string>
+    <string name="settings_light_gun_cursor">Mostra mirino</string>
+    <string name="settings_light_gun_cursor_desc">Disegna un punto dove punta la pistola ottica.</string>
+    <string name="settings_help_light_gun_cursor">Disattiva se il gioco disegna già il proprio mirino.</string>
+    <string name="settings_gyro_aim_left">Mira - stick sinistro</string>
+    <string name="settings_arcade_device_player_1">Dispositivo del giocatore 1</string>
+    <string name="settings_arcade_device_player_2">Dispositivo del giocatore 2</string>
+    <string name="settings_arcade_device_auto">Automatico</string>
+    <string name="settings_arcade_device_gamepad">Controller</string>
+    <string name="settings_arcade_device_light_gun">Pistola ottica</string>
+    <string name="settings_gyro_stick_right">Stick destro</string>
+    <string name="settings_gyro_stick_left">Stick sinistro</string>
+    <string name="settings_light_gun_aim_touch">Tocco / mouse</string>
 </resources>

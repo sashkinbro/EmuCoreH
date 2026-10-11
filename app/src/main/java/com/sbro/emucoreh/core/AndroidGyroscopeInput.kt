@@ -11,7 +11,8 @@ import kotlin.math.PI
 
 class AndroidGyroscopeInput(
     context: Context,
-    private val onAnalog: (mode: Int, x: Float, y: Float) -> Unit
+    private val onAnalog: (mode: Int, x: Float, y: Float) -> Unit,
+    private val onLightGunAim: ((x: Float, y: Float) -> Unit)? = null
 ) : SensorEventListener {
     companion object {
         private const val INPUT_DEADZONE = 0.035f
@@ -19,7 +20,7 @@ class AndroidGyroscopeInput(
         fun isModeAvailable(context: Context, mode: Int): Boolean {
             val manager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
             return when (mode) {
-                1 -> manager.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null
+                1, 3 -> manager.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null
                 2 -> manager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null
                 else -> true
             }
@@ -43,6 +44,7 @@ class AndroidGyroscopeInput(
     private var hasSteeringCenter = false
     private var sampleX = 0f
     private var sampleY = 0f
+    private val lightGunAim = GyroLightGunAim()
     private val rotationMatrix = FloatArray(9)
     private val remappedRotationMatrix = FloatArray(9)
     private val orientationValues = FloatArray(3)
@@ -60,13 +62,16 @@ class AndroidGyroscopeInput(
         lastSentY = 0f
         wasActive = false
         hasSteeringCenter = false
+        lightGunAim.recenter()
         activeSensor = when (mode) {
-            1 -> sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+            1, 3 -> sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
             2 -> sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
             else -> null
         }
         val sensor = activeSensor ?: return false
-        return sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME)
+        val registered = sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME)
+        if (registered && mode == 3) onLightGunAim?.invoke(0.5f, 0.5f)
+        return registered
     }
 
     fun stop() {
@@ -76,18 +81,30 @@ class AndroidGyroscopeInput(
         filteredX = 0f
         filteredY = 0f
         wasActive = false
+        lightGunAim.recenter()
         onAnalog(mode, 0f, 0f)
     }
 
+    /** Reset aim and angular-rate filtering before the next sensor sample. */
+    fun recalibrate() {
+        lightGunAim.recenter()
+        filteredX = 0f
+        filteredY = 0f
+        if (mode == 3) onLightGunAim?.invoke(0.5f, 0.5f)
+    }
+
+    fun recenter() = recalibrate()
+
     override fun onSensorChanged(event: SensorEvent) {
         val validSample = when (mode) {
-            1 -> readAimValues(event)
+            1, 3 -> readAimValues(event)
             2 -> readSteeringValues(event)
             else -> false
         }
         if (!validSample) return
-        var x = applyDeadzone(sampleX.coerceIn(-1f, 1f))
-        var y = applyDeadzone(sampleY.coerceIn(-1f, 1f))
+        val lightGun = mode == 3
+        var x = applyDeadzone(if (lightGun) sampleX else sampleX.coerceIn(-1f, 1f))
+        var y = applyDeadzone(if (lightGun) sampleY else sampleY.coerceIn(-1f, 1f))
         if (invertX) x = -x
         if (invertY) y = -y
         val alpha = (1f - smoothing * 0.86f).coerceIn(0.16f, 1f)
@@ -95,6 +112,11 @@ class AndroidGyroscopeInput(
         filteredY += (y - filteredY) * alpha
         val outputX = filteredX.coerceIn(-1f, 1f)
         val outputY = filteredY.coerceIn(-1f, 1f)
+        if (lightGun) {
+            val (aimX, aimY) = lightGunAim.update(outputX, outputY, event.timestamp)
+            onLightGunAim?.invoke(aimX, aimY)
+            return
+        }
         val active = kotlin.math.abs(outputX) > 0.004f || kotlin.math.abs(outputY) > 0.004f
         if (!active && !wasActive) return
         if (active && kotlin.math.abs(outputX - lastSentX) < 0.004f && kotlin.math.abs(outputY - lastSentY) < 0.004f) return

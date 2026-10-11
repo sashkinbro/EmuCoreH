@@ -791,7 +791,7 @@ object FlycastCoreOptions {
                 Choice("Green", R.string.flycast_choice_color_green),
                 Choice("Blue", R.string.flycast_choice_color_blue),
             ),
-            defaultValue = "disabled",
+            defaultValue = "White",
         ),
         // input
         Option(
@@ -806,7 +806,7 @@ object FlycastCoreOptions {
                 Choice("Green", R.string.flycast_choice_color_green),
                 Choice("Blue", R.string.flycast_choice_color_blue),
             ),
-            defaultValue = "disabled",
+            defaultValue = "Red",
         ),
         // input
         Option(

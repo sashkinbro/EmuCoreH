@@ -637,7 +637,7 @@
     <string name="settings_gyro_invert_x_desc">Kehrt die linke und rechte Bewegung um.</string>
     <string name="settings_gyro_invert_y">Vertikales Gyroskop umkehren</string>
     <string name="settings_gyro_invert_y_desc">Kehrt die Auf- und Abwärtsbewegung beim Zielen um.</string>
-    <string name="settings_help_gyro_mode">„Zielen“ wandelt die Rotationsgeschwindigkeit des Telefons in den rechten Analogstick für die Kamerasteuerung in Shootern um und kehrt automatisch in die Mitte zurück, wenn das Telefon aufhört sich zu bewegen. „Lenken“ wandelt die Neigung des Telefons in den linken Analogstick für Rennspiele um und kalibriert den aktuellen Winkel beim Spielstart als Mitte. Der ausgewählte Modus wird nur verwendet, während ein Spiel läuft, und erfordert den entsprechenden Bewegungssensor.</string>
+    <string name="settings_help_gyro_mode">Zielen wandelt die Drehung des Telefons in die Bewegung eines Analogsticks zur Kamerasteuerung um. Lenken verwendet die Neigung des Telefons als linken Stick. Die Lichtpistole verwendet die unten gewählte Zielquelle; ein physischer oder virtueller Stick benötigt keinen Bewegungssensor. Arcade-Spiele mit Lichtpistole aktivieren sie automatisch.</string>
     <string name="settings_help_gyro_sensitivity">Steuert, wie stark die Telefonbewegung den emulierten Analogstick ausschlägt. Spielspezifische Einstellungen werden empfohlen, da Spiele unterschiedliche Reaktionskurven für Kamera und Lenkung verwenden.</string>
     <string name="settings_help_gyro_smoothing">Filtert Sensorrauschen und Handzittern. Niedrigere Werte reagieren schneller; höhere Werte fühlen sich ruhiger an, fügen jedoch eine geringe Verzögerung hinzu.</string>
     <string name="settings_help_upscale">Rendert das Spiel in einer höheren internen Auflösung und skaliert das Bild anschließend auf den Bildschirm. Höhere Werte lassen 3D-Spiele deutlich schärfer aussehen, belasten aber die GPU stark, sodass anspruchsvolle Titel Bilder verlieren oder heiß werden können. Erhöhe den Wert schrittweise und beobachte den FPS-Zähler: Native für die beste Leistung, 2x als guter Kompromiss für die meisten Geräte, höhere Werte nur auf starker Hardware oder in einfachen Spielen.</string>
@@ -2141,4 +2141,26 @@
     <string name="controls_editor_show_grid">Raster anzeigen</string>
     <string name="controls_editor_snap_grid">Am Raster ausrichten</string>
     <string name="controls_editor_group_scale_value">Gruppengröße %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Lightgun-Abzug</string>
+    <string name="settings_gamepad_action_gun_pedal">Lightgun-Pedal</string>
+    <string name="settings_gamepad_action_gun_reload">Lightgun-Nachladen</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Lightgun-Kalibrierung</string>
+    <string name="settings_gyro_mode_light_gun">Lightgun</string>
+    <string name="settings_gyro_stick">Gyro-Steuerknüppel</string>
+    <string name="settings_light_gun_aim">Lightgun-Zielen</string>
+    <string name="settings_light_gun_aim_gyro">Gyroskop</string>
+    <string name="settings_light_gun_cursor">Zielcursor anzeigen</string>
+    <string name="settings_light_gun_cursor_desc">Zeichnet einen Punkt dort, wohin die Lightgun zielt.</string>
+    <string name="settings_help_light_gun_cursor">Ausschalten, wenn das Spiel bereits ein Fadenkreuz zeichnet.</string>
+    <string name="settings_gyro_aim_left">Zielen - linker Stick</string>
+    <string name="settings_arcade_device_player_1">Gerät für Spieler 1</string>
+    <string name="settings_arcade_device_player_2">Gerät für Spieler 2</string>
+    <string name="settings_arcade_device_auto">Automatisch</string>
+    <string name="settings_arcade_device_gamepad">Controller</string>
+    <string name="settings_arcade_device_light_gun">Lichtpistole</string>
+    <string name="settings_gyro_stick_right">Rechter Stick</string>
+    <string name="settings_gyro_stick_left">Linker Stick</string>
+    <string name="settings_light_gun_aim_touch">Touch / Maus</string>
 </resources>

@@ -13,6 +13,7 @@ import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
 import com.sbro.emucoreh.data.AppPreferences
+import com.sbro.emucoreh.data.GamepadBindingRules
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,9 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 import java.util.Locale
-import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlin.math.sign
 
 object GamepadManager {
     data class MappableButtonAction(
@@ -269,6 +268,13 @@ object GamepadManager {
         const val Pressure = 124
         const val AnalogToggle = 125
         const val FastForward = 126
+        const val GunTrigger = 135
+        const val GunPedal = 136
+        const val GunReload = 137
+        const val GunRecalibrate = 138
+        const val ArcadeCoin = 139
+        const val ArcadeTest = 140
+        const val ArcadeService = 141
     }
 
     private val mappableActions = listOf(
@@ -283,11 +289,14 @@ object GamepadManager {
         MappableButtonAction("l3", PadKey.L3, listOf(KeyEvent.KEYCODE_BUTTON_THUMBL)),
         MappableButtonAction("r3", PadKey.R3, listOf(KeyEvent.KEYCODE_BUTTON_THUMBR)),
         MappableButtonAction("select", PadKey.Select, listOf(KeyEvent.KEYCODE_BUTTON_SELECT, KeyEvent.KEYCODE_BUTTON_9)),
-        // Arcade service switches (Naomi/Atomiswave). They share the pad keys
-        // of Select, L3 and R3 so a bound gamepad button reaches the core.
-        MappableButtonAction("coin", PadKey.Select, listOf(KeyEvent.KEYCODE_BUTTON_SELECT, KeyEvent.KEYCODE_BUTTON_9)),
-        MappableButtonAction("test", PadKey.L3, listOf(KeyEvent.KEYCODE_BUTTON_THUMBL)),
-        MappableButtonAction("service", PadKey.R3, listOf(KeyEvent.KEYCODE_BUTTON_THUMBR)),
+        // Named cabinet actions have independent state from ordinary controller buttons.
+        MappableButtonAction("coin", PadKey.ArcadeCoin, listOf(KeyEvent.KEYCODE_BUTTON_SELECT, KeyEvent.KEYCODE_BUTTON_9)),
+        MappableButtonAction("test", PadKey.ArcadeTest, listOf(KeyEvent.KEYCODE_BUTTON_THUMBL)),
+        MappableButtonAction("service", PadKey.ArcadeService, listOf(KeyEvent.KEYCODE_BUTTON_THUMBR)),
+        MappableButtonAction("gun_trigger", PadKey.GunTrigger, emptyList()),
+        MappableButtonAction("gun_pedal", PadKey.GunPedal, emptyList()),
+        MappableButtonAction("gun_reload", PadKey.GunReload, emptyList()),
+        MappableButtonAction("gun_recalibrate", PadKey.GunRecalibrate, emptyList()),
         MappableButtonAction("start", PadKey.Start, listOf(KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_BUTTON_10)),
         MappableButtonAction("left_input_toggle", PadKey.AnalogToggle, emptyList()),
         MappableButtonAction(ACTION_QUICK_SAVE, null, emptyList()),
@@ -300,6 +309,41 @@ object GamepadManager {
     )
     private val actionsById = mappableActions.associateBy { it.id }
     private val shortcutActionIds = setOf(ACTION_QUICK_SAVE, ACTION_QUICK_LOAD)
+    private val gunActionIds = setOf("gun_trigger", "gun_pedal", "gun_reload", "gun_recalibrate")
+    @Volatile private var arcadeModeActive = false
+    @Volatile private var lightGunPorts: Set<Int> = emptySet()
+    @Volatile private var lightGunAimSource = 0
+    private val _lightGunStickByPad = MutableStateFlow<Map<Int, Pair<Float, Float>>>(emptyMap())
+    /** Signed stick vectors, already adjusted for deadzone, sensitivity and inversion. */
+    val lightGunStickByPad: StateFlow<Map<Int, Pair<Float, Float>>> = _lightGunStickByPad
+
+    fun setArcadeModeActive(active: Boolean) {
+        if (arcadeModeActive == active) return
+        arcadeModeActive = active
+        resetModeInputState((0 until MAX_PAD_SLOTS).toSet())
+    }
+
+    fun setLightGunModeActive(active: Boolean, aimSource: Int = 0) {
+        setLightGunPorts(if (active) (0 until MAX_PAD_SLOTS).toSet() else emptySet(), aimSource)
+    }
+
+    fun setLightGunPorts(activePadIndices: Set<Int>, aimSource: Int = 0) {
+        val ports = activePadIndices.filterTo(mutableSetOf()) { it in 0 until MAX_PAD_SLOTS }
+        val source = aimSource.coerceIn(0, 3)
+        if (lightGunPorts == ports && lightGunAimSource == source) return
+        val changedPorts = lightGunPorts + ports
+        lightGunPorts = ports
+        lightGunAimSource = source
+        resetModeInputState(changedPorts)
+    }
+
+    private fun resetModeInputState(padIndices: Set<Int>) {
+        synchronized(connectionLock) {
+            deviceToPadIndex.filterValues { it in padIndices }.keys.forEach(analogStatesByDeviceId::remove)
+        }
+        _lightGunStickByPad.value = _lightGunStickByPad.value.filterKeys { it !in padIndices }
+        if (emulationInputEnabled) padIndices.forEach(EmulatorBridge::resetPadState)
+    }
     private val _gamepadShortcutActions = MutableSharedFlow<GamepadShortcutAction>(extraBufferCapacity = 8)
     val gamepadShortcutActions: SharedFlow<GamepadShortcutAction> = _gamepadShortcutActions
     private val _connectedGamepadCountState = MutableStateFlow(0)
@@ -598,7 +642,10 @@ object GamepadManager {
         if (!isGameController(event.device)) return false
 
         val padIndex = resolvePadIndexForDevice(event.deviceId) ?: return false
-        mapKeyCodeToShortcutActionId(padIndex, event.keyCode)?.let { actionId ->
+        val selectedActionId = resolveMappedActionIdForKeyCode(event.keyCode, customBindingsByPad[padIndex].orEmpty(), padIndex)
+        mapKeyCodeToShortcutActionId(padIndex, event.keyCode)
+            ?.takeUnless { selectedActionId != null && GamepadBindingRules.isArcadeAction(selectedActionId) }
+            ?.let { actionId ->
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                 playGamepadButtonHaptic()
                 _gamepadShortcutActions.tryEmit(GamepadShortcutAction(padIndex, actionId))
@@ -634,7 +681,8 @@ object GamepadManager {
             .let { if (invertLeftStickHorizontal) -it else it }
         val leftY = processStickAxis(event.getAxisValue(MotionEvent.AXIS_Y), leftStickSensitivity)
             .let { if (invertLeftStick) -it else it }
-        if (leftX != state.prevLeftX || leftY != state.prevLeftY) {
+        val useLeftStickForGun = padIndex in lightGunPorts && lightGunAimSource == 1
+        if (!useLeftStickForGun && (leftX != state.prevLeftX || leftY != state.prevLeftY)) {
             dispatchAnalogStick(
                 padIndex = padIndex,
                 x = leftX,
@@ -670,7 +718,11 @@ object GamepadManager {
                 (if (rtControlsRightStick) physicalRT else 0f)
             ).coerceIn(-1f, 1f)
         val rightStickY = (rightY + rightStickYFromTriggers).coerceIn(-1f, 1f)
-        if (rightX != state.prevRightX || rightStickY != state.prevRightY) {
+        val useRightStickForGun = padIndex in lightGunPorts && lightGunAimSource == 2
+        selectLightGunStick(lightGunPorts, padIndex, lightGunAimSource, leftX to leftY, rightX to rightY)?.let { vector ->
+            _lightGunStickByPad.value = _lightGunStickByPad.value + (padIndex to vector)
+        }
+        if (!useRightStickForGun && (rightX != state.prevRightX || rightStickY != state.prevRightY)) {
             dispatchAnalogStick(
                 padIndex = padIndex,
                 x = rightX,
@@ -858,6 +910,7 @@ object GamepadManager {
                 previousBindingsByPad[padIndex] != bindingsByPad[padIndex]
             }
         if (changedPadIndices.isEmpty()) return
+        _lightGunStickByPad.value = _lightGunStickByPad.value.filterKeys { it !in changedPadIndices }
 
         synchronized(connectionLock) {
             val changedDeviceIds = deviceToPadIndex
@@ -927,7 +980,8 @@ object GamepadManager {
         val normalizedPadIndex = normalizePadIndex(padIndex)
         val actionId = resolveMappedActionIdForKeyCode(
             keyCode = keyCode,
-            customBindings = customBindingsByPad[normalizedPadIndex].orEmpty()
+            customBindings = customBindingsByPad[normalizedPadIndex].orEmpty(),
+            padIndex = normalizedPadIndex
         ) ?: return null
         return actionsById[actionId]?.padKey
     }
@@ -936,29 +990,44 @@ object GamepadManager {
         val normalizedPadIndex = normalizePadIndex(padIndex)
         val actionId = resolveMappedActionIdForTriggerAxis(
             triggerActionId = triggerActionId,
-            customBindings = customBindingsByPad[normalizedPadIndex].orEmpty()
+            customBindings = customBindingsByPad[normalizedPadIndex].orEmpty(),
+            padIndex = normalizedPadIndex
         ) ?: return null
         return actionsById[actionId]?.padKey
     }
 
     internal fun resolveMappedActionIdForKeyCode(
         keyCode: Int,
-        customBindings: Map<String, Int>
+        customBindings: Map<String, Int>,
+        padIndex: Int = 0
     ): String? {
-        customBindings.entries.firstOrNull { (_, mappedKeyCode) -> mappedKeyCode == keyCode }
+        customBindings.entries
+            .filter { (actionId, mappedKeyCode) -> mappedKeyCode == keyCode && isActionActive(actionId, padIndex) }
+            .maxByOrNull { (actionId, _) -> if (GamepadBindingRules.isArcadeAction(actionId)) 1 else 0 }
             ?.let { return it.key }
-        val defaultAction = mappableActions.firstOrNull { keyCode in it.defaultKeyCodes } ?: return null
+        val defaults = mappableActions.filter { keyCode in it.defaultKeyCodes && isActionActive(it.id, padIndex) }
+        val defaultAction = defaults.firstOrNull { GamepadBindingRules.isArcadeAction(it.id) && it.id !in customBindings }
+            ?: defaults.firstOrNull() ?: return null
         return defaultAction.id.takeUnless { it in customBindings }
     }
 
     internal fun resolveMappedActionIdForTriggerAxis(
         triggerActionId: String,
-        customBindings: Map<String, Int>
+        customBindings: Map<String, Int>,
+        padIndex: Int = 0
     ): String? {
         val triggerAction = actionsById[triggerActionId] ?: return null
-        customBindings.entries.firstOrNull { (_, keyCode) -> keyCode in triggerAction.defaultKeyCodes }
+        customBindings.entries
+            .filter { (actionId, keyCode) -> keyCode in triggerAction.defaultKeyCodes && isActionActive(actionId, padIndex) }
+            .maxByOrNull { (actionId, _) -> if (GamepadBindingRules.isArcadeAction(actionId)) 1 else 0 }
             ?.let { return it.key }
         return triggerActionId.takeUnless { it in customBindings }
+    }
+
+    private fun isActionActive(actionId: String, padIndex: Int): Boolean = when {
+        actionId in gunActionIds -> padIndex in lightGunPorts
+        GamepadBindingRules.isArcadeAction(actionId) -> arcadeModeActive || padIndex in lightGunPorts
+        else -> actionId in actionsById
     }
 
     private fun remapTriggerPadKeyForRightStick(padKey: Int): Int {
@@ -970,8 +1039,7 @@ object GamepadManager {
     }
 
     private fun processStickAxis(value: Float, sensitivity: Float): Float {
-        val deadzoned = applyDeadzone(value)
-        return (deadzoned * sensitivity.coerceIn(0.5f, 2f)).coerceIn(-1f, 1f)
+        return shapeGamepadStickAxis(value, analogDeadzone, sensitivity)
     }
 
     private fun getAxisValueWithFallback(event: MotionEvent, primaryAxis: Int, fallbackAxis: Int): Float {
@@ -980,14 +1048,6 @@ object GamepadManager {
         } else {
             event.getAxisValue(fallbackAxis)
         }
-    }
-
-    private fun applyDeadzone(value: Float): Float {
-        val deadzone = analogDeadzone.coerceIn(0f, 0.35f)
-        val magnitude = abs(value)
-        if (magnitude <= deadzone) return 0f
-        val normalized = ((magnitude - deadzone) / (1f - deadzone)).coerceIn(0f, 1f)
-        return normalized * sign(value)
     }
 
     private fun normalizePadIndex(padIndex: Int): Int = padIndex.coerceIn(0, MAX_PAD_SLOTS - 1)
@@ -1103,6 +1163,7 @@ object GamepadManager {
         }
 
         releasedAssignments.forEach { (padIndex, deviceId) ->
+            _lightGunStickByPad.value = _lightGunStickByPad.value - padIndex
             stopPhysicalGamepadVibrationForDevice(deviceId)
             clearFallbackPadVibration(padIndex)
             if (emulationInputEnabled) {
@@ -1115,6 +1176,7 @@ object GamepadManager {
     }
 
     private fun resetAnalogState() {
+        _lightGunStickByPad.value = emptyMap()
         synchronized(connectionLock) {
             analogStatesByDeviceId.clear()
             rumbleStatesByPad.clear()

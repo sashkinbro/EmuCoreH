@@ -653,7 +653,7 @@
     <string name="settings_gyro_invert_x_desc">Přehodí pohyb doleva a doprava.</string>
     <string name="settings_gyro_invert_y">Invertovat vertikální gyroskop</string>
     <string name="settings_gyro_invert_y_desc">Přehodí pohyb zaměřování nahoru a dolů.</string>
-    <string name="settings_help_gyro_mode">Zaměřování převádí rychlost otáčení telefonu do pravé analogové páčky pro ovládání kamery ve střílečkách a po zastavení pohybu telefonu se automaticky vrátí do středu. Řízení převádí naklonění telefonu do levé analogové páčky pro závodní hry a po spuštění hry zkalibruje aktuální úhel jako střed. Zvolený režim se používá pouze za běhu hry a vyžaduje odpovídající snímač pohybu.</string>
+    <string name="settings_help_gyro_mode">Míření převádí otáčení telefonu na pohyb analogové páčky pro ovládání kamery. Řízení používá náklon telefonu jako levou páčku. Světelná pistole používá zdroj míření zvolený níže; fyzická ani obrazovková páčka nepotřebuje pohybový senzor. Arkádové hry se světelnou pistolí ji aktivují automaticky.</string>
     <string name="settings_help_gyro_sensitivity">Řídí, jak silně pohyb telefonu vychyluje emulovanou analogovou páčku. Doporučuje se přepsat tuto hodnotu pro každou hru zvlášť, protože hry používají různé křivky odezvy kamery a řízení.</string>
     <string name="settings_help_gyro_smoothing">Filtruje šum senzoru a třes rukou. Nižší hodnoty reagují rychleji; vyšší hodnoty působí stabilněji, ale přidávají malou latenci.</string>
     <string name="settings_help_upscale">Vykresluje hru ve vyšším vnitřním rozlišení a obraz pak škáluje na obrazovku. Vyšší hodnoty výrazně zostřují 3D hry, ale silně zatěžují GPU, takže náročné tituly mohou ztrácet snímky nebo se přehřívat. Zvyšujte postupně a sledujte počítadlo FPS: Nativní pro nejlepší výkon, 2x je dobrý kompromis pro většinu telefonů a vyšší hodnoty jen na výkonných zařízeních nebo v jednoduchých hrách.</string>
@@ -2160,4 +2160,26 @@
     <string name="controls_editor_show_grid">Zobrazit mřížku</string>
     <string name="controls_editor_snap_grid">Přichytit k mřížce</string>
     <string name="controls_editor_group_scale_value">Měřítko skupiny %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Spoušť světelné pistole</string>
+    <string name="settings_gamepad_action_gun_pedal">Pedál světelné pistole</string>
+    <string name="settings_gamepad_action_gun_reload">Přebití světelné pistole</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Kalibrace světelné pistole</string>
+    <string name="settings_gyro_mode_light_gun">Světelná pistole</string>
+    <string name="settings_gyro_stick">Gyro páčka</string>
+    <string name="settings_light_gun_aim">Míření světelné pistole</string>
+    <string name="settings_light_gun_aim_gyro">Gyroskop</string>
+    <string name="settings_light_gun_cursor">Zobrazit mířidla</string>
+    <string name="settings_light_gun_cursor_desc">Vykreslí tečku tam, kam míří světelná pistole.</string>
+    <string name="settings_help_light_gun_cursor">Vypněte, pokud hra kreslí vlastní zaměřovač.</string>
+    <string name="settings_gyro_aim_left">Míření - levá páčka</string>
+    <string name="settings_arcade_device_player_1">Zařízení hráče 1</string>
+    <string name="settings_arcade_device_player_2">Zařízení hráče 2</string>
+    <string name="settings_arcade_device_auto">Automaticky</string>
+    <string name="settings_arcade_device_gamepad">Ovladač</string>
+    <string name="settings_arcade_device_light_gun">Světelná pistole</string>
+    <string name="settings_gyro_stick_right">Pravá páčka</string>
+    <string name="settings_gyro_stick_left">Levá páčka</string>
+    <string name="settings_light_gun_aim_touch">Dotyk / myš</string>
 </resources>

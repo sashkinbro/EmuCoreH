@@ -635,7 +635,7 @@
     <string name="settings_gyro_invert_x_desc">左右の動きを反転させます。</string>
     <string name="settings_gyro_invert_y">ジャイロの上下反転</string>
     <string name="settings_gyro_invert_y_desc">上下のエイムの動きを反転させます。</string>
-    <string name="settings_help_gyro_mode">「エイム」は、シューティングゲームの視点操作においてスマートフォンの回転速度を右アナログスティックに変換し、スマートフォンの動きが止まると自動的に中央に戻ります。「ステアリング」は、レースゲームにおいてスマートフォンの傾きを左アナログスティックに変換し、ゲーム開始時の現在の角度を中央としてキャリブレーションします。選択したモードはゲーム実行中のみ使用され、対応するモーションセンサーが必要です。</string>
+    <string name="settings_help_gyro_mode">エイムはスマートフォンの回転をカメラ操作用のアナログスティックの動きに変換します。ステアリングは傾きを左スティックとして使います。ライトガンは下で選んだ照準入力を使い、物理スティックや画面上のスティックにはモーションセンサーは不要です。アーケードのライトガンゲームでは自動的に有効になります。</string>
     <string name="settings_help_gyro_sensitivity">スマートフォンの動きがエミュレートされたアナログスティックをどれだけ強く傾けるかを制御します。ゲームによって視点操作やステアリングの応答曲線が異なるため、ゲームごとの個別設定をおすすめします。</string>
     <string name="settings_help_gyro_smoothing">センサーのノイズや手ブレをフィルタリングします。値を小さくすると反応が速くなり、値を大きくすると安定感が増しますが、わずかな遅延が生じます。</string>
     <string name="settings_help_upscale">ゲームをより高い内部解像度で描画し、画面に合わせて拡大します。値を上げると 3D ゲームは格段に鮮明になりますが、GPU 負荷が大きく、重いゲームではフレーム落ちや発熱が起こります。FPS カウンターを見ながら段階的に上げてください。最高性能なら「ネイティブ」、多くの端末でバランスが良いのは 2x、それ以上は高性能な端末や軽いゲーム向けです。</string>
@@ -2138,4 +2138,26 @@
     <string name="controls_editor_show_grid">グリッドを表示</string>
     <string name="controls_editor_snap_grid">グリッドに吸着</string>
     <string name="controls_editor_group_scale_value">グループ倍率 %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">ライトガントリガー</string>
+    <string name="settings_gamepad_action_gun_pedal">ライトガンペダル</string>
+    <string name="settings_gamepad_action_gun_reload">ライトガンリロード</string>
+    <string name="settings_gamepad_action_gun_recalibrate">ライトガン再調整</string>
+    <string name="settings_gyro_mode_light_gun">ライトガン</string>
+    <string name="settings_gyro_stick">ジャイロスティック</string>
+    <string name="settings_light_gun_aim">ライトガンの照準</string>
+    <string name="settings_light_gun_aim_gyro">ジャイロ</string>
+    <string name="settings_light_gun_cursor">照準カーソルを表示</string>
+    <string name="settings_light_gun_cursor_desc">ライトガンの照準位置に点を描画します。</string>
+    <string name="settings_help_light_gun_cursor">ゲームが独自の照準を描画する場合はオフにします。</string>
+    <string name="settings_gyro_aim_left">エイム - 左スティック</string>
+    <string name="settings_arcade_device_player_1">プレイヤー1のデバイス</string>
+    <string name="settings_arcade_device_player_2">プレイヤー2のデバイス</string>
+    <string name="settings_arcade_device_auto">自動</string>
+    <string name="settings_arcade_device_gamepad">コントローラー</string>
+    <string name="settings_arcade_device_light_gun">ライトガン</string>
+    <string name="settings_gyro_stick_right">右スティック</string>
+    <string name="settings_gyro_stick_left">左スティック</string>
+    <string name="settings_light_gun_aim_touch">タッチ / マウス</string>
 </resources>

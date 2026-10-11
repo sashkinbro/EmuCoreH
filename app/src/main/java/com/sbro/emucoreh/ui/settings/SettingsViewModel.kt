@@ -171,6 +171,11 @@ data class SettingsUiState(
     val touchHapticsPreset: Int = AppPreferences.DEFAULT_TOUCH_HAPTICS_PRESET,
     val touchHapticsStrength: Int = AppPreferences.DEFAULT_TOUCH_HAPTICS_STRENGTH,
     val gyroMode: Int = AppPreferences.GYRO_MODE_OFF,
+    val gyroStickTarget: Int = 0,
+    val lightGunAimSource: Int = 0,
+    val lightGunCursorEnabled: Boolean = true,
+    val arcadeDevice1: Int = 0,
+    val arcadeDevice2: Int = 0,
     val gyroSensitivity: Int = AppPreferences.DEFAULT_GYRO_SENSITIVITY,
     val gyroSmoothing: Int = AppPreferences.DEFAULT_GYRO_SMOOTHING,
     val gyroInvertX: Boolean = false,
@@ -350,6 +355,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             touchHapticsPreset = snapshot.touchHapticsPreset,
             touchHapticsStrength = snapshot.touchHapticsStrength,
             gyroMode = snapshot.gyroMode,
+            gyroStickTarget = snapshot.gyroStickTarget,
+            lightGunAimSource = snapshot.lightGunAimSource,
+            lightGunCursorEnabled = snapshot.lightGunCursorEnabled,
+            arcadeDevice1 = snapshot.arcadeDevice1,
+            arcadeDevice2 = snapshot.arcadeDevice2,
             gyroSensitivity = snapshot.gyroSensitivity,
             gyroSmoothing = snapshot.gyroSmoothing,
             gyroInvertX = snapshot.gyroInvertX,
@@ -940,6 +950,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
     fun setTouchHapticsPreset(value: Int) { viewModelScope.launch { preferences.setTouchHapticsPreset(value) } }
     fun setTouchHapticsStrength(value: Int) { viewModelScope.launch { preferences.setTouchHapticsStrength(value) } }
+    fun setGyroStickTarget(value: Int) { viewModelScope.launch { preferences.setGyroStickTarget(value) } }
+    fun setLightGunAimSource(value: Int) { viewModelScope.launch { preferences.setLightGunAimSource(value) } }
+    fun setLightGunCursorEnabled(value: Boolean) { viewModelScope.launch { preferences.setLightGunCursorEnabled(value) } }
+    fun setArcadeDevice1(value: Int) { viewModelScope.launch { preferences.setArcadeDevice1(value) } }
+    fun setArcadeDevice2(value: Int) { viewModelScope.launch { preferences.setArcadeDevice2(value) } }
     fun setGyroMode(value: Int) { viewModelScope.launch { preferences.setGyroMode(value) } }
     fun setGyroSensitivity(value: Int) { viewModelScope.launch { preferences.setGyroSensitivity(value) } }
     fun setGyroSmoothing(value: Int) { viewModelScope.launch { preferences.setGyroSmoothing(value) } }

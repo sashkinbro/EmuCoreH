@@ -650,7 +650,7 @@
     <string name="settings_gyro_invert_x_desc">Odwraca ruch w lewo i w prawo.</string>
     <string name="settings_gyro_invert_y">Odwróć żyroskop w pionie</string>
     <string name="settings_gyro_invert_y_desc">Odwraca ruch celowania w górę i w dół.</string>
-    <string name="settings_help_gyro_mode">"Celowanie" przekształca prędkość rotacji telefonu w wychylenie prawej gałki analogowej (do kontroli kamery w strzelankach) i automatycznie wraca do środka, gdy telefon przestaje się poruszać. "Kierowanie" przekształca pochylenie telefonu w wychylenie lewej gałki analogowej dla gier wyścigowych i ustawia aktualny kąt jako środek (punkt zerowy) w momencie rozpoczęcia rozgrywki. Wybrany tryb jest używany tylko podczas działania gry i wymaga posiadania odpowiedniego czujnika ruchu.</string>
+    <string name="settings_help_gyro_mode">Celowanie zamienia obrót telefonu na ruch gałki analogowej sterującej kamerą. Kierowanie używa pochylenia telefonu jako lewej gałki. Pistolet świetlny korzysta ze źródła celowania wybranego poniżej; fizyczna lub ekranowa gałka nie wymaga czujnika ruchu. Arkadowe gry z pistoletem świetlnym włączają go automatycznie.</string>
     <string name="settings_help_gyro_sensitivity">Kontroluje, jak silnie ruch telefonu wpływa na emulowaną gałkę analogową. Zalecane są ustawienia niestandardowe dla poszczególnych gier, ponieważ korzystają one z różnych krzywych reakcji dla kamery i sterowania.</string>
     <string name="settings_help_gyro_smoothing">Filtruje szumy z czujnika i drżenie rąk. Niższe wartości skutkują szybszą reakcją; wyższe sprawiają, że sterowanie jest płynniejsze, ale wprowadzają minimalne opóźnienie.</string>
     <string name="settings_help_upscale">Renderuje grę w wyższej rozdzielczości wewnętrznej, a następnie skaluje obraz do ekranu. Wyższe wartości znacznie wyostrzają gry 3D, ale mocno obciążają GPU, więc wymagające tytuły mogą gubić klatki lub się nagrzewać. Zwiększaj stopniowo, obserwując licznik FPS: Natywna dla najlepszej wydajności, 2x to dobry kompromis na większości telefonów, a wyżej tylko na mocnych urządzeniach lub w prostych grach.</string>
@@ -2160,4 +2160,26 @@
     <string name="controls_editor_show_grid">Pokaż siatkę</string>
     <string name="controls_editor_snap_grid">Przyciągaj do siatki</string>
     <string name="controls_editor_group_scale_value">Skala grupy %1$d%%</string>
+
+    <!-- Arcade light gun controls -->
+    <string name="settings_gamepad_action_gun_trigger">Spust pistoletu świetlnego</string>
+    <string name="settings_gamepad_action_gun_pedal">Pedał pistoletu świetlnego</string>
+    <string name="settings_gamepad_action_gun_reload">Przeładowanie pistoletu świetlnego</string>
+    <string name="settings_gamepad_action_gun_recalibrate">Kalibracja pistoletu świetlnego</string>
+    <string name="settings_gyro_mode_light_gun">Pistolet świetlny</string>
+    <string name="settings_gyro_stick">Drążek żyroskopu</string>
+    <string name="settings_light_gun_aim">Celowanie pistoletem świetlnym</string>
+    <string name="settings_light_gun_aim_gyro">Żyroskop</string>
+    <string name="settings_light_gun_cursor">Pokaż celownik</string>
+    <string name="settings_light_gun_cursor_desc">Rysuje kropkę tam, gdzie celuje pistolet świetlny.</string>
+    <string name="settings_help_light_gun_cursor">Wyłącz, jeśli gra sama rysuje celownik.</string>
+    <string name="settings_gyro_aim_left">Celowanie — lewy drążek</string>
+    <string name="settings_arcade_device_player_1">Urządzenie gracza 1</string>
+    <string name="settings_arcade_device_player_2">Urządzenie gracza 2</string>
+    <string name="settings_arcade_device_auto">Automatycznie</string>
+    <string name="settings_arcade_device_gamepad">Kontroler</string>
+    <string name="settings_arcade_device_light_gun">Pistolet świetlny</string>
+    <string name="settings_gyro_stick_right">Prawy drążek</string>
+    <string name="settings_gyro_stick_left">Lewy drążek</string>
+    <string name="settings_light_gun_aim_touch">Dotyk / mysz</string>
 </resources>

@@ -38,6 +38,8 @@ class NativeCoreBridge {
     /** Boots the core with no content into the Dreamcast BIOS. */
     external fun loadBiosOnly(handle: Long): Int
     external fun loadDisc(handle: Long, path: String): Int
+    /** Replaces the GD-ROM through the core's tray callbacks without rebooting. */
+    external fun changeDisc(handle: Long, path: String): Int
 
     /** Runs one guest frame; audio is pulled by the output stream callback. */
     external fun runFrame(handle: Long)
@@ -58,6 +60,11 @@ class NativeCoreBridge {
     external fun setPadButtons(handle: Long, port: Int, activeLowButtons: Int)
     external fun setPadAnalog(handle: Long, port: Int, lx: Int, ly: Int, rx: Int, ry: Int)
     external fun setPadAnalogMode(handle: Long, port: Int, enabled: Boolean)
+    /** Called only by the frame worker. Device: 1 joypad, 4 light gun. */
+    external fun setControllerDevice(handle: Long, port: Int, device: Int)
+    external fun setLightGunState(handle: Long, port: Int, x: Float, y: Float, buttons: Int, offscreen: Boolean)
+    external fun getArcadeInputMode(handle: Long): Int
+    external fun setLightGunCursorEnabled(enabled: Boolean)
     /** Bit 16 analog mode, bits 8..15 large motor, bits 0..7 small motor. */
     external fun getPadState(handle: Long, port: Int): Int
 

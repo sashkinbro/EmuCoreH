@@ -438,6 +438,7 @@ fun buildOverlayCanvasLayout(
     )
 
     val centerAnchorX = canvasWidth / 2f + centerAdjustment.first
+    val gunControlIds = listOf("gun_trigger", "gun_pedal", "gun_reload", "gun_recalibrate")
 
     val selectLayout = layoutFor("select")
     val toggleLayout = layoutFor("left_input_toggle")
@@ -458,7 +459,8 @@ fun buildOverlayCanvasLayout(
     val coreCenterWidths = coreCenterItems.map { it.second }
 
     fun centerBaseWidthFor(id: String): Dp = when (id) {
-        "select", "start", "coin", "test", "service" -> wideCenterW
+        "select", "start", "coin", "test", "service",
+        "gun_trigger", "gun_pedal", "gun_reload", "gun_recalibrate" -> wideCenterW
         "left_input_toggle" -> toggleBaseSize
         else -> 0.dp
     }
@@ -475,6 +477,8 @@ fun buildOverlayCanvasLayout(
         "left_input_toggle" -> OverlayCenterToggleOpticalNudgeY
         // Arcade service switches sit on a row directly above Start.
         "coin", "test", "service" -> -(centerH + centerInlineGap)
+        // Gun controls have their own row above the cabinet service switches.
+        in gunControlIds -> -(centerH + centerInlineGap) * 2f
         else -> 0.dp
     }
 
@@ -497,6 +501,11 @@ fun buildOverlayCanvasLayout(
             "coin" -> centerAnchorX - (centerInlineGap + wideCenterW)
             "test" -> centerAnchorX
             "service" -> centerAnchorX + (centerInlineGap + wideCenterW)
+            in gunControlIds -> centerAnchorX + overlayInlineGroupOffset(
+                widths = List(gunControlIds.size) { wideCenterW },
+                gap = centerInlineGap,
+                index = gunControlIds.indexOf(id)
+            )
             else -> centerAnchorX
         }
     }
@@ -569,7 +578,16 @@ fun buildOverlayCanvasLayout(
             visible = previewMode || startLayout.visible,
             shape = RoundedCornerShape(8.dp)
         ),
-    )
+    ) + gunControlIds.map { id ->
+        val control = layoutFor(id)
+        centerButtonSpec(
+            id = id,
+            width = wideCenterW * (control.scale / 100f),
+            height = centerH * (control.scale / 100f),
+            visible = previewMode || control.visible,
+            shape = RoundedCornerShape(8.dp)
+        )
+    }
 
     val rightStickSize = analogSize * (rightStickLayout.scale / (stickScaleFactor * 100f).coerceAtLeast(1f))
     val rightStickPanelWidth = if (rightStickLayout.surfaceOnly) {
