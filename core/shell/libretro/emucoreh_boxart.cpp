@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <mutex>
 
 namespace {
 
@@ -71,6 +72,12 @@ extern "C" RETRO_API int emucoreh_scrape_disc(const char *gamePath, const char *
 	if (uniqueIdOut != nullptr && uniqueIdSize > 0)
 		uniqueIdOut[0] = '\0';
 
+	// The scraper runs before the emulator session exists, and both the i18n
+	// dictionary and pvrParse use process-wide state, so scrapes are
+	// serialized and must never let a bad image escape as an exception.
+	static std::mutex scrapeMutex;
+	std::lock_guard<std::mutex> lock(scrapeMutex);
+
 	Disc *disc = nullptr;
 	try {
 		disc = OpenDisc(gamePath);
@@ -87,22 +94,28 @@ extern "C" RETRO_API int emucoreh_scrape_disc(const char *gamePath, const char *
 	}
 
 	int result = 0;
-	u8 sector[2048];
-	disc->ReadSectors(disc->GetBaseFAD(), 1, sector, sizeof(sector));
-	ip_meta_t diskId;
-	memcpy(&diskId, sector, sizeof(diskId));
-	const bool validBootSector = memcmp(diskId.hardware_id, "SEGA SEGAKATANA ", sizeof(diskId.hardware_id)) == 0
-			&& memcmp(diskId.maker_id, "SEGA ENTERPRISES", sizeof(diskId.maker_id)) == 0;
-	if (validBootSector)
-	{
-		if (uniqueIdOut != nullptr && uniqueIdSize > 0)
-			copyTrimmed(uniqueIdOut, uniqueIdSize, diskId.product_number, sizeof(diskId.product_number));
-		if (searchNameOut != nullptr && searchNameSize > 0)
-			copyTrimmed(searchNameOut, searchNameSize, diskId.software_name, sizeof(diskId.software_name));
-		result |= 1;
+	try {
+		u8 sector[2048];
+		disc->ReadSectors(disc->GetBaseFAD(), 1, sector, sizeof(sector));
+		ip_meta_t diskId;
+		memcpy(&diskId, sector, sizeof(diskId));
+		const bool validBootSector = memcmp(diskId.hardware_id, "SEGA SEGAKATANA ", sizeof(diskId.hardware_id)) == 0
+				&& memcmp(diskId.maker_id, "SEGA ENTERPRISES", sizeof(diskId.maker_id)) == 0;
+		if (validBootSector)
+		{
+			if (uniqueIdOut != nullptr && uniqueIdSize > 0)
+				copyTrimmed(uniqueIdOut, uniqueIdSize, diskId.product_number, sizeof(diskId.product_number));
+			if (searchNameOut != nullptr && searchNameSize > 0)
+				copyTrimmed(searchNameOut, searchNameSize, diskId.software_name, sizeof(diskId.software_name));
+			result |= 1;
+		}
+		else
+			WARN_LOG(COMMON, "EmuCoreH boxart: invalid IP.BIN boot sector in %s", gamePath);
+	} catch (const std::exception &e) {
+		WARN_LOG(COMMON, "EmuCoreH boxart: cannot read %s: %s", gamePath, e.what());
+	} catch (...) {
+		WARN_LOG(COMMON, "EmuCoreH boxart: cannot read %s", gamePath);
 	}
-	else
-		WARN_LOG(COMMON, "EmuCoreH boxart: invalid IP.BIN boot sector in %s", gamePath);
 
 	// Offline cover: the 0GDTEX.PVR texture stored in the ISO filesystem.
 	if (pngOutputPath != nullptr && pngOutputPath[0] != '\0')

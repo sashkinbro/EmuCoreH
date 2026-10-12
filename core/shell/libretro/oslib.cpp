@@ -185,6 +185,11 @@ namespace i18n
 
 std::string getCurrentLocale()
 {
+	// The offline disc scraper opens images before the frontend has assigned
+	// the environment callback (retro_set_environment runs at session start),
+	// so the language query must not dereference it yet.
+	if (environ_cb == nullptr)
+		return "en";
 	unsigned language;
 	if (!environ_cb(RETRO_ENVIRONMENT_GET_LANGUAGE, &language))
 		return "en";

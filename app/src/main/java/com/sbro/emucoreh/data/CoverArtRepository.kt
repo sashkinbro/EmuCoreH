@@ -307,6 +307,10 @@ class CoverArtRepository(context: Context) {
      */
     private fun scrapeDiscBoxart(game: GameItem, key: String, extractCover: Boolean): DiscScrapeResult? {
         if (isArcadeGame(game.fileName)) return null
+        // Only disc images: playlists and other library content have no
+        // ISO filesystem to scrape.
+        val extension = game.fileName.substringAfterLast('.', "").lowercase(Locale.ROOT)
+        if (extension !in GameFormats.discExtensions) return null
         val nativePath = nativeDiscPath(game.path) ?: return null
         val target = File(fetchDirectory, "$key.png")
         if (extractCover && target.exists()) target.delete()
