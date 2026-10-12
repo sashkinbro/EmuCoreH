@@ -339,6 +339,7 @@
     <string name="settings_gamepad_action_coin">コイン</string>
     <string name="settings_gamepad_action_test">テスト</string>
     <string name="settings_gamepad_action_service">サービス</string>
+    <string name="settings_gamepad_action_arcade_button">ボタン%1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">左入力切り替え</string>
     <string name="settings_gamepad_action_dpad_up">方向キー 上</string>
@@ -2152,6 +2153,7 @@
     <string name="settings_arcade_device_light_gun">ライトガン</string>
     <string name="settings_gyro_stick_right">右スティック</string>
     <string name="settings_gyro_stick_left">左スティック</string>
+    <string name="settings_light_gun_aim_dpad">十字キー</string>
     <string name="settings_light_gun_aim_touch">タッチ / マウス</string>
     <string name="library_choose_disc">ディスクを選択</string>
     <string name="library_disc_number">ディスク %1$d</string>

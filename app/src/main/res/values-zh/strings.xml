@@ -202,6 +202,7 @@
     <string name="settings_gamepad_action_coin">硬币</string>
     <string name="settings_gamepad_action_test">测试</string>
     <string name="settings_gamepad_action_service">服务</string>
+    <string name="settings_gamepad_action_arcade_button">按钮 %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_dpad_up">方向鍵 上</string>
     <string name="settings_gamepad_action_dpad_down">方向鍵 下</string>
@@ -2154,6 +2155,7 @@
     <string name="settings_arcade_device_light_gun">光線槍</string>
     <string name="settings_gyro_stick_right">右搖桿</string>
     <string name="settings_gyro_stick_left">左搖桿</string>
+    <string name="settings_light_gun_aim_dpad">十字键</string>
     <string name="settings_light_gun_aim_touch">觸控 / 滑鼠</string>
     <string name="library_choose_disc">選擇光碟</string>
     <string name="library_disc_number">光碟 %1$d</string>

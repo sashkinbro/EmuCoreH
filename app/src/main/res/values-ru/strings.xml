@@ -203,6 +203,7 @@
     <string name="settings_gamepad_action_coin">Монета</string>
     <string name="settings_gamepad_action_test">Тест</string>
     <string name="settings_gamepad_action_service">Сервис</string>
+    <string name="settings_gamepad_action_arcade_button">Кнопка %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_dpad_up">Крестовина вверх</string>
     <string name="settings_gamepad_action_dpad_down">Крестовина вниз</string>
@@ -2157,6 +2158,7 @@
     <string name="settings_arcade_device_light_gun">Световой пистолет</string>
     <string name="settings_gyro_stick_right">Правый стик</string>
     <string name="settings_gyro_stick_left">Левый стик</string>
+    <string name="settings_light_gun_aim_dpad">Крестовина</string>
     <string name="settings_light_gun_aim_touch">Касание / мышь</string>
     <string name="library_choose_disc">Выберите диск</string>
     <string name="library_disc_number">Диск %1$d</string>

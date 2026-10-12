@@ -32,7 +32,8 @@ class ArcadeSettingsProfileTest {
     fun explicitArcadeSettingsSurviveExportAndImport() {
         val profile = PerGameSettings(
             gameKey = "gun", gameTitle = "Gun", gyroMode = AppPreferences.GYRO_MODE_LIGHT_GUN,
-            gyroStickTarget = 1, lightGunAimSource = 3, lightGunCursorEnabled = false,
+            gyroStickTarget = 1, lightGunAimSource = AppPreferences.LIGHT_GUN_AIM_DPAD,
+            lightGunCursorEnabled = false,
             arcadeDevice1 = 2, arcadeDevice2 = 1
         )
 
@@ -40,7 +41,7 @@ class ArcadeSettingsProfileTest {
 
         assertEquals(3, restored.gyroMode)
         assertEquals(1, restored.gyroStickTarget)
-        assertEquals(3, restored.lightGunAimSource)
+        assertEquals(AppPreferences.LIGHT_GUN_AIM_DPAD, restored.lightGunAimSource)
         assertFalse(restored.lightGunCursorEnabled)
         assertEquals(2, restored.arcadeDevice1)
         assertEquals(1, restored.arcadeDevice2)
@@ -75,6 +76,9 @@ class ArcadeSettingsProfileTest {
         assertEquals(2, profile.arcadeDevice1)
         assertEquals(0, profile.arcadeDevice2)
         assertTrue(profile.lightGunCursorEnabled)
+
+        val clamped = JSONObject("""{"gameKey":"gun","gameTitle":"Gun","lightGunAimSource":99}""").toPerGameSettings()
+        assertEquals(AppPreferences.LIGHT_GUN_AIM_MAX, clamped.lightGunAimSource)
     }
 
     @Test

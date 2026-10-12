@@ -16,6 +16,7 @@ internal fun lightGunAimSourceOptions(): List<Pair<Int, String>> = listOf(
     AppPreferences.LIGHT_GUN_AIM_GYRO to stringResource(R.string.settings_light_gun_aim_gyro),
     AppPreferences.LIGHT_GUN_AIM_LEFT_STICK to stringResource(R.string.settings_gyro_stick_left),
     AppPreferences.LIGHT_GUN_AIM_RIGHT_STICK to stringResource(R.string.settings_gyro_stick_right),
+    AppPreferences.LIGHT_GUN_AIM_DPAD to stringResource(R.string.settings_light_gun_aim_dpad),
     AppPreferences.LIGHT_GUN_AIM_TOUCH to stringResource(R.string.settings_light_gun_aim_touch)
 )
 

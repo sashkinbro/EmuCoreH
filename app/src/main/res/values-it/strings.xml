@@ -299,6 +299,7 @@
     <string name="settings_gamepad_action_coin">Moneta</string>
     <string name="settings_gamepad_action_test">Test</string>
     <string name="settings_gamepad_action_service">Servizio</string>
+    <string name="settings_gamepad_action_arcade_button">Pulsante %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">Attiva/disattiva Input Sinistro</string>
     <string name="settings_gamepad_action_dpad_up">Croce direzionale Su</string>
@@ -2153,6 +2154,7 @@
     <string name="settings_arcade_device_light_gun">Pistola ottica</string>
     <string name="settings_gyro_stick_right">Stick destro</string>
     <string name="settings_gyro_stick_left">Stick sinistro</string>
+    <string name="settings_light_gun_aim_dpad">Croce direzionale</string>
     <string name="settings_light_gun_aim_touch">Tocco / mouse</string>
     <string name="library_choose_disc">Scegli un disco</string>
     <string name="library_disc_number">Disco %1$d</string>

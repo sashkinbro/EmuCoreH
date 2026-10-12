@@ -339,6 +339,7 @@
     <string name="settings_gamepad_action_coin">Jeton</string>
     <string name="settings_gamepad_action_test">Test</string>
     <string name="settings_gamepad_action_service">Servis</string>
+    <string name="settings_gamepad_action_arcade_button">Düğme %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">Sol Giriş Geçişi</string>
     <string name="settings_gamepad_action_dpad_up">D-Pad Yukarı</string>
@@ -2153,6 +2154,7 @@
     <string name="settings_arcade_device_light_gun">Işık tabancası</string>
     <string name="settings_gyro_stick_right">Sağ çubuk</string>
     <string name="settings_gyro_stick_left">Sol çubuk</string>
+    <string name="settings_light_gun_aim_dpad">Yön tuşları</string>
     <string name="settings_light_gun_aim_touch">Dokunmatik / fare</string>
     <string name="library_choose_disc">Bir disk seçin</string>
     <string name="library_disc_number">Disk %1$d</string>

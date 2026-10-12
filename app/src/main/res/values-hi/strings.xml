@@ -299,6 +299,7 @@
     <string name="settings_gamepad_action_coin">सिक्का</string>
     <string name="settings_gamepad_action_test">परीक्षण</string>
     <string name="settings_gamepad_action_service">सेवा</string>
+    <string name="settings_gamepad_action_arcade_button">बटन %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">Left Input Toggle</string>
     <string name="settings_gamepad_action_dpad_up">D-Pad Up</string>
@@ -2153,6 +2154,7 @@
     <string name="settings_arcade_device_light_gun">लाइट गन</string>
     <string name="settings_gyro_stick_right">दायाँ स्टिक</string>
     <string name="settings_gyro_stick_left">बायाँ स्टिक</string>
+    <string name="settings_light_gun_aim_dpad">डी-पैड</string>
     <string name="settings_light_gun_aim_touch">टच / माउस</string>
     <string name="library_choose_disc">डिस्क चुनें</string>
     <string name="library_disc_number">डिस्क %1$d</string>

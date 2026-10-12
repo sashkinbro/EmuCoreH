@@ -339,6 +339,7 @@
     <string name="settings_gamepad_action_coin">코인</string>
     <string name="settings_gamepad_action_test">테스트</string>
     <string name="settings_gamepad_action_service">서비스</string>
+    <string name="settings_gamepad_action_arcade_button">버튼 %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">왼쪽 입력 전환</string>
     <string name="settings_gamepad_action_dpad_up">D-Pad 위</string>
@@ -2152,6 +2153,7 @@
     <string name="settings_arcade_device_light_gun">라이트 건</string>
     <string name="settings_gyro_stick_right">오른쪽 스틱</string>
     <string name="settings_gyro_stick_left">왼쪽 스틱</string>
+    <string name="settings_light_gun_aim_dpad">십자 버튼</string>
     <string name="settings_light_gun_aim_touch">터치 / 마우스</string>
     <string name="library_choose_disc">디스크 선택</string>
     <string name="library_disc_number">디스크 %1$d</string>

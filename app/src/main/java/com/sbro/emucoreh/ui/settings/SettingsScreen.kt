@@ -650,7 +650,10 @@ fun SettingsScreen(
                     stringResource(
                         R.string.settings_gamepad_mapping_listening_player_desc,
                         gamepadPlayerLabel(pendingGamepadPadIndex),
-                        gamepadActionLabel(pendingGamepadActionId.value.orEmpty())
+                        gamepadActionLabel(
+                            pendingGamepadActionId.value.orEmpty(),
+                            arcade = selectedGamepadProfile == 1
+                        )
                     )
                 )
             },
@@ -1750,7 +1753,7 @@ private fun SettingsContent(
                             )
                             val isCustomBinding = selectedBindings.containsKey(action.id)
                             GamepadBindingRow(
-                                title = gamepadActionLabel(action.id),
+                                title = gamepadActionLabel(action.id, arcade = arcadeProfileSelected),
                                 value = assignedKeyCode?.let(GamepadManager::keyCodeLabel)
                                     ?: stringResource(R.string.settings_not_set),
                                 autoLabel = if (isCustomBinding || action.defaultKeyCodes.isEmpty()) null else {
@@ -5728,15 +5731,35 @@ private fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
 }
 
 @Composable
-private fun gamepadActionLabel(actionId: String): String = when (actionId) {
-    // Dreamcast face button names; the ids keep their legacy PlayStation
-    // values for compatibility with existing mappings and layouts.
-    "cross" -> "A"
-    "circle" -> "B"
-    "square" -> "X"
-    "triangle" -> "Y"
-    "pressure" -> stringResource(R.string.settings_gamepad_action_pressure)
-    else -> stringResource(gamepadActionLabelRes(actionId))
+private fun gamepadActionLabel(actionId: String, arcade: Boolean = false): String {
+    if (arcade) {
+        // Flycast numbers the arcade buttons 1..8; the ids keep their legacy
+        // PlayStation values, the core maps them to Naomi/Atomiswave buttons.
+        val arcadeButton = when (actionId) {
+            "cross" -> 1
+            "circle" -> 2
+            "square" -> 3
+            "triangle" -> 4
+            "r1" -> 5
+            "l1" -> 6
+            "r2" -> 7
+            "l2" -> 8
+            else -> 0
+        }
+        if (arcadeButton > 0) {
+            return stringResource(R.string.settings_gamepad_action_arcade_button, arcadeButton)
+        }
+    }
+    return when (actionId) {
+        // Dreamcast face button names; the ids keep their legacy PlayStation
+        // values for compatibility with existing mappings and layouts.
+        "cross" -> "A"
+        "circle" -> "B"
+        "square" -> "X"
+        "triangle" -> "Y"
+        "pressure" -> stringResource(R.string.settings_gamepad_action_pressure)
+        else -> stringResource(gamepadActionLabelRes(actionId))
+    }
 }
 
 @Composable

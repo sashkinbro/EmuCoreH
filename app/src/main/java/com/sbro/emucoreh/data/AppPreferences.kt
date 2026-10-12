@@ -280,6 +280,8 @@ class AppPreferences(private val context: Context) {
         const val LIGHT_GUN_AIM_LEFT_STICK = 1
         const val LIGHT_GUN_AIM_RIGHT_STICK = 2
         const val LIGHT_GUN_AIM_TOUCH = 3
+        const val LIGHT_GUN_AIM_DPAD = 4
+        const val LIGHT_GUN_AIM_MAX = LIGHT_GUN_AIM_DPAD
         const val ARCADE_DEVICE_AUTO = 0
         const val ARCADE_DEVICE_CONTROLLER = 1
         const val ARCADE_DEVICE_LIGHT_GUN = 2
@@ -1353,7 +1355,7 @@ class AppPreferences(private val context: Context) {
                 touchHapticsStrength = (prefs[TOUCH_HAPTICS_STRENGTH] ?: DEFAULT_TOUCH_HAPTICS_STRENGTH).coerceIn(10, 100),
                 gyroMode = (prefs[GYRO_MODE] ?: GYRO_MODE_OFF).coerceIn(GYRO_MODE_OFF, GYRO_MODE_LIGHT_GUN),
                 gyroStickTarget = (prefs[GYRO_STICK_TARGET] ?: 0).coerceIn(0, 1),
-                lightGunAimSource = (prefs[LIGHT_GUN_AIM_SOURCE] ?: 0).coerceIn(0, 3),
+                lightGunAimSource = (prefs[LIGHT_GUN_AIM_SOURCE] ?: 0).coerceIn(0, LIGHT_GUN_AIM_MAX),
                 lightGunCursorEnabled = (prefs[LIGHT_GUN_CURSOR_ENABLED] ?: true),
                 arcadeDevice1 = (prefs[ARCADE_DEVICE_1] ?: 0).coerceIn(0, 2),
                 arcadeDevice2 = (prefs[ARCADE_DEVICE_2] ?: 0).coerceIn(0, 2),
@@ -1533,8 +1535,8 @@ class AppPreferences(private val context: Context) {
     suspend fun setGyroMode(value: Int) { context.dataStore.edit { it[GYRO_MODE] = value.coerceIn(GYRO_MODE_OFF, GYRO_MODE_LIGHT_GUN) } }
     val gyroStickTarget: Flow<Int> = context.dataStore.data.map { (it[GYRO_STICK_TARGET] ?: 0).coerceIn(0, 1) }
     suspend fun setGyroStickTarget(value: Int) { context.dataStore.edit { it[GYRO_STICK_TARGET] = value.coerceIn(0, 1) } }
-    val lightGunAimSource: Flow<Int> = context.dataStore.data.map { (it[LIGHT_GUN_AIM_SOURCE] ?: 0).coerceIn(0, 3) }
-    suspend fun setLightGunAimSource(value: Int) { context.dataStore.edit { it[LIGHT_GUN_AIM_SOURCE] = value.coerceIn(0, 3) } }
+    val lightGunAimSource: Flow<Int> = context.dataStore.data.map { (it[LIGHT_GUN_AIM_SOURCE] ?: 0).coerceIn(0, LIGHT_GUN_AIM_MAX) }
+    suspend fun setLightGunAimSource(value: Int) { context.dataStore.edit { it[LIGHT_GUN_AIM_SOURCE] = value.coerceIn(0, LIGHT_GUN_AIM_MAX) } }
     val lightGunCursorEnabled: Flow<Boolean> = context.dataStore.data.map { (it[LIGHT_GUN_CURSOR_ENABLED] ?: true) }
     suspend fun setLightGunCursorEnabled(value: Boolean) { context.dataStore.edit { it[LIGHT_GUN_CURSOR_ENABLED] = value } }
     val arcadeDevice1: Flow<Int> = context.dataStore.data.map { (it[ARCADE_DEVICE_1] ?: 0).coerceIn(0, 2) }
@@ -2703,7 +2705,7 @@ class AppPreferences(private val context: Context) {
             put("arcadeDevice2", (prefs[ARCADE_DEVICE_2] ?: 0).coerceIn(0, 2))
             put("arcadeDevice1", (prefs[ARCADE_DEVICE_1] ?: 0).coerceIn(0, 2))
             put("lightGunCursorEnabled", (prefs[LIGHT_GUN_CURSOR_ENABLED] ?: true))
-            put("lightGunAimSource", (prefs[LIGHT_GUN_AIM_SOURCE] ?: 0).coerceIn(0, 3))
+            put("lightGunAimSource", (prefs[LIGHT_GUN_AIM_SOURCE] ?: 0).coerceIn(0, LIGHT_GUN_AIM_MAX))
             put("gyroStickTarget", (prefs[GYRO_STICK_TARGET] ?: 0).coerceIn(0, 1))
             put("gyroSensitivity", (prefs[GYRO_SENSITIVITY] ?: DEFAULT_GYRO_SENSITIVITY).coerceIn(25, 300))
             put("gyroSmoothing", (prefs[GYRO_SMOOTHING] ?: DEFAULT_GYRO_SMOOTHING).coerceIn(0, 90))
@@ -2952,7 +2954,7 @@ class AppPreferences(private val context: Context) {
             prefs[ARCADE_DEVICE_2] = json.optInt("arcadeDevice2", 0).coerceIn(0, 2)
             prefs[ARCADE_DEVICE_1] = json.optInt("arcadeDevice1", 0).coerceIn(0, 2)
             prefs[LIGHT_GUN_CURSOR_ENABLED] = json.optBoolean("lightGunCursorEnabled", true)
-            prefs[LIGHT_GUN_AIM_SOURCE] = json.optInt("lightGunAimSource", 0).coerceIn(0, 3)
+            prefs[LIGHT_GUN_AIM_SOURCE] = json.optInt("lightGunAimSource", 0).coerceIn(0, LIGHT_GUN_AIM_MAX)
             prefs[GYRO_STICK_TARGET] = json.optInt("gyroStickTarget", 0).coerceIn(0, 1)
             prefs[GYRO_SENSITIVITY] = json.optInt("gyroSensitivity", DEFAULT_GYRO_SENSITIVITY).coerceIn(25, 300)
             prefs[GYRO_SMOOTHING] = json.optInt("gyroSmoothing", DEFAULT_GYRO_SMOOTHING).coerceIn(0, 90)

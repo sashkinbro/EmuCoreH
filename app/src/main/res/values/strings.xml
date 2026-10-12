@@ -466,6 +466,7 @@
     <string name="settings_gamepad_action_coin">Coin</string>
     <string name="settings_gamepad_action_test">Test</string>
     <string name="settings_gamepad_action_service">Service</string>
+    <string name="settings_gamepad_action_arcade_button">Button %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">Left Input Toggle</string>
     <string name="settings_stick_toggle_button">Stick toggle</string>
@@ -2178,6 +2179,7 @@
     <string name="settings_arcade_device_light_gun">Light gun</string>
     <string name="settings_gyro_stick_right">Right stick</string>
     <string name="settings_gyro_stick_left">Left stick</string>
+    <string name="settings_light_gun_aim_dpad">D-pad</string>
     <string name="settings_light_gun_aim_touch">Touch / mouse</string>
     <string name="library_choose_disc">Choose a disc</string>
     <string name="library_disc_number">Disc %1$d</string>

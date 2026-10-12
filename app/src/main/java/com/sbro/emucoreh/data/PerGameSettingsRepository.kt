@@ -215,7 +215,7 @@ internal fun JSONObject.toPerGameSettings(): PerGameSettings {
             .coerceIn(AppPreferences.TOUCH_HAPTICS_PRESET_SOFT, AppPreferences.TOUCH_HAPTICS_PRESET_STRONG),
         gyroMode = optInt("gyroMode", AppPreferences.GYRO_MODE_OFF).coerceIn(AppPreferences.GYRO_MODE_OFF, AppPreferences.GYRO_MODE_LIGHT_GUN),
         gyroStickTarget = optInt("gyroStickTarget", 0).coerceIn(0, 1),
-        lightGunAimSource = optInt("lightGunAimSource", 0).coerceIn(0, 3),
+        lightGunAimSource = optInt("lightGunAimSource", 0).coerceIn(0, AppPreferences.LIGHT_GUN_AIM_MAX),
         lightGunCursorEnabled = optBoolean("lightGunCursorEnabled", true),
         arcadeDevice1 = optInt("arcadeDevice1", 0).coerceIn(0, 2),
         arcadeDevice2 = optInt("arcadeDevice2", 0).coerceIn(0, 2),

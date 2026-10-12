@@ -165,6 +165,7 @@ import com.sbro.emucoreh.core.AndroidTouchHaptics
 import com.sbro.emucoreh.core.AndroidGyroscopeInput
 import com.sbro.emucoreh.core.ArcadeInputPolicy
 import com.sbro.emucoreh.core.LightGunAimGeometry
+import com.sbro.emucoreh.core.dpadAimVector
 import com.sbro.emucoreh.core.AndroidTouchHaptics.ButtonPhase
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.NativeApp
@@ -517,6 +518,8 @@ fun EmulationScreen(
     val physicalGunSticks by GamepadManager.lightGunStickByPad.collectAsState()
     val currentPhysicalGunSticks by rememberUpdatedState(physicalGunSticks)
     val touchGunSticks = remember { mutableStateMapOf<Int, Offset>() }
+    // On-screen D-pad directions per port when the D-pad aims the light gun.
+    val screenGunDpadDirections = remember { mutableMapOf<Int, Int>() }
     // Each port keeps its own absolute aim; a P1 input never supplies a P2 fallback.
     val gunAim = remember { mutableMapOf<Int, Offset>() }
     fun publishGunAim(port: Int, x: Float, y: Float, offscreen: Boolean = false) {
@@ -530,10 +533,47 @@ fun EmulationScreen(
             NativeApp.resetLightGunInput(port)
         }
         touchGunSticks.clear()
+        screenGunDpadDirections.clear()
+    }
+    /**
+     * Routes an on-screen D-pad direction to the light gun aim when the D-pad
+     * is the selected aim source. Returns true when the input was consumed and
+     * must not be dispatched to the emulated pad.
+     */
+    fun consumeScreenDpadGunAim(port: Int, key: Int, pressed: Boolean): Boolean {
+        if (!currentArcadeInputActive || port !in currentGunPorts ||
+            currentLightGunAimSource != AppPreferences.LIGHT_GUN_AIM_DPAD
+        ) {
+            return false
+        }
+        val bit = when (key) {
+            PadKey.UP -> 1
+            PadKey.DOWN -> 2
+            PadKey.LEFT -> 4
+            PadKey.RIGHT -> 8
+            else -> return false
+        }
+        val previous = screenGunDpadDirections[port] ?: 0
+        val updated = if (pressed) previous or bit else previous and bit.inv()
+        if (updated == 0) screenGunDpadDirections.remove(port)
+        else screenGunDpadDirections[port] = updated
+        val vector = dpadAimVector(
+            up = updated and 1 != 0,
+            down = updated and 2 != 0,
+            left = updated and 4 != 0,
+            right = updated and 8 != 0
+        )
+        if (vector == null) {
+            touchGunSticks.remove(port)
+        } else {
+            touchGunSticks[port] = Offset(vector.first, vector.second)
+        }
+        return true
     }
     fun dispatchScreenPadInput(port: Int, key: Int, range: Int, pressed: Boolean) {
         if (key in NativeApp.PAD_GUN_TRIGGER..NativeApp.PAD_GUN_RECALIBRATE &&
             pressed && (!currentArcadeInputActive || port !in currentGunPorts)) return
+        if (consumeScreenDpadGunAim(port, key, pressed)) return
         viewModel.onPadInput(port, key, range, pressed)
     }
     val gyroController = remember(context) {
@@ -622,6 +662,7 @@ fun EmulationScreen(
     }
     LaunchedEffect(gunPorts, overlayPadIndex, uiState.lightGunAimSource, uiState.isRunning) {
         touchGunSticks.clear()
+        screenGunDpadDirections.clear()
         gunAim.clear()
         if (uiState.isRunning) {
             gunPorts.forEach { port -> publishGunAim(port, 0.5f, 0.5f) }
@@ -635,6 +676,7 @@ fun EmulationScreen(
                 if (count != previous.getOrNull(port) && port in currentGunPorts) {
                     publishGunAim(port, 0.5f, 0.5f)
                     touchGunSticks.remove(port)
+                    screenGunDpadDirections.remove(port)
                     if (port == currentOverlayPadIndex) gyroController.recalibrate()
                 }
             }
@@ -642,7 +684,10 @@ fun EmulationScreen(
         }
     }
     LaunchedEffect(gunPorts, arcadeInputActive, uiState.lightGunAimSource) {
-        if (!arcadeInputActive || uiState.lightGunAimSource !in 1..2 || gunPorts.isEmpty()) {
+        val aimsWithStickVector = uiState.lightGunAimSource == AppPreferences.LIGHT_GUN_AIM_LEFT_STICK ||
+            uiState.lightGunAimSource == AppPreferences.LIGHT_GUN_AIM_RIGHT_STICK ||
+            uiState.lightGunAimSource == AppPreferences.LIGHT_GUN_AIM_DPAD
+        if (!arcadeInputActive || !aimsWithStickVector || gunPorts.isEmpty()) {
             return@LaunchedEffect
         }
         var lastFrame = 0L
@@ -1944,7 +1989,7 @@ fun EmulationScreen(
                             )
                             val isCustomBinding = selectedBindings.containsKey(action.id)
                             EmulationGamepadBindingRow(
-                                title = gamepadActionLabel(action.id),
+                                title = gamepadActionLabel(action.id, arcade = arcadeInputMode > 0),
                                 value = assignedKeyCode?.let(GamepadManager::keyCodeLabel)
                                     ?: stringResource(R.string.settings_not_set),
                                 autoLabel = if (isCustomBinding || action.defaultKeyCodes.isEmpty()) {
@@ -2049,7 +2094,7 @@ fun EmulationScreen(
                     stringResource(
                         R.string.settings_gamepad_mapping_listening_player_desc,
                         gamepadPlayerLabel(pendingGamepadPadIndex),
-                        gamepadActionLabel(pendingGamepadActionId.orEmpty())
+                        gamepadActionLabel(pendingGamepadActionId.orEmpty(), arcade = arcadeInputMode > 0)
                     )
                 )
             },
@@ -4812,14 +4857,34 @@ private fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
 }
 
 @Composable
-private fun gamepadActionLabel(actionId: String): String = when (actionId) {
-    // Dreamcast face button names; the ids keep their legacy PlayStation
-    // values for compatibility with existing mappings and layouts.
-    "cross" -> "A"
-    "circle" -> "B"
-    "square" -> "X"
-    "triangle" -> "Y"
-    else -> stringResource(gamepadActionLabelRes(actionId))
+private fun gamepadActionLabel(actionId: String, arcade: Boolean = false): String {
+    if (arcade) {
+        // Flycast numbers the arcade buttons 1..8; the ids keep their legacy
+        // PlayStation values, the core maps them to Naomi/Atomiswave buttons.
+        val arcadeButton = when (actionId) {
+            "cross" -> 1
+            "circle" -> 2
+            "square" -> 3
+            "triangle" -> 4
+            "r1" -> 5
+            "l1" -> 6
+            "r2" -> 7
+            "l2" -> 8
+            else -> 0
+        }
+        if (arcadeButton > 0) {
+            return stringResource(R.string.settings_gamepad_action_arcade_button, arcadeButton)
+        }
+    }
+    return when (actionId) {
+        // Dreamcast face button names; the ids keep their legacy PlayStation
+        // values for compatibility with existing mappings and layouts.
+        "cross" -> "A"
+        "circle" -> "B"
+        "square" -> "X"
+        "triangle" -> "Y"
+        else -> stringResource(gamepadActionLabelRes(actionId))
+    }
 }
 
 @Composable

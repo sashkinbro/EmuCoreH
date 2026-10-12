@@ -1677,7 +1677,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun setLightGunAimSource(value: Int) {
         viewModelScope.launch {
-            val normalized = value.coerceIn(0, 3)
+            val normalized = value.coerceIn(0, AppPreferences.LIGHT_GUN_AIM_MAX)
             persistRuntimeState(_uiState.value.copy(lightGunAimSource = normalized)) {
                 preferences.setLightGunAimSource(normalized)
             }

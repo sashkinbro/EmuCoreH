@@ -284,6 +284,12 @@ object GamepadManager {
         const val ArcadeService = 141
     }
 
+    // D-pad direction bits tracked while the D-pad aims the light gun.
+    private const val DPAD_DIRECTION_UP = 1
+    private const val DPAD_DIRECTION_DOWN = 2
+    private const val DPAD_DIRECTION_LEFT = 4
+    private const val DPAD_DIRECTION_RIGHT = 8
+
     private val mappableActions = listOf(
         MappableButtonAction("cross", PadKey.Cross, listOf(KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BUTTON_1)),
         MappableButtonAction("circle", PadKey.Circle, listOf(KeyEvent.KEYCODE_BUTTON_B, KeyEvent.KEYCODE_BUTTON_2)),
@@ -324,6 +330,10 @@ object GamepadManager {
     /** Signed stick vectors, already adjusted for deadzone, sensitivity and inversion. */
     val lightGunStickByPad: StateFlow<Map<Int, Pair<Float, Float>>> = _lightGunStickByPad
 
+    // Currently held D-pad directions per pad, so the D-pad can aim the light
+    // gun on controllers without analog sticks.
+    private val dpadDirectionsByPad = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+
     fun setArcadeModeActive(active: Boolean) {
         if (arcadeModeActive == active) return
         arcadeModeActive = active
@@ -357,7 +367,7 @@ object GamepadManager {
 
     fun setLightGunPorts(activePadIndices: Set<Int>, aimSource: Int = 0) {
         val ports = activePadIndices.filterTo(mutableSetOf()) { it in 0 until MAX_PAD_SLOTS }
-        val source = aimSource.coerceIn(0, 3)
+        val source = aimSource.coerceIn(0, AppPreferences.LIGHT_GUN_AIM_MAX)
         if (lightGunPorts == ports && lightGunAimSource == source) return
         val changedPorts = lightGunPorts + ports
         lightGunPorts = ports
@@ -369,6 +379,7 @@ object GamepadManager {
         synchronized(connectionLock) {
             deviceToPadIndex.filterValues { it in padIndices }.keys.forEach(analogStatesByDeviceId::remove)
         }
+        padIndices.forEach(dpadDirectionsByPad::remove)
         _lightGunStickByPad.value = _lightGunStickByPad.value.filterKeys { it !in padIndices }
         if (emulationInputEnabled) padIndices.forEach(EmulatorBridge::resetPadState)
     }
@@ -678,7 +689,9 @@ object GamepadManager {
         if (pressed && event.repeatCount == 0) {
             playGamepadButtonHaptic()
         }
-        EmulatorBridge.setPadButton(padIndex, padKey, range, pressed)
+        if (!updateDpadLightGunDirection(padIndex, padKey, pressed)) {
+            EmulatorBridge.setPadButton(padIndex, padKey, range, pressed)
+        }
         return true
     }
 
@@ -776,15 +789,54 @@ object GamepadManager {
         val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
         val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
         if (hatX != state.prevHatX || hatY != state.prevHatY) {
-            EmulatorBridge.setPadButton(padIndex, PadKey.Left, 0, hatX < -0.5f)
-            EmulatorBridge.setPadButton(padIndex, PadKey.Right, 0, hatX > 0.5f)
-            EmulatorBridge.setPadButton(padIndex, PadKey.Up, 0, hatY < -0.5f)
-            EmulatorBridge.setPadButton(padIndex, PadKey.Down, 0, hatY > 0.5f)
+            dispatchDpadDirection(padIndex, PadKey.Left, hatX < -0.5f)
+            dispatchDpadDirection(padIndex, PadKey.Right, hatX > 0.5f)
+            dispatchDpadDirection(padIndex, PadKey.Up, hatY < -0.5f)
+            dispatchDpadDirection(padIndex, PadKey.Down, hatY > 0.5f)
             state.prevHatX = hatX
             state.prevHatY = hatY
         }
 
         return true
+    }
+
+    private fun dispatchDpadDirection(padIndex: Int, padKey: Int, pressed: Boolean) {
+        if (!updateDpadLightGunDirection(padIndex, padKey, pressed)) {
+            EmulatorBridge.setPadButton(padIndex, padKey, 0, pressed)
+        }
+    }
+
+    /**
+     * Tracks a D-pad direction. When the D-pad is the selected light gun aim
+     * source for this pad, the direction feeds the aim vector instead of the
+     * emulated pad and true is returned so the caller suppresses the dispatch.
+     */
+    private fun updateDpadLightGunDirection(padIndex: Int, padKey: Int, pressed: Boolean): Boolean {
+        val bit = when (padKey) {
+            PadKey.Up -> DPAD_DIRECTION_UP
+            PadKey.Down -> DPAD_DIRECTION_DOWN
+            PadKey.Left -> DPAD_DIRECTION_LEFT
+            PadKey.Right -> DPAD_DIRECTION_RIGHT
+            else -> return false
+        }
+        val previous = dpadDirectionsByPad[padIndex] ?: 0
+        val updated = if (pressed) previous or bit else previous and bit.inv()
+        if (updated == 0) dpadDirectionsByPad.remove(padIndex) else dpadDirectionsByPad[padIndex] = updated
+        val aiming = padIndex in lightGunPorts && lightGunAimSource == AppPreferences.LIGHT_GUN_AIM_DPAD
+        if (aiming) {
+            val vector = dpadAimVector(
+                up = updated and DPAD_DIRECTION_UP != 0,
+                down = updated and DPAD_DIRECTION_DOWN != 0,
+                left = updated and DPAD_DIRECTION_LEFT != 0,
+                right = updated and DPAD_DIRECTION_RIGHT != 0
+            )
+            _lightGunStickByPad.value = if (vector == null) {
+                _lightGunStickByPad.value - padIndex
+            } else {
+                _lightGunStickByPad.value + (padIndex to vector)
+            }
+        }
+        return aiming
     }
 
     fun onPadVibration(padIndex: Int, largeMotor: Float, smallMotor: Float) {

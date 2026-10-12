@@ -462,6 +462,7 @@
     <string name="settings_gamepad_action_coin">Mince</string>
     <string name="settings_gamepad_action_test">Test</string>
     <string name="settings_gamepad_action_service">Servis</string>
+    <string name="settings_gamepad_action_arcade_button">Tlačítko %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">Přepínač levého vstupu (Left Input Toggle)</string>
     <string name="settings_gamepad_action_pressure">Modifikátor tlaku (Pressure Modifier)</string>
@@ -2174,6 +2175,7 @@
     <string name="settings_arcade_device_light_gun">Světelná pistole</string>
     <string name="settings_gyro_stick_right">Pravá páčka</string>
     <string name="settings_gyro_stick_left">Levá páčka</string>
+    <string name="settings_light_gun_aim_dpad">Směrová tlačítka</string>
     <string name="settings_light_gun_aim_touch">Dotyk / myš</string>
     <string name="library_choose_disc">Vyberte disk</string>
     <string name="library_disc_number">Disk %1$d</string>

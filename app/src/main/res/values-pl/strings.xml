@@ -459,6 +459,7 @@
     <string name="settings_gamepad_action_coin">Moneta</string>
     <string name="settings_gamepad_action_test">Test</string>
     <string name="settings_gamepad_action_service">Serwis</string>
+    <string name="settings_gamepad_action_arcade_button">Przycisk %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">Przełącznik podwójnego sterowania (Left Toggle)</string>
     <string name="settings_gamepad_action_pressure">Modyfikator stopnia wciśnięcia / nacisku w grach dla przycisków (Pressure Modifier)</string>
@@ -2174,6 +2175,7 @@
     <string name="settings_arcade_device_light_gun">Pistolet świetlny</string>
     <string name="settings_gyro_stick_right">Prawy drążek</string>
     <string name="settings_gyro_stick_left">Lewy drążek</string>
+    <string name="settings_light_gun_aim_dpad">Przyciski kierunkowe</string>
     <string name="settings_light_gun_aim_touch">Dotyk / mysz</string>
     <string name="library_choose_disc">Wybierz płytę</string>
     <string name="library_disc_number">Płyta %1$d</string>

@@ -32,4 +32,18 @@ class LightGunInputMathTest {
         aim.recenter()
         assertEquals(0.5f to 0.5f, aim.update(1f, -1f, 5_000_000_000L))
     }
+    @Test fun dpadAimVectorNormalizesDiagonalsAndCancelsOpposites() {
+        assertNull(dpadAimVector(up = false, down = false, left = false, right = false))
+        assertNull(dpadAimVector(up = true, down = true, left = false, right = false))
+        assertNull(dpadAimVector(up = false, down = false, left = true, right = true))
+        assertEquals(1f to 0f, dpadAimVector(up = false, down = false, left = false, right = true))
+        assertEquals(0f to -1f, dpadAimVector(up = true, down = false, left = false, right = false))
+        assertEquals(0f to 1f, dpadAimVector(up = false, down = true, left = false, right = false))
+        val upLeft = dpadAimVector(up = true, down = false, left = true, right = false)!!
+        assertEquals(-0.70710678f, upLeft.first, 0.00001f)
+        assertEquals(-0.70710678f, upLeft.second, 0.00001f)
+        val downRight = dpadAimVector(up = false, down = true, left = false, right = true)!!
+        assertEquals(0.70710678f, downRight.first, 0.00001f)
+        assertEquals(0.70710678f, downRight.second, 0.00001f)
+    }
 }

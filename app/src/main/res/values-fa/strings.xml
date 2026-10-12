@@ -441,6 +441,7 @@
     <string name="settings_gamepad_action_coin">سکه</string>
     <string name="settings_gamepad_action_test">آزمایش</string>
     <string name="settings_gamepad_action_service">سرویس</string>
+    <string name="settings_gamepad_action_arcade_button">دکمه %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">تغییر ورودی چپ</string>
     <string name="settings_gamepad_action_dpad_up">D-Pad بالا</string>
@@ -2168,6 +2169,7 @@
     <string name="settings_arcade_device_light_gun">تفنگ نوری</string>
     <string name="settings_gyro_stick_right">آنالوگ راست</string>
     <string name="settings_gyro_stick_left">آنالوگ چپ</string>
+    <string name="settings_light_gun_aim_dpad">دیپد</string>
     <string name="settings_light_gun_aim_touch">لمس / ماوس</string>
     <string name="library_choose_disc">یک دیسک انتخاب کنید</string>
     <string name="library_disc_number">دیسک %1$d</string>

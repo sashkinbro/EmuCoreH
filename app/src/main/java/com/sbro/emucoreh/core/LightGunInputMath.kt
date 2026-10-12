@@ -23,6 +23,23 @@ internal fun selectLightGunStick(
     }
 }
 
+/**
+ * Aim vector for the D-pad light gun source. Diagonals are normalized so
+ * pressing two directions does not move the crosshair faster than a single
+ * direction. Returns null while no direction is held.
+ */
+internal fun dpadAimVector(
+    up: Boolean, down: Boolean, left: Boolean, right: Boolean
+): Pair<Float, Float>? {
+    val x = (if (right) 1f else 0f) - (if (left) 1f else 0f)
+    val y = (if (down) 1f else 0f) - (if (up) 1f else 0f)
+    if (x == 0f && y == 0f) return null
+    if (x == 0f) return 0f to y
+    if (y == 0f) return x to 0f
+    val diagonal = 0.70710678f
+    return x * diagonal to y * diagonal
+}
+
 internal class GyroLightGunAim {
     private var x = 0.5f
     private var y = 0.5f

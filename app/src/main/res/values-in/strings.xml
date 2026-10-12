@@ -441,6 +441,7 @@
     <string name="settings_gamepad_action_coin">Koin</string>
     <string name="settings_gamepad_action_test">Tes</string>
     <string name="settings_gamepad_action_service">Servis</string>
+    <string name="settings_gamepad_action_arcade_button">Tombol %1$d</string>
     <string name="settings_gamepad_action_start">Start</string>
     <string name="settings_gamepad_action_left_input_toggle">Beralih Input Kiri</string>
     <string name="settings_gamepad_action_dpad_up">D-Pad Atas</string>
@@ -2167,6 +2168,7 @@
     <string name="settings_arcade_device_light_gun">Pistol cahaya</string>
     <string name="settings_gyro_stick_right">Stik kanan</string>
     <string name="settings_gyro_stick_left">Stik kiri</string>
+    <string name="settings_light_gun_aim_dpad">Tombol arah</string>
     <string name="settings_light_gun_aim_touch">Sentuhan / mouse</string>
     <string name="library_choose_disc">Pilih disk</string>
     <string name="library_disc_number">Disk %1$d</string>
