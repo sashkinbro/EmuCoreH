@@ -1224,6 +1224,29 @@ private fun OnboardingSetupContent(
             modifier = if (reserveScrollHintSpace) Modifier.weight(1f) else Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // BIOS first: it is optional, but a real BIOS improves compatibility.
+            SetupCard(
+                icon = Icons.Rounded.Memory,
+                title = stringResource(R.string.settings_bios_path),
+                description = when {
+                    !biosPath.isNullOrBlank() -> DocumentPathResolver.getFallbackDisplayName(biosPath)
+                    else -> stringResource(R.string.onboarding_bios_desc)
+                },
+                status = when {
+                    biosValid -> stringResource(R.string.onboarding_status_ready)
+                    !biosPath.isNullOrBlank() -> stringResource(R.string.onboarding_status_invalid_bios)
+                    else -> stringResource(R.string.onboarding_bios_optional)
+                },
+                statusColor = when {
+                    biosValid -> Color(0xFF1B8A5A)
+                    !biosPath.isNullOrBlank() -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.primary
+                },
+                onClick = launchBiosPicker
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             SetupCard(
                 icon = Icons.Rounded.FolderOpen,
                 title = stringResource(R.string.onboarding_games_title),
@@ -1271,29 +1294,6 @@ private fun OnboardingSetupContent(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SetupCard(
-                icon = Icons.Rounded.Memory,
-                title = stringResource(R.string.settings_bios_path),
-                description = when {
-                    biosValid -> stringResource(R.string.onboarding_status_ready)
-                    !biosPath.isNullOrBlank() -> DocumentPathResolver.getFallbackDisplayName(biosPath)
-                    else -> stringResource(R.string.onboarding_bios_desc)
-                },
-                status = if (biosValid) {
-                    stringResource(R.string.onboarding_status_ready)
-                } else {
-                    stringResource(R.string.onboarding_status_invalid_bios)
-                },
-                statusColor = if (biosValid) {
-                    Color(0xFF1B8A5A)
-                } else {
-                    MaterialTheme.colorScheme.tertiary
-                },
-                onClick = launchBiosPicker
-            )
 
             Spacer(modifier = Modifier.height(8.dp))
 

@@ -391,6 +391,7 @@
     <string name="settings_bios_picker_desc">Choisissez un dossier avec vos fichiers BIOS Dreamcast (dc_boot.bin, dc_flash.bin) et les sets BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="settings_bios_picker_action">Choisir le dossier</string>
     <string name="onboarding_bios_desc">Sélectionnez un dossier avec vos fichiers BIOS Dreamcast (dc_boot.bin, dc_flash.bin) ou les sets BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
+    <string name="onboarding_bios_optional">Facultatif, mais recommandé</string>
     <string name="emulation_quick_save_confirm_title">Sauvegarder l\'état ?</string>
     <string name="emulation_quick_save_confirm_desc">Cela écrasera l\'emplacement %1$d avec l\'état actuel du jeu.</string>
     <string name="emulation_quick_load_confirm_title">Charger l\'état ?</string>

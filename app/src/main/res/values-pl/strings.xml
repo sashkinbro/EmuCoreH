@@ -493,6 +493,7 @@
 
     <string name="onboarding_subtitle">Wybierz foldery z grami Dreamcast i przyznaj dostęp do plików.</string>
     <string name="onboarding_bios_desc">Wybierz folder z plikami BIOS Dreamcast (dc_boot.bin, dc_flash.bin) lub zestawami BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
+    <string name="onboarding_bios_optional">Opcjonalne, ale zalecane</string>
     <string name="onboarding_games_title">Dodaj foldery z grami</string>
     <string name="onboarding_games_desc">Dodaj jeden lub więcej folderów zawierających Twoje gry.</string>
     <string name="onboarding_games_selected_count">Wybrano folderów: %1$d. Dotknij, aby dodać kolejny.</string>

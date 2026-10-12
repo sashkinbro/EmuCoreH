@@ -231,6 +231,7 @@
     <string name="onboarding_title">Готуйтеся до гри</string>
     <string name="onboarding_subtitle">Виберіть папки з іграми Dreamcast і надайте доступ до файлів.</string>
     <string name="onboarding_bios_desc">Виберіть теку з файлами BIOS Dreamcast (dc_boot.bin, dc_flash.bin) або наборами BIOS для аркад (naomi.zip, naomi2.zip, awbios.zip).</string>
+    <string name="onboarding_bios_optional">Не обов\'язково, але рекомендовано</string>
     <string name="onboarding_games_title">Виберіть папку з іграми</string>
     <string name="onboarding_games_desc">Виберіть папку, яка містить ваші ігри.</string>
     <string name="onboarding_status_required">Обов\'язково</string>

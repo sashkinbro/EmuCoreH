@@ -327,6 +327,7 @@
     <string name="onboarding_title">Preparati a giocare</string>
     <string name="onboarding_subtitle">Scegli le cartelle dei tuoi giochi Dreamcast e concedi l\'accesso ai file.</string>
     <string name="onboarding_bios_desc">Seleziona una cartella con i tuoi file BIOS Dreamcast (dc_boot.bin, dc_flash.bin) o i set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
+    <string name="onboarding_bios_optional">Facoltativo, ma consigliato</string>
     <string name="onboarding_games_title">Scegli cartella giochi</string>
     <string name="onboarding_games_desc">Seleziona la cartella che contiene i tuoi giochi.</string>
     <string name="onboarding_status_required">Richiesto</string>

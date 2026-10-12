@@ -473,6 +473,7 @@
     <string name="onboarding_title">Bersiaplah untuk bermain</string>
     <string name="onboarding_subtitle">Pilih folder game Dreamcast Anda dan berikan akses file.</string>
     <string name="onboarding_bios_desc">Pilih folder berisi file BIOS Dreamcast (dc_boot.bin, dc_flash.bin) atau set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
+    <string name="onboarding_bios_optional">Opsional, tetapi disarankan</string>
     <string name="onboarding_games_title">Pilih folder game</string>
     <string name="onboarding_games_desc">Pilih folder yang berisi game Anda.</string>
     <string name="onboarding_status_required">Wajib</string>

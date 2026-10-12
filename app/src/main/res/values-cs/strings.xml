@@ -496,6 +496,7 @@
     <string name="onboarding_title">Připravte se hrát</string>
     <string name="onboarding_subtitle">Vyberte složky s hrami Dreamcast a udělte přístup k souborům.</string>
     <string name="onboarding_bios_desc">Vyberte slozku s vlastnimi soubory BIOS Dreamcast (dc_boot.bin, dc_flash.bin) nebo sadami BIOS pro arkady (naomi.zip, naomi2.zip, awbios.zip).</string>
+    <string name="onboarding_bios_optional">Nepovinné, ale doporučené</string>
     <string name="onboarding_games_title">Přidat složky s hrami</string>
     <string name="onboarding_games_desc">Přidejte jednu nebo více složek obsahujících vaše hry.</string>
     <string name="onboarding_games_selected_count">Vybrané složky: %1$d. Klepnutím přidáte další.</string>

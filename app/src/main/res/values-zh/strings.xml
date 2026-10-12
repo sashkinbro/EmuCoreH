@@ -391,6 +391,7 @@
     <string name="settings_bios_picker_desc">选择包含 Dreamcast BIOS（dc_boot.bin、dc_flash.bin）和街机 BIOS 集（naomi.zip、naomi2.zip、awbios.zip）的文件夹。</string>
     <string name="settings_bios_picker_action">选择文件夹</string>
     <string name="onboarding_bios_desc">选择包含 Dreamcast BIOS（dc_boot.bin、dc_flash.bin）或街机 BIOS 集（naomi.zip、naomi2.zip、awbios.zip）的文件夹。</string>
+    <string name="onboarding_bios_optional">可选，但推荐</string>
     <string name="emulation_quick_save_confirm_title">保存状态？</string>
     <string name="emulation_quick_save_confirm_desc">这将使用当前游戏状态覆盖插槽 %1$d。</string>
     <string name="emulation_quick_load_confirm_title">加载状态？</string>

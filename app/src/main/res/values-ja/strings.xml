@@ -367,6 +367,7 @@
     <string name="onboarding_title">プレイの準備をしましょう</string>
     <string name="onboarding_subtitle">Dreamcastのゲームフォルダを選択し、ファイルへのアクセスを許可してください。</string>
     <string name="onboarding_bios_desc">Dreamcast BIOS（dc_boot.bin、dc_flash.bin）またはアーケードBIOSセット（naomi.zip、naomi2.zip、awbios.zip）を含むフォルダを選択してください。</string>
+    <string name="onboarding_bios_optional">任意ですが推奨されます</string>
     <string name="onboarding_games_title">ゲームフォルダを選択</string>
     <string name="onboarding_games_desc">ゲームが含まれているフォルダを選択します。</string>
     <string name="onboarding_status_required">必須</string>
