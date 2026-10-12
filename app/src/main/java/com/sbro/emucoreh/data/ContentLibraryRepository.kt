@@ -2,13 +2,14 @@ package com.sbro.emucoreh.data
 
 import android.content.Context
 import com.sbro.emucoreh.core.EmulatorBridge
+import com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository
 import kotlinx.coroutines.flow.first
 import java.util.Locale
 
 data class SelectedGameIdentity(
     val serial: String?,
     val crc: String?,
-    /** Product code exactly as the core reports it, used for texture folders. */
+    /** Product code or romset name exactly as the core reports it. */
     val rawSerial: String? = null
 )
 
@@ -16,6 +17,7 @@ class ContentLibraryRepository(context: Context) {
     private val appContext = context.applicationContext
     private val preferences = AppPreferences(appContext)
     private val cache = GameLibraryCacheRepository(appContext)
+    private val arcadeCatalog by lazy { ArcadeCatalogRepository(appContext) }
 
     suspend fun loadGames(): List<GameItem> {
         val paths = preferences.gamePaths.first()
@@ -23,20 +25,29 @@ class ContentLibraryRepository(context: Context) {
         val preferEnglish = preferences.preferEnglishGameTitles.first()
         return cache.loadSnapshot(GameLibraryCacheRepository.libraryKey(paths), preferEnglish)
             .games
-            .filter { !it.serial.isNullOrBlank() }
+            .filter { !it.serial.isNullOrBlank() || arcadeCatalog.isKnownRomset(it.fileName) }
             .sortedBy { it.title.lowercase(Locale.getDefault()) }
     }
 
     fun resolveIdentity(game: GameItem): SelectedGameIdentity {
         val metadata = runCatching { EmulatorBridge.getGameMetadata(game.path) }.getOrNull()
-        val serial = metadata?.serial?.normalizeGameSerial() ?: game.serial?.normalizeGameSerial()
         val rawSerial = metadata?.serial?.trim()?.takeIf { it.isNotBlank() }
             ?: game.serial?.trim()?.takeIf { it.isNotBlank() }
+            ?: arcadeRomsetFor(game)
+        // Arcade romset names and compact/revision product codes do not parse
+        // as Dreamcast serials, so keep the raw value instead of dropping it.
+        val serial = rawSerial?.normalizeGameSerial() ?: rawSerial
         val crc = metadata?.serialWithCrc
             ?.let(CRC_PATTERN::find)
             ?.value
             ?.uppercase(Locale.US)
         return SelectedGameIdentity(serial = serial, crc = crc, rawSerial = rawSerial)
+    }
+
+    /** Romset name of a library archive, the id Flycast uses for arcade games. */
+    private fun arcadeRomsetFor(game: GameItem): String? {
+        val romset = ArcadeCatalogRepository.romsetKey(game.fileName) ?: return null
+        return romset.takeIf { arcadeCatalog.isKnownRomset(it) }
     }
 
     private companion object {

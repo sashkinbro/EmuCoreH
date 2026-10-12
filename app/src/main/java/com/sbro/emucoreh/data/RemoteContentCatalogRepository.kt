@@ -199,7 +199,7 @@ class RemoteContentCatalogRepository(context: Context) {
                     id = item.requiredString("id"),
                     name = item.requiredString("name"),
                     gameTitle = item.requiredString("gameTitle"),
-                    serials = item.stringList("serials").mapNotNull(::normalizeSerial).distinct(),
+                    serials = item.stringList("serials").flatMap(::serialVariants).distinct(),
                     version = item.requiredString("version"),
                     authors = item.stringList("authors").filter(String::isNotBlank),
                     credits = item.string("credits"),
@@ -244,7 +244,7 @@ class RemoteContentCatalogRepository(context: Context) {
                 RemoteCheatPack(
                     id = item.requiredString("id"),
                     title = item.requiredString("title"),
-                    serials = item.stringList("serials").mapNotNull(::normalizeSerial).distinct(),
+                    serials = item.stringList("serials").flatMap(::serialVariants).distinct(),
                     crc = item.string("crc").uppercase(Locale.US),
                     authors = item.stringList("authors").filter(String::isNotBlank),
                     description = item.string("description"),
@@ -445,4 +445,14 @@ private fun JsonObject.stringList(name: String): List<String> =
 private fun String.requireHttps(): String = trim().also { require(it.isHttpsUrl()) }
 private fun String.isHttpsUrl(): Boolean = startsWith("https://", ignoreCase = true)
 
-private fun normalizeSerial(value: String): String? = DiscSerial.normalize(value)
+/**
+ * Catalog serials are kept exactly as published - arcade packs are keyed by
+ * romset name, which is not a disc product code - and the normalised
+ * Dreamcast spelling is added when it differs, so a pack matches whichever
+ * form a lookup uses.
+ */
+private fun serialVariants(value: String): List<String> {
+    val raw = value.trim().takeIf(String::isNotBlank) ?: return emptyList()
+    val normalized = DiscSerial.normalize(raw) ?: return listOf(raw)
+    return if (normalized.equals(raw, ignoreCase = true)) listOf(raw) else listOf(raw, normalized)
+}
