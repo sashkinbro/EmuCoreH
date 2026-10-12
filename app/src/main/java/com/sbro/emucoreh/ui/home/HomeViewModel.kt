@@ -813,6 +813,33 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 deferredCoverSync = true
                 startDeferredWorkMonitor()
             }
+            // Flycast shows the offline GD-ROM label first and swaps in the
+            // online box art a moment later. Covers extracted in the pass above
+            // are upgraded here within the same sync.
+            val upgradeTargets = allGames.filter { coverRepository.isPendingOnlineCover(it.coverArtPath) }
+            if (upgradeTargets.isNotEmpty()) {
+                coroutineScope {
+                    upgradeTargets.forEach { game ->
+                        launch {
+                            semaphore.withPermit {
+                                if (EmulatorBridge.isVmActive()) {
+                                    shouldReschedule.set(true)
+                                    return@withPermit
+                                }
+                                val upgradedCover = repository.downloadCoverForGame(game, context)
+                                if (upgradedCover != null && upgradedCover != game.coverArtPath) {
+                                    synchronized(this@HomeViewModel) {
+                                        allGames = allGames.map {
+                                            if (it.path == game.path) it.copy(coverArtPath = upgradedCover) else it
+                                        }
+                                    }
+                                    publishVisibleGames()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             currentLibraryRoot?.let { rootPath ->
                 libraryCacheRepository.save(rootPath, allGames, preferEnglishGameTitles)
             }

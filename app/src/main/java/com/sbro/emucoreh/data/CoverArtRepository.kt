@@ -78,6 +78,21 @@ class CoverArtRepository(context: Context) {
     fun isManagedCoverCachePath(path: String?): Boolean =
         CoverCachePolicy.isPathInside(path, coverCacheDirectory)
 
+    /**
+     * True for managed covers that only hold the offline GD-ROM label artwork:
+     * Flycast shows the disc label immediately and replaces it with the online
+     * box art once TheGamesDB answers, so these covers are still upgradeable.
+     */
+    fun isPendingOnlineCover(path: String?): Boolean {
+        if (path.isNullOrBlank() || !isManagedCoverCachePath(path)) return false
+        val key = File(path).name.substringBeforeLast('.')
+        return !hasOnlineSource(key)
+    }
+
+    /** Online downloads record their source URL next to the cover file. */
+    private fun hasOnlineSource(key: String): Boolean =
+        File(fetchDirectory, "$key.url").isFile
+
     fun isMissingManagedCover(path: String?): Boolean =
         isManagedCoverCachePath(path) && !path.isNullOrBlank() && !isUsableCoverFile(File(path))
 
@@ -144,9 +159,10 @@ class CoverArtRepository(context: Context) {
         }
         // Reuse artwork cached under the other key (title before the serial was
         // learned, or serial after a rename) instead of downloading a duplicate.
-        findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)?.let {
-            return it
-        }
+        // Offline label art is not final: it still needs the online upgrade.
+        findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
+            ?.takeIf { !isPendingOnlineCover(it) }
+            ?.let { return it }
         lateinit var flight: PendingCoverDownload
         var ownsDownload = false
         synchronized(downloadFlightsLock) {
@@ -178,33 +194,39 @@ class CoverArtRepository(context: Context) {
 
     private fun downloadCoverResolved(game: GameItem, key: String): String? {
         Log.d(TAG, "========== BOX ART DOWNLOAD START ($key) ==========")
-        findCoverFile(key)?.let {
-            Log.d(TAG, "Cover already exists: ${it.absolutePath}")
-            return it.absolutePath
+        val existingCover = findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
+            ?.let(::File)
+            ?: findCoverFile(key)
+        if (existingCover != null && hasOnlineSource(key)) {
+            Log.d(TAG, "Cover already exists: ${existingCover.absolutePath}")
+            return existingCover.absolutePath
         }
         val missFile = File(fetchDirectory, "$key.miss")
+        val missFresh = missFile.exists() &&
+            System.currentTimeMillis() - missFile.lastModified() < MISS_TTL_MS
 
-        // Offline scraper, exactly like Flycast: the core opens the disc image
-        // (GDI, CUE, ISO, CDI and CHD), reads the IP.BIN metadata and extracts
-        // the 0GDTEX.PVR cover texture from the ISO filesystem. Runs before the
-        // miss marker so a repaired cache always gets its disc cover back.
-        val scrape = scrapeDiscBoxart(game, key)
-        if (scrape?.coverPath != null) {
-            missFile.delete()
-            Log.d(TAG, "========== BOX ART DOWNLOAD END (GD-ROM texture) ==========")
-            return scrape.coverPath
+        var scrape: DiscScrapeResult? = null
+        if (existingCover == null) {
+            // Offline scraper, exactly like Flycast: the core opens the disc
+            // image (GDI, CUE, ISO, CDI and CHD), reads the IP.BIN metadata and
+            // extracts the 0GDTEX.PVR label artwork. It is shown immediately;
+            // the online pass below upgrades it to the full box art later.
+            scrape = scrapeDiscBoxart(game, key, extractCover = true)
+            scrape?.coverPath?.let {
+                missFile.delete()
+                Log.d(TAG, "========== BOX ART DOWNLOAD END (GD-ROM texture) ==========")
+                return it
+            }
+            // Fallback for content:// images the core cannot open directly.
+            extractDiscBoxart(game, key)?.let {
+                missFile.delete()
+                Log.d(TAG, "========== BOX ART DOWNLOAD END (GD-ROM texture) ==========")
+                return it
+            }
         }
-        if (missFile.exists() && System.currentTimeMillis() - missFile.lastModified() < MISS_TTL_MS) {
+        if (missFresh) {
             Log.d(TAG, "Recent miss marker found, skipping")
-            return null
-        }
-
-        // Fallback for content:// images the core cannot open directly.
-        val offline = extractDiscBoxart(game, key)
-        if (offline != null) {
-            missFile.delete()
-            Log.d(TAG, "========== BOX ART DOWNLOAD END (GD-ROM texture) ==========")
-            return offline
+            return existingCover?.absolutePath
         }
 
         var lookupSucceeded = false
@@ -214,9 +236,15 @@ class CoverArtRepository(context: Context) {
                 for (url in FlycastBoxartSource.arcadeImageUrls(game.fileName, game.serial)) {
                     downloadImage(url, key, missFile, "Flycast arcade", mute = true)?.let {
                         Log.d(TAG, "========== BOX ART DOWNLOAD END (arcade) ==========")
-                        return it
+                        return acceptOnlineCover(existingCover, it)
                     }
                 }
+            }
+
+            // Metadata for the online lookups when the label artwork already
+            // exists (the image itself was extracted on the first pass).
+            if (scrape == null) {
+                scrape = scrapeDiscBoxart(game, key, extractCover = false)
             }
 
             val uniqueId = game.serial?.trim().orEmpty().ifBlank { scrape?.uniqueId.orEmpty() }
@@ -227,7 +255,7 @@ class CoverArtRepository(context: Context) {
                     info.imageUrl?.let { url ->
                         downloadImage(url, key, missFile, "TheGamesDB")?.let {
                             Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB uid) ==========")
-                            return it
+                            return acceptOnlineCover(existingCover, it)
                         }
                     }
                 }
@@ -243,7 +271,7 @@ class CoverArtRepository(context: Context) {
                     info.imageUrl?.let { url ->
                         downloadImage(url, key, missFile, "TheGamesDB")?.let {
                             Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB name) ==========")
-                            return it
+                            return acceptOnlineCover(existingCover, it)
                         }
                     }
                 }
@@ -254,7 +282,16 @@ class CoverArtRepository(context: Context) {
             }
             Log.d(TAG, "========== BOX ART DOWNLOAD END ==========")
         }
-        return null
+        // No online artwork: keep the offline label art instead of a blank tile.
+        return existingCover?.absolutePath
+    }
+
+    /** Drops the offline label artwork once the online cover replaced it. */
+    private fun acceptOnlineCover(previousCover: File?, downloadedPath: String): String {
+        if (previousCover != null && previousCover.absolutePath != downloadedPath) {
+            runCatching { previousCover.delete() }
+        }
+        return downloadedPath
     }
 
     private data class DiscScrapeResult(
@@ -265,18 +302,19 @@ class CoverArtRepository(context: Context) {
 
     /**
      * Runs Flycast's offline scraper over the image through the core's disc
-     * drivers. Writes the extracted 0GDTEX.PVR cover to the cache and returns
-     * it together with the IP.BIN software name and product number.
+     * drivers. When [extractCover] is set the 0GDTEX.PVR cover is written to
+     * the cache; otherwise only the IP.BIN metadata is read.
      */
-    private fun scrapeDiscBoxart(game: GameItem, key: String): DiscScrapeResult? {
+    private fun scrapeDiscBoxart(game: GameItem, key: String, extractCover: Boolean): DiscScrapeResult? {
         if (isArcadeGame(game.fileName)) return null
         val nativePath = nativeDiscPath(game.path) ?: return null
         val target = File(fetchDirectory, "$key.png")
-        if (target.exists()) target.delete()
-        val metadata = NativeApp.scrapeDisc(nativePath, target.absolutePath) ?: return null
+        if (extractCover && target.exists()) target.delete()
+        val metadata = NativeApp.scrapeDisc(nativePath, if (extractCover) target.absolutePath else null)
+            ?: return null
         val fields = metadata.split('\n')
         return DiscScrapeResult(
-            coverPath = target.takeIf(::isUsableCoverFile)?.absolutePath,
+            coverPath = if (extractCover) target.takeIf(::isUsableCoverFile)?.absolutePath else null,
             searchName = fields.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() },
             uniqueId = fields.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
         )
@@ -385,6 +423,14 @@ class CoverArtRepository(context: Context) {
                 if (!isUsableCoverFile(coverFile)) {
                     coverFile.delete()
                     return null
+                }
+                // Drop other formats of the same key: a cached GD-ROM label
+                // (.png) must not shadow the online box art (.jpg).
+                for (extension in IMAGE_EXTENSIONS) {
+                    val sibling = File(fetchDirectory, "$key.$extension")
+                    if (sibling != coverFile && sibling.isFile) {
+                        runCatching { sibling.delete() }
+                    }
                 }
                 runCatching { File(fetchDirectory, "$key.url").writeText(urlString) }
                 missFile.delete()
