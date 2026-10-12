@@ -7,7 +7,9 @@ import java.util.Locale
 
 data class SelectedGameIdentity(
     val serial: String?,
-    val crc: String?
+    val crc: String?,
+    /** Product code exactly as the core reports it, used for texture folders. */
+    val rawSerial: String? = null
 )
 
 class ContentLibraryRepository(context: Context) {
@@ -28,11 +30,13 @@ class ContentLibraryRepository(context: Context) {
     fun resolveIdentity(game: GameItem): SelectedGameIdentity {
         val metadata = runCatching { EmulatorBridge.getGameMetadata(game.path) }.getOrNull()
         val serial = metadata?.serial?.normalizeGameSerial() ?: game.serial?.normalizeGameSerial()
+        val rawSerial = metadata?.serial?.trim()?.takeIf { it.isNotBlank() }
+            ?: game.serial?.trim()?.takeIf { it.isNotBlank() }
         val crc = metadata?.serialWithCrc
             ?.let(CRC_PATTERN::find)
             ?.value
             ?.uppercase(Locale.US)
-        return SelectedGameIdentity(serial = serial, crc = crc)
+        return SelectedGameIdentity(serial = serial, crc = crc, rawSerial = rawSerial)
     }
 
     private companion object {

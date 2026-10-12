@@ -763,6 +763,10 @@ internal object CoreRuntime {
             }
             "EmuCoreH/Runtime:LoadTextureReplacements" ->
                 bool?.let { "reicast_custom_textures" to if (it) "enabled" else "disabled" }
+            "EmuCoreH/Runtime:PrecacheTextureReplacements" ->
+                bool?.let { "reicast_preload_custom_textures" to if (it) "enabled" else "disabled" }
+            "EmuCoreH/Runtime:DumpReplaceableTextures" ->
+                bool?.let { "reicast_dump_textures" to if (it) "enabled" else "disabled" }
             "EmuCoreH/Display:AspectRatio" -> value.toIntOrNull()?.let { type ->
                 setDisplayAspectRatio(type)
                 null

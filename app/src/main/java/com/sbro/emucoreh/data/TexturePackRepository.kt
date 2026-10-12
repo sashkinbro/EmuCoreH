@@ -101,10 +101,10 @@ class TexturePackRepository(
         targetSerial: String? = null,
         replaceExisting: Boolean = false
     ): TextureImportResult {
-        val normalizedTargetSerial = targetSerial?.let(::normalizeSerial)
-        if (targetSerial != null && normalizedTargetSerial == null) return TextureImportResult(success = false)
+        val targetFolder = targetSerial?.let(::textureFolderNameForGameId)
+        if (targetSerial != null && targetFolder == null) return TextureImportResult(success = false)
         val stagingRoot = File(texturesRoot(), ".texture-import-${UUID.randomUUID()}")
-        val fallbackSerial = findSerial(displayName)
+        val fallbackSerial = findGameId(displayName)
         val sourceRoot = File(stagingRoot, ".source")
         val sourceFiles = linkedSetOf<String>()
         var entryCount = 0
@@ -163,13 +163,13 @@ class TexturePackRepository(
                 "Texture pack contains no texture assets"
             }
             val serials = linkedSetOf<String>().apply {
-                normalizedTargetSerial?.let(::add)
+                targetFolder?.let(::add)
                 if (isEmpty() && textureIniEntry != null) {
                     addAll(readSerialsFromTexturesIni(File(sourceRoot, textureIniEntry.key)))
                 }
-                if (isEmpty() && textureIniEntry == null) normalizeSerial(archiveRoot)?.let(::add)
-                if (isEmpty()) serialFromParts(archiveRoot.split('/'))?.let(::add)
-                if (isEmpty()) fallbackSerial?.let(::add)
+                if (isEmpty() && textureIniEntry == null) textureFolderNameForGameId(archiveRoot)?.let(::add)
+                if (isEmpty()) textureFolderNameForGameId(serialFromParts(archiveRoot.split('/')))?.let(::add)
+                if (isEmpty()) textureFolderNameForGameId(fallbackSerial)?.let(::add)
             }
             require(serials.isNotEmpty()) { "Could not determine a game serial" }
 
@@ -228,7 +228,7 @@ class TexturePackRepository(
      */
     private fun replacePackAtomically(stagedSerialRoot: File, serial: String) {
         val root = texturesRoot().canonicalFile
-        val target = File(root, gameDirectoryName(serial)).canonicalFile
+        val target = (existingGameDir(serial) ?: File(root, gameDirectoryName(serial))).canonicalFile
         require(target.parentFile == root) { "Invalid texture target" }
         val backup = File(root, ".texture-backup-${UUID.randomUUID()}")
         var oldMoved = false
@@ -258,34 +258,38 @@ class TexturePackRepository(
     }
 
     fun deletePack(serial: String): Boolean {
-        val normalized = normalizeSerial(serial) ?: return false
-        val directory = existingGameDir(normalized) ?: return false
-        return !directory.exists() || directory.deleteRecursively()
+        val directory = existingGameDir(serial) ?: return false
+        val packDeleted = !directory.exists() || directory.deleteRecursively()
+        val dumps = dumpDirFor(directory.name)
+        if (dumps.exists()) dumps.deleteRecursively()
+        return packDeleted
     }
 
     fun clearDumps(serial: String): Boolean {
-        val normalized = normalizeSerial(serial) ?: return false
-        val game = existingGameDir(normalized) ?: return false
-        if (!game.exists()) return true
-        val dumps = File(game, "new")
-        if (!dumps.exists()) return true
-        return dumps.deleteRecursively() && dumps.mkdirs()
+        val directory = existingGameDir(serial) ?: return false
+        var cleared = true
+        val dumps = dumpDirFor(directory.name)
+        if (dumps.exists()) cleared = dumps.deleteRecursively() && dumps.mkdirs()
+        val legacyDumps = File(directory, "new")
+        if (legacyDumps.exists()) cleared = legacyDumps.deleteRecursively() && legacyDumps.mkdirs()
+        return cleared
     }
 
     private fun buildPackInfo(folder: File, libraryTitles: Map<String, String>): TexturePackInfo? {
-        val serial = normalizeSerial(folder.name) ?: return null
-        val dumpDir = File(folder, "new")
-        val dumpPrefix = dumpDir.canonicalPath + File.separator
+        val serial = normalizeSerial(folder.name) ?: textureFolderNameForGameId(folder.name) ?: return null
+        val legacyDumpDir = File(folder, "new")
+        val legacyDumpPrefix = legacyDumpDir.canonicalPath + File.separator
         val allFiles = textureFiles(folder)
-        val dumpFiles = allFiles.filter { it.canonicalPath.startsWith(dumpPrefix) }
-        val replacementFiles = allFiles.filterNot { it.canonicalPath.startsWith(dumpPrefix) }
+        val legacyDumps = allFiles.filter { it.canonicalPath.startsWith(legacyDumpPrefix) }
+        val replacementFiles = allFiles.filterNot { it.canonicalPath.startsWith(legacyDumpPrefix) }
+        val dumpFiles = legacyDumps + textureFiles(dumpDirFor(folder.name))
         return TexturePackInfo(
             serial = serial,
             gameTitle = libraryTitles[serial],
             replacementCount = replacementFiles.size,
             dumpCount = dumpFiles.size,
             sizeBytes = allFiles.sumOf { it.length() },
-            lastModifiedAt = allFiles.maxOfOrNull { it.lastModified() } ?: folder.lastModified()
+            lastModifiedAt = (allFiles + dumpFiles).maxOfOrNull { it.lastModified() } ?: folder.lastModified()
         )
     }
 
@@ -308,14 +312,31 @@ class TexturePackRepository(
         return EmulatorStorage.texturesDir(context)
     }
 
+    private fun dumpDirFor(folderName: String): File =
+        File(EmulatorStorage.textureDumpDir(context), folderName)
+
+    /** Pack folder for the core's game id, reusing an existing spelling when present. */
     private fun gameDir(serial: String): File {
-        return File(texturesRoot(), gameDirectoryName(serial)).apply { mkdirs() }
+        return existingGameDir(serial) ?: File(texturesRoot(), gameDirectoryName(serial)).apply { mkdirs() }
     }
 
+    /**
+     * Resolves the pack folder for a serial. The manager files packs under the
+     * raw product code while the library and the catalogs hand back the
+     * normalised form, so fall back to a canonical match on the folder names.
+     */
     private fun existingGameDir(serial: String): File? {
         val root = texturesRoot().canonicalFile
-        val target = File(root, gameDirectoryName(serial)).canonicalFile
-        return target.takeIf { it.parentFile == root }
+        val folderName = gameDirectoryName(normalizeSerial(serial) ?: serial.trim())
+        if (folderName.isBlank()) return null
+        val exact = File(root, folderName).canonicalFile
+        if (exact.parentFile == root && exact.isDirectory) return exact
+        return root.listFiles { file -> file.isDirectory }
+            .orEmpty()
+            .asSequence()
+            .filter { CheatKeyMatcher.matches(serial, it.name) }
+            .sortedBy { it.name.lowercase(Locale.US) }
+            .firstOrNull()
     }
 
     /** Flycast trims the product code and turns spaces into underscores. */
@@ -344,7 +365,7 @@ class TexturePackRepository(
                         gameSection.matches(line) -> inGames = true
                         section.matches(line) -> inGames = false
                         inGames -> gameKey.find(line)?.groupValues?.getOrNull(1)
-                            ?.let(::findSerial)
+                            ?.let(::findGameId)
                             ?.let(::add)
                     }
                 }
@@ -361,13 +382,17 @@ class TexturePackRepository(
     }
 
     private fun serialFromParts(parts: List<String>): String? {
-        return parts.firstNotNullOfOrNull(::findSerial)
+        return parts.firstNotNullOfOrNull(::findGameId)
     }
 
-    private fun findSerial(text: String?): String? {
+    /**
+     * Raw game id found in a text, exactly as Flycast derives it from the disc
+     * or ROM name. Normalising here would file revision-suffixed product codes
+     * and arcade ROM names under a folder the core never looks at.
+     */
+    private fun findGameId(text: String?): String? {
         if (text.isNullOrBlank()) return null
-        val match = serialPattern.find(text) ?: return null
-        return normalizeSerial(match.value)
+        return serialPattern.find(text)?.value?.trim()?.takeIf { it.isNotBlank() }
     }
 
     /**
@@ -414,4 +439,17 @@ private fun InputStream.copyToWithLimit(output: java.io.OutputStream, limit: Lon
         require(copied <= limit) { "Texture file is too large" }
         output.write(buffer, 0, read)
     }
+}
+
+/**
+ * Pack folder name Flycast resolves for a game id: the raw product code with
+ * trailing whitespace trimmed and spaces replaced by underscores. The spelling
+ * must survive `DiscSerial.normalize`, otherwise revision-suffixed product
+ * codes and arcade ROM names end up in a folder the core never scans.
+ */
+internal fun textureFolderNameForGameId(raw: String?): String? {
+    val value = raw?.trim().orEmpty()
+    if (value.isEmpty() || value == "." || value == "..") return null
+    val sanitized = value.replace(Regex("[\\\\/:*?\"<>|]"), "_").replace(' ', '_')
+    return sanitized.takeIf { it.isNotBlank() }
 }

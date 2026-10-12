@@ -49,6 +49,8 @@ data class TextureDownloadTask(
     val packName: String,
     val version: String,
     val serial: String,
+    /** Folder the pack is installed under, i.e. the core's raw game id. */
+    val folderId: String = serial,
     val downloadUrl: String,
     val sha256: String,
     val totalBytes: Long,
@@ -71,11 +73,11 @@ class TextureDownloadManager(context: Context) {
 
     fun tasks(): List<TextureDownloadTask> = TextureDownloadStore.readAll(appContext)
 
-    fun enqueue(pack: RemoteTexturePack, serial: String) {
+    fun enqueue(pack: RemoteTexturePack, serial: String, folderId: String = serial) {
         require(pack.serials.any { it.equals(serial, ignoreCase = true) }) {
             "Texture pack is not compatible with the selected game serial"
         }
-        val task = TextureDownloadStore.createOrReset(appContext, pack, serial)
+        val task = TextureDownloadStore.createOrReset(appContext, pack, serial, folderId)
         enqueue(task)
     }
 
@@ -182,7 +184,7 @@ class TextureDownloadWorker(
             }
             val preferences = AppPreferences(applicationContext)
             val installed = TexturePackRepository(applicationContext, preferences)
-                .installRemotePack(archive, task.serial)
+                .installRemotePack(archive, task.folderId)
             if (!installed.success) throw PermanentDownloadException("Texture archive could not be installed")
 
             val installState = RemoteContentInstallState(applicationContext)
@@ -500,7 +502,12 @@ internal object TextureDownloadStore {
     private const val ARCHIVE = "download.zip"
     private val lock = Any()
 
-    fun createOrReset(context: Context, pack: RemoteTexturePack, serial: String): TextureDownloadTask = synchronized(lock) {
+    fun createOrReset(
+        context: Context,
+        pack: RemoteTexturePack,
+        serial: String,
+        folderId: String = serial
+    ): TextureDownloadTask = synchronized(lock) {
         val key = key(pack.id, serial)
         val directory = directory(context, key).apply { mkdirs() }
         val previous = readUnlocked(context, key)
@@ -524,6 +531,7 @@ internal object TextureDownloadStore {
             packName = pack.name,
             version = pack.version,
             serial = serial.uppercase(Locale.US),
+            folderId = folderId,
             downloadUrl = pack.downloadUrl,
             sha256 = pack.sha256.uppercase(Locale.US),
             totalBytes = pack.sizeBytes,
@@ -602,6 +610,8 @@ internal object TextureDownloadStore {
                 packName = json.getString("packName"),
                 version = json.getString("version"),
                 serial = json.getString("serial"),
+                folderId = json.optString("folderId").takeIf { it.isNotBlank() }
+                    ?: json.getString("serial"),
                 downloadUrl = json.getString("downloadUrl"),
                 sha256 = json.getString("sha256"),
                 totalBytes = json.getLong("totalBytes"),
@@ -633,6 +643,7 @@ internal object TextureDownloadStore {
             .put("packName", task.packName)
             .put("version", task.version)
             .put("serial", task.serial)
+            .put("folderId", task.folderId)
             .put("downloadUrl", task.downloadUrl)
             .put("sha256", task.sha256)
             .put("totalBytes", task.totalBytes)

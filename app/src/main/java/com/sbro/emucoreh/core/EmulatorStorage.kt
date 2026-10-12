@@ -110,6 +110,10 @@ object EmulatorStorage {
     fun texturesDir(context: Context): File =
         File(flycastSystemDir(context), "dc/textures").apply { mkdirs() }
 
+    /** Flycast dumps used textures into `<system>/dc/texdump/<game id>`. */
+    fun textureDumpDir(context: Context): File =
+        File(flycastSystemDir(context), "dc/texdump").apply { mkdirs() }
+
     fun cheatsDir(context: Context, customRootPath: String? = null): File =
         File(root(context, customRootPath), "cheats").apply { mkdirs() }
 

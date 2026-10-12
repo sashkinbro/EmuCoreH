@@ -309,7 +309,10 @@ internal fun TextureOnlineCatalogSection(
                                             ) {
                                                 notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                                             }
-                                            downloadManager.enqueue(pack, serial)
+                                            val folderId = identity?.rawSerial
+                                                ?.takeIf { it.isNotBlank() }
+                                                ?: serial
+                                            downloadManager.enqueue(pack, serial, folderId)
                                         },
                                         onPause = { task?.let { downloadManager.pause(it.key) } },
                                         onResume = { task?.let { downloadManager.resume(it.key) } },
