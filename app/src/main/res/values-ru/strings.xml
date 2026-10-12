@@ -296,7 +296,7 @@
     <string name="save_manager_empty_body_all">Сначала создайте сохранение в игре, после чего оно появится здесь.</string>
     <string name="save_manager_empty_body_game">Для этой игры сохранений пока нет.</string>
     <string name="save_manager_unknown_game">Неизвестная игра</string>
-    <string name="save_manager_entry_meta">%1$s • Слот %2$d</string>
+    <string name="save_manager_slot_label">Слот %1$d</string>
     <string name="save_manager_entry_size">Размер: %1$s</string>
     <string name="save_manager_load_action">Загрузить</string>
     <string name="save_manager_delete_action">Удалить</string>
@@ -389,7 +389,7 @@
     <string name="emulation_session_restored_unavailable">Предыдущий сеанс эмуляции был закрыт в фоновом режиме. Запустите игру снова из вашей библиотеки.</string>
     <string name="settings_gamepad_action_left_input_toggle">Переключение левого ввода</string>
     <string name="controls_editor_done">Готово</string>
-    <string name="memory_card_meta">%1$s • Обновлено: %2$s</string>
+    <string name="memory_card_updated">Обновлено: %1$s</string>
     <string name="memory_card_loading">Загрузка карт памяти…</string>
     <string name="shell_memory_cards">Карты памяти</string>
     <string name="emulation_quick_save_confirm_title">Сохранить состояние?</string>
@@ -448,7 +448,6 @@
     <string name="settings_language_hindi">Хинди</string>
     <string name="settings_language_native_italian">Italiano</string>
     <string name="settings_language_native_hindi">हिन्दी</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
     <string name="save_manager_auto_save_label">Автосохранение</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s будет удалено навсегда.</string>
     <string name="emulation_save_slot_saved_at">Сохранено: %1$s</string>

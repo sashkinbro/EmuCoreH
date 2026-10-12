@@ -394,7 +394,7 @@
     <string name="save_manager_empty_body_all">पहले गेम में एक सेव बनाएं, फिर वह यहां दिखाई देगा।</string>
     <string name="save_manager_empty_body_game">इस गेम के लिए अभी तक कोई सेव नहीं है।</string>
     <string name="save_manager_unknown_game">अज्ञात गेम</string>
-    <string name="save_manager_entry_meta">%1$s • स्लॉट %2$d</string>
+    <string name="save_manager_slot_label">स्लॉट %1$d</string>
     <string name="save_manager_entry_size">आकार: %1$s</string>
     <string name="save_manager_load_action">लोड करें</string>
     <string name="save_manager_delete_action">हटाएं</string>
@@ -403,7 +403,7 @@
     <string name="save_manager_delete_confirm_title">सेव हटाएं?</string>
     <string name="save_manager_delete_confirm_body">%1$s, स्लॉट %2$d स्थायी रूप से हटा दिया जाएगा।</string>
     <string name="save_manager_load_unavailable">गेम फ़ाइल लाइब्रेरी में नहीं मिली</string>
-    <string name="memory_card_meta">%1$s • अपडेट किया गया: %2$s</string>
+    <string name="memory_card_updated">अद्यतन: %1$s</string>
     <string name="memory_card_loading">मेमोरी कार्ड लोड हो रहे हैं…</string>
     <string name="settings_reset_to_default_toast">डिफ़ॉल्ट मान पुनर्स्थापित किया गया।</string>
     <string name="shell_game_settings_manager">गेम मैनेजर</string>
@@ -446,7 +446,6 @@
     <string name="settings_language_hindi">हिन्दी</string>
     <string name="settings_language_native_italian">Italiano</string>
     <string name="settings_language_native_hindi">हिन्दी</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
     <string name="save_manager_auto_save_label">ऑटो सेव</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s को स्थायी रूप से हटा दिया जाएगा।</string>
     <string name="emulation_save_slot_saved_at">सहेजा गया: %1$s</string>

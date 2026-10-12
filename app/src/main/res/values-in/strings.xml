@@ -545,8 +545,7 @@
     <string name="save_manager_empty_body_all">Buat simpanan di dalam game terlebih dahulu, maka simpanan itu akan muncul di sini.</string>
     <string name="save_manager_empty_body_game">Game ini belum memiliki simpanan apa pun.</string>
     <string name="save_manager_unknown_game">Game tidak diketahui</string>
-    <string name="save_manager_entry_meta">%1$s • Slot %2$d</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
+    <string name="save_manager_slot_label">Slot %1$d</string>
     <string name="save_manager_auto_save_label">Simpan Otomatis</string>
     <string name="save_manager_entry_size">Ukuran: %1$s</string>
     <string name="save_manager_load_action">Muat</string>
@@ -557,7 +556,7 @@
     <string name="save_manager_delete_confirm_body">%1$s, slot %2$d akan dihapus permanen.</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s akan dihapus permanen.</string>
     <string name="save_manager_load_unavailable">File game tidak ditemukan di pustaka</string>
-    <string name="memory_card_meta">%1$s • Diperbarui: %2$s</string>
+    <string name="memory_card_updated">Diperbarui: %1$s</string>
     <string name="memory_card_loading">Memuat kartu memori…</string>
     <string name="settings_reset_to_default_toast">Nilai default dikembalikan.</string>
     <string name="shell_game_settings_manager">Manajer Game</string>

@@ -394,7 +394,7 @@
     <string name="save_manager_empty_body_all">Crea prima un salvataggio in-game, poi apparirà qui.</string>
     <string name="save_manager_empty_body_game">Questo gioco non ha ancora alcun salvataggio.</string>
     <string name="save_manager_unknown_game">Gioco sconosciuto</string>
-    <string name="save_manager_entry_meta">%1$s • Slot %2$d</string>
+    <string name="save_manager_slot_label">Slot %1$d</string>
     <string name="save_manager_entry_size">Dimensione: %1$s</string>
     <string name="save_manager_load_action">Carica</string>
     <string name="save_manager_delete_action">Elimina</string>
@@ -403,7 +403,7 @@
     <string name="save_manager_delete_confirm_title">Eliminare il salvataggio?</string>
     <string name="save_manager_delete_confirm_body">%1$s, lo slot %2$d verrà eliminato permanentemente.</string>
     <string name="save_manager_load_unavailable">File di gioco non trovato nella libreria</string>
-    <string name="memory_card_meta">%1$s • Aggiornato: %2$s</string>
+    <string name="memory_card_updated">Aggiornato: %1$s</string>
     <string name="memory_card_loading">Caricamento memory card…</string>
     <string name="settings_reset_to_default_toast">Valore predefinito ripristinato.</string>
     <string name="shell_game_settings_manager">Game Manager</string>
@@ -446,7 +446,6 @@
     <string name="settings_language_hindi">Hindi</string>
     <string name="settings_language_native_italian">Italiano</string>
     <string name="settings_language_native_hindi">हिन्दी</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
     <string name="save_manager_auto_save_label">Salvataggio automatico</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s sarà eliminato definitivamente.</string>
     <string name="emulation_save_slot_saved_at">Salvato: %1$s</string>

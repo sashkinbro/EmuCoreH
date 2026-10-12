@@ -434,8 +434,7 @@
     <string name="save_manager_empty_body_all">قم بإنشاء حفظ في اللعبة أولاً، ثم سيظهر هنا.</string>
     <string name="save_manager_empty_body_game">لا يوجد أي حفظ لهذه اللعبة حتى الآن.</string>
     <string name="save_manager_unknown_game">لعبة غير معروفة</string>
-    <string name="save_manager_entry_meta">%1$s • الفتحة %2$d</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
+    <string name="save_manager_slot_label">الفتحة %1$d</string>
     <string name="save_manager_auto_save_label">حفظ تلقائي</string>
     <string name="save_manager_entry_size">الحجم: %1$s</string>
     <string name="save_manager_load_action">تحميل</string>
@@ -446,7 +445,7 @@
     <string name="save_manager_delete_confirm_body">سيتم حذف %1$s، الفتحة %2$d بشكل دائم.</string>
     <string name="save_manager_delete_confirm_body_named">سيتم حذف %1$s، %2$s بشكل دائم.</string>
     <string name="save_manager_load_unavailable">ملف اللعبة غير موجود في المكتبة</string>
-    <string name="memory_card_meta">%1$s • تم التحديث: %2$s</string>
+    <string name="memory_card_updated">آخر تحديث: %1$s</string>
     <string name="memory_card_loading">جاري تحميل بطاقات الذاكرة…</string>
     <string name="settings_reset_to_default_toast">تمت استعادة القيمة الافتراضية.</string>
     <string name="shell_game_settings_manager">مدير اللعبة</string>

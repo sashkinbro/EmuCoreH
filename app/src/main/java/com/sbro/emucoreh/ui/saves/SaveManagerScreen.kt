@@ -700,18 +700,19 @@ private fun SaveEntryCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
+                        text = entry.serial,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    // The slot keeps its own line so long product codes cannot
+                    // push it out of the row.
+                    Text(
                         text = if (entry.isAutoSave) {
-                            stringResource(
-                                R.string.save_manager_entry_meta_auto,
-                                entry.serial,
-                                stringResource(R.string.save_manager_auto_save_label)
-                            )
+                            stringResource(R.string.save_manager_auto_save_label)
                         } else {
-                            stringResource(
-                                R.string.save_manager_entry_meta,
-                                entry.serial,
-                                entry.slot
-                            )
+                            stringResource(R.string.save_manager_slot_label, entry.slot)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

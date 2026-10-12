@@ -606,8 +606,7 @@
     <string name="save_manager_empty_body_all">Create a save in-game first, then it will appear here.</string>
     <string name="save_manager_empty_body_game">This game does not have any saves yet.</string>
     <string name="save_manager_unknown_game">Unknown game</string>
-    <string name="save_manager_entry_meta">%1$s • Slot %2$d</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
+    <string name="save_manager_slot_label">Slot %1$d</string>
     <string name="save_manager_auto_save_label">Auto Save</string>
     <string name="save_manager_entry_size">Size: %1$s</string>
     <string name="save_manager_load_action">Load</string>
@@ -618,7 +617,7 @@
     <string name="save_manager_delete_confirm_body">%1$s, slot %2$d will be deleted permanently.</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s will be deleted permanently.</string>
     <string name="save_manager_load_unavailable">Game file not found in the library</string>
-    <string name="memory_card_meta">%1$s • Updated: %2$s</string>
+    <string name="memory_card_updated">Updated: %1$s</string>
     <string name="memory_card_loading">Loading memory cards…</string>
     <string name="settings_reset_to_default_toast">Restored default value.</string>
     <string name="shell_game_settings_manager">Game Manager</string>

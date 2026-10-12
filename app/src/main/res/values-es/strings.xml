@@ -293,7 +293,7 @@
     <string name="save_manager_empty_body_all">Crea un guardado en el juego primero, luego aparecerá aquí.</string>
     <string name="save_manager_empty_body_game">Este juego aún no tiene guardados.</string>
     <string name="save_manager_unknown_game">Juego desconocido</string>
-    <string name="save_manager_entry_meta">%1$s • Ranura %2$d</string>
+    <string name="save_manager_slot_label">Ranura %1$d</string>
     <string name="save_manager_entry_size">Tamaño: %1$s</string>
     <string name="save_manager_load_action">Cargar</string>
     <string name="save_manager_delete_action">Eliminar</string>
@@ -384,7 +384,7 @@
     <string name="emulation_session_restored_unavailable">La sesión de emulación anterior se cerró en segundo plano. Vuelve a iniciar el juego desde tu biblioteca.</string>
     <string name="settings_gamepad_action_left_input_toggle">Alternar entrada izquierda</string>
     <string name="controls_editor_done">Hecho</string>
-    <string name="memory_card_meta">%1$s • Actualizado: %2$s</string>
+    <string name="memory_card_updated">Actualizado: %1$s</string>
     <string name="memory_card_loading">Cargando tarjetas de memoria…</string>
     <string name="shell_memory_cards">Tarjetas de memoria</string>
     <string name="settings_bios_path">Carpeta BIOS</string>
@@ -448,7 +448,6 @@
     <string name="settings_language_hindi">Hindi</string>
     <string name="settings_language_native_italian">Italiano</string>
     <string name="settings_language_native_hindi">हिन्दी</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
     <string name="save_manager_auto_save_label">Guardado automático</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s se eliminará permanentemente.</string>
     <string name="emulation_save_slot_saved_at">Guardado: %1$s</string>

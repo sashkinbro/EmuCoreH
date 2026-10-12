@@ -434,8 +434,7 @@
     <string name="save_manager_empty_body_all">まずゲーム内でセーブデータを作成すると、ここに表示されます。</string>
     <string name="save_manager_empty_body_game">このゲームにはまだセーブデータがありません。</string>
     <string name="save_manager_unknown_game">不明なゲーム</string>
-    <string name="save_manager_entry_meta">%1$s • スロット %2$d</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
+    <string name="save_manager_slot_label">スロット %1$d</string>
     <string name="save_manager_auto_save_label">オートセーブ</string>
     <string name="save_manager_entry_size">サイズ: %1$s</string>
     <string name="save_manager_load_action">ロード</string>
@@ -446,7 +445,7 @@
     <string name="save_manager_delete_confirm_body">%1$s、スロット %2$d は完全に削除されます。</string>
     <string name="save_manager_delete_confirm_body_named">%1$s、%2$s は完全に削除されます。</string>
     <string name="save_manager_load_unavailable">ゲームファイルがライブラリに見つかりません</string>
-    <string name="memory_card_meta">%1$s • 更新: %2$s</string>
+    <string name="memory_card_updated">更新日時: %1$s</string>
     <string name="memory_card_loading">メモリーカードを読み込み中…</string>
     <string name="settings_reset_to_default_toast">デフォルト値に戻しました。</string>
     <string name="shell_game_settings_manager">ゲームマネージャー</string>

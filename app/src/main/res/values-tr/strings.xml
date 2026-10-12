@@ -434,8 +434,7 @@
     <string name="save_manager_empty_body_all">Önce oyun içinde bir kayıt oluşturun, ardından burada görünecektir.</string>
     <string name="save_manager_empty_body_game">Bu oyunda henüz hiç kayıt yok.</string>
     <string name="save_manager_unknown_game">Bilinmeyen oyun</string>
-    <string name="save_manager_entry_meta">%1$s • Yuva %2$d</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
+    <string name="save_manager_slot_label">Yuva %1$d</string>
     <string name="save_manager_auto_save_label">Otomatik Kayıt</string>
     <string name="save_manager_entry_size">Boyut: %1$s</string>
     <string name="save_manager_load_action">Yükle</string>
@@ -446,7 +445,7 @@
     <string name="save_manager_delete_confirm_body">%1$s, yuva %2$d kalıcı olarak silinecek.</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s kalıcı olarak silinecek.</string>
     <string name="save_manager_load_unavailable">Oyun dosyası kütüphanede bulunamadı</string>
-    <string name="memory_card_meta">%1$s • Güncellendi: %2$s</string>
+    <string name="memory_card_updated">Güncellendi: %1$s</string>
     <string name="memory_card_loading">Hafıza kartları yükleniyor…</string>
     <string name="settings_reset_to_default_toast">Varsayılan değer geri yüklendi.</string>
     <string name="shell_game_settings_manager">Oyun Yöneticisi</string>

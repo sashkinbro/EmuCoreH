@@ -577,8 +577,7 @@
     <string name="save_manager_empty_body_all">Nejprve vytvořte uložení ve hře, poté se objeví zde.</string>
     <string name="save_manager_empty_body_game">Tato hra zatím nemá žádná uložení.</string>
     <string name="save_manager_unknown_game">Neznámá hra</string>
-    <string name="save_manager_entry_meta">%1$s • Slot %2$d</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
+    <string name="save_manager_slot_label">Slot %1$d</string>
     <string name="save_manager_auto_save_label">Automatické uložení</string>
     <string name="save_manager_entry_size">Velikost: %1$s</string>
     <string name="save_manager_load_action">Načíst</string>
@@ -589,7 +588,7 @@
     <string name="save_manager_delete_confirm_body">%1$s, slot %2$d bude trvale smazán.</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s bude trvale smazán.</string>
     <string name="save_manager_load_unavailable">Soubor hry nebyl v knihovně nalezen</string>
-    <string name="memory_card_meta">%1$s • Aktualizováno: %2$s</string>
+    <string name="memory_card_updated">Aktualizováno: %1$s</string>
     <string name="memory_card_loading">Načítání paměťových karet…</string>
     <string name="settings_reset_to_default_toast">Byla obnovena výchozí hodnota.</string>
     <string name="shell_game_settings_manager">Správce her</string>

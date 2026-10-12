@@ -293,7 +293,7 @@
     <string name="save_manager_empty_body_all">Crie um save no jogo primeiro, e ele aparecerá aqui.</string>
     <string name="save_manager_empty_body_game">Este jogo ainda não possui nenhum save.</string>
     <string name="save_manager_unknown_game">Jogo desconhecido</string>
-    <string name="save_manager_entry_meta">%1$s • Slot %2$d</string>
+    <string name="save_manager_slot_label">Slot %1$d</string>
     <string name="save_manager_entry_size">Tamanho: %1$s</string>
     <string name="save_manager_load_action">Carregar</string>
     <string name="save_manager_delete_action">Excluir</string>
@@ -384,7 +384,7 @@
     <string name="emulation_session_restored_unavailable">A sessão de emulação anterior foi fechada em segundo plano. Inicie o jogo novamente a partir da sua biblioteca.</string>
     <string name="settings_gamepad_action_left_input_toggle">Alternar entrada esquerda</string>
     <string name="controls_editor_done">Concluído</string>
-    <string name="memory_card_meta">%1$s • Atualizado: %2$s</string>
+    <string name="memory_card_updated">Atualizado: %1$s</string>
     <string name="memory_card_loading">Carregando cartões de memória…</string>
     <string name="shell_memory_cards">Cartões de memória</string>
     <string name="settings_bios_path">Pasta de BIOS</string>
@@ -448,7 +448,6 @@
     <string name="settings_language_hindi">Hindi</string>
     <string name="settings_language_native_italian">Italiano</string>
     <string name="settings_language_native_hindi">हिन्दी</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
     <string name="save_manager_auto_save_label">Salvamento automático</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s será excluído permanentemente.</string>
     <string name="emulation_save_slot_saved_at">Salvo: %1$s</string>

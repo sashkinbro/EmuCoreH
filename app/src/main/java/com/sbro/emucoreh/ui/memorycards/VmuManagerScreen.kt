@@ -249,9 +249,8 @@ private fun vmuCardTitle(name: String): String {
 @Composable
 private fun VmuRow(vmu: VmuFile, title: String) {
     val context = LocalContext.current
-    val meta = stringResource(
-        R.string.memory_card_meta,
-        vmu.name,
+    val updated = stringResource(
+        R.string.memory_card_updated,
         formatTimestamp(context, vmu.modifiedAt)
     )
     Surface(
@@ -289,8 +288,19 @@ private fun VmuRow(vmu: VmuFile, title: String) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (title != vmu.name) {
+                    Text(
+                        vmu.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                // The update timestamp keeps its own line so long file names
+                // cannot push it out of the row.
                 Text(
-                    meta,
+                    updated,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

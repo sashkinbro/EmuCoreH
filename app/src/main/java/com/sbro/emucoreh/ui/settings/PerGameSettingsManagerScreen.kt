@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -671,7 +672,7 @@ private fun GamePickerCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Surface(
-                modifier = Modifier.width(48.dp).aspectRatio(com.sbro.emucoreh.ui.common.GameCoverAspectRatio),
+                modifier = Modifier.fillMaxHeight().aspectRatio(1f),
                 shape = neonShape(16.dp),
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.26f)
             ) {

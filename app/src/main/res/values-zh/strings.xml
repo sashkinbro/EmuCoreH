@@ -293,7 +293,7 @@
     <string name="save_manager_empty_body_all">請先在遊戲中建立存檔，然後它就會出現在這裡。</string>
     <string name="save_manager_empty_body_game">此遊戲目前沒有任何存檔。</string>
     <string name="save_manager_unknown_game">未知的遊戲</string>
-    <string name="save_manager_entry_meta">%1$s • 欄位 %2$d</string>
+    <string name="save_manager_slot_label">插槽 %1$d</string>
     <string name="save_manager_entry_size">大小：%1$s</string>
     <string name="save_manager_load_action">載入</string>
     <string name="save_manager_delete_action">刪除</string>
@@ -384,7 +384,7 @@
     <string name="emulation_session_restored_unavailable">先前的模拟会话已在后台关闭。请从您的游戏库中再次启动该游戏。</string>
     <string name="settings_gamepad_action_left_input_toggle">左侧输入切换</string>
     <string name="controls_editor_done">完成</string>
-    <string name="memory_card_meta">%1$s • 已更新：%2$s</string>
+    <string name="memory_card_updated">已更新: %1$s</string>
     <string name="memory_card_loading">正在加载记忆卡…</string>
     <string name="shell_memory_cards">记忆卡</string>
     <string name="settings_bios_path">BIOS 文件夹</string>
@@ -448,7 +448,6 @@
     <string name="settings_language_hindi">印地语</string>
     <string name="settings_language_native_italian">Italiano</string>
     <string name="settings_language_native_hindi">हिन्दी</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
     <string name="save_manager_auto_save_label">自动保存</string>
     <string name="save_manager_delete_confirm_body_named">%1$s，%2$s 将被永久删除。</string>
     <string name="emulation_save_slot_saved_at">已保存：%1$s</string>

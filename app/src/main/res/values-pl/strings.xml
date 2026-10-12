@@ -574,8 +574,7 @@
     <string name="save_manager_empty_body_all">Najpierw utwórz zapis w grze, a pojawi się on tutaj.</string>
     <string name="save_manager_empty_body_game">Ta gra nie ma jeszcze żadnych zapisów.</string>
     <string name="save_manager_unknown_game">Nieznana gra</string>
-    <string name="save_manager_entry_meta">%1$s • Gniazdo %2$d</string>
-    <string name="save_manager_entry_meta_auto">%1$s • %2$s</string>
+    <string name="save_manager_slot_label">Slot %1$d</string>
     <string name="save_manager_auto_save_label">Autozapis</string>
     <string name="save_manager_entry_size">Rozmiar: %1$s</string>
     <string name="save_manager_load_action">Wczytaj</string>
@@ -586,7 +585,7 @@
     <string name="save_manager_delete_confirm_body">%1$s, gniazdo %2$d zostanie trwale usunięte.</string>
     <string name="save_manager_delete_confirm_body_named">%1$s, %2$s zostanie trwale usunięte.</string>
     <string name="save_manager_load_unavailable">Nie znaleziono pliku gry w bibliotece</string>
-    <string name="memory_card_meta">%1$s • Zaktualizowano: %2$s</string>
+    <string name="memory_card_updated">Zaktualizowano: %1$s</string>
     <string name="memory_card_loading">Ładowanie kart pamięci…</string>
     <string name="settings_reset_to_default_toast">Przywrócono wartość domyślną.</string>
     <string name="shell_game_settings_manager">Menedżer gier</string>
