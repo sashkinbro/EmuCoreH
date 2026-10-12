@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-EmuCoreH-Proprietary
 
 #include "vulkan_frontend.h"
+#include "vulkan_api_policy.h"
 #include "shader_chain.h"
 #include "shader_effects_spv.h"
 
@@ -91,6 +92,9 @@ struct State {
     bool has_negotiation = false;
 
     VkInstance instance = VK_NULL_HANDLE;
+    // API version the instance (and therefore every device created from it)
+    // was capped to. A 1.0 instance must never be paired with a 1.1 device.
+    uint32_t instance_api_version = VK_API_VERSION_1_0;
     VkSurfaceKHR surface = VK_NULL_HANDLE;
     VkPhysicalDevice physical_device = VK_NULL_HANDLE;
     uint32_t queue_family = kPreferredQueueFamilyNone;
@@ -236,6 +240,28 @@ bool EnsureInstance() {
         if (app_info.apiVersion < VK_API_VERSION_1_0) app_info.apiVersion = VK_API_VERSION_1_0;
     }
 
+    // The core is loaded after this early instance creation, so the requested
+    // version is usually the 1.0 default. Flycast needs a 1.1 instance for its
+    // allocator; create one whenever the loader allows it. On a pre-1.1 loader
+    // keep 1.0 and reject 1.1 devices in PickPhysicalDevice instead of letting
+    // the allocator call null 1.1 entry points.
+    uint32_t loader_api = VK_API_VERSION_1_0;
+    const auto enumerate_version = reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
+        vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"));
+    if (enumerate_version != nullptr && enumerate_version(&loader_api) != VK_SUCCESS) {
+        VK_LOGE("Unable to query the Vulkan loader version");
+        return false;
+    }
+    const uint32_t selected_api = SelectCoreVulkanApi(loader_api, app_info.apiVersion);
+    if (selected_api == 0) {
+        VK_LOGW("Vulkan loader %u.%u cannot provide the required 1.1 instance; using 1.0",
+                VK_VERSION_MAJOR(loader_api), VK_VERSION_MINOR(loader_api));
+        app_info.apiVersion = VK_API_VERSION_1_0;
+    } else {
+        app_info.apiVersion = selected_api;
+    }
+    g_vk.instance_api_version = app_info.apiVersion;
+
     const char* enabled_extensions[] = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
     VkInstanceCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -266,7 +292,8 @@ bool EnsureInstance() {
         VK_LOGE("Vulkan surface entry points are missing");
         return false;
     }
-    VK_LOGI("Vulkan instance created");
+    VK_LOGI("Vulkan instance created (API %u.%u)", VK_VERSION_MAJOR(app_info.apiVersion),
+            VK_VERSION_MINOR(app_info.apiVersion));
     return true;
 }
 
@@ -320,6 +347,19 @@ bool PickPhysicalDevice() {
     for (VkPhysicalDevice device : devices) {
         if (!HasDeviceExtension(device, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) continue;
 
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(device, &properties);
+        if (properties.apiVersion >= kMinimumCoreVulkanApi &&
+            g_vk.instance_api_version < kMinimumCoreVulkanApi) {
+            // Flycast takes the core 1.1 memory-requirements path for these
+            // devices, but a 1.0 instance caps the device API version and the
+            // entry points resolve to null. Skip instead of crashing.
+            VK_LOGW("Skipping %s: requires a 1.1 instance but the loader only provides %u.%u",
+                    properties.deviceName, VK_VERSION_MAJOR(g_vk.instance_api_version),
+                    VK_VERSION_MINOR(g_vk.instance_api_version));
+            continue;
+        }
+
         uint32_t queue_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_count, nullptr);
         if (queue_count == 0) continue;
@@ -332,8 +372,6 @@ bool PickPhysicalDevice() {
             if (g_vk.pfn_surface_support(device, i, g_vk.surface, &present_supported) != VK_SUCCESS) continue;
             if (present_supported != VK_TRUE) continue;
 
-            VkPhysicalDeviceProperties properties{};
-            vkGetPhysicalDeviceProperties(device, &properties);
             g_vk.physical_device = device;
             g_vk.queue_family = i;
             VK_LOGI("Vulkan physical device: %s (API %u.%u, queue family %u)", properties.deviceName,
@@ -364,6 +402,20 @@ bool CreateDevice() {
     }
 
     g_vk.device = context.device;
+    // Flycast/VMA resolve the 1.1 memory-requirements entry points themselves.
+    // A device that advertises 1.1 must expose them; failing here keeps the
+    // failure inside hardware setup instead of a null call on the first frame.
+    VkPhysicalDeviceProperties device_properties{};
+    vkGetPhysicalDeviceProperties(g_vk.physical_device, &device_properties);
+    if (device_properties.apiVersion >= kMinimumCoreVulkanApi) {
+        for (const char* name : {"vkGetBufferMemoryRequirements2", "vkGetImageMemoryRequirements2",
+                                 "vkBindBufferMemory2", "vkBindImageMemory2"}) {
+            if (LoadDeviceFunction<PFN_vkVoidFunction>(name) == nullptr) {
+                VK_LOGE("Required Vulkan 1.1 entry point is missing: %s", name);
+                return false;
+            }
+        }
+    }
     g_vk.queue = context.queue;
     g_vk.queue_family = context.queue_family_index;
     g_vk.present_queue = context.presentation_queue != VK_NULL_HANDLE ? context.presentation_queue : context.queue;
