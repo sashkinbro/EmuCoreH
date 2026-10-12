@@ -812,6 +812,10 @@ internal object CoreRuntime {
         val timingClock = EmulationTiming()
         var previousSourceFrames = output.stats()?.getOrNull(5) ?: 0L
         var lastRunSourceFrames = 0L
+        // Guest rate of the last run that actually produced audio. Used when a
+        // run uploads nothing: the console's reported refresh (a boot/attract
+        // value on some arcade systems) must not re-pace the loop.
+        var lastRunRate = 0.0
         var sourceSampleRate = 44100L
         var frameStartNanos = 0L
         var previousFrameStartNanos = 0L
@@ -829,6 +833,7 @@ internal object CoreRuntime {
                     resetMetrics = true
                     timingClock.reset()
                     lastRunSourceFrames = 0L
+                    lastRunRate = 0.0
                     Thread.sleep(8)
                     continue
                 }
@@ -854,7 +859,9 @@ internal object CoreRuntime {
                         // Use the guest time advanced by the previous run. Swap
                         // interval detection can lag behind scene transitions or
                         // be disabled; neither should change the console speed.
-                        val runRate = EmulationTiming.pacingRate(coreFrameRate, lastRunSourceFrames, sourceSampleRate)
+                        val runRate = EmulationTiming.pacingRate(
+                            coreFrameRate, lastRunSourceFrames, sourceSampleRate, lastRunRate)
+                        if (lastRunSourceFrames > 0L) lastRunRate = runRate
                         val pacedRate = when (timeMode) {
                             1 -> runRate * audioPlaybackRate * 3.0
                             2 -> 2.0

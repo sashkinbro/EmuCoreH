@@ -179,6 +179,10 @@
     <string name="settings_reset_all_confirm">Bist du sicher, dass du alle Einstellungen zurücksetzen möchtest? Dadurch wird die Standard-App-Konfiguration wiederhergestellt.</string>
     <string name="settings_gamepad_hide_overlay_desc">Touch-Steuerung ausblenden, wenn ein physisches Gamepad angeschlossen ist</string>
     <string name="settings_gamepad_mapping_title">Gamepad-Tastenbelegung</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Arcade</string>
+    <string name="settings_gamepad_profile_desc">Dreamcast- und Arcade-Spiele behalten getrennte Controller-Zuordnungen.</string>
+    <string name="settings_gamepad_profile_active">Profil: %1$s</string>
     <string name="settings_gamepad_mapping_auto_format">Auto</string>
     <string name="settings_gamepad_mapping_reset_title">Gamepad-Belegung zurücksetzen</string>
     <string name="settings_gamepad_mapping_reset_desc">Das standardmäßige physische Tastenlayout wiederherstellen.</string>

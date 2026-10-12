@@ -66,4 +66,14 @@ class EmulationTimingTest {
         assertEquals(1.0, EmulationTiming.speedMultiplier(60.0, 60), 0.001)
         assertEquals(1.2, EmulationTiming.speedMultiplier(50.0, 60), 0.001)
     }
+
+    @Test fun silentRunsReuseTheLastMeasuredGuestRate() {
+        // A run that presents before the AICA pushed any sample must not fall
+        // back to the reported console refresh (wrong on some arcade systems).
+        assertEquals(59.94, EmulationTiming.pacingRate(40.0, 0, 44100, 59.94), 0.001)
+        // Once audio shows up again the measured rate wins.
+        assertEquals(60.0, EmulationTiming.pacingRate(40.0, 735, 44100, 30.0), 0.001)
+        // No fallback yet: the reported refresh is the only option.
+        assertEquals(40.0, EmulationTiming.pacingRate(40.0, 0, 44100), 0.001)
+    }
 }

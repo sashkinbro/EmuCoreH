@@ -40,6 +40,19 @@ static bool rendererEnabled = true;
 static bool presented;
 static u32 fbAddrHistory[2] { 1, 1 };
 
+// Delay frame swapping is a threaded-rendering feature (see the libretro core
+// option help). With the single-threaded renderer the emulation thread is
+// stopped when a frame is presented, so delaying the present until the game
+// swaps its framebuffer leaves a run to end on the 50 ms vblank timeout
+// instead. Games whose swap pattern doesn't match FB_R_SOF == FB_W_SOF (many
+// Naomi/Atomiswave titles) then advance an unpredictable number of vblanks per
+// frontend frame, which makes the frame pacing wander (~40 FPS) and the audio
+// stutter. Only honour the option when the threaded renderer is active.
+static bool delayFrameSwapping()
+{
+	return config::ThreadedRendering && config::DelayFrameSwapping;
+}
+
 class PvrMessageQueue
 {
 	using lock_guard = std::lock_guard<std::mutex>;
@@ -242,7 +255,7 @@ private:
 
 		if (!renderToScreen)
 			renderEnd.Set();
-		else if (config::DelayFrameSwapping && fb_w_cur == FB_R_SOF1)
+		else if (delayFrameSwapping() && fb_w_cur == FB_R_SOF1)
 			present();
 
 		//clear up & free data ..
@@ -583,7 +596,7 @@ void rend_start_render()
 		palette_update();
 		pend_rend = true;
 		pvrQueue.enqueue(PvrMessageQueue::Render);
-		if (!config::DelayFrameSwapping && !ctx->rend.isRTT && !config::EmulateFramebuffer)
+		if (!delayFrameSwapping() && !ctx->rend.isRTT && !config::EmulateFramebuffer)
 			pvrQueue.enqueue(PvrMessageQueue::Present);
 	}
 }

@@ -179,6 +179,10 @@
     <string name="settings_reset_all_confirm">¿Estás seguro de que quieres restablecer todos los ajustes? Esto restaurará la configuración predeterminada de la aplicación.</string>
     <string name="settings_gamepad_hide_overlay_desc">Ocultar los controles táctiles cuando se conecta un mando físico</string>
     <string name="settings_gamepad_mapping_title">Asignación de botones del mando</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Arcade</string>
+    <string name="settings_gamepad_profile_desc">Los juegos de Dreamcast y de arcade mantienen asignaciones de mando separadas.</string>
+    <string name="settings_gamepad_profile_active">Perfil: %1$s</string>
     <string name="settings_gamepad_mapping_auto_format">Automático</string>
     <string name="settings_gamepad_mapping_reset_title">Restablecer asignación del mando</string>
     <string name="settings_gamepad_mapping_reset_desc">Restaura la disposición predeterminada de los botones físicos.</string>

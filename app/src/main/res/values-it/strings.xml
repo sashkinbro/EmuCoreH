@@ -271,6 +271,10 @@
     <string name="settings_reset_all_confirm">Sei sicuro di voler ripristinare tutte le impostazioni? Questo ripristinerà la configurazione predefinita dell\'app.</string>
     <string name="settings_gamepad_hide_overlay_desc">Nascondi i controlli touch quando è collegato un gamepad fisico</string>
     <string name="settings_gamepad_mapping_title">Mappatura pulsanti Gamepad</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Arcade</string>
+    <string name="settings_gamepad_profile_desc">I giochi Dreamcast e arcade mantengono mappature del controller separate.</string>
+    <string name="settings_gamepad_profile_active">Profilo: %1$s</string>
     <string name="settings_gamepad_player_1">Giocatore 1</string>
     <string name="settings_gamepad_player_2">Giocatore 2</string>
     <string name="settings_gamepad_mapping_player_connected">Controller %1$s: %2$s</string>

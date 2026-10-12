@@ -431,6 +431,10 @@
     <string name="settings_reset_all_confirm">Czy na pewno chcesz przywrócić wszystkie ustawienia do wartości domyślnych dla tej aplikacji EmuCoreH?</string>
     <string name="settings_gamepad_hide_overlay_desc">Ukrywa kontroler dotykowy na pulpicie natychmiast podczas nawiązania komunikacji telefonu ze zmapowanym urządzeniem / padem Bluetooth lub na łączu USB.</string>
     <string name="settings_gamepad_mapping_title">Mapowanie przycisków kontrolera</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Arcade</string>
+    <string name="settings_gamepad_profile_desc">Gry Dreamcast i arcade mają osobne przypisania kontrolera.</string>
+    <string name="settings_gamepad_profile_active">Profil: %1$s</string>
     <string name="settings_gamepad_player_1">Gracz 1</string>
     <string name="settings_gamepad_player_2">Gracz 2</string>
     <string name="settings_gamepad_mapping_player_connected">Kontroler dla %1$s to obecnie: %2$s</string>

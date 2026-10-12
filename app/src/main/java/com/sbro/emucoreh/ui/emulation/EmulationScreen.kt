@@ -393,6 +393,7 @@ fun EmulationScreen(
     val globalDefaults by preferences.settingsSnapshot.collectAsState(initial = SettingsSnapshot())
     val overlayDefaults by preferences.overlayLayoutSnapshot.collectAsState(initial = OverlayLayoutSnapshot())
     val gamepadBindingsByPad by preferences.gamepadBindingsByPad.collectAsState(initial = emptyMap())
+    val gamepadArcadeBindingsByPad by preferences.gamepadArcadeBindingsByPad.collectAsState(initial = emptyMap())
     val persistedFloatingQuickSavePosition by preferences.floatingQuickSavePosition.collectAsState(
         initial = AppPreferences.DEFAULT_FLOATING_QUICK_SAVE_POSITION_X to
             AppPreferences.DEFAULT_FLOATING_QUICK_SAVE_POSITION_Y
@@ -408,11 +409,6 @@ fun EmulationScreen(
     val emulationAllowsBothOrientations by preferences.emulationAllowsBothOrientations.collectAsState(
         initial = null
     )
-    val effectiveGamepadBindingsByPad = if (uiState.gameSettingsProfileActive && uiState.gamepadBindingsByPad.isNotEmpty()) {
-        uiState.gamepadBindingsByPad
-    } else {
-        gamepadBindingsByPad
-    }
     val gamepadActions = remember { GamepadManager.mappableButtonActions() }
     val scope = rememberCoroutineScope()
     val achievementsRepository = remember(context) { RetroAchievementsRepository.get(context) }
@@ -915,7 +911,12 @@ fun EmulationScreen(
                         currentBindings[pendingGamepadPadIndex] = padBindings
                         viewModel.setGamepadBindingsByPad(currentBindings)
                     } else {
-                        preferences.setGamepadBinding(pendingGamepadPadIndex, actionId, keyCode)
+                        preferences.setGamepadBinding(
+                            pendingGamepadPadIndex,
+                            actionId,
+                            keyCode,
+                            arcade = arcadeInputMode > 0
+                        )
                     }
                 }
                 pendingGamepadActionId = null
@@ -1861,7 +1862,17 @@ fun EmulationScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     val connectedControllerName = GamepadManager.connectedControllerName(selectedGamepadPadIndex)
-                    val selectedBindings = effectiveGamepadBindingsByPad[selectedGamepadPadIndex].orEmpty()
+                    // A per-game profile replaces the active global profile; otherwise
+                    // arcade content shows the arcade mapping, like Flycast does.
+                    val activeGamepadBindingsByPad =
+                        if (uiState.gameSettingsProfileActive && uiState.gamepadBindingsByPad.isNotEmpty()) {
+                            uiState.gamepadBindingsByPad
+                        } else if (arcadeInputMode > 0) {
+                            gamepadArcadeBindingsByPad
+                        } else {
+                            gamepadBindingsByPad
+                        }
+                    val selectedBindings = activeGamepadBindingsByPad[selectedGamepadPadIndex].orEmpty()
                     Column(
                         modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 18.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -1870,6 +1881,21 @@ fun EmulationScreen(
                             text = stringResource(R.string.settings_gamepad_mapping_title),
                             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (uiState.gameSettingsProfileActive) {
+                                stringResource(R.string.game_settings_overlay_profile_active)
+                            } else {
+                                stringResource(
+                                    R.string.settings_gamepad_profile_active,
+                                    stringResource(
+                                        if (arcadeInputMode > 0) R.string.settings_gamepad_profile_arcade
+                                        else R.string.settings_gamepad_profile_dreamcast
+                                    )
+                                )
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Row(
                             modifier = Modifier.fullBleedScrollViewport(18.dp)
@@ -1944,7 +1970,11 @@ fun EmulationScreen(
                                                 }
                                                 viewModel.setGamepadBindingsByPad(currentBindings)
                                             } else {
-                                                preferences.clearGamepadBinding(selectedGamepadPadIndex, action.id)
+                                                preferences.clearGamepadBinding(
+                                                    selectedGamepadPadIndex,
+                                                    action.id,
+                                                    arcade = arcadeInputMode > 0
+                                                )
                                             }
                                         }
                                     }
@@ -1964,7 +1994,10 @@ fun EmulationScreen(
                                             currentBindings.remove(selectedGamepadPadIndex)
                                             viewModel.setGamepadBindingsByPad(currentBindings)
                                         } else {
-                                            preferences.resetGamepadBindingsForPad(selectedGamepadPadIndex)
+                                            preferences.resetGamepadBindingsForPad(
+                                                selectedGamepadPadIndex,
+                                                arcade = arcadeInputMode > 0
+                                            )
                                         }
                                     }
                                 },

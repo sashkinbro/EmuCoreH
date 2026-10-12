@@ -311,6 +311,10 @@
     <string name="settings_reset_all_confirm">هل أنت متأكد أنك تريد إعادة تعيين جميع الإعدادات؟ سيؤدي هذا إلى استعادة التكوين الافتراضي للتطبيق.</string>
     <string name="settings_gamepad_hide_overlay_desc">إخفاء عناصر التحكم باللمس عند توصيل وحدة تحكم فعلية</string>
     <string name="settings_gamepad_mapping_title">تعيين أزرار وحدة التحكم</string>
+    <string name="settings_gamepad_profile_dreamcast">دريم كاست</string>
+    <string name="settings_gamepad_profile_arcade">أركيد</string>
+    <string name="settings_gamepad_profile_desc">تحتفظ ألعاب Dreamcast وألعاب الأركيد بتخطيطات تحكم منفصلة.</string>
+    <string name="settings_gamepad_profile_active">الملف: %1$s</string>
     <string name="settings_gamepad_player_1">اللاعب 1</string>
     <string name="settings_gamepad_player_2">اللاعب 2</string>
     <string name="settings_gamepad_mapping_player_connected">وحدة تحكم %1$s: %2$s</string>

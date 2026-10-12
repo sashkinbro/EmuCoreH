@@ -271,6 +271,10 @@
     <string name="settings_reset_all_confirm">क्या आप वाकई सभी सेटिंग्स को रीसेट करना चाहते हैं? यह डिफ़ॉल्ट ऐप कॉन्फ़िगरेशन को पुनर्स्थापित करेगा।</string>
     <string name="settings_gamepad_hide_overlay_desc">भौतिक गेमपैड कनेक्ट होने पर टच कंट्रोल्स छिपाएं</string>
     <string name="settings_gamepad_mapping_title">गेमपैड बटन मैपिंग</string>
+    <string name="settings_gamepad_profile_dreamcast">ड्रीमकास्ट</string>
+    <string name="settings_gamepad_profile_arcade">आर्केड</string>
+    <string name="settings_gamepad_profile_desc">Dreamcast और आर्केड गेम के कंट्रोलर मैपिंग अलग रहते हैं।</string>
+    <string name="settings_gamepad_profile_active">प्रोफ़ाइल: %1$s</string>
     <string name="settings_gamepad_player_1">प्लेयर 1</string>
     <string name="settings_gamepad_player_2">प्लेयर 2</string>
     <string name="settings_gamepad_mapping_player_connected">%1$s नियंत्रक: %2$s</string>

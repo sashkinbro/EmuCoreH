@@ -138,6 +138,8 @@ data class SettingsSnapshot(
     val pressureModifierAmount: Int = AppPreferences.DEFAULT_PRESSURE_MODIFIER_AMOUNT,
     val gamepadBindings: Map<String, Int> = emptyMap(),
     val gamepadBindingsByPad: Map<Int, Map<String, Int>> = emptyMap(),
+    /** Independent controller mappings for arcade content (Naomi, Naomi 2, Atomiswave, System SP). */
+    val gamepadArcadeBindingsByPad: Map<Int, Map<String, Int>> = emptyMap(),
     val gamepadDeviceAssignments: Map<Int, String> = emptyMap(),
     val ignoredGamepadDevices: Set<String> = emptySet(),
     val frameLimitEnabled: Boolean = true,
@@ -379,6 +381,7 @@ class AppPreferences(private val context: Context) {
         private val GAME_PATHS = stringPreferencesKey("game_paths")
         private val EMULATOR_DATA_PATH = stringPreferencesKey("emulator_data_path")
         private val FETCH_BOXART = booleanPreferencesKey("fetch_boxart")
+        private val GAMEPAD_ARCADE_BINDINGS = stringPreferencesKey("gamepad_arcade_bindings")
         private val LEGACY_COVER_ART_STYLE = intPreferencesKey("cover_art_style")
         private val COVER_ART_STYLE = intPreferencesKey("psp_cover_art_style_v2")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
@@ -1375,6 +1378,7 @@ class AppPreferences(private val context: Context) {
                 pressureModifierAmount = (prefs[PRESSURE_MODIFIER_AMOUNT] ?: DEFAULT_PRESSURE_MODIFIER_AMOUNT).coerceIn(1, 100),
                 gamepadBindings = decodeGamepadBindings(prefs[GAMEPAD_BINDINGS]),
                 gamepadBindingsByPad = decodeGamepadBindingsByPad(prefs[GAMEPAD_BINDINGS]),
+                gamepadArcadeBindingsByPad = decodeGamepadBindingsByPad(prefs[GAMEPAD_ARCADE_BINDINGS]),
                 gamepadDeviceAssignments = decodeGamepadDeviceAssignments(prefs[GAMEPAD_DEVICE_ASSIGNMENTS]),
                 ignoredGamepadDevices = decodeIgnoredGamepadDevices(prefs[GAMEPAD_IGNORED_DEVICES]),
                 frameLimitEnabled = prefs[FRAME_LIMIT_ENABLED] ?: true,
@@ -1879,11 +1883,12 @@ class AppPreferences(private val context: Context) {
 
     private fun updateGamepadBindingsForPad(
         prefs: MutablePreferences,
+        bindingsKey: Preferences.Key<String>,
         padIndex: Int,
         transform: (MutableMap<String, Int>) -> Unit
     ) {
         val normalizedPadIndex = normalizeGamepadPadIndex(padIndex)
-        val updated = decodeGamepadBindingsByPad(prefs[GAMEPAD_BINDINGS])
+        val updated = decodeGamepadBindingsByPad(prefs[bindingsKey])
             .mapValues { (_, bindings) -> bindings.toMutableMap() }
             .toMutableMap()
         val padBindings = updated[normalizedPadIndex]?.toMutableMap() ?: mutableMapOf()
@@ -1894,9 +1899,9 @@ class AppPreferences(private val context: Context) {
             updated[normalizedPadIndex] = padBindings
         }
         if (updated.isEmpty()) {
-            prefs.remove(GAMEPAD_BINDINGS)
+            prefs.remove(bindingsKey)
         } else {
-            prefs[GAMEPAD_BINDINGS] = encodeGamepadBindingsByPad(updated)
+            prefs[bindingsKey] = encodeGamepadBindingsByPad(updated)
         }
     }
 
@@ -2197,9 +2202,17 @@ class AppPreferences(private val context: Context) {
         decodeGamepadBindingsByPad(prefs[GAMEPAD_BINDINGS])
     }
 
-    suspend fun setGamepadBinding(padIndex: Int, actionId: String, keyCode: Int) {
+    /** Arcade mappings stay separate so console and arcade games do not fight over buttons. */
+    val gamepadArcadeBindingsByPad: Flow<Map<Int, Map<String, Int>>> = context.dataStore.data.map { prefs ->
+        decodeGamepadBindingsByPad(prefs[GAMEPAD_ARCADE_BINDINGS])
+    }
+
+    private fun gamepadBindingsKey(arcade: Boolean): Preferences.Key<String> =
+        if (arcade) GAMEPAD_ARCADE_BINDINGS else GAMEPAD_BINDINGS
+
+    suspend fun setGamepadBinding(padIndex: Int, actionId: String, keyCode: Int, arcade: Boolean = false) {
         context.dataStore.edit { prefs ->
-            updateGamepadBindingsForPad(prefs, padIndex) { updated ->
+            updateGamepadBindingsForPad(prefs, gamepadBindingsKey(arcade), padIndex) { updated ->
                 val assigned = GamepadBindingRules.assign(updated, actionId, keyCode)
                 updated.clear()
                 updated.putAll(assigned)
@@ -2207,17 +2220,17 @@ class AppPreferences(private val context: Context) {
         }
     }
 
-    suspend fun clearGamepadBinding(padIndex: Int, actionId: String) {
+    suspend fun clearGamepadBinding(padIndex: Int, actionId: String, arcade: Boolean = false) {
         context.dataStore.edit { prefs ->
-            updateGamepadBindingsForPad(prefs, padIndex) { updated ->
+            updateGamepadBindingsForPad(prefs, gamepadBindingsKey(arcade), padIndex) { updated ->
                 updated.remove(actionId)
             }
         }
     }
 
-    suspend fun resetGamepadBindingsForPad(padIndex: Int) {
+    suspend fun resetGamepadBindingsForPad(padIndex: Int, arcade: Boolean = false) {
         context.dataStore.edit { prefs ->
-            updateGamepadBindingsForPad(prefs, padIndex) { updated ->
+            updateGamepadBindingsForPad(prefs, gamepadBindingsKey(arcade), padIndex) { updated ->
                 updated.clear()
             }
         }
@@ -2721,6 +2734,7 @@ class AppPreferences(private val context: Context) {
             put("retroAchievementsUnofficial", prefs[RETRO_ACHIEVEMENTS_UNOFFICIAL] ?: false)
             put("retroAchievementsEncore", prefs[RETRO_ACHIEVEMENTS_ENCORE] ?: false)
             put("gamepadBindings", prefs[GAMEPAD_BINDINGS])
+            put("gamepadArcadeBindings", prefs[GAMEPAD_ARCADE_BINDINGS])
             put("gamepadDeviceAssignments", prefs[GAMEPAD_DEVICE_ASSIGNMENTS])
             put("gamepadIgnoredDevices", prefs[GAMEPAD_IGNORED_DEVICES])
             put("frameLimitEnabled", prefs[FRAME_LIMIT_ENABLED] ?: true)
@@ -2983,6 +2997,7 @@ class AppPreferences(private val context: Context) {
                 prefs[RETRO_ACHIEVEMENTS_ENCORE] = json.optBoolean("retroAchievementsEncore", false)
             }
             json.optString("gamepadBindings").takeIf { it.isNotBlank() }?.let { prefs[GAMEPAD_BINDINGS] = it } ?: prefs.remove(GAMEPAD_BINDINGS)
+            json.optString("gamepadArcadeBindings").takeIf { it.isNotBlank() }?.let { prefs[GAMEPAD_ARCADE_BINDINGS] = it } ?: prefs.remove(GAMEPAD_ARCADE_BINDINGS)
             json.optString("gamepadDeviceAssignments").takeIf { it.isNotBlank() }?.let { prefs[GAMEPAD_DEVICE_ASSIGNMENTS] = it } ?: prefs.remove(GAMEPAD_DEVICE_ASSIGNMENTS)
             json.optString("gamepadIgnoredDevices").takeIf { it.isNotBlank() }?.let { prefs[GAMEPAD_IGNORED_DEVICES] = it } ?: prefs.remove(GAMEPAD_IGNORED_DEVICES)
             prefs[FRAME_LIMIT_ENABLED] = json.optBoolean("frameLimitEnabled", true)

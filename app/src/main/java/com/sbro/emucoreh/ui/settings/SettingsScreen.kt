@@ -280,6 +280,9 @@ fun SettingsScreen(
     var selectedTab by rememberSaveable(initialTab) { mutableStateOf(initialTab.toSettingsTab()) }
     val pendingGamepadActionId = remember { mutableStateOf<String?>(null) }
     var pendingGamepadPadIndex by rememberSaveable { mutableIntStateOf(0) }
+    // 0 = Dreamcast (console), 1 = arcade. Only selects which mapping the
+    // editor shows; the running game picks its profile automatically.
+    var selectedGamepadProfile by rememberSaveable { mutableIntStateOf(0) }
     var showGamepadAssignmentDialog by rememberSaveable { mutableStateOf(false) }
     var showTopBarMenu by remember { mutableStateOf(false) }
     val showResetAllSettingsDialog = remember { mutableStateOf(false) }
@@ -430,7 +433,12 @@ fun SettingsScreen(
         val actionId = pendingGamepadActionId.value
         if (actionId != null) {
             GamepadManager.startBindingCapture(pendingGamepadPadIndex) { keyCode ->
-                viewModel.setGamepadBinding(pendingGamepadPadIndex, actionId, keyCode)
+                viewModel.setGamepadBinding(
+                    pendingGamepadPadIndex,
+                    actionId,
+                    keyCode,
+                    arcade = selectedGamepadProfile == 1
+                )
                 pendingGamepadActionId.value = null
             }
         } else {
@@ -561,6 +569,8 @@ fun SettingsScreen(
                     pendingGamepadPadIndex = padIndex
                     pendingGamepadActionId.value = actionId
                 },
+                selectedGamepadProfile = selectedGamepadProfile,
+                onGamepadProfileChange = { selectedGamepadProfile = it },
                 onOpenGamepadAssignment = { showGamepadAssignmentDialog = true },
                 searchQuery = searchQuery,
                 onSearchResultSelected = { tab ->
@@ -975,6 +985,8 @@ private fun SettingsContent(
     launchCloudBackup: () -> Unit,
     openLanguageSheet: () -> Unit,
     onRequestGamepadBinding: (Int, String) -> Unit,
+    selectedGamepadProfile: Int,
+    onGamepadProfileChange: (Int) -> Unit,
     onOpenGamepadAssignment: () -> Unit,
     onSearchResultSelected: (SettingsTab) -> Unit,
     viewModel: SettingsViewModel,
@@ -1657,7 +1669,11 @@ private fun SettingsContent(
                         )
                     }
                     SettingsSection(title = stringResource(R.string.settings_gamepad_mapping_title)) {
-                        val selectedBindings = uiState.gamepadBindingsByPad[selectedGamepadPadIndex].orEmpty()
+                        val arcadeProfileSelected = selectedGamepadProfile == 1
+                        val selectedBindings = (
+                            if (arcadeProfileSelected) uiState.gamepadArcadeBindingsByPad
+                            else uiState.gamepadBindingsByPad
+                            )[selectedGamepadPadIndex].orEmpty()
                         val connectedControllerName = GamepadManager.connectedControllerName(selectedGamepadPadIndex)
                         LazyRow(
                             modifier = Modifier
@@ -1683,6 +1699,38 @@ private fun SettingsContent(
                                 )
                             }
                         }
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .tvFocusGroup(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(end = 4.dp)
+                        ) {
+                            items(listOf(0, 1)) { profile ->
+                                val interactionSource = remember { MutableInteractionSource() }
+                                FilterChip(
+                                    modifier = Modifier.tvGamepadFocusableCard(
+                                        shape = neonShape(16.dp),
+                                        interactionSource = interactionSource,
+                                        addFocusTarget = false
+                                    ),
+                                    shape = neonChipShape(),
+                                    selected = selectedGamepadProfile == profile,
+                                    onClick = { onGamepadProfileChange(profile) },
+                                    interactionSource = interactionSource,
+                                    label = {
+                                        Text(
+                                            stringResource(
+                                                if (profile == 1) R.string.settings_gamepad_profile_arcade
+                                                else R.string.settings_gamepad_profile_dreamcast
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                        SettingsInlineNote(stringResource(R.string.settings_gamepad_profile_desc))
                         SettingsInlineNote(
                             text = connectedControllerName?.let {
                                 stringResource(
@@ -1710,7 +1758,13 @@ private fun SettingsContent(
                                 },
                                 onBindClick = { onRequestGamepadBinding(selectedGamepadPadIndex, action.id) },
                                 onClearClick = if (isCustomBinding) {
-                                    { viewModel.clearGamepadBinding(selectedGamepadPadIndex, action.id) }
+                                    {
+                                        viewModel.clearGamepadBinding(
+                                            selectedGamepadPadIndex,
+                                            action.id,
+                                            arcade = arcadeProfileSelected
+                                        )
+                                    }
                                 } else {
                                     null
                                 }
@@ -1720,7 +1774,12 @@ private fun SettingsContent(
                             icon = Icons.Rounded.SettingsSuggest,
                             label = stringResource(R.string.settings_gamepad_mapping_reset_title),
                             value = stringResource(R.string.settings_gamepad_mapping_reset_desc),
-                            onClick = { viewModel.resetGamepadBindingsForPad(selectedGamepadPadIndex) }
+                            onClick = {
+                                viewModel.resetGamepadBindingsForPad(
+                                    selectedGamepadPadIndex,
+                                    arcade = arcadeProfileSelected
+                                )
+                            }
                         )
                     }
 

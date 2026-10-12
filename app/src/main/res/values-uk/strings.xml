@@ -181,6 +181,10 @@
     <string name="settings_reset_all_confirm">Ви впевнені, що хочете скинути всі налаштування? Це відновить стандартну конфігурацію застосунку.</string>
     <string name="settings_gamepad_hide_overlay_desc">Приховувати сенсорне керування при підключенні фізичного геймпада</string>
     <string name="settings_gamepad_mapping_title">Переназначення кнопок геймпада</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Аркадні</string>
+    <string name="settings_gamepad_profile_desc">Для ігор Dreamcast та аркадних ігор зберігаються окремі розкладки контролера.</string>
+    <string name="settings_gamepad_profile_active">Профіль: %1$s</string>
     <string name="settings_gamepad_mapping_auto_format">Авто</string>
     <string name="settings_gamepad_mapping_reset_title">Скинути розкладку геймпада</string>
     <string name="settings_gamepad_mapping_reset_desc">Відновити стандартне розташування фізичних кнопок.</string>

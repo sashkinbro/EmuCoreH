@@ -311,6 +311,10 @@
     <string name="settings_reset_all_confirm">Tüm ayarları sıfırlamak istediğinizden emin misiniz? Bu işlem varsayılan uygulama yapılandırmasını geri yükleyecektir.</string>
     <string name="settings_gamepad_hide_overlay_desc">Fiziksel bir gamepad bağlandığında dokunmatik kontrolleri gizle</string>
     <string name="settings_gamepad_mapping_title">Gamepad Düğme Eşleme</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Arcade</string>
+    <string name="settings_gamepad_profile_desc">Dreamcast ve arcade oyunları ayrı denetleyici eşlemeleri tutar.</string>
+    <string name="settings_gamepad_profile_active">Profil: %1$s</string>
     <string name="settings_gamepad_player_1">1. Oyuncu</string>
     <string name="settings_gamepad_player_2">2. Oyuncu</string>
     <string name="settings_gamepad_mapping_player_connected">%1$s kontrolcüsü: %2$s</string>

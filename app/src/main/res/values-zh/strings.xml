@@ -179,6 +179,10 @@
     <string name="settings_reset_all_confirm">您確定要重設所有設定嗎？這將還原預設的應用程式設定。</string>
     <string name="settings_gamepad_hide_overlay_desc">連接實體遊戲手把時隱藏觸控控制</string>
     <string name="settings_gamepad_mapping_title">遊戲手把按鈕對應</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">街机</string>
+    <string name="settings_gamepad_profile_desc">Dreamcast 和街机游戏保持独立的控制器映射。</string>
+    <string name="settings_gamepad_profile_active">配置文件: %1$s</string>
     <string name="settings_gamepad_mapping_auto_format">自動</string>
     <string name="settings_gamepad_mapping_reset_title">重設遊戲手把對應</string>
     <string name="settings_gamepad_mapping_reset_desc">還原預設的實體按鈕配置。</string>

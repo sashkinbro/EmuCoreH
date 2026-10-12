@@ -179,6 +179,10 @@
     <string name="settings_reset_all_confirm">Tem certeza de que deseja redefinir todas as configurações? Isso restaurará a configuração padrão do aplicativo.</string>
     <string name="settings_gamepad_hide_overlay_desc">Ocultar os controles de toque quando um gamepad físico estiver conectado</string>
     <string name="settings_gamepad_mapping_title">Mapeamento de Botões do Gamepad</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Arcade</string>
+    <string name="settings_gamepad_profile_desc">Jogos Dreamcast e arcade mantêm mapeamentos de controle separados.</string>
+    <string name="settings_gamepad_profile_active">Perfil: %1$s</string>
     <string name="settings_gamepad_mapping_auto_format">Auto</string>
     <string name="settings_gamepad_mapping_reset_title">Redefinir Mapeamento do Gamepad</string>
     <string name="settings_gamepad_mapping_reset_desc">Restaurar o layout padrão dos botões físicos.</string>

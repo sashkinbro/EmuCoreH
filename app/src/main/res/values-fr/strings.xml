@@ -179,6 +179,10 @@
     <string name="settings_reset_all_confirm">Voulez-vous vraiment réinitialiser tous les paramètres ? Cela restaurera la configuration par défaut de l\'application.</string>
     <string name="settings_gamepad_hide_overlay_desc">Masquer les contrôles tactiles lorsqu\'une manette physique est connectée</string>
     <string name="settings_gamepad_mapping_title">Configuration des boutons de la manette</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Arcade</string>
+    <string name="settings_gamepad_profile_desc">Les jeux Dreamcast et arcade conservent des mappages de manette séparés.</string>
+    <string name="settings_gamepad_profile_active">Profil : %1$s</string>
     <string name="settings_gamepad_mapping_auto_format">Auto</string>
     <string name="settings_gamepad_mapping_reset_title">Réinitialiser la configuration de la manette</string>
     <string name="settings_gamepad_mapping_reset_desc">Restaurer la disposition par défaut des boutons physiques.</string>

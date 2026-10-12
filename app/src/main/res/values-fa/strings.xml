@@ -413,6 +413,10 @@
     <string name="settings_reset_all_confirm">آیا مطمئن هستید که می‌خواهید همه تنظیمات را بازنشانی کنید؟ این کار پیکربندی پیش‌فرض برنامه را بازیابی می‌کند.</string>
     <string name="settings_gamepad_hide_overlay_desc">هنگام اتصال یک گیم‌پد فیزیکی، کنترل‌های لمسی را مخفی کنید</string>
     <string name="settings_gamepad_mapping_title">نگاشت دکمه‌های گیم‌پد</string>
+    <string name="settings_gamepad_profile_dreamcast">دریم‌کست</string>
+    <string name="settings_gamepad_profile_arcade">آرکید</string>
+    <string name="settings_gamepad_profile_desc">بازی‌های Dreamcast و آرکید نقشه‌بندی دسته جداگانه‌ای دارند.</string>
+    <string name="settings_gamepad_profile_active">پروفایل: %1$s</string>
     <string name="settings_gamepad_player_1">بازیکن 1</string>
     <string name="settings_gamepad_player_2">بازیکن 2</string>
     <string name="settings_gamepad_mapping_player_connected">کنترلر %1$s: %2$s</string>

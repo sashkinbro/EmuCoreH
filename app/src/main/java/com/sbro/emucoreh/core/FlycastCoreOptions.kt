@@ -234,6 +234,9 @@ object FlycastCoreOptions {
             defaultValue = "640x480",
         ),
         // video
+        // Android devices are all-digital: VGA (480p) gives the sharpest
+        // picture. The core still falls back to composite for the titles whose
+        // IP.BIN declares no VGA support.
         Option(
             key = "reicast_cable_type",
             labelRes = R.string.flycast_opt_cable_type_label,
@@ -244,7 +247,7 @@ object FlycastCoreOptions {
                 Choice("TV (RGB)", R.string.flycast_opt_cable_type_choice_tv_rgb),
                 Choice("TV (Composite)", R.string.flycast_opt_cable_type_choice_tv_composite),
             ),
-            defaultValue = "TV (Composite)",
+            defaultValue = "VGA",
         ),
         // video
         Option(
@@ -405,6 +408,12 @@ object FlycastCoreOptions {
             defaultValue = "0",
         ),
         // video
+        // Only meaningful with the threaded renderer, which this build never
+        // enables: with the single-threaded renderer the core stops the
+        // emulation thread when a frame is presented, so delaying the present
+        // until the game swaps its framebuffer makes arcade titles advance an
+        // unpredictable number of vblanks per frontend frame (~40 FPS, stuttery
+        // audio). The core ignores the option while threaded rendering is off.
         Option(
             key = "reicast_delay_frame_swapping",
             labelRes = R.string.flycast_opt_delay_frame_swapping_label,
@@ -414,7 +423,7 @@ object FlycastCoreOptions {
                 Choice("disabled", R.string.flycast_choice_disabled),
                 Choice("enabled", R.string.flycast_choice_enabled),
             ),
-            defaultValue = "enabled",
+            defaultValue = "disabled",
         ),
         // video
         Option(
@@ -806,7 +815,9 @@ object FlycastCoreOptions {
                 Choice("Green", R.string.flycast_choice_color_green),
                 Choice("Blue", R.string.flycast_choice_color_blue),
             ),
-            defaultValue = "Red",
+            // The red P2 cursor sat on screen in every gun game even without a
+            // second player; a crosshair is opt-in per port, like Flycast.
+            defaultValue = "disabled",
         ),
         // input
         Option(

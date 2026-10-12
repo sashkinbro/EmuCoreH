@@ -413,6 +413,10 @@
     <string name="settings_reset_all_confirm">Anda yakin ingin mengatur ulang semua pengaturan? Ini akan memulihkan konfigurasi aplikasi default.</string>
     <string name="settings_gamepad_hide_overlay_desc">Sembunyikan kontrol sentuh saat gamepad fisik tersambung</string>
     <string name="settings_gamepad_mapping_title">Pemetaan Tombol Gamepad</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Arcade</string>
+    <string name="settings_gamepad_profile_desc">Game Dreamcast dan arcade memiliki pemetaan kontroler terpisah.</string>
+    <string name="settings_gamepad_profile_active">Profil: %1$s</string>
     <string name="settings_gamepad_player_1">Pemain 1</string>
     <string name="settings_gamepad_player_2">Pemain 2</string>
     <string name="settings_gamepad_mapping_player_connected">Pengontrol %1$s: %2$s</string>

@@ -438,6 +438,10 @@
     <string name="settings_reset_all_confirm">Are you sure you want to reset all settings? This will restore the default app configuration.</string>
     <string name="settings_gamepad_hide_overlay_desc">Hide touch controls when a physical gamepad is connected</string>
     <string name="settings_gamepad_mapping_title">Gamepad Button Mapping</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Arcade</string>
+    <string name="settings_gamepad_profile_desc">Dreamcast and arcade games keep separate controller mappings.</string>
+    <string name="settings_gamepad_profile_active">Profile: %1$s</string>
     <string name="settings_gamepad_player_1">Player 1</string>
     <string name="settings_gamepad_player_2">Player 2</string>
     <string name="settings_gamepad_mapping_player_connected">%1$s controller: %2$s</string>

@@ -27,9 +27,17 @@ internal class EmulationTiming {
     }
 
     companion object {
-        /** A retro_run can advance several vblanks in a 30/20 FPS scene. */
-        fun pacingRate(refreshRate: Double, sourceFrames: Long, sampleRate: Long): Double =
+        /**
+         * A retro_run can advance several vblanks in a 30/20 FPS scene. Runs
+         * that produce no audio at all (a frame can be presented before the
+         * AICA pushes anything, notably on arcade titles) must reuse the
+         * previous run's rate: the reported console refresh is unreliable on
+         * those systems and pacing on it lands on the wrong frame rate.
+         */
+        fun pacingRate(refreshRate: Double, sourceFrames: Long, sampleRate: Long,
+                       fallbackRate: Double = 0.0): Double =
             if (sourceFrames > 0L && sampleRate > 0L) sampleRate.toDouble() / sourceFrames
+            else if (fallbackRate > 0.0) fallbackRate
             else refreshRate
 
         fun speedMultiplier(refreshRate: Double, targetFps: Int): Double =

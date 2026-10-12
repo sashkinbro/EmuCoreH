@@ -434,6 +434,10 @@
     <string name="settings_reset_all_confirm">Jste si jisti, že si přejete vyresetovat/obnovit kompletně veškerá svá nastavení? Zcela to navrátí (obnoví) výchozí (původní) konfiguraci aplikace.</string>
     <string name="settings_gamepad_hide_overlay_desc">Skrýt dotykové ovládací prvky (překrytí), pokud je připojen fyzický gamepad</string>
     <string name="settings_gamepad_mapping_title">Mapování tlačítek gamepadu</string>
+    <string name="settings_gamepad_profile_dreamcast">Dreamcast</string>
+    <string name="settings_gamepad_profile_arcade">Arkádové</string>
+    <string name="settings_gamepad_profile_desc">Hry Dreamcast a arkádové hry mají oddělená mapování ovladače.</string>
+    <string name="settings_gamepad_profile_active">Profil: %1$s</string>
     <string name="settings_gamepad_player_1">Hráč 1</string>
     <string name="settings_gamepad_player_2">Hráč 2</string>
     <string name="settings_gamepad_mapping_player_connected">%1$s ovladač: %2$s</string>

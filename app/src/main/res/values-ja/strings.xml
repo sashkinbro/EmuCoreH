@@ -311,6 +311,10 @@
     <string name="settings_reset_all_confirm">すべての設定をリセットしてもよろしいですか？これにより、デフォルトのアプリ構成が復元されます。</string>
     <string name="settings_gamepad_hide_overlay_desc">物理ゲームパッドが接続されているときにタッチコントロールを非表示にします</string>
     <string name="settings_gamepad_mapping_title">ゲームパッドのボタンマッピング</string>
+    <string name="settings_gamepad_profile_dreamcast">ドリームキャスト</string>
+    <string name="settings_gamepad_profile_arcade">アーケード</string>
+    <string name="settings_gamepad_profile_desc">ドリームキャストとアーケードのゲームはコントローラーマッピングを別々に保持します。</string>
+    <string name="settings_gamepad_profile_active">プロフィール: %1$s</string>
     <string name="settings_gamepad_player_1">プレイヤー 1</string>
     <string name="settings_gamepad_player_2">プレイヤー 2</string>
     <string name="settings_gamepad_mapping_player_connected">%1$s コントローラー: %2$s</string>

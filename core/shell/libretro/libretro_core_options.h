@@ -335,7 +335,7 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "TV (Composite)", NULL },
          { NULL, NULL },
       },
-      "TV (Composite)",
+      "VGA",
    },
    {
       CORE_OPTION_NAME "_broadcast",
@@ -539,7 +539,7 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "enabled",  NULL },
          { NULL, NULL },
       },
-      "enabled",
+      "disabled",
    },
    {
       CORE_OPTION_NAME "_detect_vsync_swap_interval",

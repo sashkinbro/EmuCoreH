@@ -195,6 +195,13 @@ object GamepadManager {
     private var customBindingsByPad: Map<Int, Map<String, Int>> = emptyMap()
     @Volatile
     private var customShortcutBindingsByPadAndKeyCode: Map<Int, Map<Int, String>> = emptyMap()
+    // Dreamcast and arcade mappings are stored separately (like Flycast's own
+    // per-system mapping files). [customBindingsByPad] is whichever profile is
+    // active, optionally replaced by a per-game override.
+    @Volatile
+    private var consoleBindingsByPad: Map<Int, Map<String, Int>> = emptyMap()
+    @Volatile
+    private var arcadeBindingsByPad: Map<Int, Map<String, Int>> = emptyMap()
     @Volatile
     private var analogDeadzone = AppPreferences.DEFAULT_GAMEPAD_STICK_DEADZONE / 100f
     @Volatile
@@ -223,7 +230,7 @@ object GamepadManager {
     @Volatile
     private var perGameBindingsActive = false
     @Volatile
-    private var savedGlobalBindingsByPad: Map<Int, Map<String, Int>> = emptyMap()
+    private var perGameBindingsOverride: Map<Int, Map<String, Int>>? = null
     @Volatile
     private var savedGlobalAnalogDeadzone: Float = analogDeadzone
     @Volatile
@@ -320,7 +327,28 @@ object GamepadManager {
     fun setArcadeModeActive(active: Boolean) {
         if (arcadeModeActive == active) return
         arcadeModeActive = active
+        refreshActiveBindings()
         resetModeInputState((0 until MAX_PAD_SLOTS).toSet())
+    }
+
+    private fun activeProfileBindings(): Map<Int, Map<String, Int>> =
+        if (arcadeModeActive) arcadeBindingsByPad else consoleBindingsByPad
+
+    /** Recomputes [customBindingsByPad] after a profile or override change. */
+    private fun refreshActiveBindings() {
+        val desired = if (perGameBindingsActive) {
+            perGameBindingsOverride ?: activeProfileBindings()
+        } else {
+            activeProfileBindings()
+        }
+        val previousBindingsByPad = customBindingsByPad
+        customBindingsByPad = desired
+        customShortcutBindingsByPadAndKeyCode = desired.mapValues { (_, bindings) ->
+            bindings.entries.mapNotNull { (actionId, keyCode) ->
+                actionId.takeIf { it in shortcutActionIds }?.let { keyCode to it }
+            }.toMap()
+        }
+        resetChangedBindingStates(previousBindingsByPad, desired)
     }
 
     fun setLightGunModeActive(active: Boolean, aimSource: Int = 0) {
@@ -363,14 +391,14 @@ object GamepadManager {
         val preferences = AppPreferences(context.applicationContext)
         scope.launch {
             preferences.gamepadBindingsByPad.collectLatest { bindingsByPad ->
-                val previousBindingsByPad = customBindingsByPad
-                customBindingsByPad = bindingsByPad
-                customShortcutBindingsByPadAndKeyCode = bindingsByPad.mapValues { (_, bindings) ->
-                    bindings.entries.mapNotNull { (actionId, keyCode) ->
-                        actionId.takeIf { it in shortcutActionIds }?.let { keyCode to it }
-                    }.toMap()
-                }
-                resetChangedBindingStates(previousBindingsByPad, bindingsByPad)
+                consoleBindingsByPad = bindingsByPad
+                if (!arcadeModeActive) refreshActiveBindings()
+            }
+        }
+        scope.launch {
+            preferences.gamepadArcadeBindingsByPad.collectLatest { bindingsByPad ->
+                arcadeBindingsByPad = bindingsByPad
+                if (arcadeModeActive) refreshActiveBindings()
             }
         }
         scope.launch {
@@ -592,22 +620,15 @@ object GamepadManager {
         rightSensitivity: Int?
     ) {
         if (!perGameBindingsActive) {
-            savedGlobalBindingsByPad = customBindingsByPad
             savedGlobalAnalogDeadzone = analogDeadzone
             savedGlobalLeftStickSensitivity = leftStickSensitivity
             savedGlobalRightStickSensitivity = rightStickSensitivity
             perGameBindingsActive = true
         }
         if (bindingsByPad != null && bindingsByPad.isNotEmpty()) {
-            val previousBindingsByPad = customBindingsByPad
-            customBindingsByPad = bindingsByPad
-            customShortcutBindingsByPadAndKeyCode = bindingsByPad.mapValues { (_, bindings) ->
-                bindings.entries.mapNotNull { (actionId, keyCode) ->
-                    actionId.takeIf { it in shortcutActionIds }?.let { keyCode to it }
-                }.toMap()
-            }
-            resetChangedBindingStates(previousBindingsByPad, bindingsByPad)
+            perGameBindingsOverride = bindingsByPad
         }
+        refreshActiveBindings()
         if (deadzone != null) {
             analogDeadzone = deadzone.coerceIn(0, 35) / 100f
         }
@@ -622,17 +643,11 @@ object GamepadManager {
     fun clearPerGameOverrides() {
         if (!perGameBindingsActive) return
         perGameBindingsActive = false
-        val previousBindingsByPad = customBindingsByPad
-        customBindingsByPad = savedGlobalBindingsByPad
-        customShortcutBindingsByPadAndKeyCode = savedGlobalBindingsByPad.mapValues { (_, bindings) ->
-            bindings.entries.mapNotNull { (actionId, keyCode) ->
-                actionId.takeIf { it in shortcutActionIds }?.let { keyCode to it }
-            }.toMap()
-        }
+        perGameBindingsOverride = null
+        refreshActiveBindings()
         analogDeadzone = savedGlobalAnalogDeadzone
         leftStickSensitivity = savedGlobalLeftStickSensitivity
         rightStickSensitivity = savedGlobalRightStickSensitivity
-        resetChangedBindingStates(previousBindingsByPad, savedGlobalBindingsByPad)
     }
 
     fun isEmulationInputEnabled(): Boolean = emulationInputEnabled

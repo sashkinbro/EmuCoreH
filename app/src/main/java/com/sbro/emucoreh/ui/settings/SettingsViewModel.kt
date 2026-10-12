@@ -197,6 +197,7 @@ data class SettingsUiState(
     val pressureModifierAmount: Int = AppPreferences.DEFAULT_PRESSURE_MODIFIER_AMOUNT,
     val gamepadBindings: Map<String, Int> = emptyMap(),
     val gamepadBindingsByPad: Map<Int, Map<String, Int>> = emptyMap(),
+    val gamepadArcadeBindingsByPad: Map<Int, Map<String, Int>> = emptyMap(),
     val appUpdate: AppUpdateUiState = AppUpdateUiState(),
     val frameLimitEnabled: Boolean = true,
     val floatingQuickActionsEnabled: Boolean = false,
@@ -379,6 +380,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             pressureModifierAmount = snapshot.pressureModifierAmount,
             gamepadBindings = snapshot.gamepadBindings,
             gamepadBindingsByPad = snapshot.gamepadBindingsByPad,
+            gamepadArcadeBindingsByPad = snapshot.gamepadArcadeBindingsByPad,
             frameLimitEnabled = snapshot.frameLimitEnabled,
             floatingQuickActionsEnabled = snapshot.floatingQuickActionsEnabled,
             vSyncEnabled = snapshot.vSyncEnabled,
@@ -842,21 +844,21 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         )
     }
 
-    fun setGamepadBinding(padIndex: Int, actionId: String, keyCode: Int) {
+    fun setGamepadBinding(padIndex: Int, actionId: String, keyCode: Int, arcade: Boolean = false) {
         viewModelScope.launch {
-            preferences.setGamepadBinding(padIndex, actionId, keyCode)
+            preferences.setGamepadBinding(padIndex, actionId, keyCode, arcade)
         }
     }
 
-    fun clearGamepadBinding(padIndex: Int, actionId: String) {
+    fun clearGamepadBinding(padIndex: Int, actionId: String, arcade: Boolean = false) {
         viewModelScope.launch {
-            preferences.clearGamepadBinding(padIndex, actionId)
+            preferences.clearGamepadBinding(padIndex, actionId, arcade)
         }
     }
 
-    fun resetGamepadBindingsForPad(padIndex: Int) {
+    fun resetGamepadBindingsForPad(padIndex: Int, arcade: Boolean = false) {
         viewModelScope.launch {
-            preferences.resetGamepadBindingsForPad(padIndex)
+            preferences.resetGamepadBindingsForPad(padIndex, arcade)
         }
     }
 
