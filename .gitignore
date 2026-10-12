@@ -22,6 +22,9 @@ core/build/
 /public
 /tools
 
+# Local planning workspace (never commit)
+/docs/
+
 # Signing material
 *.jks
 *.keystore

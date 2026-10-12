@@ -33,6 +33,8 @@ import com.sbro.emucoreh.data.SettingsSnapshot
 import com.sbro.emucoreh.data.AppPreferences.Companion.FPS_OVERLAY_MODE_SIMPLE
 import com.sbro.emucoreh.data.AppPreferences.Companion.FPS_OVERLAY_MODE_DETAILED
 import com.sbro.emucoreh.data.CheatBlock
+import com.sbro.emucoreh.data.DiscSerial
+import com.sbro.emucoreh.data.LearnedSerialRepository
 import com.sbro.emucoreh.data.DisplayCrop
 import com.sbro.emucoreh.data.OverlayControlLayout
 import com.sbro.emucoreh.data.CheatRepository
@@ -2122,17 +2124,29 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch(Dispatchers.IO) {
             val path = currentGamePath
             val metadata = path?.takeIf { it.isNotBlank() }?.let { EmulatorBridge.getGameMetadata(it) }
+            val learned = learnedSerialForCurrentGame()
             val serial = currentGameSerial.takeIf { it.isNotBlank() }
+                ?: learned
                 ?: metadata?.serial?.takeIf { it.isNotBlank() }
                 .orEmpty()
             val crc = currentGameCrc.takeIf { it.isNotBlank() }
                 ?: metadata?.serialWithCrc.extractCrc()
                 .orEmpty()
             val keys = linkedSetOf<String>()
-            metadata?.let { keys.addAll(cheatLookupKeys(it)) }
+            metadata?.let {
+                keys.addAll(
+                    cheatLookupKeys(
+                        it,
+                        listOfNotNull(learned, currentGameSerial.takeIf(String::isNotBlank))
+                    )
+                )
+            }
             if (serial.isNotBlank() && crc.isNotBlank()) keys.add("${serial}_$crc")
             if (crc.isNotBlank()) keys.add(crc)
-            if (serial.isNotBlank()) keys.add(serial)
+            if (serial.isNotBlank()) {
+                keys.add(serial)
+                DiscSerial.normalize(serial)?.let(keys::add)
+            }
             val config = cheatRepository.getGameConfig(
                 gameKeys = keys.toList(),
                 serial = serial,
@@ -2142,6 +2156,9 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 cheatsGameKey = config.gameKey,
                 availableCheats = config.blocks
             )
+            // Packs that were installed or toggled in the manager while the
+            // game was already running have to reach the core as well.
+            syncCheatsForCurrentGame(config.gameKey)
         }
     }
 
@@ -2808,10 +2825,17 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     private fun refreshCurrentGameCheats(
         metadata: com.sbro.emucoreh.core.GameMetadata
     ) {
-        val serial = metadata.serial.orEmpty()
+        val learned = learnedSerialForCurrentGame()
+        val serial = metadata.serial?.takeIf { it.isNotBlank() }
+            ?: learned
+            ?: currentGameSerial.takeIf { it.isNotBlank() }
+            .orEmpty()
         val crc = metadata.serialWithCrc.extractCrc()
         val config = cheatRepository.getGameConfig(
-            gameKeys = cheatLookupKeys(metadata),
+            gameKeys = cheatLookupKeys(
+                metadata,
+                listOfNotNull(learned, currentGameSerial.takeIf(String::isNotBlank))
+            ),
             serial = serial,
             crc = crc
         )
@@ -2822,6 +2846,24 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         if (config != null) {
             cheatRepository.syncActiveCheats(config.gameKey, serial, crc)
         }
+    }
+
+    /**
+     * Product code the library learned from the running core. Container games
+     * (and content URIs) do not expose their serial while scanning, so the
+     * cheat manager files their packs under this value while the launch
+     * metadata alone cannot look them up.
+     */
+    private fun learnedSerialForCurrentGame(): String? {
+        val path = currentGamePath?.takeIf { it.isNotBlank() } ?: return null
+        val fileName = if (path.startsWith("content://")) {
+            DocumentPathResolver.getDisplayName(getApplication(), path)
+        } else {
+            File(path).name
+        }
+        return runCatching {
+            LearnedSerialRepository.forContext(getApplication()).serialFor(fileName)
+        }.getOrNull()
     }
 
     /**
@@ -2838,6 +2880,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     private fun syncCheatsForCurrentGame(gameKeyOverride: String? = null) {
         val state = _uiState.value
         val serial = currentGameSerial.takeIf { it.isNotBlank() }
+            ?: learnedSerialForCurrentGame()
         val crc = currentGameCrc.takeIf { it.isNotBlank() }
         val gameKey = gameKeyOverride
             ?: state.cheatsGameKey
@@ -2857,12 +2900,19 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun cheatLookupKeys(metadata: com.sbro.emucoreh.core.GameMetadata): List<String> {
+    private fun cheatLookupKeys(
+        metadata: com.sbro.emucoreh.core.GameMetadata,
+        extraSerials: Collection<String> = emptyList()
+    ): List<String> {
         val keys = linkedSetOf<String>()
         metadata.serialWithCrc?.trim()?.takeIf { it.isNotBlank() }?.let(keys::add)
         metadata.serialWithCrc.extractSerialAndCrcKey()?.let(keys::add)
         metadata.serialWithCrc.extractCrc()?.let(keys::add)
-        metadata.serial?.trim()?.takeIf { it.isNotBlank() }?.let(keys::add)
+        (listOf(metadata.serial) + extraSerials).forEach { raw ->
+            val value = raw?.trim()?.takeIf { it.isNotBlank() } ?: return@forEach
+            keys += value
+            DiscSerial.normalize(value)?.let { keys += it }
+        }
         metadata.title.trim().takeIf { it.isNotBlank() }?.let(keys::add)
         return keys.toList()
     }

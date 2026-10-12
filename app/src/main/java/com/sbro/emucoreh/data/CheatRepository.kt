@@ -31,6 +31,61 @@ data class CheatFileEntry(
     val blockCount: Int
 )
 
+/**
+ * Cheat packs are filed either under the disc serial (`MK-51035`), the serial
+ * with the disc CRC (`MK-51035_D8B2E8A0`) or the CRC alone. Those spellings
+ * reach the repository from different sources (online catalog, library
+ * metadata, launch metadata), so lookups compare canonical serial/CRC
+ * signatures instead of the exact file name.
+ */
+internal object CheatKeyMatcher {
+    private val crcSuffix = Regex("^(.+?)[\\s_+-]+([0-9A-F]{8})$")
+    private val crcOnly = Regex("^[0-9A-F]{8}$")
+    private val nonSerialChars = Regex("[^A-Z0-9]")
+
+    private data class CheatKey(val serial: String, val signature: String, val crc: String?)
+
+    /** Splits a key into its serial text, an alphanumeric signature and an optional CRC. */
+    private fun decompose(raw: String): CheatKey? {
+        val value = raw.trim().uppercase(Locale.US)
+        if (value.isBlank()) return null
+        val match = crcSuffix.matchEntire(value)
+        val serial = (match?.groupValues?.getOrNull(1) ?: value).trim()
+        val signature = serial.replace(nonSerialChars, "")
+        if (signature.isBlank()) return null
+        return CheatKey(serial = serial, signature = signature, crc = match?.groupValues?.getOrNull(2))
+    }
+
+    private fun serialsCompatible(a: String, b: String): Boolean {
+        if (a.uppercase(Locale.US).replace(nonSerialChars, "") ==
+            b.uppercase(Locale.US).replace(nonSerialChars, "")) {
+            return true
+        }
+        val normalizedA = DiscSerial.normalize(a)?.replace('_', '-')
+        val normalizedB = DiscSerial.normalize(b)?.replace('_', '-')
+        return normalizedA != null && normalizedB != null && normalizedA == normalizedB
+    }
+
+    fun matches(candidateKey: String, fileNameKey: String): Boolean {
+        val candidate = decompose(candidateKey) ?: return false
+        val file = decompose(fileNameKey) ?: return false
+        val candidateCrc = candidate.crc ?: candidate.signature.takeIf(crcOnly::matches)
+        val fileCrc = file.crc ?: file.signature.takeIf(crcOnly::matches)
+        return when {
+            // Both sides carry a CRC: only the same disc decodes both files.
+            candidateCrc != null && fileCrc != null ->
+                candidateCrc == fileCrc &&
+                    (candidate.signature.matches(crcOnly) || file.signature.matches(crcOnly) ||
+                        serialsCompatible(candidate.serial, file.serial))
+            // A CRC-only key cannot be verified against a serial-only name.
+            candidateCrc != null && candidate.signature.matches(crcOnly) -> false
+            // Serial-only names match a serial-qualified key no matter which
+            // side spelled the CRC out.
+            else -> serialsCompatible(candidate.serial, file.serial)
+        }
+    }
+}
+
 class CheatRepository(private val context: Context) {
     private val preferences = AppPreferences(context)
     private val importedDir = EmulatorStorage.importedCheatsDir(context)
@@ -317,7 +372,16 @@ class CheatRepository(private val context: Context) {
             matches.firstOrNull { it.name == candidate.name }?.let { return it }
             matches.firstOrNull()?.let { return it }
         }
-        return exact
+        // Last resort: compare canonical serial/CRC signatures so a pack filed
+        // as "MK-51035_D8B2E8A0" is still found by the plain serial (and vice
+        // versa) no matter which source produced the key.
+        return importedDir.listFiles { file ->
+            file.isFile && file.extension.equals("pnach", ignoreCase = true) &&
+                CheatKeyMatcher.matches(gameKey, file.nameWithoutExtension)
+        }.orEmpty()
+            .sortedBy { it.name.lowercase(Locale.US) }
+            .firstOrNull()
+            ?: exact
     }
 
     private fun loadEnabledIds(): JSONObject {
