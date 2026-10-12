@@ -18,7 +18,7 @@
     <string name="home_game_count">إجمالي الألعاب: %d</string>
     <string name="home_recent_title">تم فتحها مؤخرًا</string>
     <string name="home_shelf_games_counter">%1$d من %2$d</string>
-    <string name="home_shelf_enable_3d_title">استخدام أغلفة ثلاثية الأبعاد 3D</string>
+    <string name="home_shelf_enable_3d_title">استخدام أغلفة الألعاب في العرض الدوار</string>
     <string name="home_shelf_enable_3d_action">تفعيل</string>
     <string name="home_sort_title_asc">العنوان أ-ي</string>
     <string name="home_sort_title_desc">العنوان ي-أ</string>
@@ -185,19 +185,6 @@
     <string name="settings_bios_picker_desc">اختر مجلدًا يحتوي على ملفات BIOS الخاصة بـ Dreamcast (dc_boot.bin وdc_flash.bin) ومجموعات BIOS للأركيد (naomi.zip وnaomi2.zip وawbios.zip).</string>
     <string name="settings_bios_picker_action">اختيار مجلد</string>
     <string name="settings_game_path">مجلد الألعاب</string>
-    <string name="settings_cover_download_url">رابط تنزيل الأغلفة</string>
-    <string name="settings_cover_art_style">نمط الغلاف</string>
-    <string name="settings_cover_art_style_off">إيقاف</string>
-    <string name="settings_cover_art_style_flat">مسطح</string>
-    <string name="settings_cover_art_style_3d">صندوق 3D</string>
-    <string name="settings_cover_download_url_dialog_title">مصدر أغلفة مخصص</string>
-    <string name="settings_cover_download_url_builtin">المصدر المدمج</string>
-    <string name="settings_cover_download_url_custom">مصدر مخصص</string>
-    <string name="settings_cover_download_url_disabled">معطل</string>
-    <string name="settings_cover_download_url_placeholder">https://example.com/covers/default https://example.com/covers/3d</string>
-    <string name="settings_cover_download_url_use_default">استخدام الافتراضي</string>
-    <string name="settings_cover_download_url_invalid">أدخل عنوان HTTP أو HTTPS صالحًا.</string>
-    <string name="settings_cover_download_url_copied">تم نسخ روابط المثال.</string>
     <string name="settings_not_set">غير محدد</string>
     <string name="settings_about">حول</string>
     <string name="settings_version">الإصدار</string>
@@ -504,6 +491,8 @@
     <string name="settings_updates_rate_limit_error">التحقق من التحديثات غير متاح مؤقتًا. حاول مرة أخرى خلال %1$d دقيقة.</string>
     <string name="onboarding_status_custom_folder">تم تحديد مجلد مخصص</string>
     <string name="settings_emulator_data_path">مجلد المحاكي</string>
+    <string name="settings_fetch_boxart">جلب أغلفة الألعاب</string>
+    <string name="settings_fetch_boxart_desc">تنزيل أغلفة الألعاب من مصادر Flycast: صور GD-ROM من القرص، وأغلفة ألعاب الأركيد من flycast-content و TheGamesDB.</string>
     <string name="shell_texture_manager">مدير الإكساءات</string>
     <string name="texture_manager_title">مدير الإكساءات</string>
     <string name="texture_manager_import_zip">استيراد ملف ZIP</string>
@@ -2139,7 +2128,7 @@
     <string name="naomi_guide_step_gdrom">ألعاب GD-ROM — تحتاج أيضًا إلى القرص بعد استخراجه من الأرشيف: بجانب ikaruga.zip أنشئ مجلدًا باسم ikaruga وضع فيه gdl-0010.chd كملف عادي. ملف CHD داخل zip لا يُقرأ؛ ونسخ GDI/CUE لأقراص Naomi لا تعمل.</string>
     <string name="naomi_guide_step_launch">التشغيل — شغّل مجموعة ROM من المكتبة. لا تشغّل الملفات المستخرجة من الأرشيف: مجلد ROM عادي لا يقلع.</string>
     <string name="naomi_guide_step_controls">التحكم — زر Select يُدخل عملة وStart يبدأ اللعبة. مع يد التحكم يفتح L3 قائمة Test وR3 قائمة Service. الوضع المجاني مفعّل افتراضيًا.</string>
-    <string name="naomi_guide_step_covers">الأغلفة — تُحمّل من كتالوج EmuCoreH حسب اسم مجموعة ROM. الألعاب بلا صورة تعرض بطاقة بالاسم.</string>
+    <string name="naomi_guide_step_covers">الأغلفة - يتم جلب الصور من مصادر Flycast حسب اسم مجموعة ROM ورمز المنتج واسم اللعبة. الألعاب بدون صور تُعرض على شكل بطاقة تحمل اسمها.</string>
     <string name="naomi_guide_settings_desc">إرشادات BIOS ومجموعة ROM وGD-ROM والتشغيل والتحكم.</string>
     <string name="settings_fps_metric_version">الإصدار</string>
     <string name="settings_stick_toggle_button">تبديل العصا</string>

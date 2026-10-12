@@ -43,17 +43,13 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 
-/** Portrait box-art canvas; images retain their original proportions within it. */
-val LocalGameCoverAspectRatio = androidx.compose.runtime.staticCompositionLocalOf { 2f / 3f }
+/**
+ * Square box-art tile, like Flycast's box art game list: the artwork keeps its
+ * own proportions and is fitted inside the tile without being cropped.
+ */
+val LocalGameCoverAspectRatio = androidx.compose.runtime.staticCompositionLocalOf { 1f }
 val GameCoverAspectRatio: Float
     @Composable get() = LocalGameCoverAspectRatio.current
-
-internal fun isGenerated3dCover(coverPath: String?): Boolean =
-    coverPath?.replace('\\', '/')?.let { path ->
-        path.contains("/game-covers/igdb-psp-v13/") && path.endsWith("_3d.webp") ||
-            path.startsWith("https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/") &&
-            path.contains("/covers/3d/") && path.endsWith(".webp")
-    } == true
 
 private const val COVER_LOAD_MAX_ATTEMPTS = 4
 private const val COVER_LOAD_RETRY_DELAY_MS = 750L

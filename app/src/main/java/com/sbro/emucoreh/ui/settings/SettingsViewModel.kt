@@ -152,8 +152,7 @@ data class SettingsUiState(
     val gamePaths: List<String> = emptyList(),
     val emulatorDataPath: String? = null,
     val sdCardDataPath: String? = null,
-    val coverDownloadBaseUrl: String? = null,
-    val coverArtStyle: Int = AppPreferences.COVER_ART_STYLE_3D,
+    val fetchBoxart: Boolean = true,
     val biosValid: Boolean = false,
     val setupComplete: Boolean = false,
     val appVersion: String = BuildConfig.VERSION_NAME,
@@ -341,8 +340,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             gamePath = snapshot.gamePath,
             gamePaths = snapshot.gamePaths,
             emulatorDataPath = snapshot.emulatorDataPath,
-            coverDownloadBaseUrl = snapshot.coverDownloadBaseUrl,
-            coverArtStyle = snapshot.coverArtStyle,
+            fetchBoxart = snapshot.fetchBoxart,
             setupComplete = snapshot.setupComplete,
             overlayScale = snapshot.overlayScale,
             overlayOpacity = snapshot.overlayOpacity,
@@ -1143,20 +1141,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private fun flycastSystemDir(): String =
         EmulatorStorage.flycastSystemDir(getApplication()).absolutePath
 
-    fun setCoverDownloadBaseUrl(url: String?) {
+    fun setFetchBoxart(enabled: Boolean) {
         viewModelScope.launch {
-            preferences.setCoverDownloadBaseUrl(url)
-            CoverArtRepository(getApplication()).clearCache()
+            // Cached files survive the toggle; only the in-memory bitmaps are
+            // dropped so the new state is reflected immediately.
             clearCoverImageMemoryCache()
-        }
-    }
-
-    fun setCoverArtStyle(style: Int) {
-        viewModelScope.launch {
-            // Flat and 3D covers have separate cache files. Keep both so a style
-            // change cannot delete files while HomeViewModel starts loading them.
-            clearCoverImageMemoryCache()
-            preferences.setCoverArtStyle(style)
+            preferences.setFetchBoxart(enabled)
         }
     }
 

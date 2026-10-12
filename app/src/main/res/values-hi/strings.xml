@@ -18,7 +18,7 @@
     <string name="home_game_count">कुल गेम्स: %d</string>
     <string name="home_recent_title">हाल ही में खोले गए</string>
     <string name="home_shelf_games_counter">%2$d में से %1$d</string>
-    <string name="home_shelf_enable_3d_title">हिंडोला (carousel) में 3D कवर का उपयोग करें</string>
+    <string name="home_shelf_enable_3d_title">कैरोसेल में बॉक्स आर्ट इस्तेमाल करें</string>
     <string name="home_shelf_enable_3d_action">सक्षम करें</string>
     <string name="home_sort_title_asc">शीर्षक A-Z</string>
     <string name="home_sort_title_desc">शीर्षक Z-A</string>
@@ -154,19 +154,6 @@
     <string name="settings_bios_picker_desc">Dreamcast BIOS (dc_boot.bin, dc_flash.bin) और आर्केड BIOS सेट (naomi.zip, naomi2.zip, awbios.zip) वाला फ़ोल्डर चुनें।</string>
     <string name="settings_bios_picker_action">फ़ोल्डर चुनें</string>
     <string name="settings_game_path">गेम्स फ़ोल्डर</string>
-    <string name="settings_cover_download_url">कवर डाउनलोड URL</string>
-    <string name="settings_cover_art_style">कवर स्टाइल</string>
-    <string name="settings_cover_art_style_off">बंद</string>
-    <string name="settings_cover_art_style_flat">फ्लैट</string>
-    <string name="settings_cover_art_style_3d">3D बॉक्स</string>
-    <string name="settings_cover_download_url_dialog_title">कस्टम कवर स्रोत</string>
-    <string name="settings_cover_download_url_builtin">अंतर्निर्मित स्रोत</string>
-    <string name="settings_cover_download_url_custom">कस्टम स्रोत</string>
-    <string name="settings_cover_download_url_disabled">अक्षम किया गया</string>
-    <string name="settings_cover_download_url_placeholder">https://example.com/covers/default https://example.com/covers/3d</string>
-    <string name="settings_cover_download_url_use_default">डिफ़ॉल्ट का उपयोग करें</string>
-    <string name="settings_cover_download_url_invalid">एक वैध HTTP या HTTPS URL दर्ज करें।</string>
-    <string name="settings_cover_download_url_copied">उदाहरण URL कॉपी किए गए।</string>
     <string name="settings_not_set">सेट नहीं है</string>
     <string name="settings_about">के बारे में</string>
     <string name="settings_version">संस्करण</string>
@@ -504,6 +491,8 @@
     <string name="settings_updates_rate_limit_error">अपडेट की जांच अस्थायी रूप से अनुपलब्ध है। %1$d मिनट में फिर से प्रयास करें।</string>
     <string name="onboarding_status_custom_folder">कस्टम फ़ोल्डर चुना गया</string>
     <string name="settings_emulator_data_path">एमुलेटर फ़ोल्डर</string>
+    <string name="settings_fetch_boxart">बॉक्स आर्ट प्राप्त करें</string>
+    <string name="settings_fetch_boxart_desc">Flycast स्रोतों से बॉक्स आर्ट डाउनलोड करें: डिस्क से GD-ROM आर्टवर्क, flycast-content आर्केड कवर और TheGamesDB।</string>
     <string name="shell_texture_manager">टेक्सचर मैनेजर</string>
     <string name="texture_manager_title">टेक्सचर मैनेजर</string>
     <string name="texture_manager_import_zip">ZIP आयात करें</string>
@@ -2131,7 +2120,7 @@
     <string name="naomi_guide_step_gdrom">GD-ROM गेम — डिस्क भी चाहिए, आर्काइव से निकाली हुई: ikaruga.zip के पास ikaruga फ़ोल्डर बनाएँ और उसमें gdl-0010.chd सामान्य फ़ाइल के रूप में रखें। zip में छोड़ा CHD नहीं पढ़ा जाता; Naomi डिस्क के GDI/CUE डंप नहीं चलते।</string>
     <string name="naomi_guide_step_launch">लॉन्च — ROM सेट को लाइब्रेरी से शुरू करें। आर्काइव से निकाली गई फ़ाइलें न चलाएँ: सादा ROM फ़ोल्डर बूट नहीं होता।</string>
     <string name="naomi_guide_step_controls">कंट्रोल — Select सिक्का डालता है और Start गेम शुरू करता है। गेमपैड पर L3 Test मेन्यू और R3 Service मेन्यू खोलता है। फ्री प्ले डिफ़ॉल्ट रूप से चालू है।</string>
-    <string name="naomi_guide_step_covers">कवर — ROM सेट के नाम से EmuCoreH कैटलॉग से डाउनलोड होते हैं। आर्टवर्क न होने पर नाम वाला कार्ड दिखता है।</string>
+    <string name="naomi_guide_step_covers">कवर - आर्टवर्क Flycast स्रोतों से ROM सेट नाम, प्रोडक्ट कोड और गेम शीर्षक के अनुसार प्राप्त किया जाता है। बिना आर्टवर्क वाले गेम अपने नाम के साथ कार्ड दिखाते हैं।</string>
     <string name="naomi_guide_settings_desc">BIOS, ROM सेट, GD-ROM, लॉन्च और कंट्रोल के निर्देश।</string>
     <string name="settings_fps_metric_version">संस्करण</string>
     <string name="settings_stick_toggle_button">स्टिक बदलें</string>

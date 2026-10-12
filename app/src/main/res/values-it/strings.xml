@@ -18,7 +18,7 @@
     <string name="home_game_count">Giochi totali: %d</string>
     <string name="home_recent_title">Aperti di recente</string>
     <string name="home_shelf_games_counter">%1$d di %2$d</string>
-    <string name="home_shelf_enable_3d_title">Usa copertine 3D nel carosello</string>
+    <string name="home_shelf_enable_3d_title">Usa copertine nel carosello</string>
     <string name="home_shelf_enable_3d_action">Abilita</string>
     <string name="home_sort_title_asc">Titolo A-Z</string>
     <string name="home_sort_title_desc">Titolo Z-A</string>
@@ -154,19 +154,6 @@
     <string name="settings_bios_picker_desc">Scegli una cartella con i tuoi file BIOS Dreamcast (dc_boot.bin, dc_flash.bin) e i set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="settings_bios_picker_action">Scegli cartella</string>
     <string name="settings_game_path">Cartella giochi</string>
-    <string name="settings_cover_download_url">URL download copertine</string>
-    <string name="settings_cover_art_style">Stile copertina</string>
-    <string name="settings_cover_art_style_off">Disattivato</string>
-    <string name="settings_cover_art_style_flat">Piatta</string>
-    <string name="settings_cover_art_style_3d">Scatola 3D</string>
-    <string name="settings_cover_download_url_dialog_title">Fonte copertina personalizzata</string>
-    <string name="settings_cover_download_url_builtin">Fonte integrata</string>
-    <string name="settings_cover_download_url_custom">Fonte personalizzata</string>
-    <string name="settings_cover_download_url_disabled">Disabilitato</string>
-    <string name="settings_cover_download_url_placeholder">https://example.com/covers/default https://example.com/covers/3d</string>
-    <string name="settings_cover_download_url_use_default">Usa predefinito</string>
-    <string name="settings_cover_download_url_invalid">Inserisci un URL HTTP o HTTPS valido.</string>
-    <string name="settings_cover_download_url_copied">URL di esempio copiati.</string>
     <string name="settings_not_set">Non impostato</string>
     <string name="settings_about">Informazioni</string>
     <string name="settings_version">Versione</string>
@@ -504,6 +491,8 @@
     <string name="settings_updates_rate_limit_error">Controllo degli aggiornamenti temporaneamente non disponibile. Riprova tra %1$d minuti.</string>
     <string name="onboarding_status_custom_folder">Cartella personalizzata selezionata</string>
     <string name="settings_emulator_data_path">Cartella dell\'emulatore</string>
+    <string name="settings_fetch_boxart">Scarica copertine</string>
+    <string name="settings_fetch_boxart_desc">Scarica le copertine dalle fonti Flycast: artwork GD-ROM dal disco, copertine arcade flycast-content e TheGamesDB.</string>
     <string name="shell_texture_manager">Gestore Texture</string>
     <string name="texture_manager_title">Gestore Texture</string>
     <string name="texture_manager_import_zip">Importa ZIP</string>
@@ -2131,7 +2120,7 @@
     <string name="naomi_guide_step_gdrom">Giochi GD-ROM — serve anche il disco, estratto dal suo archivio: accanto a ikaruga.zip crea una cartella ikaruga e inserisci gdl-0010.chd come file normale. Un CHD lasciato in uno zip non viene letto; i dump GDI/CUE dei dischi Naomi non funzionano.</string>
     <string name="naomi_guide_step_launch">Avvio — avvia il set ROM dalla libreria. Non avviare i file estratti dall’archivio: una semplice cartella di ROM non parte.</string>
     <string name="naomi_guide_step_controls">Comandi — Select inserisce una moneta e Start avvia la partita. Con un controller, L3 apre il menu Test e R3 il menu Service. Il free play è attivo per impostazione predefinita.</string>
-    <string name="naomi_guide_step_covers">Copertine — scaricate dal catalogo EmuCoreH in base al nome del set ROM. Senza artwork viene mostrata una scheda con il nome.</string>
+    <string name="naomi_guide_step_covers">Copertine - l\'artwork viene scaricato dalle fonti Flycast per nome del set ROM, codice prodotto e titolo del gioco. I giochi senza artwork mostrano una scheda con il nome.</string>
     <string name="naomi_guide_settings_desc">Istruzioni per BIOS, set ROM, GD-ROM, avvio e comandi.</string>
     <string name="settings_fps_metric_version">Versione</string>
     <string name="settings_stick_toggle_button">Alterna stick</string>

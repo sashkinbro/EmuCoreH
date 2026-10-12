@@ -21,7 +21,7 @@
     <string name="home_game_count">Total games: %d</string>
     <string name="home_recent_title">Recently opened</string>
     <string name="home_shelf_games_counter">%1$d of %2$d</string>
-    <string name="home_shelf_enable_3d_title">Use 3D covers in carousel</string>
+    <string name="home_shelf_enable_3d_title">Use box art in carousel</string>
     <string name="home_shelf_enable_3d_action">Enable</string>
     <string name="home_sort_title_asc">Title A-Z</string>
     <string name="home_sort_title_desc">Title Z-A</string>
@@ -215,19 +215,8 @@
     <string name="settings_game_folders_count">%1$d folders selected</string>
     <string name="game_folders_remove">Remove folder</string>
     <string name="settings_emulator_data_path">Emulator Folder</string>
-    <string name="settings_cover_download_url">Cover Download URL</string>
-    <string name="settings_cover_art_style">Cover Style</string>
-    <string name="settings_cover_art_style_off">Off</string>
-    <string name="settings_cover_art_style_flat">Flat</string>
-    <string name="settings_cover_art_style_3d">3D Box</string>
-    <string name="settings_cover_download_url_dialog_title">Custom cover source</string>
-    <string name="settings_cover_download_url_builtin">Built-in source</string>
-    <string name="settings_cover_download_url_custom">Custom source</string>
-    <string name="settings_cover_download_url_disabled">Disabled</string>
-    <string name="settings_cover_download_url_placeholder">https://example.com/covers/default https://example.com/covers/3d</string>
-    <string name="settings_cover_download_url_use_default">Use default</string>
-    <string name="settings_cover_download_url_invalid">Enter a valid HTTP or HTTPS URL.</string>
-    <string name="settings_cover_download_url_copied">Example URLs copied.</string>
+    <string name="settings_fetch_boxart">Fetch Box Art</string>
+    <string name="settings_fetch_boxart_desc">Download box art from Flycast sources: in-disc GD-ROM artwork, flycast-content arcade covers and TheGamesDB.</string>
     <string name="settings_not_set">Not set</string>
     <string name="settings_about">About</string>
     <string name="settings_version">Version</string>
@@ -2162,7 +2151,7 @@
     <string name="naomi_guide_step_gdrom">GD-ROM games — also need the disc, extracted from its archive: next to ikaruga.zip create a folder named ikaruga and put gdl-0010.chd inside as a normal file. A CHD left inside a zip is not read; GDI or CUE dumps of Naomi discs do not work.</string>
     <string name="naomi_guide_step_launch">Launch — start the ROM set from the library. Never launch files extracted from the archive: a plain folder of ROMs cannot boot.</string>
     <string name="naomi_guide_step_controls">Controls — Select inserts a coin and Start begins the game. With a gamepad, L3 opens the Test menu and R3 the Service menu. Free play is on by default.</string>
-    <string name="naomi_guide_step_covers">Covers — artwork is downloaded from the EmuCoreH catalogue by ROM set name. Titles without artwork show a card with their name.</string>
+    <string name="naomi_guide_step_covers">Covers - artwork is fetched from the Flycast sources by ROM set name, product code and game title. Titles without artwork show a card with their name.</string>
     <string name="naomi_guide_settings_desc">BIOS, ROM set, GD-ROM, launch and control instructions.</string>
 
     <!-- Arcade light gun controls -->

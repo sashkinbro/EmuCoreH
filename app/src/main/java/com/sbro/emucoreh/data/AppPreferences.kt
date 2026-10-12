@@ -99,8 +99,7 @@ data class SettingsSnapshot(
     val gamePath: String? = null,
     val gamePaths: List<String> = emptyList(),
     val emulatorDataPath: String? = null,
-    val coverDownloadBaseUrl: String? = null,
-    val coverArtStyle: Int = AppPreferences.COVER_ART_STYLE_3D,
+    val fetchBoxart: Boolean = true,
     val setupComplete: Boolean = false,
     val overlayScale: Int = 100,
     val overlayOpacity: Int = AppPreferences.DEFAULT_OVERLAY_OPACITY,
@@ -284,9 +283,6 @@ class AppPreferences(private val context: Context) {
         const val ARCADE_DEVICE_LIGHT_GUN = 2
         const val DEFAULT_GYRO_SENSITIVITY = 100
         const val DEFAULT_GYRO_SMOOTHING = 45
-        const val COVER_ART_STYLE_DISABLED = -1
-        const val COVER_ART_STYLE_DEFAULT = 0
-        const val COVER_ART_STYLE_3D = 1
         const val FPS_OVERLAY_MODE_SIMPLE = 0
         const val FPS_OVERLAY_MODE_DETAILED = 1
         const val FPS_OVERLAY_CORNER_TOP_LEFT = 0
@@ -382,7 +378,7 @@ class AppPreferences(private val context: Context) {
         private val GAME_PATH = stringPreferencesKey("game_path")
         private val GAME_PATHS = stringPreferencesKey("game_paths")
         private val EMULATOR_DATA_PATH = stringPreferencesKey("emulator_data_path")
-        private val COVER_DOWNLOAD_BASE_URL = stringPreferencesKey("cover_download_base_url")
+        private val FETCH_BOXART = booleanPreferencesKey("fetch_boxart")
         private val LEGACY_COVER_ART_STYLE = intPreferencesKey("cover_art_style")
         private val COVER_ART_STYLE = intPreferencesKey("psp_cover_art_style_v2")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
@@ -1188,56 +1184,34 @@ class AppPreferences(private val context: Context) {
         }
     }
 
-    val coverDownloadBaseUrl: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[COVER_DOWNLOAD_BASE_URL]
+    val fetchBoxart: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        readFetchBoxart(prefs)
     }
 
-    suspend fun setCoverDownloadBaseUrl(url: String?) {
+    suspend fun setFetchBoxart(enabled: Boolean) {
         context.dataStore.edit { prefs ->
-            if (url.isNullOrBlank()) {
-                prefs.remove(COVER_DOWNLOAD_BASE_URL)
-            } else {
-                prefs[COVER_DOWNLOAD_BASE_URL] = url.trim().trimEnd('/')
-            }
+            prefs[FETCH_BOXART] = enabled
         }
     }
 
-    fun getCoverDownloadBaseUrlSync(): String? {
-        return kotlinx.coroutines.runBlocking {
-            context.dataStore.data.map { it[COVER_DOWNLOAD_BASE_URL] }.first()
-        }
-    }
-
-    private fun readCoverArtStyle(prefs: Preferences): Int = when (prefs[COVER_ART_STYLE]) {
-        COVER_ART_STYLE_DISABLED -> COVER_ART_STYLE_DISABLED
-        COVER_ART_STYLE_DEFAULT -> COVER_ART_STYLE_DEFAULT
-        COVER_ART_STYLE_3D -> COVER_ART_STYLE_3D
-        // Migrate old automatic artwork to the 3D style once, preserving disabled artwork.
-        else -> if (prefs[LEGACY_COVER_ART_STYLE] == COVER_ART_STYLE_DISABLED)
-            COVER_ART_STYLE_DISABLED else COVER_ART_STYLE_3D
-    }
-
-    val coverArtStyle: Flow<Int> = context.dataStore.data.map { prefs ->
-        readCoverArtStyle(prefs)
-    }
-
-    suspend fun setCoverArtStyle(style: Int) {
-        context.dataStore.edit { prefs ->
-            prefs[COVER_ART_STYLE] = when (style) {
-                COVER_ART_STYLE_DISABLED -> COVER_ART_STYLE_DISABLED
-                COVER_ART_STYLE_3D -> COVER_ART_STYLE_3D
-                else -> COVER_ART_STYLE_DEFAULT
-            }
-        }
-    }
-
-    fun getCoverArtStyleSync(): Int {
+    fun getFetchBoxartSync(): Boolean {
         return kotlinx.coroutines.runBlocking {
             context.dataStore.data.map { prefs ->
-                readCoverArtStyle(prefs)
+                readFetchBoxart(prefs)
             }.first()
         }
     }
+
+    /**
+     * The box art style preference (3D/flat/off) is gone: box art now comes
+     * from the official Flycast sources. Only the on/off state is kept, with
+     * the old "off" value migrated to a disabled fetch toggle.
+     */
+    private fun readFetchBoxart(prefs: Preferences): Boolean =
+        prefs[FETCH_BOXART] ?: (readLegacyCoverArtStyle(prefs) != -1)
+
+    private fun readLegacyCoverArtStyle(prefs: Preferences): Int =
+        prefs[COVER_ART_STYLE] ?: prefs[LEGACY_COVER_ART_STYLE] ?: 1
 
     val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[ONBOARDING_COMPLETED] ?: false
@@ -1357,8 +1331,7 @@ class AppPreferences(private val context: Context) {
                 gamePath = readGamePaths(prefs).firstOrNull(),
                 gamePaths = readGamePaths(prefs),
                 emulatorDataPath = prefs[EMULATOR_DATA_PATH],
-                coverDownloadBaseUrl = prefs[COVER_DOWNLOAD_BASE_URL],
-                coverArtStyle = readCoverArtStyle(prefs),
+                fetchBoxart = readFetchBoxart(prefs),
                 setupComplete = prefs[ONBOARDING_COMPLETED] ?: false,
                 overlayScale = prefs[OVERLAY_SCALE] ?: 100,
                 overlayOpacity = (prefs[OVERLAY_OPACITY] ?: DEFAULT_OVERLAY_OPACITY)
@@ -2655,8 +2628,7 @@ class AppPreferences(private val context: Context) {
             put("gamePath", prefs[GAME_PATH])
             put("gamePaths", JSONArray(readGamePaths(prefs)))
             put("emulatorDataPath", prefs[EMULATOR_DATA_PATH])
-            put("coverDownloadBaseUrl", prefs[COVER_DOWNLOAD_BASE_URL])
-            put("coverArtStyle", readCoverArtStyle(prefs))
+            put("fetchBoxart", readFetchBoxart(prefs))
             put("onboardingCompleted", prefs[ONBOARDING_COMPLETED] ?: false)
             put("languageTag", prefs[LANGUAGE_TAG])
             put("aspectRatio", normalizeAspectRatioPreference(prefs[ASPECT_RATIO]))
@@ -2881,14 +2853,12 @@ class AppPreferences(private val context: Context) {
             json.optString("emulatorDataPath").takeIf { it.isNotBlank() }?.let {
                 prefs[EMULATOR_DATA_PATH] = it
             } ?: prefs.remove(EMULATOR_DATA_PATH)
-            json.optString("coverDownloadBaseUrl").takeIf { it.isNotBlank() }?.let {
-                prefs[COVER_DOWNLOAD_BASE_URL] = it.trim().trimEnd('/')
-            } ?: prefs.remove(COVER_DOWNLOAD_BASE_URL)
-            prefs[COVER_ART_STYLE] = when (json.optInt("coverArtStyle", COVER_ART_STYLE_3D)) {
-                COVER_ART_STYLE_DISABLED -> COVER_ART_STYLE_DISABLED
-                COVER_ART_STYLE_3D -> COVER_ART_STYLE_3D
-                else -> COVER_ART_STYLE_DEFAULT
-            }
+            // Backups from the custom cover source era stored a style value
+            // (-1 = off); they map to the new fetch toggle.
+            prefs[FETCH_BOXART] = json.optBoolean(
+                "fetchBoxart",
+                json.optInt("coverArtStyle", 1) != -1
+            )
             prefs[ONBOARDING_COMPLETED] = json.optBoolean("onboardingCompleted", false)
             languageTag?.let { prefs[LANGUAGE_TAG] = it } ?: prefs.remove(LANGUAGE_TAG)
             prefs[ASPECT_RATIO] = normalizeAspectRatioPreference(json.optInt("aspectRatio", 1))

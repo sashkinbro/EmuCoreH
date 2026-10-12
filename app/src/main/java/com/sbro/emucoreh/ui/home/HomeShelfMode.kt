@@ -43,7 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.RectangleShape
-import com.sbro.emucoreh.ui.common.isGenerated3dCover
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -90,7 +89,7 @@ internal fun HomeShelfMode(
     horizontalInset: Dp,
     modifier: Modifier = Modifier,
     onExitShelfMode: () -> Unit,
-    onEnable3dCoverArt: () -> Unit,
+    onEnableBoxart: () -> Unit,
     onGameClick: (GameItem) -> Unit,
     onLongClickStart: (GameItem) -> Unit,
     onLongClickContinue: (GameItem) -> Unit,
@@ -185,7 +184,7 @@ internal fun HomeShelfMode(
                             .fillMaxWidth()
                             .padding(horizontal = horizontalInset)
                             .padding(top = 2.dp, bottom = 4.dp),
-                        onEnable3dCoverArt = onEnable3dCoverArt
+                        onEnableBoxart = onEnableBoxart
                     )
                 }
                 Box(
@@ -480,7 +479,7 @@ private fun ShelfCoverCard(
     val verticalCoverPadding = if (isActive) 6.dp else 4.dp
     val shelfCoverPath = rememberShelfCoverPath(game, isCoverArtDisabled)
     // Flat covers are plain rectangles so their corners are never clipped.
-    val shape = if (isGenerated3dCover(game.coverArtPath) || !shelfCoverPath.isNullOrBlank()) {
+    val shape = if (!shelfCoverPath.isNullOrBlank()) {
         RectangleShape
     } else {
         neonShape(24.dp)
@@ -599,7 +598,7 @@ private fun rememberShelfCoverPath(game: GameItem, isCoverArtDisabled: Boolean):
 @Composable
 private fun ShelfCoverArtPrompt(
     modifier: Modifier = Modifier,
-    onEnable3dCoverArt: () -> Unit
+    onEnableBoxart: () -> Unit
 ) {
     Surface(
         modifier = modifier,
@@ -623,7 +622,7 @@ private fun ShelfCoverArtPrompt(
             )
             FilledTonalButton(
                 shape = neonButtonShape(),
-                onClick = onEnable3dCoverArt,
+                onClick = onEnableBoxart,
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = Color(0xFF252C38),
                     contentColor = Color.White.copy(alpha = 0.92f)

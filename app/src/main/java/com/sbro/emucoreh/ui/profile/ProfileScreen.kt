@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -1971,9 +1972,9 @@ private fun FavoriteGamesShowcase(
                         decodeWidth = 220,
                         decodeHeight = 320,
                         modifier = Modifier
-                            .size(width = 56.dp, height = 82.dp)
+                            .size(width = 56.dp, height = 56.dp)
                             .clip(neonShape(6.dp)),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Fit
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -2322,9 +2323,9 @@ private fun ProShowcaseGameChoice(
                 decodeWidth = 180,
                 decodeHeight = 260,
                 modifier = Modifier
-                    .size(width = 42.dp, height = 58.dp)
+                    .size(width = 42.dp, height = 42.dp)
                     .clip(neonShape(6.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Fit
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -2820,9 +2821,9 @@ private fun GamePlayStatRow(
                     decodeWidth = 300,
                     decodeHeight = 450,
                     modifier = Modifier
-                        .size(width = 84.dp, height = 118.dp)
+                        .size(width = 84.dp, height = 84.dp)
                         .clip(neonShape(6.dp)),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Fit
                 )
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
@@ -3134,9 +3135,9 @@ private fun RecentGamesCard(
                                 decodeHeight = 460,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(136.dp)
+                                    .aspectRatio(1f)
                                     .clip(neonShape(5.dp)),
-                                contentScale = ContentScale.Crop
+                                contentScale = ContentScale.Fit
                             )
                         }
                         Text(

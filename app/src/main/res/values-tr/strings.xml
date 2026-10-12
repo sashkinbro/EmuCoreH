@@ -18,7 +18,7 @@
     <string name="home_game_count">Toplam oyun: %d</string>
     <string name="home_recent_title">Son açılanlar</string>
     <string name="home_shelf_games_counter">%1$d / %2$d</string>
-    <string name="home_shelf_enable_3d_title">Karuselde 3D kapakları kullan</string>
+    <string name="home_shelf_enable_3d_title">Karuzelde kapak resimlerini kullan</string>
     <string name="home_shelf_enable_3d_action">Etkinleştir</string>
     <string name="home_sort_title_asc">İsim A-Z</string>
     <string name="home_sort_title_desc">İsim Z-A</string>
@@ -185,19 +185,6 @@
     <string name="settings_bios_picker_desc">Dreamcast BIOS dosyalarınızı (dc_boot.bin, dc_flash.bin) ve arcade BIOS setlerini (naomi.zip, naomi2.zip, awbios.zip) içeren bir klasör seçin.</string>
     <string name="settings_bios_picker_action">Klasör seç</string>
     <string name="settings_game_path">Oyun Klasörü</string>
-    <string name="settings_cover_download_url">Kapak İndirme URL\'si</string>
-    <string name="settings_cover_art_style">Kapak Stili</string>
-    <string name="settings_cover_art_style_off">Kapalı</string>
-    <string name="settings_cover_art_style_flat">Düz</string>
-    <string name="settings_cover_art_style_3d">3D Kutu</string>
-    <string name="settings_cover_download_url_dialog_title">Özel kapak kaynağı</string>
-    <string name="settings_cover_download_url_builtin">Yerleşik kaynak</string>
-    <string name="settings_cover_download_url_custom">Özel kaynak</string>
-    <string name="settings_cover_download_url_disabled">Devre dışı</string>
-    <string name="settings_cover_download_url_placeholder">https://example.com/covers/default https://example.com/covers/3d</string>
-    <string name="settings_cover_download_url_use_default">Varsayılanı kullan</string>
-    <string name="settings_cover_download_url_invalid">Geçerli bir HTTP veya HTTPS URL\'si girin.</string>
-    <string name="settings_cover_download_url_copied">Örnek URL\'ler kopyalandı.</string>
     <string name="settings_not_set">Ayarlanmadı</string>
     <string name="settings_about">Hakkında</string>
     <string name="settings_version">Sürüm</string>
@@ -504,6 +491,8 @@
     <string name="settings_updates_rate_limit_error">Güncelleme kontrolü geçici olarak kullanılamıyor. %1$d dakika sonra tekrar deneyin.</string>
     <string name="onboarding_status_custom_folder">Özel klasör seçildi</string>
     <string name="settings_emulator_data_path">Emülatör Klasörü</string>
+    <string name="settings_fetch_boxart">Kapak resimlerini indir</string>
+    <string name="settings_fetch_boxart_desc">Kapak resimlerini Flycast kaynaklarından indir: diskteki GD-ROM görseli, flycast-content arcade kapakları ve TheGamesDB.</string>
     <string name="shell_texture_manager">Doku Yöneticisi</string>
     <string name="texture_manager_title">Doku Yöneticisi</string>
     <string name="texture_manager_import_zip">ZIP İçe Aktar</string>
@@ -2131,7 +2120,7 @@
     <string name="naomi_guide_step_gdrom">GD-ROM oyunları — ayrıca arşivden çıkarılmış diske ihtiyaç duyar: ikaruga.zip yanında ikaruga klasörü oluştur ve içine gdl-0010.chd dosyasını normal dosya olarak koy. Zip içinde kalan CHD okunmaz; Naomi disklerinin GDI/CUE dökümleri çalışmaz.</string>
     <string name="naomi_guide_step_launch">Başlatma — ROM setini kitaplıktan başlat. Arşivden çıkarılan dosyaları başlatma: düz bir ROM klasörü açılmaz.</string>
     <string name="naomi_guide_step_controls">Kontroller — Select jeton atar, Start oyunu başlatır. Gamepad’de L3 Test menüsünü, R3 Servis menüsünü açar. Ücretsiz oyun varsayılan olarak açıktır.</string>
-    <string name="naomi_guide_step_covers">Kapaklar — ROM seti adına göre EmuCoreH kataloğundan indirilir. Görseli olmayan oyunlar için adı taşıyan bir kart gösterilir.</string>
+    <string name="naomi_guide_step_covers">Kapaklar - görseller Flycast kaynaklarından ROM seti adına, ürün koduna ve oyun adına göre alınır. Görseli olmayan oyunlar adını taşıyan bir kart gösterir.</string>
     <string name="naomi_guide_settings_desc">BIOS, ROM seti, GD-ROM, başlatma ve kontrol talimatları.</string>
     <string name="settings_fps_metric_version">Sürüm</string>
     <string name="settings_stick_toggle_button">Çubuğu değiştir</string>

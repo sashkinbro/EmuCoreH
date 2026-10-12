@@ -128,11 +128,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var currentLibraryPaths: List<String> = emptyList()
     private var preferEnglishGameTitles = false
     private var titlesPreferenceInitialized = false
-    private var coverArtStyleInitialized = false
-    private var coverBaseUrlInitialized = false
+    private var fetchBoxartInitialized = false
     private var coverCacheRevisionInitialized = false
-    private var currentCoverArtStyle = AppPreferences.COVER_ART_STYLE_3D
-    private var currentCoverDownloadBaseUrl: String? = null
+    private var currentFetchBoxart = true
     private val scanMutex = Mutex()
     private var deferredLibraryScan: DeferredLibraryScan? = null
     private var deferredWorkJob: Job? = null
@@ -329,23 +327,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
-            preferences.coverArtStyle.distinctUntilChanged().collect { style ->
+            preferences.fetchBoxart.distinctUntilChanged().collect { enabled ->
                 _uiState.value = _uiState.value.copy(
-                    isCoverArtDisabled = style == AppPreferences.COVER_ART_STYLE_DISABLED
+                    isCoverArtDisabled = !enabled
                 )
-                val shouldRefreshLibrary = coverArtStyleInitialized && currentCoverArtStyle != style
-                currentCoverArtStyle = style
-                coverArtStyleInitialized = true
-                if (shouldRefreshLibrary) {
-                    handleCoverSourceChanged()
-                }
-            }
-        }
-        viewModelScope.launch {
-            preferences.coverDownloadBaseUrl.distinctUntilChanged().collect { baseUrl ->
-                val shouldRefreshLibrary = coverBaseUrlInitialized && currentCoverDownloadBaseUrl != baseUrl
-                currentCoverDownloadBaseUrl = baseUrl
-                coverBaseUrlInitialized = true
+                val shouldRefreshLibrary = fetchBoxartInitialized && currentFetchBoxart != enabled
+                currentFetchBoxart = enabled
+                fetchBoxartInitialized = true
                 if (shouldRefreshLibrary) {
                     handleCoverSourceChanged()
                 }
@@ -465,9 +453,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun enable3dCoverArt() {
+    fun enableBoxart() {
         viewModelScope.launch {
-            preferences.setCoverArtStyle(AppPreferences.COVER_ART_STYLE_3D)
+            preferences.setFetchBoxart(true)
         }
     }
 
@@ -656,7 +644,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         if (!isInitialLoad) return false
         if (cacheSnapshot.games.isEmpty()) return false
         val coverRepository = CoverArtRepository(getApplication())
-        if (currentCoverArtStyle != AppPreferences.COVER_ART_STYLE_DISABLED &&
+        if (currentFetchBoxart &&
             cacheSnapshot.games.any {
                 it.serial.isNullOrBlank() || it.coverArtPath.isNullOrBlank() ||
                     coverRepository.isMissingManagedCover(it.coverArtPath)
@@ -787,8 +775,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             if (removedStalePaths) publishVisibleGames()
             val gamesToProcess = allGames.filter {
                 it.coverArtPath == null || it.coverArtPath.startsWith("http") ||
-                    (coverRepository.isManagedCoverCachePath(it.coverArtPath) &&
-                        !it.coverArtPath.contains("/igdb-psp-v13/"))
+                    coverRepository.isManagedCoverCachePath(it.coverArtPath)
             }
             if (gamesToProcess.isEmpty()) {
                 if (removedStalePaths) {

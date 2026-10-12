@@ -18,7 +18,7 @@
     <string name="home_game_count">총 게임 수: %d</string>
     <string name="home_recent_title">최근 실행함</string>
     <string name="home_shelf_games_counter">%2$d개 중 %1$d개</string>
-    <string name="home_shelf_enable_3d_title">캐러셀에서 3D 커버 사용</string>
+    <string name="home_shelf_enable_3d_title">캐러셀에서 박스 아트 사용</string>
     <string name="home_shelf_enable_3d_action">활성화</string>
     <string name="home_sort_title_asc">제목순 (A-Z)</string>
     <string name="home_sort_title_desc">제목순 (Z-A)</string>
@@ -185,19 +185,6 @@
     <string name="settings_bios_picker_desc">Dreamcast BIOS(dc_boot.bin, dc_flash.bin)와 아케이드 BIOS 세트(naomi.zip, naomi2.zip, awbios.zip)가 있는 폴더를 선택하세요.</string>
     <string name="settings_bios_picker_action">폴더 선택</string>
     <string name="settings_game_path">게임 폴더</string>
-    <string name="settings_cover_download_url">커버 다운로드 URL</string>
-    <string name="settings_cover_art_style">커버 스타일</string>
-    <string name="settings_cover_art_style_off">끄기</string>
-    <string name="settings_cover_art_style_flat">평면 (Flat)</string>
-    <string name="settings_cover_art_style_3d">3D 박스 (3D Box)</string>
-    <string name="settings_cover_download_url_dialog_title">사용자 지정 커버 소스</string>
-    <string name="settings_cover_download_url_builtin">기본 내장 소스</string>
-    <string name="settings_cover_download_url_custom">사용자 지정 소스</string>
-    <string name="settings_cover_download_url_disabled">비활성화됨</string>
-    <string name="settings_cover_download_url_placeholder">https://example.com/covers/default https://example.com/covers/3d</string>
-    <string name="settings_cover_download_url_use_default">기본값 사용</string>
-    <string name="settings_cover_download_url_invalid">유효한 HTTP 또는 HTTPS URL을 입력하세요.</string>
-    <string name="settings_cover_download_url_copied">예시 URL이 복사되었습니다.</string>
     <string name="settings_not_set">설정되지 않음</string>
     <string name="settings_about">정보</string>
     <string name="settings_version">버전</string>
@@ -504,6 +491,8 @@
     <string name="settings_updates_rate_limit_error">업데이트 확인을 일시적으로 사용할 수 없습니다. %1$d분 후에 다시 시도해 주세요.</string>
     <string name="onboarding_status_custom_folder">사용자 지정 폴더가 선택되었습니다</string>
     <string name="settings_emulator_data_path">에뮬레이터 폴더</string>
+    <string name="settings_fetch_boxart">박스 아트 가져오기</string>
+    <string name="settings_fetch_boxart_desc">Flycast 소스에서 박스 아트를 다운로드합니다: 디스크의 GD-ROM 아트워크, flycast-content 아케이드 커버, TheGamesDB.</string>
     <string name="shell_texture_manager">텍스처 관리자</string>
     <string name="texture_manager_title">텍스처 관리자</string>
     <string name="texture_manager_import_zip">ZIP 가져오기</string>
@@ -2130,7 +2119,7 @@
     <string name="naomi_guide_step_gdrom">GD-ROM 게임 — 아카이브에서 추출한 디스크도 필요합니다. ikaruga.zip 옆에 ikaruga 폴더를 만들고 gdl-0010.chd를 일반 파일로 넣으세요. zip 안에 있는 CHD는 읽지 않습니다. Naomi 디스크의 GDI/CUE 덤프는 작동하지 않습니다.</string>
     <string name="naomi_guide_step_launch">실행 — 라이브러리에서 ROM 세트를 실행하세요. 아카이브에서 추출한 파일은 실행하지 마세요. 일반 ROM 폴더는 부팅되지 않습니다.</string>
     <string name="naomi_guide_step_controls">조작 — Select는 코인을 넣고 Start는 게임을 시작합니다. 게임패드에서 L3는 Test 메뉴, R3는 Service 메뉴를 엽니다. 프리 플레이는 기본으로 켜져 있습니다.</string>
-    <string name="naomi_guide_step_covers">커버 — ROM 세트 이름으로 EmuCoreH 카탈로그에서 받아옵니다. 아트워크가 없으면 이름이 적힌 카드가 표시됩니다.</string>
+    <string name="naomi_guide_step_covers">커버 - ROM 세트 이름, 제품 코드, 게임 제목을 기준으로 Flycast 소스에서 아트워크를 가져옵니다. 아트워크가 없는 게임은 이름이 표시된 카드를 보여줍니다.</string>
     <string name="naomi_guide_settings_desc">BIOS, ROM 세트, GD-ROM, 실행 및 조작 안내.</string>
     <string name="settings_fps_metric_version">버전</string>
     <string name="settings_stick_toggle_button">스틱 전환</string>

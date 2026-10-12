@@ -20,7 +20,7 @@
     <string name="home_game_count">Celkem her: %d</string>
     <string name="home_recent_title">Nedávno spuštěné</string>
     <string name="home_shelf_games_counter">%1$d z %2$d</string>
-    <string name="home_shelf_enable_3d_title">Použít 3D přebaly v karuselu</string>
+    <string name="home_shelf_enable_3d_title">Použít obaly v karuselu</string>
     <string name="home_shelf_enable_3d_action">Povolit</string>
     <string name="home_sort_title_asc">Název A-Z</string>
     <string name="home_sort_title_desc">Název Z-A</string>
@@ -212,19 +212,8 @@
     <string name="settings_game_folders_count">%1$d vybraných složek</string>
     <string name="game_folders_remove">Odstranit složku</string>
     <string name="settings_emulator_data_path">Složka emulátoru</string>
-    <string name="settings_cover_download_url">URL ke stažení přebalu</string>
-    <string name="settings_cover_art_style">Styl přebalu</string>
-    <string name="settings_cover_art_style_off">Vypnuto</string>
-    <string name="settings_cover_art_style_flat">Plochý</string>
-    <string name="settings_cover_art_style_3d">3D krabička</string>
-    <string name="settings_cover_download_url_dialog_title">Vlastní zdroj přebalů</string>
-    <string name="settings_cover_download_url_builtin">Vestavěný zdroj</string>
-    <string name="settings_cover_download_url_custom">Vlastní zdroj</string>
-    <string name="settings_cover_download_url_disabled">Zakázáno</string>
-    <string name="settings_cover_download_url_placeholder">https://example.com/covers/default https://example.com/covers/3d</string>
-    <string name="settings_cover_download_url_use_default">Použít výchozí</string>
-    <string name="settings_cover_download_url_invalid">Zadejte platnou URL adresu HTTP nebo HTTPS.</string>
-    <string name="settings_cover_download_url_copied">Ukázkové adresy URL byly zkopírovány.</string>
+    <string name="settings_fetch_boxart">Načítat obaly</string>
+    <string name="settings_fetch_boxart_desc">Stahovat obaly ze zdrojů Flycast: grafika GD-ROM z disku, obaly arkádových her z flycast-content a TheGamesDB.</string>
     <string name="settings_not_set">Nenastaveno</string>
 
     <string name="settings_about">O aplikaci</string>
@@ -2152,7 +2141,7 @@
     <string name="naomi_guide_step_gdrom">Hry GD-ROM — potřebují i disk vybalený z archivu: vedle ikaruga.zip vytvoř složku ikaruga a vlož do ní gdl-0010.chd jako běžný soubor. CHD ponechané v zipu se nečte; dumpy GDI/CUE disků Naomi nefungují.</string>
     <string name="naomi_guide_step_launch">Spuštění — spouštěj ROM sadu z knihovny. Nikdy nespouštěj soubory rozbalené z archivu: obyčejná složka s ROM se nespustí.</string>
     <string name="naomi_guide_step_controls">Ovládání — Select vhodí minci a Start zahájí hru. Na gamepadu L3 otevře menu Test a R3 menu Service. Režim free play je zapnutý ve výchozím stavu.</string>
-    <string name="naomi_guide_step_covers">Obály — stahují se z katalogu EmuCoreH podle názvu ROM sady. Bez grafiky se zobrazí karta s názvem.</string>
+    <string name="naomi_guide_step_covers">Obaly – grafika se stahuje ze zdrojů Flycast podle názvu ROM sady, kódu produktu a názvu hry. Hry bez grafiky zobrazí kartu s názvem.</string>
     <string name="naomi_guide_settings_desc">Pokyny k BIOSu, ROM sadě, GD-ROM, spuštění a ovládání.</string>
     <string name="settings_fps_metric_version">Verze</string>
     <string name="settings_stick_toggle_button">Přepínání páčky</string>
