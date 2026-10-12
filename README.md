@@ -1,11 +1,14 @@
 # EmuCoreH
 
+[![Get EmuCoreH on Google Play](https://img.shields.io/badge/Google%20Play-Get%20EmuCoreH-3DDC84?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.sbro.emucoreh)
 [![Support EmuCoreH on Patreon](https://img.shields.io/badge/Patreon-Support%20EmuCoreH-ff424d?logo=patreon&logoColor=white)](https://www.patreon.com/c/emucore/membership)
 [![Join the EmuCoreH Discord](https://img.shields.io/badge/Discord-Join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.com/invite/c5EBeNRpz2)
 
 EmuCoreH is a Sega Dreamcast, Naomi, Naomi 2, and Atomiswave library, launcher, and emulator frontend for Android. It pairs a purpose-built Compose interface with a vendored [Flycast](https://github.com/flyinghead/flycast) core that is built together with the app, so no separate core download is needed.
 
 Website: [emucoreh.web.app](https://emucoreh.web.app/)
+
+Google Play: [EmuCoreH on Google Play](https://play.google.com/store/apps/details?id=com.sbro.emucoreh)
 
 ![Status](https://img.shields.io/badge/Status-Active%20Development-blue)
 
@@ -40,12 +43,12 @@ This repository contains the Android application, its Kotlin UI, the JNI fronten
 
 ## Current App Scope
 
-EmuCoreH version `0.0.1` currently targets Android with:
+EmuCoreH is published on [Google Play](https://play.google.com/store/apps/details?id=com.sbro.emucoreh). Version `0.0.6` currently targets Android with:
 
 - `minSdk 26` (Android 8.0)
 - `targetSdk 37`
 - package id `com.sbro.emucoreh`
-- version `0.0.1`
+- version `0.0.6`
 - ARM64 devices only
 
 ## Building Locally
