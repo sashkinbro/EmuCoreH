@@ -4,7 +4,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
+import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.GameFormats
+import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.data.boxart.DiscGdtexExtractor
 import com.sbro.emucoreh.data.boxart.FlycastBoxartSource
 import com.sbro.emucoreh.data.boxart.TheGamesDb
@@ -181,12 +183,23 @@ class CoverArtRepository(context: Context) {
             return it.absolutePath
         }
         val missFile = File(fetchDirectory, "$key.miss")
+
+        // Offline scraper, exactly like Flycast: the core opens the disc image
+        // (GDI, CUE, ISO, CDI and CHD), reads the IP.BIN metadata and extracts
+        // the 0GDTEX.PVR cover texture from the ISO filesystem. Runs before the
+        // miss marker so a repaired cache always gets its disc cover back.
+        val scrape = scrapeDiscBoxart(game, key)
+        if (scrape?.coverPath != null) {
+            missFile.delete()
+            Log.d(TAG, "========== BOX ART DOWNLOAD END (GD-ROM texture) ==========")
+            return scrape.coverPath
+        }
         if (missFile.exists() && System.currentTimeMillis() - missFile.lastModified() < MISS_TTL_MS) {
             Log.d(TAG, "Recent miss marker found, skipping")
             return null
         }
 
-        // Offline scraper: the 0GDTEX.PVR texture stored on the disc.
+        // Fallback for content:// images the core cannot open directly.
         val offline = extractDiscBoxart(game, key)
         if (offline != null) {
             missFile.delete()
@@ -206,7 +219,7 @@ class CoverArtRepository(context: Context) {
                 }
             }
 
-            val uniqueId = game.serial?.trim().orEmpty()
+            val uniqueId = game.serial?.trim().orEmpty().ifBlank { scrape?.uniqueId.orEmpty() }
             if (uniqueId.isNotEmpty() && uniqueId != "T0000" && uniqueId != "T0000M") {
                 val info = TheGamesDb.findByUniqueId(uniqueId)
                 if (info != null) {
@@ -219,7 +232,10 @@ class CoverArtRepository(context: Context) {
                     }
                 }
             }
-            val searchName = game.title.ifBlank { game.fileName.substringBeforeLast('.') }
+            // TheGamesDB search name: the disc's own software name when the
+            // image was readable, like Flycast, otherwise the library title.
+            val searchName = scrape?.searchName
+                ?: game.title.ifBlank { game.fileName.substringBeforeLast('.') }
             if (searchName.isNotBlank()) {
                 val info = TheGamesDb.findByName(searchName)
                 if (info != null) {
@@ -239,6 +255,39 @@ class CoverArtRepository(context: Context) {
             Log.d(TAG, "========== BOX ART DOWNLOAD END ==========")
         }
         return null
+    }
+
+    private data class DiscScrapeResult(
+        val coverPath: String?,
+        val searchName: String?,
+        val uniqueId: String?
+    )
+
+    /**
+     * Runs Flycast's offline scraper over the image through the core's disc
+     * drivers. Writes the extracted 0GDTEX.PVR cover to the cache and returns
+     * it together with the IP.BIN software name and product number.
+     */
+    private fun scrapeDiscBoxart(game: GameItem, key: String): DiscScrapeResult? {
+        if (isArcadeGame(game.fileName)) return null
+        val nativePath = nativeDiscPath(game.path) ?: return null
+        val target = File(fetchDirectory, "$key.png")
+        if (target.exists()) target.delete()
+        val metadata = NativeApp.scrapeDisc(nativePath, target.absolutePath) ?: return null
+        val fields = metadata.split('\n')
+        return DiscScrapeResult(
+            coverPath = target.takeIf(::isUsableCoverFile)?.absolutePath,
+            searchName = fields.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() },
+            uniqueId = fields.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
+        )
+    }
+
+    /** The core's disc drivers only read real files, not SAF content URIs. */
+    private fun nativeDiscPath(path: String): String? {
+        if (!path.startsWith("content://")) return path
+        return runCatching {
+            DocumentPathResolver.resolveFilePath(context, path)?.takeIf { it.isNotBlank() }
+        }.getOrNull()
     }
 
     private fun extractDiscBoxart(game: GameItem, key: String): String? {

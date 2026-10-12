@@ -168,10 +168,21 @@ class NativeCoreBridge {
     external fun audioOutputStats(handle: Long): LongArray?
 
     // ---------------------------------------------------------------------
-    // Disc metadata read straight from the image. The library layer falls
-    // back to filename-derived titles when this returns null.
+    // Disc metadata and offline box art read straight from the image through
+    // the core's own disc drivers (GDI, CUE, ISO, CDI and CHD). The library
+    // layer falls back to filename-derived titles when this returns null.
     // ---------------------------------------------------------------------
     external fun getDiscMetadata(path: String): String?
+
+    /**
+     * Scrapes a disc image without booting the emulator, exactly like
+     * Flycast's offline scraper: reads the IP.BIN metadata and extracts the
+     * 0GDTEX.PVR cover to [pngPath].
+     *
+     * Returns "searchName\nuniqueId\ncoverWritten" or null when the image
+     * cannot be opened.
+     */
+    external fun scrapeDisc(path: String, pngPath: String?): String?
 
     external fun getDiscMetadataFd(fd: Int, offset: Long, size: Long): String?
 }

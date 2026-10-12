@@ -120,9 +120,19 @@ object NativeApp {
         }.getOrNull()
         val fields = rawMetadata?.split('\n', limit = 3).orEmpty()
         val serial = fields.getOrNull(1).orEmpty().trim()
-        if (serial.isBlank()) return fallback
-        return "${fallback.orEmpty()}|$serial|$serial"
+        val nativeTitle = fields.getOrNull(0).orEmpty().trim()
+        if (serial.isBlank()) return nativeTitle.ifBlank { fallback }
+        return "${nativeTitle.ifBlank { fallback.orEmpty() }}|$serial|$serial"
     }
+
+    /**
+     * Scrapes a disc image through the core's own disc drivers (including CHD),
+     * like Flycast's offline scraper. Returns `searchName\nuniqueId\ncoverWritten`
+     * or null when the image cannot be opened.
+     */
+    @JvmStatic fun scrapeDisc(path: String, pngPath: String?): String? = runCatching {
+        CoreRuntime.bridge.scrapeDisc(path, pngPath)
+    }.getOrNull()
     @JvmStatic fun isBiosPath(path: String): Boolean = File(path).let { it.isFile && it.length() == BIOS_SIZE_BYTES }
     /** Takes ownership of [fd] and always closes it before returning. */
     @JvmStatic fun isBiosFd(fd: Int): Boolean = runCatching {

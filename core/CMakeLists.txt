@@ -968,6 +968,7 @@ if(LIBRETRO)
 	endif()
 	target_sources(${PROJECT_NAME} PRIVATE
 		shell/libretro/audiostream.cpp
+		shell/libretro/emucoreh_boxart.cpp
 		shell/libretro/keyboard_map.h
 		shell/libretro/libretro_core_option_defines.h
 		shell/libretro/libretro_core_options_intl.h

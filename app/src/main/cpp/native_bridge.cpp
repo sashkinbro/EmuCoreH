@@ -113,6 +113,7 @@ struct CoreApi {
     bool (*load_game)(const retro_game_info*) = nullptr;
     void (*unload_game)() = nullptr;
     const char* (*boot_error)() = nullptr;
+    int (*scrape_disc)(const char*, const char*, char*, int, char*, int) = nullptr;
 };
 
 CoreApi g_core;
@@ -278,6 +279,8 @@ bool LoadCoreLocked() {
     g_core.set_cabinet_buttons = reinterpret_cast<void (*)(unsigned, unsigned)>(resolve("flycast_set_cabinet_buttons"));
     g_core.get_memory_data = reinterpret_cast<void* (*)(unsigned)>(resolve("retro_get_memory_data"));
     g_core.boot_error = reinterpret_cast<const char* (*)()>(resolve("emucorea_boot_error"));
+    g_core.scrape_disc = reinterpret_cast<int (*)(const char*, const char*, char*, int, char*, int)>(
+        resolve("emucoreh_scrape_disc"));
     g_core.get_memory_size = reinterpret_cast<size_t (*)(unsigned)>(resolve("retro_get_memory_size"));
     g_core.set_controller_port_device = reinterpret_cast<void (*)(unsigned, unsigned)>(resolve("retro_set_controller_port_device"));
     g_core.run = reinterpret_cast<void (*)()>(resolve("retro_run"));
@@ -1811,9 +1814,42 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_hasDiscMedia(JNIEnv*, jobject, jlon
     return (handle != 0 && g_frontend.game_loaded.load()) ? JNI_TRUE : JNI_FALSE;
 }
 
+// Shared offline scraper call: opens the disc image through the core
+// (GDI, CUE, ISO, CDI and CHD) and returns "searchName\nuniqueId" plus the
+// core's result bit mask. False when the disc cannot be opened at all.
+static bool ScrapeDisc(JNIEnv* env, jstring jPath, jstring jPngPath, std::string& metadata, int& result) {
+    if (!LoadCoreLocked() || g_core.scrape_disc == nullptr) return false;
+    const std::string path = ToString(env, jPath);
+    if (path.empty()) return false;
+    std::string pngPath;
+    if (jPngPath != nullptr) pngPath = ToString(env, jPngPath);
+    char searchName[128] = {};
+    char uniqueId[16] = {};
+    result = g_core.scrape_disc(path.c_str(), pngPath.empty() ? nullptr : pngPath.c_str(),
+        searchName, sizeof(searchName), uniqueId, sizeof(uniqueId));
+    if (result == 0) return false;
+    metadata = searchName;
+    metadata += '\n';
+    metadata += uniqueId;
+    return true;
+}
+
 JNIEXPORT jstring JNICALL
-Java_com_sbro_emucoreh_core_NativeCoreBridge_getDiscMetadata(JNIEnv*, jobject, jstring) {
-    return nullptr;
+Java_com_sbro_emucoreh_core_NativeCoreBridge_getDiscMetadata(JNIEnv* env, jobject, jstring jPath) {
+    std::string metadata;
+    int result = 0;
+    if (!ScrapeDisc(env, jPath, nullptr, metadata, result) || (result & 1) == 0) return nullptr;
+    return env->NewStringUTF(metadata.c_str());
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_scrapeDisc(JNIEnv* env, jobject, jstring jPath, jstring jPngPath) {
+    std::string metadata;
+    int result = 0;
+    if (!ScrapeDisc(env, jPath, jPngPath, metadata, result)) return nullptr;
+    metadata += '\n';
+    metadata += (result & 2) != 0 ? "1" : "0";
+    return env->NewStringUTF(metadata.c_str());
 }
 
 JNIEXPORT jstring JNICALL
