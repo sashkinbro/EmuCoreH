@@ -19,7 +19,6 @@
 
 package com.sbro.emucoreh.data.boxart
 
-import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -32,13 +31,13 @@ import java.net.URLEncoder
  * and by name second, and the artwork is downloaded from TheGamesDB CDN using
  * the same public API key as the official emulator.
  */
-object TheGamesDb {
+internal class TheGamesDbClient(private val baseUrl: String = "https://api.thegamesdb.net/v1/") {
 
-    private const val TAG = "TheGamesDb"
-    private const val API_KEY = "3fcc5e726a129924972be97abfd577ac5311f8f12398a9d9bcb5a377d4656fa8"
-    private const val BASE_URL = "https://api.thegamesdb.net/v1/"
-    private const val CONNECT_TIMEOUT_MS = 10000
-    private const val READ_TIMEOUT_MS = 15000
+    companion object {
+        private const val API_KEY = "3fcc5e726a129924972be97abfd577ac5311f8f12398a9d9bcb5a377d4656fa8"
+        private const val CONNECT_TIMEOUT_MS = 10000
+        private const val READ_TIMEOUT_MS = 15000
+    }
 
     data class GameInfo(
         val title: String?,
@@ -66,10 +65,27 @@ object TheGamesDb {
         return fetchGameInfo(url, uniqueId)
     }
 
-    fun findByName(name: String): GameInfo? {
+    fun findByUniqueIds(uniqueIds: List<String>): Map<String, GameInfo?> {
+        val ids = uniqueIds.filter(String::isNotBlank).distinct()
+        if (ids.isEmpty()) return emptyMap()
+        val platform = fetchPlatforms() ?: return emptyMap()
+        val results = LinkedHashMap<String, GameInfo?>()
+        // Flycast processes ten discs per online scrape. Keep that bound and
+        // match each response by its UID, never by the result ordering.
+        for (batch in ids.chunked(10)) {
+            val url = makeUrl("Games/ByGameUniqueID") +
+                "&fields=overview,uids&include=boxart&filter%5Bplatform%5D=" +
+                platform.dreamcast + "&uid=" + urlEncode(batch.joinToString(","))
+            val response = httpGet(url)
+            for (id in batch) results[id] = response?.let { parseGameInfo(it, id) }
+        }
+        return results
+    }
+
+    fun findByName(name: String, arcade: Boolean = false): GameInfo? {
         if (name.isBlank()) return null
         val platform = fetchPlatforms() ?: return null
-        val platformId = platform.dreamcast
+        val platformId = if (arcade) platform.arcade else platform.dreamcast
         if (platformId == 0) return null
         val url = makeUrl("Games/ByGameName") + "&fields=overview&include=boxart&filter%5Bplatform%5D=" +
             platformId + "&name=" + urlEncode(name)
@@ -78,6 +94,7 @@ object TheGamesDb {
 
     private data class Platforms(val dreamcast: Int, val arcade: Int)
 
+    @Synchronized
     private fun fetchPlatforms(): Platforms? {
         if (dreamcastPlatformId != 0 && arcadePlatformId != 0) {
             return Platforms(dreamcastPlatformId, arcadePlatformId)
@@ -98,7 +115,7 @@ object TheGamesDb {
         }
         getPlatformId("Dreamcast")
         getPlatformId("Arcade")
-        if (dreamcast == 0 || arcade == 0) return null
+        if (dreamcast == 0 || arcade == 0) retry("Missing platform identifiers")
         dreamcastPlatformId = dreamcast
         arcadePlatformId = arcade
         return Platforms(dreamcast, arcade)
@@ -106,6 +123,10 @@ object TheGamesDb {
 
     private fun fetchGameInfo(url: String, uniqueId: String = ""): GameInfo? {
         val response = httpGet(url) ?: return null
+        return parseGameInfo(response, uniqueId)
+    }
+
+    private fun parseGameInfo(response: JSONObject, uniqueId: String = ""): GameInfo? {
         val games = gameEntries(response)
         val boxart = runCatching { response.getJSONObject("include").optJSONObject("boxart") }
             .getOrNull()
@@ -134,12 +155,12 @@ object TheGamesDb {
      * object keyed by game id, depending on the endpoint.
      */
     private fun gameEntries(response: JSONObject): List<JSONObject> {
-        val data = runCatching { response.getJSONObject("data") }.getOrNull() ?: return emptyList()
+        val data = response.optJSONObject("data") ?: retry("Missing games response data")
         val games = data.opt("games")
         return when {
             games is JSONArray -> (0 until games.length()).mapNotNull { games.optJSONObject(it) }
             games is JSONObject -> games.keys().asSequence().mapNotNull { games.optJSONObject(it) }.toList()
-            else -> emptyList()
+            else -> retry("Missing games collection")
         }
     }
 
@@ -155,7 +176,7 @@ object TheGamesDb {
     private fun parseBoxart(boxartElement: JSONObject?, gameId: Int): String? {
         if (boxartElement == null || gameId == 0) return null
         val baseUrl = boxartElement.optJSONObject("base_url")?.let { urls ->
-            urls.optString("thumb").ifBlank { urls.optString("small") }
+            (urls.opt("thumb") as? String).orEmpty().ifBlank { (urls.opt("small") as? String).orEmpty() }
         }?.takeIf { it.isNotBlank() } ?: return null
 
         val images = when {
@@ -177,19 +198,18 @@ object TheGamesDb {
             val image = images.optJSONObject(index) ?: continue
             if (!image.optString("type").equals(type, ignoreCase = true)) continue
             if (type == "boxart" && image.optString("side").equals("back", ignoreCase = true)) continue
-            val filename = image.optString("filename")
+            val filename = image.opt("filename") as? String ?: continue
             if (filename.isNotBlank()) return filename
         }
         return null
     }
 
-    private fun makeUrl(endpoint: String): String = "$BASE_URL$endpoint?apikey=$API_KEY"
+    private fun makeUrl(endpoint: String): String = "$baseUrl$endpoint?apikey=$API_KEY"
 
     private fun httpGet(url: String): JSONObject? {
-        if (System.currentTimeMillis() < blackoutUntil) return null
-        blackoutUntil = 0L
+        if (System.currentTimeMillis() < blackoutUntil) throw BoxartRetryException(blackoutUntil)
         val connection = runCatching { URL(url).openConnection() as HttpURLConnection }.getOrNull()
-            ?: return null
+            ?: retry("Cannot open API connection")
         return try {
             connection.requestMethod = "GET"
             connection.instanceFollowRedirects = true
@@ -199,35 +219,50 @@ object TheGamesDb {
             connection.connect()
             val status = connection.responseCode
             if (status == 403 || status == 429) {
-                // Monthly allowance reached
-                blackoutUntil = System.currentTimeMillis() + 24 * 60 * 60 * 1000L
-                Log.w(TAG, "TheGamesDB allowance reached, pausing for 24 hours")
-                return null
+                retry("TheGamesDB allowance reached", 24 * 60 * 60 * 1000L)
             }
+            // The API uses 404 for an empty search. It must not black out
+            // the name fallback or concurrent lookups for unrelated games.
+            if (status == HttpURLConnection.HTTP_NOT_FOUND) return null
             if (status !in 200..299) {
-                blackoutUntil = System.currentTimeMillis() + 1000L
-                Log.d(TAG, "TheGamesDB HTTP error $status for $url")
-                return null
+                retry("TheGamesDB HTTP $status")
             }
             val body = connection.inputStream.bufferedReader().use { it.readText() }
-            if (body.isBlank()) return null
-            val response = runCatching { JSONObject(body) }.getOrNull() ?: return null
+            if (body.isBlank()) retry("Empty API response")
+            val response = JSONObject(body)
             val code = response.optInt("code", 200)
+            if (code == 404) return null
+            if (code == 403 || code == 429) retry("TheGamesDB allowance reached", 24 * 60 * 60 * 1000L)
             if (code !in 200..299) {
-                blackoutUntil = System.currentTimeMillis() + 1000L
-                Log.d(TAG, "TheGamesDB error $code: ${response.optString("status")}")
-                return null
+                retry("TheGamesDB error $code")
             }
             response
+        } catch (error: BoxartRetryException) {
+            throw error
         } catch (error: Exception) {
-            blackoutUntil = System.currentTimeMillis() + 1000L
-            Log.d(TAG, "TheGamesDB request failed: ${error.message}")
-            null
+            retry("TheGamesDB request failed: ${error.message}")
         } finally {
             connection.disconnect()
         }
     }
 
+    private fun retry(message: String, delayMillis: Long = 1000L): Nothing {
+        synchronized(this) {
+            blackoutUntil = maxOf(blackoutUntil, System.currentTimeMillis() + delayMillis)
+        }
+        throw BoxartRetryException(blackoutUntil, message)
+    }
+
     private fun urlEncode(value: String): String =
         URLEncoder.encode(value, "UTF-8").replace("+", "%20")
 }
+
+internal object TheGamesDb {
+    private val client = TheGamesDbClient()
+    fun findByUniqueId(uniqueId: String) = client.findByUniqueId(uniqueId)
+    fun findByName(name: String, arcade: Boolean = false) = client.findByName(name, arcade)
+    fun findByUniqueIds(uniqueIds: List<String>) = client.findByUniqueIds(uniqueIds)
+}
+
+internal class BoxartRetryException(val retryAtMillis: Long, message: String = "Online artwork lookup paused") :
+    RuntimeException(message)

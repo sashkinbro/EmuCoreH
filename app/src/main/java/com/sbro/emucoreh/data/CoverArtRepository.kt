@@ -8,13 +8,17 @@ import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.GameFormats
 import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.data.boxart.DiscGdtexExtractor
+import com.sbro.emucoreh.data.boxart.BoxartRetryException
+import com.sbro.emucoreh.data.boxart.FlycastCoverCache
+import com.sbro.emucoreh.data.boxart.FlycastImageDownloader
 import com.sbro.emucoreh.data.boxart.FlycastBoxartSource
 import com.sbro.emucoreh.data.boxart.TheGamesDb
+import com.sbro.emucoreh.data.boxart.PreparedBoxartLookup
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
 data class CoverCacheClearResult(
     val deletedFiles: Int,
@@ -36,13 +40,9 @@ class CoverArtRepository(context: Context) {
 
     companion object {
         private const val TAG = "CoverArtRepository"
-        private const val CONNECT_TIMEOUT_MS = 10000
-        private const val READ_TIMEOUT_MS = 15000
         private const val MISS_TTL_MS = 24L * 60L * 60L * 1000L
-        private const val MAX_IMAGE_BYTES = 16 * 1024 * 1024
         private val downloadFlightsLock = Any()
         private val downloadFlights = HashMap<String, PendingCoverDownload>()
-        private val IMAGE_EXTENSIONS = listOf("png", "jpg", "jpeg", "webp")
     }
 
     private class PendingCoverDownload {
@@ -54,6 +54,12 @@ class CoverArtRepository(context: Context) {
 
     private val coverCacheDirectory = File(this.context.cacheDir, "game-covers")
     private val remoteImageCacheDirectory = File(this.context.cacheDir, "remote-image-cache")
+    private val discMetadata = ConcurrentHashMap<String, DiscScrapeResult>()
+    private val prefetchedInfo = PreparedBoxartLookup()
+    private val retryAt = AtomicLong(0L)
+    val nextOnlineRetryAtMillis: Long get() = retryAt.get()
+    private val cache by lazy { FlycastCoverCache(fetchDirectory, ::isUsableCoverFile) }
+    private val imageDownloader by lazy { FlycastImageDownloader(fetchDirectory, ::isUsableCoverFile) }
 
     private val fetchDirectory by lazy {
         // The old EmuCoreH cover server cache is no longer used: drop it so the
@@ -85,13 +91,46 @@ class CoverArtRepository(context: Context) {
      */
     fun isPendingOnlineCover(path: String?): Boolean {
         if (path.isNullOrBlank() || !isManagedCoverCachePath(path)) return false
-        val key = File(path).name.substringBeforeLast('.')
-        return !hasOnlineSource(key)
+        return !cache.isOnline(File(path))
     }
 
-    /** Online downloads record their source URL next to the cover file. */
-    private fun hasOnlineSource(key: String): Boolean =
-        File(fetchDirectory, "$key.url").isFile
+    /** Resolve raw disc UIDs in batches, as Flycast does, before parallel downloads. */
+    fun prepareOnlineCovers(games: List<GameItem>, shouldAbort: () -> Boolean = { false }) {
+        retryAt.set(0L)
+        if (!isFetchBoxartEnabled()) return
+        prefetchedInfo.begin()
+        val ids = games.filter { game ->
+            !isArcadeGame(game.fileName) &&
+                findCachedCoverPath(game.serial, game.title, ignoreDisabled = true)
+                    .let { it == null || isPendingOnlineCover(it) } &&
+                !hasRecentMiss(game)
+        }.flatMap { game ->
+            if (shouldAbort()) return@flatMap emptyList()
+            val key = normalizeSerial(game.serial) ?: titleCoverKey(game.title) ?: return@flatMap emptyList()
+            val scrape = scrapeDiscBoxart(game, key, extractCover = false)
+            FlycastBoxartSource.uniqueIdCandidates(scrape?.uniqueId, game.serial)
+        }.distinct().filter { !prefetchedInfo.contains(it) }
+        for (batch in ids.chunked(10)) {
+            if (shouldAbort()) break
+            try {
+                prefetchedInfo.add(TheGamesDb.findByUniqueIds(batch))
+            } catch (failure: BoxartRetryException) {
+                noteRetry(failure.retryAtMillis)
+                Log.d(TAG, "Online cover batch postponed: ${failure.message}")
+                break
+            }
+        }
+    }
+
+    private fun noteRetry(atMillis: Long = System.currentTimeMillis() + 1000L) {
+        retryAt.accumulateAndGet(atMillis, ::maxOf)
+    }
+
+    private fun hasRecentMiss(game: GameItem): Boolean {
+        val key = normalizeSerial(game.serial) ?: titleCoverKey(game.title) ?: return false
+        val miss = cache.missFile(key)
+        return miss.isFile && System.currentTimeMillis() - miss.lastModified() < MISS_TTL_MS
+    }
 
     fun isMissingManagedCover(path: String?): Boolean =
         isManagedCoverCachePath(path) && !path.isNullOrBlank() && !isUsableCoverFile(File(path))
@@ -120,12 +159,8 @@ class CoverArtRepository(context: Context) {
             Log.d(TAG, "No serial or title provided")
             return null
         }
-        for (key in coverKeys) {
-            val found = findCoverFile(key)
-            if (found != null) {
-                Log.d(TAG, "Cached cover for $key: FOUND")
-                return found.absolutePath
-            }
+        cache.find(coverKeys)?.let { found ->
+            return found.absolutePath
         }
         Log.d(TAG, "Cached cover for ${coverKeys.joinToString()}: NOT FOUND")
         return null
@@ -147,7 +182,7 @@ class CoverArtRepository(context: Context) {
     private fun coverKeys(serial: String?, title: String?): List<String> =
         listOfNotNull(normalizeSerial(serial), titleCoverKey(title)).distinct()
 
-    fun downloadCover(game: GameItem, context: Context): String? {
+    fun downloadCover(game: GameItem, context: Context, offlineOnly: Boolean = false): String? {
         if (!isFetchBoxartEnabled()) {
             Log.d(TAG, "Cover download skipped: box art fetching is disabled")
             return null
@@ -181,7 +216,7 @@ class CoverArtRepository(context: Context) {
             return flight.result
         }
         return try {
-            downloadCoverResolved(game, primaryKey).also {
+            downloadCoverResolved(game, primaryKey, offlineOnly).also {
                 flight.result = it
             }
         } finally {
@@ -192,16 +227,16 @@ class CoverArtRepository(context: Context) {
         }
     }
 
-    private fun downloadCoverResolved(game: GameItem, key: String): String? {
+    private fun downloadCoverResolved(game: GameItem, key: String, offlineOnly: Boolean): String? {
         Log.d(TAG, "========== BOX ART DOWNLOAD START ($key) ==========")
-        val existingCover = findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
+        var existingCover = findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
             ?.let(::File)
             ?: findCoverFile(key)
-        if (existingCover != null && hasOnlineSource(key)) {
+        if (existingCover != null && cache.isOnline(existingCover)) {
             Log.d(TAG, "Cover already exists: ${existingCover.absolutePath}")
             return existingCover.absolutePath
         }
-        val missFile = File(fetchDirectory, "$key.miss")
+        val missFile = cache.missFile(key)
         val missFresh = missFile.exists() &&
             System.currentTimeMillis() - missFile.lastModified() < MISS_TTL_MS
 
@@ -214,27 +249,27 @@ class CoverArtRepository(context: Context) {
             scrape = scrapeDiscBoxart(game, key, extractCover = true)
             scrape?.coverPath?.let {
                 missFile.delete()
-                Log.d(TAG, "========== BOX ART DOWNLOAD END (GD-ROM texture) ==========")
-                return it
+                if (offlineOnly) return it
+                existingCover = File(it)
             }
             // Fallback for content:// images the core cannot open directly.
-            extractDiscBoxart(game, key)?.let {
+            if (existingCover == null) extractDiscBoxart(game, key)?.let {
                 missFile.delete()
-                Log.d(TAG, "========== BOX ART DOWNLOAD END (GD-ROM texture) ==========")
-                return it
+                if (offlineOnly) return it
+                existingCover = File(it)
             }
         }
+        if (offlineOnly) return existingCover?.absolutePath
         if (missFresh) {
             Log.d(TAG, "Recent miss marker found, skipping")
             return existingCover?.absolutePath
         }
 
-        var lookupSucceeded = false
         val arcade = isArcadeGame(game.fileName)
         try {
             if (arcade) {
                 for (url in FlycastBoxartSource.arcadeImageUrls(game.fileName, game.serial)) {
-                    downloadImage(url, key, missFile, "Flycast arcade", mute = true)?.let {
+                    downloadImage(url, key, "Flycast arcade", mute = true)?.let {
                         Log.d(TAG, "========== BOX ART DOWNLOAD END (arcade) ==========")
                         return acceptOnlineCover(existingCover, it)
                     }
@@ -247,13 +282,15 @@ class CoverArtRepository(context: Context) {
                 scrape = scrapeDiscBoxart(game, key, extractCover = false)
             }
 
-            val uniqueId = game.serial?.trim().orEmpty().ifBlank { scrape?.uniqueId.orEmpty() }
-            if (uniqueId.isNotEmpty() && uniqueId != "T0000" && uniqueId != "T0000M") {
-                val info = TheGamesDb.findByUniqueId(uniqueId)
+            val uniqueIds = if (arcade) emptyList() else
+                FlycastBoxartSource.uniqueIdCandidates(scrape?.uniqueId, game.serial)
+            for (uniqueId in uniqueIds) {
+                val info = prefetchedInfo.find(
+                    uniqueId, maxOf(nextOnlineRetryAtMillis, System.currentTimeMillis() + 1000L)
+                ) { TheGamesDb.findByUniqueId(uniqueId) }
                 if (info != null) {
-                    lookupSucceeded = true
                     info.imageUrl?.let { url ->
-                        downloadImage(url, key, missFile, "TheGamesDB")?.let {
+                        downloadImage(url, key, "TheGamesDB")?.let {
                             Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB uid) ==========")
                             return acceptOnlineCover(existingCover, it)
                         }
@@ -262,24 +299,25 @@ class CoverArtRepository(context: Context) {
             }
             // TheGamesDB search name: the disc's own software name when the
             // image was readable, like Flycast, otherwise the library title.
-            val searchName = scrape?.searchName
-                ?: game.title.ifBlank { game.fileName.substringBeforeLast('.') }
+            val searchName = FlycastBoxartSource.searchName(
+                scrape?.searchName ?: game.title.ifBlank { game.fileName.substringBeforeLast('.') }, arcade
+            )
             if (searchName.isNotBlank()) {
-                val info = TheGamesDb.findByName(searchName)
+                val info = TheGamesDb.findByName(searchName, arcade = arcade)
                 if (info != null) {
-                    lookupSucceeded = true
                     info.imageUrl?.let { url ->
-                        downloadImage(url, key, missFile, "TheGamesDB")?.let {
+                        downloadImage(url, key, "TheGamesDB")?.let {
                             Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB name) ==========")
                             return acceptOnlineCover(existingCover, it)
                         }
                     }
                 }
             }
+            missFile.writeText("not-found at ${System.currentTimeMillis()}")
+        } catch (failure: BoxartRetryException) {
+            noteRetry(failure.retryAtMillis)
+            Log.d(TAG, "Online cover postponed ($key): ${failure.message}")
         } finally {
-            if (lookupSucceeded) {
-                missFile.writeText("not-found at ${System.currentTimeMillis()}")
-            }
             Log.d(TAG, "========== BOX ART DOWNLOAD END ==========")
         }
         // No online artwork: keep the offline label art instead of a blank tile.
@@ -306,6 +344,7 @@ class CoverArtRepository(context: Context) {
      * the cache; otherwise only the IP.BIN metadata is read.
      */
     private fun scrapeDiscBoxart(game: GameItem, key: String, extractCover: Boolean): DiscScrapeResult? {
+        if (!extractCover) discMetadata[game.path]?.let { return it }
         if (isArcadeGame(game.fileName)) return null
         // Only disc images: playlists and other library content have no
         // ISO filesystem to scrape.
@@ -313,6 +352,7 @@ class CoverArtRepository(context: Context) {
         if (extension !in GameFormats.discExtensions) return null
         val nativePath = nativeDiscPath(game.path) ?: return null
         val target = File(fetchDirectory, "$key.png")
+        if (extractCover) cache.clearOnlineSource(key)
         if (extractCover && target.exists()) target.delete()
         val metadata = NativeApp.scrapeDisc(nativePath, if (extractCover) target.absolutePath else null)
             ?: return null
@@ -321,7 +361,7 @@ class CoverArtRepository(context: Context) {
             coverPath = if (extractCover) target.takeIf(::isUsableCoverFile)?.absolutePath else null,
             searchName = fields.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() },
             uniqueId = fields.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
-        )
+        ).also { discMetadata[game.path] = it }
     }
 
     /** The core's disc drivers only read real files, not SAF content URIs. */
@@ -337,6 +377,7 @@ class CoverArtRepository(context: Context) {
         val bitmap = DiscGdtexExtractor.extractBitmap(context, game.path, game.fileName) ?: return null
         val target = File(fetchDirectory, "$key.png")
         return runCatching {
+            cache.clearOnlineSource(key)
             if (target.exists()) target.delete()
             target.outputStream().use { output ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
@@ -363,119 +404,19 @@ class CoverArtRepository(context: Context) {
     private fun downloadImage(
         urlString: String,
         key: String,
-        missFile: File,
         sourceName: String,
         mute: Boolean = false
-    ): String? {
-        val connection = (URL(urlString).openConnection() as? HttpURLConnection)
-            ?: run {
-                Log.e(TAG, "$sourceName: Failed to create HTTP connection")
-                return null
-            }
-        return try {
-            connection.requestMethod = "GET"
-            connection.instanceFollowRedirects = true
-            connection.connectTimeout = CONNECT_TIMEOUT_MS
-            connection.readTimeout = READ_TIMEOUT_MS
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (EmuCoreH)")
-            connection.connect()
-
-            val responseCode = connection.responseCode
-            if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                missFile.writeText("404 at ${System.currentTimeMillis()}")
-            }
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                if (!mute) Log.w(TAG, "$sourceName: Cover not found (HTTP $responseCode)")
-                return null
-            }
-            val contentType = connection.contentType.orEmpty()
-            if (!contentType.startsWith("image/")) {
-                if (!mute) Log.w(TAG, "$sourceName: Bad content type $contentType")
-                return null
-            }
-            val contentLength = connection.contentLength
-            if (contentLength == 0 || contentLength > MAX_IMAGE_BYTES) {
-                if (!mute) Log.w(TAG, "$sourceName: Invalid content length")
-                return null
-            }
-
-            val extension = imageExtension(urlString)
-            val coverFile = File(fetchDirectory, "$key.$extension")
-            val tempFile = File.createTempFile("$key.", ".tmp", fetchDirectory)
-            try {
-                connection.inputStream.use { input ->
-                    tempFile.outputStream().use { output ->
-                        var copied = 0L
-                        val buffer = ByteArray(8192)
-                        while (true) {
-                            val count = input.read(buffer)
-                            if (count < 0) break
-                            copied += count
-                            require(copied <= MAX_IMAGE_BYTES) { "Cover exceeds size limit" }
-                            output.write(buffer, 0, count)
-                        }
-                    }
-                }
-                if (!isUsableCoverFile(tempFile)) {
-                    if (!mute) Log.w(TAG, "$sourceName: Downloaded file is not a valid image")
-                    return null
-                }
-                if (coverFile.exists()) coverFile.delete()
-                if (!tempFile.renameTo(coverFile)) {
-                    tempFile.copyTo(coverFile, overwrite = true)
-                }
-                if (!isUsableCoverFile(coverFile)) {
-                    coverFile.delete()
-                    return null
-                }
-                // Drop other formats of the same key: a cached GD-ROM label
-                // (.png) must not shadow the online box art (.jpg).
-                for (extension in IMAGE_EXTENSIONS) {
-                    val sibling = File(fetchDirectory, "$key.$extension")
-                    if (sibling != coverFile && sibling.isFile) {
-                        runCatching { sibling.delete() }
-                    }
-                }
-                runCatching { File(fetchDirectory, "$key.url").writeText(urlString) }
-                missFile.delete()
-                Log.d(TAG, "$sourceName: SUCCESS - ${coverFile.absolutePath}")
-                coverFile.absolutePath
-            } finally {
-                tempFile.delete()
-            }
-        } catch (e: Exception) {
-            if (!mute) Log.e(TAG, "$sourceName: Error: ${e.message}", e)
-            null
-        } finally {
-            connection.disconnect()
-        }
+    ): String? = imageDownloader.download(urlString, key).also { path ->
+        if (path != null) Log.d(TAG, "$sourceName: SUCCESS - $path")
+        else if (!mute) Log.d(TAG, "$sourceName: No artwork at $urlString")
     }
-
     private fun findCoverFile(key: String): File? {
-        for (extension in IMAGE_EXTENSIONS) {
-            val file = File(fetchDirectory, "$key.$extension")
-            if (file.isFile && file.length() <= 0L) {
-                Log.w(TAG, "Removing empty cached cover: ${file.absolutePath}")
-                runCatching { file.delete() }
-                continue
-            }
-            if (isUsableCoverFile(file)) return file
-        }
-        return null
+        return cache.find(listOf(key))
     }
 
     private fun isArcadeGame(fileName: String): Boolean {
         val extension = fileName.substringAfterLast('.', "").lowercase(Locale.ROOT)
         return extension in GameFormats.romExtensions
-    }
-
-    private fun imageExtension(urlString: String): String {
-        val path = urlString.substringBefore('?').substringBefore('#')
-        val extension = path.substringAfterLast('.', "").lowercase(Locale.ROOT)
-        return when (extension) {
-            "png", "jpg", "jpeg", "webp" -> extension
-            else -> "jpg"
-        }
     }
 
     private fun normalizeSerial(serial: String?): String? {

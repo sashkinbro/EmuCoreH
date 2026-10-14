@@ -29,6 +29,25 @@ import java.util.Locale
  */
 object FlycastBoxartSource {
 
+    fun searchName(name: String, arcade: Boolean): String {
+        if (!arcade) return name
+        var result = name.substringBefore('/').trimEnd()
+        while (result.isNotEmpty()) {
+            val start = when (result.last()) {
+                ')' -> result.lastIndexOf('(')
+                ']' -> result.lastIndexOf('[')
+                else -> -1
+            }
+            if (start < 0) break
+            result = result.substring(0, start).trimEnd()
+        }
+        return result
+    }
+
+    fun uniqueIdCandidates(discUniqueId: String?, librarySerial: String?): List<String> =
+        listOfNotNull(discUniqueId, librarySerial).map(String::trim)
+            .filter { it.isNotEmpty() && it != "T0000" && it != "T0000M" }.distinct()
+
     private const val ARCADE_ARTWORK_BASE_URL = "https://flyinghead.github.io/flycast-content/arcade/jpg/"
 
     /**

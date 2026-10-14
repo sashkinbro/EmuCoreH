@@ -157,12 +157,16 @@ class GameRepository {
         return CoverArtRepository(context).displayCoverPath(serial, title, candidate)
     }
 
-    fun downloadCoverForGame(game: GameItem, context: Context): String? {
+    fun downloadCoverForGame(
+        game: GameItem,
+        context: Context,
+        covers: CoverArtRepository = CoverArtRepository(context),
+        offlineOnly: Boolean = false
+    ): String? {
         CustomGameCoverRepository(context).findCustomCoverPath(game.path)?.let { return it }
-        val covers = CoverArtRepository(context)
         // Covers come from the official Flycast sources: the disc's 0GDTEX
         // texture, the flycast-content arcade artwork and TheGamesDB.
-        covers.downloadCover(game, context)?.let { return it }
+        covers.downloadCover(game, context, offlineOnly)?.let { return it }
         covers.findCachedCoverPath(game.serial, title = game.title)?.let { return it }
         return game.coverArtPath?.takeIf { File(it).isFile }
     }

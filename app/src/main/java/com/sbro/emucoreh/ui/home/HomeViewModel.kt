@@ -20,6 +20,7 @@ import com.sbro.emucoreh.data.HomeBackgroundRepository
 import com.sbro.emucoreh.data.HomeBackgroundPreset
 import com.sbro.emucoreh.data.HomeBackgroundType
 import com.sbro.emucoreh.data.CoverArtRepository
+import com.sbro.emucoreh.data.boxart.BoxartRetryPolicy
 import com.sbro.emucoreh.data.CoreMaintenanceRepository
 import com.sbro.emucoreh.data.CoreUpdateResetAction
 import com.sbro.emucoreh.data.CustomGameCoverRepository
@@ -121,6 +122,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var allGames: List<GameItem> = emptyList()
     private var recentEntries: List<RecentGameEntry> = emptyList()
     private var coverSyncJob: Job? = null
+    private var coverRetryJob: Job? = null
     private var searchJob: Job? = null
     private var biosInitialized = false
     private var libraryInitialized = false
@@ -742,6 +744,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun syncMissingCovers() {
+        coverRetryJob?.cancel()
+        coverRetryJob = null
         if (EmulatorBridge.isVmActive()) {
             deferredCoverSync = true
             startDeferredWorkMonitor()
@@ -796,7 +800,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                                 shouldReschedule.set(true)
                                 return@withPermit
                             }
-                            val downloadedCover = repository.downloadCoverForGame(game, context)
+                            val downloadedCover = repository.downloadCoverForGame(
+                                game, context, coverRepository, offlineOnly = true
+                            )
                             if (downloadedCover != null && downloadedCover != game.coverArtPath) {
                                 synchronized(this@HomeViewModel) {
                                     allGames = allGames.map {
@@ -809,15 +815,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
             }
-            if (shouldReschedule.get()) {
-                deferredCoverSync = true
-                startDeferredWorkMonitor()
-            }
             // Flycast shows the offline GD-ROM label first and swaps in the
             // online box art a moment later. Covers extracted in the pass above
             // are upgraded here within the same sync.
-            val upgradeTargets = allGames.filter { coverRepository.isPendingOnlineCover(it.coverArtPath) }
-            if (upgradeTargets.isNotEmpty()) {
+            for (attempt in 0 until 3) {
+                val upgradeTargets = allGames.filter {
+                    it.coverArtPath == null || it.coverArtPath.startsWith("http") ||
+                        coverRepository.isPendingOnlineCover(it.coverArtPath)
+                }
+                if (upgradeTargets.isEmpty()) break
+                if (EmulatorBridge.isVmActive()) {
+                    shouldReschedule.set(true)
+                    break
+                }
+                coverRepository.prepareOnlineCovers(upgradeTargets) { EmulatorBridge.isVmActive() }
                 coroutineScope {
                     upgradeTargets.forEach { game ->
                         launch {
@@ -826,7 +837,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                                     shouldReschedule.set(true)
                                     return@withPermit
                                 }
-                                val upgradedCover = repository.downloadCoverForGame(game, context)
+                                val upgradedCover = repository.downloadCoverForGame(game, context, coverRepository)
                                 if (upgradedCover != null && upgradedCover != game.coverArtPath) {
                                     synchronized(this@HomeViewModel) {
                                         allGames = allGames.map {
@@ -839,9 +850,31 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
                 }
+                if (shouldReschedule.get()) break
+                val retryAt = coverRepository.nextOnlineRetryAtMillis
+                if (retryAt == 0L) break
+                val waitMillis = (retryAt - System.currentTimeMillis()).coerceAtLeast(0L)
+                // Retry short outages within this sync. Allowance exhaustion
+                // keeps its 24-hour backoff; never hold this job for a day.
+                if (waitMillis > 10_000L || attempt == 2) break
+                delay(waitMillis.coerceAtLeast(1000L))
+            }
+            if (shouldReschedule.get()) {
+                deferredCoverSync = true
+                startDeferredWorkMonitor()
             }
             currentLibraryRoot?.let { rootPath ->
                 libraryCacheRepository.save(rootPath, allGames, preferEnglishGameTitles)
+            }
+            if (!shouldReschedule.get() && currentFetchBoxart) {
+                BoxartRetryPolicy.nextSyncDelay(coverRepository.nextOnlineRetryAtMillis, System.currentTimeMillis())
+                    ?.let { retryDelay ->
+                        coverRetryJob = viewModelScope.launch {
+                            delay(retryDelay)
+                            coverRetryJob = null
+                            if (currentFetchBoxart) syncMissingCovers()
+                        }
+                    }
             }
         }
     }
