@@ -18,6 +18,7 @@
 */
 #pragma once
 #include "vulkan_context.h"
+#include "descriptor_pool_chunk.h"
 
 class DynamicDescSetAlloc
 {
@@ -28,6 +29,12 @@ public:
 
 	void setLayout(vk::DescriptorSetLayout layout) {
 		this->layout = layout;
+		poolBindings.clear();
+	}
+	template<typename Bindings>
+	void setLayout(vk::DescriptorSetLayout layout, const Bindings& bindings) {
+		this->layout = layout;
+		poolBindings.assign(bindings.begin(), bindings.end());
 	}
 	void setAllocChunk(int size) {
 		this->allocChunk = size;
@@ -57,8 +64,13 @@ public:
 		if (descSets.empty())
 		{
 			std::vector<vk::DescriptorSetLayout> layouts(allocChunk, layout);
-			descSets = VulkanContext::Instance()->GetDevice().allocateDescriptorSetsUnique(
-					vk::DescriptorSetAllocateInfo(VulkanContext::Instance()->GetDescriptorPool(), layouts));
+			const auto context = VulkanContext::Instance();
+			if (poolBindings.empty())
+				descSets = context->GetDevice().allocateDescriptorSetsUnique(
+						vk::DescriptorSetAllocateInfo(context->GetDescriptorPool(), layouts));
+			else
+				descSets = allocateDescriptorPoolChunk(context->GetDevice(), layouts, poolBindings,
+						pools);
 		}
 		descSetsInFlight[index].emplace_back(std::move(descSets.back()));
 		descSets.pop_back();
@@ -69,10 +81,14 @@ public:
 	{
 		descSets.clear();
 		descSetsInFlight.clear();
+		pools.clear();
 	}
 
 private:
 	vk::DescriptorSetLayout layout;
+	std::vector<vk::DescriptorSetLayoutBinding> poolBindings;
+	// Declare pools before sets: reverse member destruction frees sets first.
+	std::vector<vk::UniqueDescriptorPool> pools;
 	std::vector<vk::UniqueDescriptorSet> descSets;
 	std::vector<std::vector<vk::UniqueDescriptorSet>> descSetsInFlight;
 	int index = 0;

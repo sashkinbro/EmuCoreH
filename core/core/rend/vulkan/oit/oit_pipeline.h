@@ -23,6 +23,7 @@
 #include "oit_shaders.h"
 #include "oit_renderpass.h"
 #include "oit_buffer.h"
+#include "oit_descriptor_layout.h"
 #include "../texture.h"
 #include "../desc_set.h"
 
@@ -87,9 +88,9 @@ public:
 		this->samplerManager = samplerManager;
 		this->pipelineLayout = pipelineLayout;
 
-		perFrameAlloc.setLayout(perFrameLayout);
+		perFrameAlloc.setLayout(perFrameLayout, oitPerFrameDescriptorBindings());
 		perPolyAlloc.setLayout(perPolyLayout);
-		colorInputAlloc.setLayout(colorInputLayout);
+		colorInputAlloc.setLayout(colorInputLayout, oitColorInputDescriptorBindings());
 	}
 
 	// FIXME way too many params
@@ -282,25 +283,13 @@ public:
 		{
 			vk::Device device = GetContext()->GetDevice();
 			// Descriptor set and pipeline layout
-			std::array<vk::DescriptorSetLayoutBinding, 10> perFrameBindings = {
-					vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex),			// vertex uniforms
-					vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eFragment),		// fragment uniforms
-					vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),// fog texture
-					vk::DescriptorSetLayoutBinding(3, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eFragment),		// Tr poly params
-					vk::DescriptorSetLayoutBinding(4, vk::DescriptorType::eInputAttachment, 1, vk::ShaderStageFlagBits::eFragment),		// stencil input attachment
-					vk::DescriptorSetLayoutBinding(5, vk::DescriptorType::eInputAttachment, 1, vk::ShaderStageFlagBits::eFragment),		// depth input attachment
-					vk::DescriptorSetLayoutBinding(6, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),// palette texture
-					// OIT buffers
-					vk::DescriptorSetLayoutBinding(7, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eFragment),		// pixel buffer
-					vk::DescriptorSetLayoutBinding(8, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eFragment),		// pixel counter
-					vk::DescriptorSetLayoutBinding(9, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eFragment),		// a-buffer pointers
-			};
+			const auto perFrameBindings = oitPerFrameDescriptorBindings();
 			perFrameLayout = device.createDescriptorSetLayoutUnique(
 					vk::DescriptorSetLayoutCreateInfo(vk::DescriptorSetLayoutCreateFlags(), perFrameBindings));
 
-			vk::DescriptorSetLayoutBinding colorInputBinding(0, vk::DescriptorType::eInputAttachment, 1, vk::ShaderStageFlagBits::eFragment);		// color input attachment
+			const auto colorInputBindings = oitColorInputDescriptorBindings();
 			colorInputLayout = device.createDescriptorSetLayoutUnique(
-					vk::DescriptorSetLayoutCreateInfo(vk::DescriptorSetLayoutCreateFlags(), colorInputBinding));
+					vk::DescriptorSetLayoutCreateInfo(vk::DescriptorSetLayoutCreateFlags(), colorInputBindings));
 
 			std::array<vk::DescriptorSetLayoutBinding, 4> perPolyBindings = {
 					vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),	// texture 0

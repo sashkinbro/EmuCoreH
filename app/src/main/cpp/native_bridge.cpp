@@ -15,6 +15,7 @@
 #include "audio_resampler.h"
 #include "disc_control.h"
 #include "light_gun_input.h"
+#include "native_frame_boundary.h"
 #include "storage_vfs.h"
 
 #include <android/log.h>
@@ -1347,38 +1348,49 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_destroySession(JNIEnv*, jobject, jl
 
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_runFrame(JNIEnv* env, jobject, jlong handle) {
-    if (g_frontend.shutdown_requested.load()) {
-        const char* detail = g_core.boot_error ? g_core.boot_error() : nullptr;
-        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"),
-                      detail && *detail ? detail : "Flycast requested shutdown");
-        return;
-    }
-    if (handle == 0 || !g_frontend.core_initialized.load()) return;
-    if (!EnsureHardwareContext()) return;
-    // Flycast updates its AV geometry when internal resolution changes. The
-    // render target must grow before the next retro_run(), otherwise 4x and
-    // higher frames are clipped to the old (for example 3x) framebuffer.
-    if (g_frontend.av_info_refresh_pending.exchange(false)) {
-        if (g_core.get_system_av_info != nullptr) {
-            retro_system_av_info info{};
-            g_core.get_system_av_info(&info);
-            if (info.geometry.aspect_ratio > 0.01) {
-                g_frontend.aspect_ratio.store(info.geometry.aspect_ratio);
-            }
-        }
-        if (!vulkan::IsRequested() && !CreatePresentFramebuffer()) {
-            g_frontend.av_info_refresh_pending.store(true);
+    emucoreh::RunNativeFrame([&] {
+        if (g_frontend.shutdown_requested.load()) {
+            const char* detail = g_core.boot_error ? g_core.boot_error() : nullptr;
+            env->ThrowNew(env->FindClass("java/lang/IllegalStateException"),
+                          detail && *detail ? detail : "Flycast requested shutdown");
             return;
         }
-    }
-    if (g_core.run != nullptr) g_core.run();
-    if (g_frontend.shutdown_requested.load()) {
-        const char* detail = g_core.boot_error ? g_core.boot_error() : nullptr;
-        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"),
-                      detail && *detail ? detail : "Flycast requested shutdown");
-        return;
-    }
-    EmuCoreHAchievementsOnFrame();
+        if (handle == 0 || !g_frontend.core_initialized.load()) return;
+        if (!EnsureHardwareContext()) return;
+        // Flycast updates its AV geometry when internal resolution changes. The
+        // render target must grow before the next retro_run(), otherwise 4x and
+        // higher frames are clipped to the old (for example 3x) framebuffer.
+        if (g_frontend.av_info_refresh_pending.exchange(false)) {
+            if (g_core.get_system_av_info != nullptr) {
+                retro_system_av_info info{};
+                g_core.get_system_av_info(&info);
+                if (info.geometry.aspect_ratio > 0.01) {
+                    g_frontend.aspect_ratio.store(info.geometry.aspect_ratio);
+                }
+            }
+            if (!vulkan::IsRequested() && !CreatePresentFramebuffer()) {
+                g_frontend.av_info_refresh_pending.store(true);
+                return;
+            }
+        }
+        if (g_core.run != nullptr) g_core.run();
+        if (g_frontend.shutdown_requested.load()) {
+            const char* detail = g_core.boot_error ? g_core.boot_error() : nullptr;
+            env->ThrowNew(env->FindClass("java/lang/IllegalStateException"),
+                          detail && *detail ? detail : "Flycast requested shutdown");
+            return;
+        }
+        EmuCoreHAchievementsOnFrame();
+    }, [&](const char* message) {
+        // Stop further frames after a native renderer failure; the Kotlin
+        // run loop handles the pending Java exception and reports the error.
+        g_frontend.shutdown_requested.store(true);
+        LOGE("Native frame failed: %s", message);
+        if (!env->ExceptionCheck()) {
+            jclass exceptionClass = env->FindClass("java/lang/IllegalStateException");
+            if (exceptionClass != nullptr) env->ThrowNew(exceptionClass, message);
+        }
+    });
 }
 
 JNIEXPORT void JNICALL

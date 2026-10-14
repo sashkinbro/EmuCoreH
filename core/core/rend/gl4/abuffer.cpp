@@ -18,6 +18,7 @@
 */
 #include "gl4.h"
 #include "rend/gles/glcache.h"
+#include "abuffer_sync.h"
 
 #include <memory>
 
@@ -503,7 +504,7 @@ void DrawTranslucentModVols(int first, int count, bool useOpaqueGeom)
 
 	ModifierVolumeParam* params = useOpaqueGeom ? &gl.rendContext->global_param_mvo[first] : &gl.rendContext->global_param_mvo_tr[first];
 
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
+	synchronizeABuffer(ABufferAccess::ShaderStorageAndPointers);
 
 	int mod_base = -1;
 
@@ -534,7 +535,7 @@ void DrawTranslucentModVols(int first, int count, bool useOpaqueGeom)
 
 		SetCull(param.isp.CullMode); glCheck();
 
-		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+		synchronizeABuffer(ABufferAccess::ShaderStorage);
 
 		glDrawArrays(GL_TRIANGLES, param.first * 3, param.count * 3); glCheck();
 
@@ -545,7 +546,7 @@ void DrawTranslucentModVols(int first, int count, bool useOpaqueGeom)
 			glcache.UseProgram(shader->program);
 			gl4ShaderUniforms.Set(shader);
 
-			glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+			synchronizeABuffer(ABufferAccess::ShaderStorage);
 			glDrawArrays(GL_TRIANGLES, mod_base * 3, (param.first + param.count - mod_base) * 3); glCheck();
 			mod_base = -1;
 		}
@@ -555,6 +556,7 @@ void DrawTranslucentModVols(int first, int count, bool useOpaqueGeom)
 
 void checkOverflowAndReset()
 {
+	synchronizeABuffer(ABufferAccess::FrameReuse);
 	// Using atomic counter
 	GLuint max_pixel_index = 0;
 //	glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &max_pixel_index);
@@ -616,10 +618,10 @@ void renderABuffer(bool lastPass)
 	glcache.Disable(GL_DEPTH_TEST);
 	glcache.Disable(GL_CULL_FACE);
 	glcache.Disable(GL_SCISSOR_TEST);
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
+	synchronizeABuffer(ABufferAccess::ShaderStorageAndPointers);
 	glcache.Disable(GL_BLEND);
 
-	abufferDrawQuad();
+	drawABufferResolve(abufferDrawQuad);
 
 	glActiveTexture(GL_TEXTURE0);
 
