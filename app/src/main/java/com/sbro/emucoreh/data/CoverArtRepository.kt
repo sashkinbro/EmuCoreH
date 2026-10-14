@@ -73,6 +73,19 @@ class CoverArtRepository(context: Context) {
         }
         File(coverCacheDirectory, "flycast").apply {
             if (!exists()) mkdirs()
+            // Invalidate old uncropped/padded 3D covers once so the app downloads
+            // the new tight-cropped 3D covers from EmuCoreH-Covers.
+            val marker = File(this, ".tight_3d_v2.marker")
+            if (!marker.exists()) {
+                runCatching {
+                    listFiles()?.forEach { file ->
+                        if (file.name.endsWith(".webp") || file.name.endsWith(".url") || file.name.endsWith(".miss")) {
+                            file.delete()
+                        }
+                    }
+                    marker.createNewFile()
+                }
+            }
             Log.d(TAG, "Box art cache directory created: $absolutePath")
         }
     }
