@@ -251,6 +251,8 @@ std::string ToString(JNIEnv* env, jstring value) {
     return out;
 }
 
+bool EnvironmentCallback(unsigned cmd, void* data);
+
 bool LoadCoreLocked() {
     if (g_core.handle != nullptr) return true;
     std::lock_guard<std::mutex> load_lock(g_core_load_mutex);
@@ -301,6 +303,7 @@ bool LoadCoreLocked() {
     }
 
     g_core.handle = handle;
+    g_core.set_environment(EnvironmentCallback);
     LOGI("Flycast libretro core loaded");
     return true;
 }

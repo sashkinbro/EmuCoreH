@@ -23,9 +23,8 @@ import java.net.URLEncoder
 import java.util.Locale
 
 /**
- * Kotlin port of Flycast's arcade box art scraper
- * (core/core/ui/boxart/arcade_scraper.h). Arcade covers live on the
- * flycast-content GitHub Pages site used by the official emulator.
+ * Arcade box art scraper source. Arcade covers live on our EmuCoreH-Covers
+ * GitHub repository (with upstream flycast-content as fallback).
  */
 object FlycastBoxartSource {
 
@@ -48,24 +47,28 @@ object FlycastBoxartSource {
         listOfNotNull(discUniqueId, librarySerial).map(String::trim)
             .filter { it.isNotEmpty() && it != "T0000" && it != "T0000M" }.distinct()
 
-    private const val ARCADE_ARTWORK_BASE_URL = "https://flyinghead.github.io/flycast-content/arcade/jpg/"
+    private const val EMUCOREH_ARCADE_BASE_URL = "https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/main/arcade/"
+    private const val UPSTREAM_ARCADE_ARTWORK_BASE_URL = "https://flyinghead.github.io/flycast-content/arcade/jpg/"
 
     /**
-     * Candidate cover URLs for an arcade ROM set, in the same order Flycast
-     * tries them: the archive file name first (zip/7z), then the ROM's unique
-     * id as read from the ROM header.
+     * Candidate cover URLs for an arcade ROM set: tried first on our GitHub repository,
+     * then on the upstream flycast-content site.
      */
     fun arcadeImageUrls(fileName: String, uniqueId: String?): List<String> {
-        val urls = ArrayList<String>(2)
+        val urls = ArrayList<String>(4)
         val extension = fileName.substringAfterLast('.', "").lowercase(Locale.ROOT)
         if (extension == "zip" || extension == "7z") {
             val baseName = fileName.substringBeforeLast('.')
             if (baseName.isNotBlank()) {
-                urls += ARCADE_ARTWORK_BASE_URL + urlEncode(baseName) + ".jpg"
+                val enc = urlEncode(baseName)
+                urls += "$EMUCOREH_ARCADE_BASE_URL$enc.jpg"
+                urls += "$UPSTREAM_ARCADE_ARTWORK_BASE_URL$enc.jpg"
             }
         }
         if (!uniqueId.isNullOrBlank() && uniqueId.all { it in ' '..'~' }) {
-            urls += ARCADE_ARTWORK_BASE_URL + urlEncode(uniqueId) + ".jpg"
+            val enc = urlEncode(uniqueId)
+            urls += "$EMUCOREH_ARCADE_BASE_URL$enc.jpg"
+            urls += "$UPSTREAM_ARCADE_ARTWORK_BASE_URL$enc.jpg"
         }
         return urls
     }

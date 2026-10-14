@@ -5,87 +5,109 @@ import org.json.JSONObject
 import java.text.Normalizer
 import java.util.Locale
 
-/** A bundled, reviewed snapshot; regional product codes share a canonical IGDB game. */
+/**
+ * Universal cover catalog repository backed by GitHub repository:
+ * https://github.com/sashkinbro/EmuCoreH-Covers
+ *
+ * Mappings:
+ * - Product code / serial -> cover image URL
+ * - Game title -> cover image URL
+ * - Arcade romset / unique ID -> arcade cover image URL
+ */
 class CoverIndexRepository(private val context: Context) {
-    data class Cover(val url: String, val sourceUrl: String, val sha256: String)
 
-    /**
-     * Local serial -> catalogue id memory. Whenever a cover is resolved through
-     * a title, the mapping is remembered for the disc's product code, so any
-     * regional serial gets the same artwork even when the bundled index has no
-     * entry for it yet.
-     */
+    data class Cover(val url: String, val sourceUrl: String = "", val sha256: String = "")
+
     private val learned by lazy {
         context.getSharedPreferences("cover_serial_map", Context.MODE_PRIVATE)
     }
 
-    fun find(serial: String?, title: String?, threeDimensional: Boolean = false): Cover? {
+    /**
+     * Resolves a cover URL by product code / serial (e.g. MK-51037, T1202N, HDR-0053).
+     */
+    fun findCoverBySerial(serial: String?): String? {
+        val norm = normalizeSerial(serial) ?: return null
+        val learnedPath = learned.getString(norm, null)
+        if (!learnedPath.isNullOrBlank()) {
+            return makeCoverUrl(learnedPath)
+        }
         val index = load() ?: return null
-        val titles = index.optJSONObject("titles")
-        val normalizedSerial = serial.orEmpty().uppercase(Locale.ROOT).replace(Regex("[-_.\\s]"), "")
-        val normalizedTitle = normalizeTitle(title.orEmpty())
-        val learnedId = normalizedSerial.takeIf { it.isNotEmpty() }?.let { learned.getString(it, null) }
-        var matchedByTitle = false
-        val id = learnedId ?: index.optJSONObject("serials")?.optString(normalizedSerial).orEmpty().ifBlank {
-            titles?.optString(normalizedTitle).orEmpty().ifBlank {
-                fuzzyTitleMatch(titles, normalizedTitle)
-            }
-        }.ifBlank { arcadeGameId(index, title) }.also {
-            matchedByTitle = learnedId == null && it.isNotEmpty() && normalizedSerial.length >= 6
+        val serials = index.optJSONObject("serials") ?: return null
+        val path = serials.optString(norm).takeIf { it.isNotBlank() } ?: return null
+        return makeCoverUrl(path)
+    }
+
+    /**
+     * Resolves a cover URL by game title (exact match first, fuzzy containment second).
+     */
+    fun findCoverByTitle(title: String?): String? {
+        val norm = normalizeTitle(title.orEmpty())
+        if (norm.length < 3) return null
+        val index = load() ?: return null
+        val titles = index.optJSONObject("titles") ?: return null
+        val exactPath = titles.optString(norm).takeIf { it.isNotBlank() }
+        val path = exactPath ?: fuzzyTitleMatch(titles, norm)
+        if (path.isNullOrBlank()) return null
+        return makeCoverUrl(path)
+    }
+
+    /**
+     * Resolves an arcade cover URL by archive romset name (e.g. 18wheelr) or ROM unique ID.
+     */
+    fun findArcadeCover(nameOrPath: String?, uniqueId: String? = null): String? {
+        val index = load() ?: return null
+        val arcade = index.optJSONObject("arcade") ?: return null
+        val romset = romsetKey(nameOrPath)
+        if (romset != null) {
+            val path = arcade.optString(romset).takeIf { it.isNotBlank() }
+            if (path != null) return makeCoverUrl(path)
         }
-        val game = index.optJSONObject("games")?.optJSONObject(id) ?: return arcadeCover(index, title, threeDimensional)
-        val path = game.optString(if (threeDimensional) "path_3d" else "path")
-        if (!Regex("covers/(3d/)?[0-9]+\\.(jpg|png|webp)").matches(path)) {
-            return arcadeCover(index, title, threeDimensional)
+        if (!uniqueId.isNullOrBlank()) {
+            val uidKey = uniqueId.trim().lowercase(Locale.ROOT)
+            val path = arcade.optString(uidKey).takeIf { it.isNotBlank() }
+            if (path != null) return makeCoverUrl(path)
         }
-        if (matchedByTitle) learned.edit().putString(normalizedSerial, id).apply()
-        return Cover("$BASE_URL/$path", game.optString("source_url"), game.optString(if (threeDimensional) "sha256_3d" else "sha256"))
+        return null
+    }
+
+    /** Legacy method maintained for backward compatibility with IgdbCatalogRepository. */
+    fun find(serial: String?, title: String?, threeDimensional: Boolean = false): Cover? {
+        val url = findCoverBySerial(serial)
+            ?: findCoverByTitle(title)
+            ?: findArcadeCover(title, serial)
+            ?: return null
+        return Cover(url, url, "")
     }
 
     /** Product code -> catalogue id from the bundled serial map plus learned aliases. */
     fun gameIdForSerial(serial: String?): Long? {
-        val normalizedSerial = serial.orEmpty().uppercase(Locale.ROOT).replace(Regex("[-_.\\s]"), "")
-        if (normalizedSerial.length < 6) return null
+        val norm = normalizeSerial(serial) ?: return null
         val index = load() ?: return null
-        val id = learned.getString(normalizedSerial, null)
-            ?: index.optJSONObject("serials")?.optString(normalizedSerial).orEmpty()
-        return id.takeIf { it.isNotBlank() }?.toLongOrNull()
+        val serials = index.optJSONObject("serials") ?: return null
+        val path = learned.getString(norm, null)
+            ?: serials.optString(norm).takeIf { it.isNotBlank() }
+            ?: return null
+        return path.substringAfterLast('/').substringBeforeLast('.').toLongOrNull()
     }
 
-    /** Romsets matched to an IGDB entry reuse the standard game artwork. */
-    private fun arcadeGameId(index: JSONObject, title: String?): String =
-        romsetKey(title)?.let { index.optJSONObject("arcade")?.optString(it).orEmpty() }.orEmpty()
-
-    /**
-     * Arcade archives (.zip/.7z/.dat/.lst) are identified by their romset name;
-     * upstream covers exist for every romset Flycast supports.
-     */
-    private fun arcadeCover(index: JSONObject, title: String?, threeDimensional: Boolean): Cover? {
-        val romset = romsetKey(title) ?: return null
-        val entry = index.optJSONObject("arcadeFallback")?.optJSONObject(romset) ?: return null
-        val path = entry.optString(if (threeDimensional) "path_3d" else "path")
-        if (path.isBlank()) return null
-        return Cover(
-            "$BASE_URL/$path",
-            "$BASE_URL/${entry.optString("path")}",
-            entry.optString(if (threeDimensional) "sha256_3d" else "sha256"),
-        )
+    fun recordLearnedSerial(serial: String?, pathOrTitle: String?) {
+        val norm = normalizeSerial(serial) ?: return
+        if (norm.length < 4) return
+        val normTitle = normalizeTitle(pathOrTitle.orEmpty())
+        val index = load() ?: return
+        val path = index.optJSONObject("titles")?.optString(normTitle)?.takeIf { it.isNotBlank() } ?: return
+        learned.edit().putString(norm, path).apply()
     }
 
-    private fun romsetKey(title: String?): String? {
-        val key = title.orEmpty().lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "")
-        return key.takeIf { it.length in 3..40 }
+    private fun makeCoverUrl(relPath: String): String {
+        val clean = relPath.trim().trimStart('/')
+        return "$BASE_URL/$clean"
     }
 
-    /**
-     * Disc titles and IGDB names rarely match exactly ("SOUL REAVER" vs
-     * "Legacy of Kain: Soul Reaver"), so a whole-phrase containment fallback
-     * resolves the catalogue entry when the exact lookup misses.
-     */
-    private fun fuzzyTitleMatch(titles: JSONObject?, query: String): String {
-        if (titles == null || query.length < 4) return ""
+    private fun fuzzyTitleMatch(titles: JSONObject, query: String): String? {
+        if (query.length < 4) return null
         val keys = titles.keys()
-        var bestId = ""
+        var bestPath: String? = null
         var bestLength = Int.MAX_VALUE
         while (keys.hasNext()) {
             val key = keys.next()
@@ -94,49 +116,48 @@ class CoverIndexRepository(private val context: Context) {
             if (!contains) continue
             if (key.length < bestLength) {
                 bestLength = key.length
-                bestId = titles.optString(key)
+                bestPath = titles.optString(key)
             }
         }
-        return bestId
+        return bestPath?.takeIf { it.isNotBlank() }
     }
 
     private fun load(): JSONObject? = cached ?: synchronized(lock) {
         cached ?: runCatching {
-            context.assets.open("catalog/dreamcast_covers.json").bufferedReader().use { JSONObject(it.readText()) }
-                .also(::normalizeArcadeKeys)
+            val hasCoversIndex = runCatching {
+                context.assets.open("catalog/covers_index.json").close()
+                true
+            }.getOrDefault(false)
+
+            val assetPath = if (hasCoversIndex) "catalog/covers_index.json" else "catalog/dreamcast_covers.json"
+            context.assets.open(assetPath).bufferedReader().use { JSONObject(it.readText()) }
         }.getOrNull()?.also { cached = it }
     }
 
-    /**
-     * Older index snapshots key the arcade maps by the raw romset name, while
-     * romsets are looked up by their normalized archive name. Normalizing the
-     * keys on load keeps every snapshot resolvable.
-     */
-    private fun normalizeArcadeKeys(index: JSONObject) {
-        for (section in arrayOf("arcade", "arcadeFallback")) {
-            val source = index.optJSONObject(section) ?: continue
-            val normalized = JSONObject()
-            val keys = source.keys()
-            while (keys.hasNext()) {
-                val key = keys.next()
-                val normalizedKey = key.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "")
-                if (normalizedKey.isNotEmpty() && !normalized.has(normalizedKey)) {
-                    normalized.put(normalizedKey, source.get(key))
-                }
-            }
-            index.put(section, normalized)
-        }
-    }
-
     companion object {
-        private const val BASE_URL = "https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/15caa0598ce7b3ddc04f79c8517c5c74d7497a95"
+        const val BASE_URL = "https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/main"
         private val lock = Any()
         @Volatile private var cached: JSONObject? = null
 
-        internal fun normalizeTitle(value: String): String = Normalizer.normalize(value.lowercase(Locale.ROOT), Normalizer.Form.NFKD)
+        fun normalizeSerial(serial: String?): String? {
+            val norm = serial.orEmpty().uppercase(Locale.ROOT).replace(Regex("[^A-Z0-9]"), "")
+            return norm.takeIf { it.length >= 4 }
+        }
+
+        fun normalizeTitle(value: String): String = Normalizer.normalize(
+            value.replace(Regex("[™®©]"), "").lowercase(Locale.ROOT),
+            Normalizer.Form.NFKD
+        )
             .replace(Regex("\\p{M}+"), "")
-            .replace(Regex("[™®©]"), "")
             .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
             .trim()
+
+        fun romsetKey(nameOrPath: String?): String? = nameOrPath
+            ?.substringAfterLast('/')
+            ?.substringAfterLast('\\')
+            ?.substringBeforeLast('.')
+            ?.trim()
+            ?.lowercase(Locale.ROOT)
+            ?.takeIf { it.isNotBlank() }
     }
 }

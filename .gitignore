@@ -21,6 +21,7 @@ core/build/
 /IGDB
 /public
 /tools
+/cover/
 
 # Local planning workspace (never commit)
 /docs/

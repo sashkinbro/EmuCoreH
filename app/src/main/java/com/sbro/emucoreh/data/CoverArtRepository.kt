@@ -14,6 +14,8 @@ import com.sbro.emucoreh.data.boxart.FlycastImageDownloader
 import com.sbro.emucoreh.data.boxart.FlycastBoxartSource
 import com.sbro.emucoreh.data.boxart.TheGamesDb
 import com.sbro.emucoreh.data.boxart.PreparedBoxartLookup
+import com.sbro.emucoreh.core.SafStorageBridge
+import com.sbro.emucoreh.data.catalog.CoverIndexRepository
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
@@ -60,6 +62,7 @@ class CoverArtRepository(context: Context) {
     val nextOnlineRetryAtMillis: Long get() = retryAt.get()
     private val cache by lazy { FlycastCoverCache(fetchDirectory, ::isUsableCoverFile) }
     private val imageDownloader by lazy { FlycastImageDownloader(fetchDirectory, ::isUsableCoverFile) }
+    private val coverIndex by lazy { CoverIndexRepository(this.context) }
 
     private val fetchDirectory by lazy {
         // The old EmuCoreH cover server cache is no longer used: drop it so the
@@ -109,7 +112,7 @@ class CoverArtRepository(context: Context) {
             val key = normalizeSerial(game.serial) ?: titleCoverKey(game.title) ?: return@flatMap emptyList()
             val scrape = scrapeDiscBoxart(game, key, extractCover = false)
             FlycastBoxartSource.uniqueIdCandidates(scrape?.uniqueId, game.serial)
-        }.distinct().filter { !prefetchedInfo.contains(it) }
+        }.distinct().filter { !prefetchedInfo.contains(it) && coverIndex.findCoverBySerial(it) == null }
         for (batch in ids.chunked(10)) {
             if (shouldAbort()) break
             try {
@@ -268,6 +271,13 @@ class CoverArtRepository(context: Context) {
         val arcade = isArcadeGame(game.fileName)
         try {
             if (arcade) {
+                val arcadeCoverUrl = coverIndex.findArcadeCover(game.fileName, game.serial)
+                if (arcadeCoverUrl != null) {
+                    downloadImage(arcadeCoverUrl, key, "EmuCoreH-Covers arcade", mute = true)?.let {
+                        Log.d(TAG, "========== BOX ART DOWNLOAD END (arcade repo) ==========")
+                        return acceptOnlineCover(existingCover, it)
+                    }
+                }
                 for (url in FlycastBoxartSource.arcadeImageUrls(game.fileName, game.serial)) {
                     downloadImage(url, key, "Flycast arcade", mute = true)?.let {
                         Log.d(TAG, "========== BOX ART DOWNLOAD END (arcade) ==========")
@@ -284,10 +294,40 @@ class CoverArtRepository(context: Context) {
 
             val uniqueIds = if (arcade) emptyList() else
                 FlycastBoxartSource.uniqueIdCandidates(scrape?.uniqueId, game.serial)
+
+            // 1. EmuCoreH-Covers GitHub repository by UID / product code first
             for (uniqueId in uniqueIds) {
-                val info = prefetchedInfo.find(
-                    uniqueId, maxOf(nextOnlineRetryAtMillis, System.currentTimeMillis() + 1000L)
-                ) { TheGamesDb.findByUniqueId(uniqueId) }
+                val repoUrl = coverIndex.findCoverBySerial(uniqueId)
+                if (repoUrl != null) {
+                    downloadImage(repoUrl, key, "EmuCoreH-Covers serial")?.let {
+                        Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers serial) ==========")
+                        return acceptOnlineCover(existingCover, it)
+                    }
+                }
+            }
+
+            // 2. EmuCoreH-Covers GitHub repository by game title second
+            val searchName = FlycastBoxartSource.searchName(
+                scrape?.searchName ?: game.title.ifBlank { game.fileName.substringBeforeLast('.') }, arcade
+            )
+            if (searchName.isNotBlank()) {
+                val repoTitleUrl = coverIndex.findCoverByTitle(searchName)
+                    ?: coverIndex.findCoverByTitle(game.title)
+                if (repoTitleUrl != null) {
+                    downloadImage(repoTitleUrl, key, "EmuCoreH-Covers title")?.let {
+                        Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers title) ==========")
+                        return acceptOnlineCover(existingCover, it)
+                    }
+                }
+            }
+
+            // 3. Fallback: TheGamesDB API (if game not found in our repository, e.g. homebrew)
+            for (uniqueId in uniqueIds) {
+                val info = runCatching {
+                    prefetchedInfo.find(
+                        uniqueId, maxOf(nextOnlineRetryAtMillis, System.currentTimeMillis() + 1000L)
+                    ) { TheGamesDb.findByUniqueId(uniqueId) }
+                }.getOrNull()
                 if (info != null) {
                     info.imageUrl?.let { url ->
                         downloadImage(url, key, "TheGamesDB")?.let {
@@ -297,13 +337,8 @@ class CoverArtRepository(context: Context) {
                     }
                 }
             }
-            // TheGamesDB search name: the disc's own software name when the
-            // image was readable, like Flycast, otherwise the library title.
-            val searchName = FlycastBoxartSource.searchName(
-                scrape?.searchName ?: game.title.ifBlank { game.fileName.substringBeforeLast('.') }, arcade
-            )
             if (searchName.isNotBlank()) {
-                val info = TheGamesDb.findByName(searchName, arcade = arcade)
+                val info = runCatching { TheGamesDb.findByName(searchName, arcade = arcade) }.getOrNull()
                 if (info != null) {
                     info.imageUrl?.let { url ->
                         downloadImage(url, key, "TheGamesDB")?.let {
@@ -369,6 +404,7 @@ class CoverArtRepository(context: Context) {
         if (!path.startsWith("content://")) return path
         return runCatching {
             DocumentPathResolver.resolveFilePath(context, path)?.takeIf { it.isNotBlank() }
+                ?: SafStorageBridge.prepare(context, path)
         }.getOrNull()
     }
 
@@ -398,7 +434,9 @@ class CoverArtRepository(context: Context) {
             val url = runCatching { urlFile.readText().trim() }.getOrNull().orEmpty()
             if (url.startsWith("http://") || url.startsWith("https://")) return url
         }
-        return null
+        return coverIndex.findCoverBySerial(serial)
+            ?: coverIndex.findCoverByTitle(title)
+            ?: coverIndex.findArcadeCover(title, serial)
     }
 
     private fun downloadImage(
