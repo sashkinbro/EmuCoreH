@@ -153,6 +153,7 @@ data class SettingsUiState(
     val emulatorDataPath: String? = null,
     val sdCardDataPath: String? = null,
     val fetchBoxart: Boolean = true,
+    val coverArtStyle: Int = AppPreferences.COVER_ART_STYLE_3D,
     val biosValid: Boolean = false,
     val setupComplete: Boolean = false,
     val appVersion: String = BuildConfig.VERSION_NAME,
@@ -342,6 +343,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             gamePaths = snapshot.gamePaths,
             emulatorDataPath = snapshot.emulatorDataPath,
             fetchBoxart = snapshot.fetchBoxart,
+            coverArtStyle = snapshot.coverArtStyle,
             setupComplete = snapshot.setupComplete,
             overlayScale = snapshot.overlayScale,
             overlayOpacity = snapshot.overlayOpacity,
@@ -414,6 +416,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         preferences.setThemeMode(mode)
         if (mode == ThemeMode.NEON) {
             preferences.setTouchControlVisualStyle(TouchControlVisualStyle.MODERN)
+        }
+        if (preferences.getCoverArtStyleSync() == AppPreferences.COVER_ART_STYLE_3D) {
+            clearCoverImageMemoryCache()
+            CoverArtRepository(getApplication()).clearAllTemporaryImageCaches()
+            preferences.notifyCoverCacheCleared()
         }
     }
     fun saveCustomTheme(config: CustomThemeConfig, activate: Boolean) = viewModelScope.launch {
@@ -1149,6 +1156,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             // dropped so the new state is reflected immediately.
             clearCoverImageMemoryCache()
             preferences.setFetchBoxart(enabled)
+        }
+    }
+
+    fun setCoverArtStyle(style: Int) {
+        viewModelScope.launch {
+            clearCoverImageMemoryCache()
+            CoverArtRepository(getApplication()).clearAllTemporaryImageCaches()
+            preferences.setCoverArtStyle(style)
+            preferences.notifyCoverCacheCleared()
         }
     }
 

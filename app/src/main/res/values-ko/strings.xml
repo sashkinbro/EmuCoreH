@@ -2160,4 +2160,10 @@
     <string name="library_disc_count">디스크 %1$d장</string>
     <string name="library_launch_disc">실행</string>
     <string name="library_disc_file">디스크 이미지</string>
+
+    <string name="settings_cover_art_style">커버 아트 스타일</string>
+    <string name="settings_cover_art_style_desc">라이브러리에서 게임 커버가 표시되는 방식을 선택합니다. 3D 스타일은 활성 테마(다크 또는 라이트)에 맞춰 자동으로 조정됩니다.</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">평면</string>
+    <string name="settings_cover_art_style_disabled">비활성화</string>
 </resources>

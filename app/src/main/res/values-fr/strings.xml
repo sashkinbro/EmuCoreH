@@ -2163,4 +2163,10 @@
     <string name="library_disc_count">%1$d disques</string>
     <string name="library_launch_disc">Lancer</string>
     <string name="library_disc_file">Image disque</string>
+
+    <string name="settings_cover_art_style">Style des jaquettes</string>
+    <string name="settings_cover_art_style_desc">Choisissez comment afficher les jaquettes de jeux dans la bibliothèque. Le style 3D s\'adapte automatiquement au thème actif (sombre ou clair).</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">Plates</string>
+    <string name="settings_cover_art_style_disabled">Désactivé</string>
 </resources>

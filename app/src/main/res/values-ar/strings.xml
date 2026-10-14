@@ -2169,4 +2169,10 @@
     <string name="library_disc_count">عدد الأقراص: %1$d</string>
     <string name="library_launch_disc">تشغيل</string>
     <string name="library_disc_file">صورة القرص</string>
+
+    <string name="settings_cover_art_style">نمط أغلفة الألعاب</string>
+    <string name="settings_cover_art_style_desc">اختر كيفية عرض أغلفة الألعاب في المكتبة. يتكيف النمط ثلاثي الأبعاد 3D تلقائيًا مع السمة النشطة (داكنة أو فاتحة).</string>
+    <string name="settings_cover_art_style_3d">ثلاثي الأبعاد (3D)</string>
+    <string name="settings_cover_art_style_flat">مسطح</string>
+    <string name="settings_cover_art_style_disabled">معطّل</string>
 </resources>

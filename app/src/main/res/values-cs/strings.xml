@@ -2182,4 +2182,10 @@
     <string name="library_disc_count">Počet disků: %1$d</string>
     <string name="library_launch_disc">Spustit</string>
     <string name="library_disc_file">Obraz disku</string>
+
+    <string name="settings_cover_art_style">Styl obalů her</string>
+    <string name="settings_cover_art_style_desc">Vyberte zobrazení obalů her v knihovně. Styl 3D se automaticky přizpůsobuje aktivnímu motivu (tmavému nebo světlému).</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">Ploché</string>
+    <string name="settings_cover_art_style_disabled">Vypnuto</string>
 </resources>

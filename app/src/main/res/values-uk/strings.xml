@@ -2166,4 +2166,10 @@
     <string name="library_disc_count">Дисків: %1$d</string>
     <string name="library_launch_disc">Запустити</string>
     <string name="library_disc_file">Образ диска</string>
+
+    <string name="settings_cover_art_style">Стиль обкладинок</string>
+    <string name="settings_cover_art_style_desc">Виберіть вигляд обкладинок ігор у бібліотеці. Стиль 3D автоматично підлаштовується під активну тему (темну або світлу).</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">Плоскі</string>
+    <string name="settings_cover_art_style_disabled">Вимкнено</string>
 </resources>

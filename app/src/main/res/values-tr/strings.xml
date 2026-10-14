@@ -2161,4 +2161,10 @@
     <string name="library_disc_count">%1$d disk</string>
     <string name="library_launch_disc">Başlat</string>
     <string name="library_disc_file">Disk görüntüsü</string>
+
+    <string name="settings_cover_art_style">Kapak Resmi Stili</string>
+    <string name="settings_cover_art_style_desc">Kütüphanede oyun kapaklarının nasıl görüntüleneceğini seçin. 3D stili aktif temaya (karanlık veya aydınlık) göre otomatik uyarlanır.</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">Düz</string>
+    <string name="settings_cover_art_style_disabled">Devre Dışı</string>
 </resources>

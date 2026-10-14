@@ -2163,4 +2163,10 @@
     <string name="library_disc_count">%1$d discos</string>
     <string name="library_launch_disc">Iniciar</string>
     <string name="library_disc_file">Imagen de disco</string>
+
+    <string name="settings_cover_art_style">Estilo de carátulas</string>
+    <string name="settings_cover_art_style_desc">Selecciona cómo se muestran las carátulas de los juegos en la biblioteca. El estilo 3D se adapta automáticamente al tema activo (oscuro o claro).</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">Planas</string>
+    <string name="settings_cover_art_style_disabled">Desactivado</string>
 </resources>

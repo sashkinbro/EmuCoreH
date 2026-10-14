@@ -2176,4 +2176,10 @@
     <string name="library_disc_count">%1$d دیسک</string>
     <string name="library_launch_disc">اجرا</string>
     <string name="library_disc_file">تصویر دیسک</string>
+
+    <string name="settings_cover_art_style">سبک کاور بازی‌ها</string>
+    <string name="settings_cover_art_style_desc">نحوه نمایش کاور بازی‌ها در کتابخانه را انتخاب کنید. سبک سه‌بعدی به صورت خودکار با تم فعال (تیره یا روشن) هماهنگ می‌شود.</string>
+    <string name="settings_cover_art_style_3d">سه‌بعدی (3D)</string>
+    <string name="settings_cover_art_style_flat">تخت</string>
+    <string name="settings_cover_art_style_disabled">غیرفعال</string>
 </resources>

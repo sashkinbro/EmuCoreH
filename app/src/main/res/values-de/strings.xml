@@ -2163,4 +2163,10 @@
     <string name="library_disc_count">%1$d Discs</string>
     <string name="library_launch_disc">Starten</string>
     <string name="library_disc_file">Disc-Image</string>
+
+    <string name="settings_cover_art_style">Cover-Stil</string>
+    <string name="settings_cover_art_style_desc">Wählen Sie die Darstellung der Spiele-Cover in der Bibliothek. Der 3D-Stil passt sich automatisch dem aktiven Design an (dunkel oder hell).</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">Flach</string>
+    <string name="settings_cover_art_style_disabled">Deaktiviert</string>
 </resources>

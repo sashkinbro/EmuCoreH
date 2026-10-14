@@ -56,4 +56,40 @@ class CoverIndexRepositoryTest {
             CoverIndexRepository.BASE_URL
         )
     }
+
+    @Test
+    fun makeCoverUrlTransforms3DAndFlatStyles() {
+        val base = CoverIndexRepository.BASE_URL
+        
+        // 3D Dark Dreamcast
+        assertEquals(
+            "$base/covers/3d/420.webp",
+            CoverIndexRepository.makeCoverUrl("covers/420.jpg", style = com.sbro.emucoreh.data.AppPreferences.COVER_ART_STYLE_3D, isLight = false)
+        )
+        // 3D Light Dreamcast
+        assertEquals(
+            "$base/covers/3d/light/420.webp",
+            CoverIndexRepository.makeCoverUrl("covers/420.jpg", style = com.sbro.emucoreh.data.AppPreferences.COVER_ART_STYLE_3D, isLight = true)
+        )
+        // Flat Dreamcast
+        assertEquals(
+            "$base/covers/420.jpg",
+            CoverIndexRepository.makeCoverUrl("covers/420.jpg", style = com.sbro.emucoreh.data.AppPreferences.COVER_ART_STYLE_FLAT, isLight = false)
+        )
+        // 3D Dark Arcade
+        assertEquals(
+            "$base/arcade/3d/18wheelr.webp",
+            CoverIndexRepository.makeCoverUrl("arcade/18wheelr.jpg", style = com.sbro.emucoreh.data.AppPreferences.COVER_ART_STYLE_3D, isLight = false)
+        )
+        // 3D Light Arcade
+        assertEquals(
+            "$base/arcade/3d/light/18wheelr.webp",
+            CoverIndexRepository.makeCoverUrl("arcade/18wheelr.jpg", style = com.sbro.emucoreh.data.AppPreferences.COVER_ART_STYLE_3D, isLight = true)
+        )
+        // Flat Arcade
+        assertEquals(
+            "$base/arcade/18wheelr.jpg",
+            CoverIndexRepository.makeCoverUrl("arcade/18wheelr.jpg", style = com.sbro.emucoreh.data.AppPreferences.COVER_ART_STYLE_FLAT, isLight = false)
+        )
+    }
 }

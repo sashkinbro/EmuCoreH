@@ -2162,4 +2162,10 @@
     <string name="library_disc_count">%1$d 張光碟</string>
     <string name="library_launch_disc">啟動</string>
     <string name="library_disc_file">光碟映像檔</string>
+
+    <string name="settings_cover_art_style">封面样式</string>
+    <string name="settings_cover_art_style_desc">选择游戏库中封面的显示方式。3D样式会自动适配当前主题（深色或浅色）。</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">平面</string>
+    <string name="settings_cover_art_style_disabled">禁用</string>
 </resources>

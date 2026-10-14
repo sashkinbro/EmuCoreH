@@ -2175,4 +2175,10 @@
     <string name="library_disc_count">%1$d disk</string>
     <string name="library_launch_disc">Jalankan</string>
     <string name="library_disc_file">Image disk</string>
+
+    <string name="settings_cover_art_style">Gaya Sampul Game</string>
+    <string name="settings_cover_art_style_desc">Pilih bagaimana sampul game ditampilkan di pustaka. Gaya 3D otomatis menyesuaikan dengan tema aktif (gelap atau terang).</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">Datar</string>
+    <string name="settings_cover_art_style_disabled">Dinonaktifkan</string>
 </resources>

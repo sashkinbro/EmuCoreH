@@ -1,6 +1,7 @@
 package com.sbro.emucoreh.data.catalog
 
 import android.content.Context
+import com.sbro.emucoreh.data.AppPreferences
 import org.json.JSONObject
 import java.text.Normalizer
 import java.util.Locale
@@ -25,22 +26,32 @@ class CoverIndexRepository(private val context: Context) {
     /**
      * Resolves a cover URL by product code / serial (e.g. MK-51037, T1202N, HDR-0053).
      */
-    fun findCoverBySerial(serial: String?): String? {
+    fun findCoverBySerial(
+        serial: String?,
+        style: Int = AppPreferences.COVER_ART_STYLE_3D,
+        isLight: Boolean = false
+    ): String? {
+        if (style == AppPreferences.COVER_ART_STYLE_DISABLED) return null
         val norm = normalizeSerial(serial) ?: return null
         val learnedPath = learned.getString(norm, null)
         if (!learnedPath.isNullOrBlank()) {
-            return makeCoverUrl(learnedPath)
+            return makeCoverUrl(learnedPath, style, isLight)
         }
         val index = load() ?: return null
         val serials = index.optJSONObject("serials") ?: return null
         val path = serials.optString(norm).takeIf { it.isNotBlank() } ?: return null
-        return makeCoverUrl(path)
+        return makeCoverUrl(path, style, isLight)
     }
 
     /**
      * Resolves a cover URL by game title (exact match first, fuzzy containment second).
      */
-    fun findCoverByTitle(title: String?): String? {
+    fun findCoverByTitle(
+        title: String?,
+        style: Int = AppPreferences.COVER_ART_STYLE_3D,
+        isLight: Boolean = false
+    ): String? {
+        if (style == AppPreferences.COVER_ART_STYLE_DISABLED) return null
         val norm = normalizeTitle(title.orEmpty())
         if (norm.length < 3) return null
         val index = load() ?: return null
@@ -48,33 +59,40 @@ class CoverIndexRepository(private val context: Context) {
         val exactPath = titles.optString(norm).takeIf { it.isNotBlank() }
         val path = exactPath ?: fuzzyTitleMatch(titles, norm)
         if (path.isNullOrBlank()) return null
-        return makeCoverUrl(path)
+        return makeCoverUrl(path, style, isLight)
     }
 
     /**
      * Resolves an arcade cover URL by archive romset name (e.g. 18wheelr) or ROM unique ID.
      */
-    fun findArcadeCover(nameOrPath: String?, uniqueId: String? = null): String? {
+    fun findArcadeCover(
+        nameOrPath: String?,
+        uniqueId: String? = null,
+        style: Int = AppPreferences.COVER_ART_STYLE_3D,
+        isLight: Boolean = false
+    ): String? {
+        if (style == AppPreferences.COVER_ART_STYLE_DISABLED) return null
         val index = load() ?: return null
         val arcade = index.optJSONObject("arcade") ?: return null
         val romset = romsetKey(nameOrPath)
         if (romset != null) {
             val path = arcade.optString(romset).takeIf { it.isNotBlank() }
-            if (path != null) return makeCoverUrl(path)
+            if (path != null) return makeCoverUrl(path, style, isLight)
         }
         if (!uniqueId.isNullOrBlank()) {
             val uidKey = uniqueId.trim().lowercase(Locale.ROOT)
             val path = arcade.optString(uidKey).takeIf { it.isNotBlank() }
-            if (path != null) return makeCoverUrl(path)
+            if (path != null) return makeCoverUrl(path, style, isLight)
         }
         return null
     }
 
     /** Legacy method maintained for backward compatibility with IgdbCatalogRepository. */
     fun find(serial: String?, title: String?, threeDimensional: Boolean = false): Cover? {
-        val url = findCoverBySerial(serial)
-            ?: findCoverByTitle(title)
-            ?: findArcadeCover(title, serial)
+        val style = if (threeDimensional) AppPreferences.COVER_ART_STYLE_3D else AppPreferences.COVER_ART_STYLE_FLAT
+        val url = findCoverBySerial(serial, style)
+            ?: findCoverByTitle(title, style)
+            ?: findArcadeCover(title, serial, style)
             ?: return null
         return Cover(url, url, "")
     }
@@ -99,10 +117,7 @@ class CoverIndexRepository(private val context: Context) {
         learned.edit().putString(norm, path).apply()
     }
 
-    private fun makeCoverUrl(relPath: String): String {
-        val clean = relPath.trim().trimStart('/')
-        return "$BASE_URL/$clean"
-    }
+
 
     private fun fuzzyTitleMatch(titles: JSONObject, query: String): String? {
         if (query.length < 4) return null
@@ -159,5 +174,25 @@ class CoverIndexRepository(private val context: Context) {
             ?.trim()
             ?.lowercase(Locale.ROOT)
             ?.takeIf { it.isNotBlank() }
+
+        fun makeCoverUrl(
+            relPath: String,
+            style: Int = AppPreferences.COVER_ART_STYLE_3D,
+            isLight: Boolean = false
+        ): String {
+            val clean = relPath.trim().trimStart('/')
+            if (style == AppPreferences.COVER_ART_STYLE_3D) {
+                val ext = ".webp"
+                val stem = clean.substringAfterLast('/').substringBeforeLast('.')
+                val variant = if (isLight) "3d/light" else "3d"
+                if (clean.startsWith("arcade/")) {
+                    return "$BASE_URL/arcade/$variant/$stem$ext"
+                }
+                if (clean.startsWith("covers/")) {
+                    return "$BASE_URL/covers/$variant/$stem$ext"
+                }
+            }
+            return "$BASE_URL/$clean"
+        }
     }
 }

@@ -2161,4 +2161,10 @@
     <string name="library_disc_count">%1$d डिस्क</string>
     <string name="library_launch_disc">लॉन्च करें</string>
     <string name="library_disc_file">डिस्क इमेज</string>
+
+    <string name="settings_cover_art_style">कवर आर्ट शैली</string>
+    <string name="settings_cover_art_style_desc">लाइब्रेरी में गेम कवर कैसे प्रदर्शित हों, चुनें। 3D शैली आपकी सक्रिय थीम (डार्क या लाइट) के अनुसार अनुकूलित होती है।</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">फ्लैट</string>
+    <string name="settings_cover_art_style_disabled">अक्षम</string>
 </resources>

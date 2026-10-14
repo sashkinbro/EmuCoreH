@@ -2163,4 +2163,10 @@
     <string name="library_disc_count">%1$d discos</string>
     <string name="library_launch_disc">Iniciar</string>
     <string name="library_disc_file">Imagem de disco</string>
+
+    <string name="settings_cover_art_style">Estilo de capas</string>
+    <string name="settings_cover_art_style_desc">Escolha como as capas dos jogos são exibidas na biblioteca. O estilo 3D adapta-se automaticamente ao tema ativo (escuro ou claro).</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">Planas</string>
+    <string name="settings_cover_art_style_disabled">Desativado</string>
 </resources>

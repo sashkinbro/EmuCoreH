@@ -100,6 +100,7 @@ data class SettingsSnapshot(
     val gamePaths: List<String> = emptyList(),
     val emulatorDataPath: String? = null,
     val fetchBoxart: Boolean = true,
+    val coverArtStyle: Int = AppPreferences.COVER_ART_STYLE_3D,
     val setupComplete: Boolean = false,
     val overlayScale: Int = 100,
     val overlayOpacity: Int = AppPreferences.DEFAULT_OVERLAY_OPACITY,
@@ -297,6 +298,10 @@ class AppPreferences(private val context: Context) {
         const val MAX_FPS_OVERLAY_SCALE = 200
         const val DEFAULT_FPS_OVERLAY_SCALE = 100
 
+        const val COVER_ART_STYLE_DISABLED = 0
+        const val COVER_ART_STYLE_FLAT = 1
+        const val COVER_ART_STYLE_3D = 2
+
         fun defaultOverlayControlLayouts(stickScale: Int = OVERLAY_CONTROL_SCALE_DEFAULT): Map<String, OverlayControlLayout> = mapOf(
             "l1" to OverlayControlLayout(),
             "r1" to OverlayControlLayout(),
@@ -386,6 +391,7 @@ class AppPreferences(private val context: Context) {
         private val GAMEPAD_ARCADE_BINDINGS = stringPreferencesKey("gamepad_arcade_bindings")
         private val LEGACY_COVER_ART_STYLE = intPreferencesKey("cover_art_style")
         private val COVER_ART_STYLE = intPreferencesKey("psp_cover_art_style_v2")
+        private val COVER_ART_STYLE_V3 = intPreferencesKey("cover_art_style_v3")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         private val GPU_HARDWARE_PROFILE = intPreferencesKey("gpu_hardware_profile")
         private val LANGUAGE_TAG = stringPreferencesKey("language_tag")
@@ -1207,16 +1213,58 @@ class AppPreferences(private val context: Context) {
         }
     }
 
-    /**
-     * The box art style preference (3D/flat/off) is gone: box art now comes
-     * from the official Flycast sources. Only the on/off state is kept, with
-     * the old "off" value migrated to a disabled fetch toggle.
-     */
-    private fun readFetchBoxart(prefs: Preferences): Boolean =
-        prefs[FETCH_BOXART] ?: (readLegacyCoverArtStyle(prefs) != -1)
+    val coverArtStyle: Flow<Int> = context.dataStore.data.map { prefs ->
+        readCoverArtStyle(prefs)
+    }.distinctUntilChanged()
+
+    suspend fun setCoverArtStyle(style: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[COVER_ART_STYLE_V3] = style
+        }
+    }
+
+    fun getCoverArtStyleSync(): Int {
+        return kotlinx.coroutines.runBlocking {
+            context.dataStore.data.map { prefs ->
+                readCoverArtStyle(prefs)
+            }.first()
+        }
+    }
+
+    private fun readCoverArtStyle(prefs: Preferences): Int =
+        prefs[COVER_ART_STYLE_V3] ?: COVER_ART_STYLE_3D
+
+    private fun readFetchBoxart(prefs: Preferences): Boolean {
+        if (readCoverArtStyle(prefs) == COVER_ART_STYLE_DISABLED) return false
+        return prefs[FETCH_BOXART] ?: (readLegacyCoverArtStyle(prefs) != -1)
+    }
 
     private fun readLegacyCoverArtStyle(prefs: Preferences): Int =
         prefs[COVER_ART_STYLE] ?: prefs[LEGACY_COVER_ART_STYLE] ?: 1
+
+    fun isThemeLightSync(): Boolean {
+        return when (getThemeModeSync()) {
+            ThemeMode.LIGHT -> true
+            ThemeMode.DARK, ThemeMode.PRO, ThemeMode.NEON -> false
+            ThemeMode.CUSTOM -> !getCustomThemeSync().dark
+            ThemeMode.SYSTEM -> {
+                val uiMode = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                uiMode != android.content.res.Configuration.UI_MODE_NIGHT_YES
+            }
+        }
+    }
+
+    fun getThemeModeSync(): ThemeMode {
+        return kotlinx.coroutines.runBlocking {
+            context.dataStore.data.map { readThemeMode(it) }.first()
+        }
+    }
+
+    fun getCustomThemeSync(): CustomThemeConfig {
+        return kotlinx.coroutines.runBlocking {
+            context.dataStore.data.map { readCustomThemeLibrary(it).activeTheme()?.config ?: CustomThemeConfig.Default }.first()
+        }
+    }
 
     val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[ONBOARDING_COMPLETED] ?: false
@@ -1337,6 +1385,7 @@ class AppPreferences(private val context: Context) {
                 gamePaths = readGamePaths(prefs),
                 emulatorDataPath = prefs[EMULATOR_DATA_PATH],
                 fetchBoxart = readFetchBoxart(prefs),
+                coverArtStyle = readCoverArtStyle(prefs),
                 setupComplete = prefs[ONBOARDING_COMPLETED] ?: false,
                 overlayScale = prefs[OVERLAY_SCALE] ?: 100,
                 overlayOpacity = (prefs[OVERLAY_OPACITY] ?: DEFAULT_OVERLAY_OPACITY)

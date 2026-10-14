@@ -2186,4 +2186,10 @@
     <string name="library_disc_count">%1$d discs</string>
     <string name="library_launch_disc">Launch</string>
     <string name="library_disc_file">Disc image</string>
+
+    <string name="settings_cover_art_style">Cover Art Style</string>
+    <string name="settings_cover_art_style_desc">Select how game covers are displayed in the library. 3D style dynamically matches your active theme (Dark or Light).</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">Flat</string>
+    <string name="settings_cover_art_style_disabled">Disabled</string>
 </resources>

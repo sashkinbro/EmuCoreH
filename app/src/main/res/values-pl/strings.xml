@@ -2182,4 +2182,10 @@
     <string name="library_disc_count">Liczba płyt: %1$d</string>
     <string name="library_launch_disc">Uruchom</string>
     <string name="library_disc_file">Obraz płyty</string>
+
+    <string name="settings_cover_art_style">Styl okładek</string>
+    <string name="settings_cover_art_style_desc">Wybierz sposób wyświetlania okładek gier w bibliotece. Styl 3D automatycznie dopasowuje się do aktywnego motywu (ciemnego lub jasnego).</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">Płaskie</string>
+    <string name="settings_cover_art_style_disabled">Wyłączone</string>
 </resources>

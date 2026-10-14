@@ -2160,4 +2160,10 @@
     <string name="library_disc_count">%1$d 枚のディスク</string>
     <string name="library_launch_disc">起動</string>
     <string name="library_disc_file">ディスクイメージ</string>
+
+    <string name="settings_cover_art_style">カバーアートのスタイル</string>
+    <string name="settings_cover_art_style_desc">ライブラリ内でのゲームカバーの表示形式を選択します。3Dスタイルはアクティブなテーマ（ダークまたはライト）に合わせて自動調整されます。</string>
+    <string name="settings_cover_art_style_3d">3D</string>
+    <string name="settings_cover_art_style_flat">フラット</string>
+    <string name="settings_cover_art_style_disabled">無効</string>
 </resources>

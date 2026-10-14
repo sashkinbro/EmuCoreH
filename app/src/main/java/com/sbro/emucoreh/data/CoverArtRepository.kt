@@ -269,9 +269,12 @@ class CoverArtRepository(context: Context) {
         }
 
         val arcade = isArcadeGame(game.fileName)
+        val prefs = AppPreferences(context)
+        val style = prefs.getCoverArtStyleSync()
+        val isLight = prefs.isThemeLightSync()
         try {
             if (arcade) {
-                val arcadeCoverUrl = coverIndex.findArcadeCover(game.fileName, game.serial)
+                val arcadeCoverUrl = coverIndex.findArcadeCover(game.fileName, game.serial, style, isLight)
                 if (arcadeCoverUrl != null) {
                     downloadImage(arcadeCoverUrl, key, "EmuCoreH-Covers arcade", mute = true)?.let {
                         Log.d(TAG, "========== BOX ART DOWNLOAD END (arcade repo) ==========")
@@ -297,7 +300,7 @@ class CoverArtRepository(context: Context) {
 
             // 1. EmuCoreH-Covers GitHub repository by UID / product code first
             for (uniqueId in uniqueIds) {
-                val repoUrl = coverIndex.findCoverBySerial(uniqueId)
+                val repoUrl = coverIndex.findCoverBySerial(uniqueId, style, isLight)
                 if (repoUrl != null) {
                     downloadImage(repoUrl, key, "EmuCoreH-Covers serial")?.let {
                         Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers serial) ==========")
@@ -311,8 +314,8 @@ class CoverArtRepository(context: Context) {
                 scrape?.searchName ?: game.title.ifBlank { game.fileName.substringBeforeLast('.') }, arcade
             )
             if (searchName.isNotBlank()) {
-                val repoTitleUrl = coverIndex.findCoverByTitle(searchName)
-                    ?: coverIndex.findCoverByTitle(game.title)
+                val repoTitleUrl = coverIndex.findCoverByTitle(searchName, style, isLight)
+                    ?: coverIndex.findCoverByTitle(game.title, style, isLight)
                 if (repoTitleUrl != null) {
                     downloadImage(repoTitleUrl, key, "EmuCoreH-Covers title")?.let {
                         Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers title) ==========")

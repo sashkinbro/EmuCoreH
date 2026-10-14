@@ -1859,13 +1859,17 @@ private fun SettingsContent(
                     }
 
                     SettingsSection(title = stringResource(R.string.settings_covers_tab)) {
-                        ToggleItem(
-                            icon = Icons.Rounded.Image,
-                            title = stringResource(R.string.settings_fetch_boxart),
-                            subtitle = stringResource(R.string.settings_fetch_boxart_desc),
-                            checked = uiState.fetchBoxart,
-                            onCheckedChange = viewModel::setFetchBoxart,
-                            onResetToDefault = { viewModel.setFetchBoxart(true) }
+                        ChoiceSection(
+                            title = stringResource(R.string.settings_cover_art_style),
+                            options = listOf(
+                                AppPreferences.COVER_ART_STYLE_3D to stringResource(R.string.settings_cover_art_style_3d),
+                                AppPreferences.COVER_ART_STYLE_FLAT to stringResource(R.string.settings_cover_art_style_flat),
+                                AppPreferences.COVER_ART_STYLE_DISABLED to stringResource(R.string.settings_cover_art_style_disabled)
+                            ),
+                            selectedValue = uiState.coverArtStyle,
+                            onSelect = viewModel::setCoverArtStyle,
+                            helpText = stringResource(R.string.settings_cover_art_style_desc),
+                            onResetToDefault = { viewModel.setCoverArtStyle(AppPreferences.COVER_ART_STYLE_3D) }
                         )
                         SettingsItem(
                             icon = Icons.Rounded.DeleteOutline,
