@@ -470,7 +470,8 @@ fun EmulationScreen(
     LocalConfiguration.current
     val view = LocalView.current
     var showExitDialog by remember { mutableStateOf(false) }
-    var exitDispatched by remember { mutableStateOf(false) }
+    var exitDispatched by remember(gamePath, bootToBios) { mutableStateOf(false) }
+    val gameMenuExitState = remember(gamePath, bootToBios) { GameMenuExitState() }
     var showQuickSaveDialog by remember { mutableStateOf(false) }
     var showQuickLoadDialog by remember { mutableStateOf(false) }
     var floatingQuickSavePosition by remember { mutableStateOf<Offset?>(null) }
@@ -727,7 +728,9 @@ fun EmulationScreen(
         touchPadIndex != null || !gamepadConnected || !uiState.hideOverlayOnGamepad
     )
 
-    val toggleMenuClick = rememberDebouncedClick(onClick = { viewModel.toggleMenu() })
+    val toggleMenuClick = rememberDebouncedClick(onClick = {
+        if (!exitDispatched) viewModel.toggleMenu()
+    })
     val toggleControlsClick = rememberDebouncedClick(onClick = { viewModel.toggleControlsVisibility() })
     val togglePauseClick = rememberDebouncedClick(onClick = { viewModel.togglePause() })
     val requestQuickSaveClick = rememberDebouncedClick(onClick = {
@@ -763,11 +766,15 @@ fun EmulationScreen(
     // A retained emulation destination can be reused for another game. Reset
     // the one-shot exit gate when presenting a fresh confirmation dialog.
     val requestExitClick = rememberDebouncedClick(onClick = {
-        if (uiState.isRunning) exitDispatched = false
+        if (uiState.isRunning) {
+            exitDispatched = false
+            gameMenuExitState.reset()
+        }
         showExitDialog = true
     })
     val confirmExitClick = rememberDebouncedClick(onClick = {
         if (exitDispatched) return@rememberDebouncedClick
+        gameMenuExitState.begin(uiState)
         exitDispatched = true
         showExitDialog = false
         val completedActivePlayTimeMs = currentActivePlayTimeMs
@@ -783,7 +790,7 @@ fun EmulationScreen(
     val dismissGamepadMappingDialog: () -> Unit = { showGamepadMappingDialog = false }
     val dismissGamepadMappingDialogClick = rememberDebouncedClick(onClick = dismissGamepadMappingDialog)
     val sessionRestoredUnavailableMessage = stringResource(R.string.emulation_session_restored_unavailable)
-    val gamepadUiActive = uiState.showMenu ||
+    val gamepadUiActive = exitDispatched || uiState.showMenu ||
         showControlsEditor ||
         showExitDialog ||
         showQuickSaveDialog ||
@@ -803,6 +810,7 @@ fun EmulationScreen(
         enabled = gamepadUiActive,
         onBack = {
             when {
+                exitDispatched -> true
                 pendingGamepadActionId != null -> {
                     pendingGamepadActionId = null
                     true
@@ -1650,17 +1658,19 @@ fun EmulationScreen(
         // slides off-screen when closed: opening the menu is then a single
         // animation instead of composing the whole sidebar on the tap, which
         // used to make the first open lag and stutter.
-        val gameMenuVisible = uiState.showMenu && !showControlsEditor
+        val menuUiState = gameMenuExitState.present(uiState)
+        val gameMenuVisible = menuUiState.showMenu && !showControlsEditor
         val menuSlideProgress by animateFloatAsState(
             targetValue = if (gameMenuVisible) 0f else 1f,
             animationSpec = tween(durationMillis = if (gameMenuVisible) 260 else 220),
             label = "emulation_menu_slide"
         )
-        if (uiState.isRunning) {
+        if (menuUiState.isRunning) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .zIndex(32f)
+                    .onPreviewKeyEvent { exitDispatched }
                     .graphicsLayer { translationX = menuSlideProgress * size.width }
             ) {
                 Box(
@@ -1674,7 +1684,7 @@ fun EmulationScreen(
                 )
 
                 EmulationSidebarMenu(
-                    uiState = uiState,
+                    uiState = menuUiState,
                     gamepadConnected = gamepadConnected,
                     lightGunActive = overlayPadIndex in gunPorts,
                     arcadeInputMode = arcadeInputMode,
@@ -1751,6 +1761,17 @@ fun EmulationScreen(
                 )
                 if (LocalNeonTheme.current) {
                     NeonCrtOverlay()
+                }
+                if (exitDispatched) {
+                    // Keep the last menu frame visible, but stop accepting
+                    // actions while the core and navigation are shutting down.
+                    Box(Modifier.matchParentSize().pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                awaitPointerEvent().changes.forEach { it.consume() }
+                            }
+                        }
+                    })
                 }
             }
         }
