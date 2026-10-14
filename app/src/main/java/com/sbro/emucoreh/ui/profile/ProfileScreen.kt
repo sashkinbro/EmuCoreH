@@ -2809,14 +2809,11 @@ private fun GamePlayStatRow(
     val content: @Composable () -> Unit = {
         Box {
             Row(
-                modifier = Modifier.padding(
-                    start = 14.dp,
-                    top = 14.dp,
-                    end = 14.dp,
-                    bottom = 50.dp
-                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 val is3d = isGenerated3dCover(game.coverArtPath)
                 GameCoverArt(
@@ -2831,7 +2828,12 @@ private fun GamePlayStatRow(
                         .clip(if (is3d) RectangleShape else neonShape(8.dp)),
                     contentScale = ContentScale.Fit
                 )
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(bottom = 18.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     Text(
                         text = game.title,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
@@ -2894,22 +2896,21 @@ private fun GamePlayStatSkeletonRow() {
     ) {
         Box {
             Row(
-                modifier = Modifier.padding(
-                    start = 14.dp,
-                    top = 14.dp,
-                    end = 14.dp,
-                    bottom = 50.dp
-                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 SkeletonBlock(
                     modifier = Modifier
-                        .size(width = 84.dp, height = 118.dp)
-                        .clip(neonShape(6.dp))
+                        .size(96.dp)
+                        .clip(neonShape(8.dp))
                 )
                 Column(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(bottom = 18.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     SkeletonBlock(

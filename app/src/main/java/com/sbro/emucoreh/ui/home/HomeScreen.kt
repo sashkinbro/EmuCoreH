@@ -480,8 +480,8 @@ fun HomeScreen(
                                 top = topInset,
                                 bottom = 76.dp + bottomInset
                             ),
-                            horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 3.dp),
+                            verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 3.dp)
                         ) {
                             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                 HomeHeader(
@@ -596,12 +596,12 @@ fun HomeScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(horizontal = horizontalInset),
-                                        verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 4.dp)
+                                        verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 3.dp)
                                     ) {
                                         uiState.games.chunked(if (isListView) 1 else columnsCount).forEach { rowGames ->
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 4.dp)
+                                                horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 3.dp)
                                             ) {
                                                 rowGames.forEach { game ->
                                                     val showCoverPlaceholder = uiState.isCoverArtDisabled &&
