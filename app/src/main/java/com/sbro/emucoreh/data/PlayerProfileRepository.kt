@@ -940,6 +940,15 @@ class PlayerProfileRepository(context: Context) {
 
     private fun resolveReadableCoverPath(coverArtPath: String, serial: String?, title: String?): String? {
         val cover = coverArtPath.trim()
+        val prefs = AppPreferences(appContext)
+        val style = prefs.getCoverArtStyleSync()
+        val is3d = style == AppPreferences.COVER_ART_STYLE_3D
+        if (is3d) {
+            coverArtRepository.findCachedCoverPath(serial, title = title)?.let { return it }
+            coverArtRepository.buildPublicCoverUrl(serial, title = title)?.let { return it }
+        } else {
+            coverArtRepository.findCachedCoverPath(serial, title = title)?.let { return it }
+        }
         return when {
             cover.startsWith("http://") || cover.startsWith("https://") -> cover
             cover.startsWith("content://") -> cover

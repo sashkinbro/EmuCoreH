@@ -24,7 +24,9 @@ internal class FlycastImageDownloader(private val directory: File, private val u
             if (connection.contentLength == 0 || connection.contentLength > 16 * 1024 * 1024) retry("Invalid artwork length")
             val extension = url.substringBefore('?').substringBefore('#').substringAfterLast('.', "")
                 .lowercase(Locale.ROOT).takeIf { it in listOf("png", "jpg", "jpeg", "webp") } ?: "jpg"
-            val target = cache.onlineFile(key, extension)
+            val is3d = url.contains("/3d/") || extension == "webp"
+            val isLight = url.contains("/3d/light/") || url.contains("_light.")
+            val target = cache.onlineFile(key, extension, if (is3d) isLight else null)
             val temp = File.createTempFile("${key.take(40)}.", ".tmp", directory)
             try {
                 connection.inputStream.use { input ->
@@ -47,10 +49,16 @@ internal class FlycastImageDownloader(private val directory: File, private val u
                     target.delete()
                     retry("Cannot store downloaded artwork")
                 }
-                for (suffix in listOf("png", "jpg", "jpeg", "webp")) {
-                    File(directory, "$key.$suffix").delete()
+                if (is3d) {
+                    val urlFileName = if (isLight) "$key.light.url" else "$key.dark.url"
+                    runCatching { File(directory, urlFileName).writeText(url) }
+                    runCatching { File(directory, "$key.url").writeText(url) }
+                } else {
+                    for (suffix in listOf("png", "jpg", "jpeg")) {
+                        File(directory, "$key.$suffix").delete()
+                    }
+                    runCatching { File(directory, "$key.url").writeText(url) }
                 }
-                runCatching { File(directory, "$key.url").writeText(url) }
                 cache.missFile(key).delete()
                 target.absolutePath
             } finally {

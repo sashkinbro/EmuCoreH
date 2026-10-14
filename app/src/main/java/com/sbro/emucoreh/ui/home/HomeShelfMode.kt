@@ -145,16 +145,17 @@ internal fun HomeShelfMode(
     ) {
         val isLandscape = maxWidth > maxHeight
         val baseCardWidth = when {
-            maxWidth >= 1100.dp -> 254.dp
-            maxWidth >= 840.dp -> 228.dp
-            maxWidth >= 620.dp -> 204.dp
-            else -> 182.dp
+            maxWidth >= 1100.dp -> 360.dp
+            maxWidth >= 840.dp -> 320.dp
+            maxWidth >= 620.dp -> 290.dp
+            maxWidth >= 480.dp -> 270.dp
+            else -> (maxWidth * 0.74f).coerceIn(240.dp, 290.dp)
         }
         val coverPromptHeightAllowance = if (isCoverArtDisabled) 58.dp else 0.dp
         val reservedHeight = (if (isLandscape) 124.dp else 164.dp) + coverPromptHeightAllowance
         val maxCardWidthFromHeight =
             ((maxHeight - topInset - bottomInset - reservedHeight).coerceAtLeast(210.dp)) * GameCoverAspectRatio
-        val cardWidth = (if (isLandscape) baseCardWidth * 0.84f else baseCardWidth)
+        val cardWidth = (if (isLandscape) ((maxHeight - topInset - bottomInset - reservedHeight) * 0.88f * GameCoverAspectRatio).coerceAtMost(maxWidth * 0.45f) else baseCardWidth)
             .coerceAtMost(maxCardWidthFromHeight)
         val horizontalPadding = ((maxWidth - cardWidth) / 2).coerceAtLeast(0.dp)
 
@@ -475,8 +476,8 @@ private fun ShelfCoverCard(
     val interactionSource = remember { MutableInteractionSource() }
     val showMenu = remember(game.path) { mutableStateOf(false) }
     val coverAspectRatio = GameCoverAspectRatio
-    val horizontalCoverPadding = if (isActive) 6.dp else 8.dp
-    val verticalCoverPadding = if (isActive) 6.dp else 4.dp
+    val horizontalCoverPadding = 0.dp
+    val verticalCoverPadding = 0.dp
     val shelfCoverPath = rememberShelfCoverPath(game, isCoverArtDisabled)
     // Flat covers are plain rectangles so their corners are never clipped.
     val shape = if (!shelfCoverPath.isNullOrBlank()) {

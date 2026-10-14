@@ -101,10 +101,13 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import androidx.compose.ui.graphics.RectangleShape
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.GamepadManager
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
 import com.sbro.emucoreh.ui.common.GameCoverArt
+import com.sbro.emucoreh.ui.common.GameCoverAspectRatio
+import com.sbro.emucoreh.ui.common.isGenerated3dCover
 import com.sbro.emucoreh.ui.common.NavigationBackButton
 import com.sbro.emucoreh.ui.common.RequestFocusOnResume
 import com.sbro.emucoreh.ui.common.gamepadFocusableCard
@@ -205,6 +208,7 @@ fun GameDetailScreen(
         } else {
             val title = catalog.name
 
+            val is3dCover = isGenerated3dCover(heroImage)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -213,17 +217,17 @@ fun GameDetailScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(if (isLandscape) 0.4f else 1f)
-                        .widthIn(max = heroMaxWidth)
-                        .aspectRatio(2f / 3f)
-                        .clip(neonShape(28.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                        .fillMaxWidth(if (isLandscape) 0.45f else 0.85f)
+                        .widthIn(max = if (isLandscape) 320.dp else 290.dp)
+                        .aspectRatio(GameCoverAspectRatio)
+                        .clip(if (is3dCover) RectangleShape else neonShape(20.dp))
+                        .background(if (is3dCover) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                 ) {
                     GameCoverArt(
                         coverPath = heroImage,
                         fallbackTitle = title,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.FillHeight
+                        contentScale = ContentScale.Fit
                     )
                 }
             }

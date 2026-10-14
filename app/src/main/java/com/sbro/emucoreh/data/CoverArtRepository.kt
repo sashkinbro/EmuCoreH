@@ -162,7 +162,10 @@ class CoverArtRepository(context: Context) {
             Log.d(TAG, "No serial or title provided")
             return null
         }
-        cache.find(coverKeys)?.let { found ->
+        val prefs = AppPreferences(context)
+        val style = prefs.getCoverArtStyleSync()
+        val isLight = prefs.isThemeLightSync()
+        cache.find(coverKeys, style, isLight)?.let { found ->
             return found.absolutePath
         }
         Log.d(TAG, "Cached cover for ${coverKeys.joinToString()}: NOT FOUND")
@@ -235,8 +238,11 @@ class CoverArtRepository(context: Context) {
         var existingCover = findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
             ?.let(::File)
             ?: findCoverFile(key)
+        val prefs = AppPreferences(context)
+        val style = prefs.getCoverArtStyleSync()
+        val isLight = prefs.isThemeLightSync()
         if (existingCover != null && cache.isOnline(existingCover)) {
-            Log.d(TAG, "Cover already exists: ${existingCover.absolutePath}")
+            Log.d(TAG, "Cover already exists and matches style and theme: ${existingCover.absolutePath}")
             return existingCover.absolutePath
         }
         val missFile = cache.missFile(key)
@@ -269,9 +275,6 @@ class CoverArtRepository(context: Context) {
         }
 
         val arcade = isArcadeGame(game.fileName)
-        val prefs = AppPreferences(context)
-        val style = prefs.getCoverArtStyleSync()
-        val isLight = prefs.isThemeLightSync()
         try {
             if (arcade) {
                 val arcadeCoverUrl = coverIndex.findArcadeCover(game.fileName, game.serial, style, isLight)
@@ -431,15 +434,21 @@ class CoverArtRepository(context: Context) {
 
     /** Public artwork URL of a cached cover, used for shareable metadata. */
     fun buildPublicCoverUrl(serial: String?, title: String? = null): String? {
+        val prefs = AppPreferences(context)
+        val style = prefs.getCoverArtStyleSync()
+        val isLight = prefs.isThemeLightSync()
+        val indexUrl = coverIndex.findCoverBySerial(serial, style, isLight)
+            ?: coverIndex.findCoverByTitle(title, style, isLight)
+            ?: coverIndex.findArcadeCover(title, serial, style, isLight)
+        if (indexUrl != null) return indexUrl
+
         for (key in coverKeys(serial, title)) {
             val urlFile = File(fetchDirectory, "$key.url")
             if (!urlFile.isFile) continue
             val url = runCatching { urlFile.readText().trim() }.getOrNull().orEmpty()
             if (url.startsWith("http://") || url.startsWith("https://")) return url
         }
-        return coverIndex.findCoverBySerial(serial)
-            ?: coverIndex.findCoverByTitle(title)
-            ?: coverIndex.findArcadeCover(title, serial)
+        return null
     }
 
     private fun downloadImage(
@@ -452,7 +461,10 @@ class CoverArtRepository(context: Context) {
         else if (!mute) Log.d(TAG, "$sourceName: No artwork at $urlString")
     }
     private fun findCoverFile(key: String): File? {
-        return cache.find(listOf(key))
+        val prefs = AppPreferences(context)
+        val style = prefs.getCoverArtStyleSync()
+        val isLight = prefs.isThemeLightSync()
+        return cache.find(listOf(key), style, isLight)
     }
 
     private fun isArcadeGame(fileName: String): Boolean {

@@ -66,11 +66,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.graphics.Color
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.GamepadManager
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
 import com.sbro.emucoreh.data.igdb.IgdbCatalogSummary
 import com.sbro.emucoreh.ui.common.GameCoverArt
+import com.sbro.emucoreh.ui.common.GameCoverAspectRatio
+import com.sbro.emucoreh.ui.common.isGenerated3dCover
 import com.sbro.emucoreh.ui.common.EmuCoreHLoadingAnimation
 import com.sbro.emucoreh.ui.common.RequestFocusOnResume
 import com.sbro.emucoreh.ui.common.ScreenTopBar
@@ -502,18 +505,19 @@ private fun CatalogGameCard(
         interactionSource = interactionSource,
         onClick = onClick
     ) {
+        val is3dCover = isGenerated3dCover(game.coverUrl)
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(2f / 3f)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    .aspectRatio(GameCoverAspectRatio)
+                    .background(if (is3dCover) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             ) {
                 GameCoverArt(
                     coverPath = game.coverUrl,
                     fallbackTitle = game.name,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.FillHeight
+                    contentScale = ContentScale.Fit
                 )
             }
             Column(

@@ -143,8 +143,11 @@ import com.sbro.emucoreh.data.PlayerDevice
 import com.sbro.emucoreh.data.ProfileFriendship
 import com.sbro.emucoreh.data.ProfileFeedEvent
 import com.sbro.emucoreh.data.PublicPlayerDevice
+import androidx.compose.ui.graphics.RectangleShape
 import com.sbro.emucoreh.ui.common.BitmapPathImage
 import com.sbro.emucoreh.ui.common.GameCoverArt
+import com.sbro.emucoreh.ui.common.GameCoverAspectRatio
+import com.sbro.emucoreh.ui.common.isGenerated3dCover
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import com.sbro.emucoreh.ui.common.shimmer
@@ -1959,9 +1962,10 @@ private fun FavoriteGamesShowcase(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(favorites, key = { it.gameKey }) { game ->
+                val is3d = isGenerated3dCover(game.coverArtPath)
                 Row(
-                    modifier = Modifier.width(180.dp),
-                    horizontalArrangement = Arrangement.spacedBy(9.dp),
+                    modifier = Modifier.width(220.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     GameCoverArt(
@@ -1969,11 +1973,11 @@ private fun FavoriteGamesShowcase(
                         fallbackTitle = game.title,
                         showTitleWhileLoading = false,
                         shimmerWhileLoading = false,
-                        decodeWidth = 220,
-                        decodeHeight = 320,
+                        decodeWidth = 280,
+                        decodeHeight = 280,
                         modifier = Modifier
-                            .size(width = 56.dp, height = 56.dp)
-                            .clip(neonShape(6.dp)),
+                            .size(72.dp)
+                            .clip(if (is3d) RectangleShape else neonShape(8.dp)),
                         contentScale = ContentScale.Fit
                     )
                     Column(modifier = Modifier.weight(1f)) {
@@ -2310,9 +2314,10 @@ private fun ProShowcaseGameChoice(
             if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.42f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.38f)
         )
     ) {
+        val is3d = isGenerated3dCover(game.coverArtPath)
         Row(
-            modifier = Modifier.padding(9.dp),
-            horizontalArrangement = Arrangement.spacedBy(11.dp),
+            modifier = Modifier.padding(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             GameCoverArt(
@@ -2320,11 +2325,11 @@ private fun ProShowcaseGameChoice(
                 fallbackTitle = game.title,
                 showTitleWhileLoading = false,
                 shimmerWhileLoading = false,
-                decodeWidth = 180,
-                decodeHeight = 260,
+                decodeWidth = 240,
+                decodeHeight = 240,
                 modifier = Modifier
-                    .size(width = 42.dp, height = 42.dp)
-                    .clip(neonShape(6.dp)),
+                    .size(56.dp)
+                    .clip(if (is3d) RectangleShape else neonShape(8.dp)),
                 contentScale = ContentScale.Fit
             )
             Column(modifier = Modifier.weight(1f)) {
@@ -2813,16 +2818,17 @@ private fun GamePlayStatRow(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.Top
             ) {
+                val is3d = isGenerated3dCover(game.coverArtPath)
                 GameCoverArt(
                     coverPath = game.coverArtPath,
                     fallbackTitle = game.title,
                     showTitleWhileLoading = false,
                     shimmerWhileLoading = false,
-                    decodeWidth = 300,
-                    decodeHeight = 450,
+                    decodeWidth = 320,
+                    decodeHeight = 320,
                     modifier = Modifier
-                        .size(width = 84.dp, height = 84.dp)
-                        .clip(neonShape(6.dp)),
+                        .size(96.dp)
+                        .clip(if (is3d) RectangleShape else neonShape(8.dp)),
                     contentScale = ContentScale.Fit
                 )
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -3117,13 +3123,14 @@ private fun RecentGamesCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(games, key = { it.gameKey }) { game ->
+                    val is3d = isGenerated3dCover(game.coverArtPath)
                     Column(
-                        modifier = Modifier.width(96.dp),
+                        modifier = Modifier.width(132.dp),
                         verticalArrangement = Arrangement.spacedBy(7.dp)
                     ) {
                         Surface(
                             onClick = { onGameClick(game) },
-                            shape = neonShape(16.dp),
+                            shape = if (is3d) RectangleShape else neonShape(14.dp),
                             color = Color.Transparent
                         ) {
                             GameCoverArt(
@@ -3131,12 +3138,12 @@ private fun RecentGamesCard(
                                 fallbackTitle = game.title,
                                 showTitleWhileLoading = false,
                                 shimmerWhileLoading = false,
-                                decodeWidth = 320,
-                                decodeHeight = 460,
+                                decodeWidth = 360,
+                                decodeHeight = 360,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .aspectRatio(1f)
-                                    .clip(neonShape(5.dp)),
+                                    .aspectRatio(GameCoverAspectRatio)
+                                    .clip(if (is3d) RectangleShape else neonShape(8.dp)),
                                 contentScale = ContentScale.Fit
                             )
                         }
@@ -3180,14 +3187,14 @@ private fun RecentGamesSkeletonCard() {
             ) {
                 items(4) {
                     Column(
-                        modifier = Modifier.width(96.dp),
+                        modifier = Modifier.width(132.dp),
                         verticalArrangement = Arrangement.spacedBy(7.dp)
                     ) {
                         SkeletonBlock(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(136.dp)
-                                .clip(neonShape(5.dp))
+                                .aspectRatio(1f)
+                                .clip(neonShape(14.dp))
                         )
                         SkeletonBlock(
                             modifier = Modifier

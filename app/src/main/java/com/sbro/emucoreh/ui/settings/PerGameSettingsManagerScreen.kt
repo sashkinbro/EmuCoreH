@@ -99,7 +99,10 @@ import com.sbro.emucoreh.data.RetroArchShaderRepository
 import com.sbro.emucoreh.data.SettingsSnapshot
 import com.sbro.emucoreh.data.TouchControlPressEffect
 import com.sbro.emucoreh.data.TouchControlVisualStyle
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import com.sbro.emucoreh.ui.common.GameCoverArt
+import com.sbro.emucoreh.ui.common.isGenerated3dCover
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import com.sbro.emucoreh.ui.common.SettingHelpButton
@@ -644,10 +647,11 @@ private fun GamePickerCard(
     hasProfile: Boolean,
     onClick: () -> Unit
 ) {
+    val is3d = isGenerated3dCover(game.coverArtPath)
     Surface(
         modifier = Modifier
-            .width(280.dp)
-            .height(96.dp),
+            .width(286.dp)
+            .height(106.dp),
         shape = neonShape(22.dp),
         color = if (selected) {
             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f)
@@ -667,21 +671,21 @@ private fun GamePickerCard(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Surface(
                 modifier = Modifier.fillMaxHeight().aspectRatio(1f),
-                shape = neonShape(16.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.26f)
+                shape = if (is3d) RectangleShape else neonShape(12.dp),
+                color = if (is3d) Color.Transparent else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.26f)
             ) {
                 GameCoverArt(
                     coverPath = game.coverArtPath,
                     fallbackTitle = game.title,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(neonShape(16.dp)),
+                        .clip(if (is3d) RectangleShape else neonShape(12.dp)),
                     contentScale = ContentScale.Fit
                 )
             }

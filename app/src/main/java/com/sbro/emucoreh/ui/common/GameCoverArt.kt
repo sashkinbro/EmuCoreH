@@ -51,12 +51,21 @@ val LocalGameCoverAspectRatio = androidx.compose.runtime.staticCompositionLocalO
 val GameCoverAspectRatio: Float
     @Composable get() = LocalGameCoverAspectRatio.current
 
+fun isGenerated3dCover(coverPath: String?): Boolean =
+    coverPath?.replace('\\', '/')?.let { path ->
+        val localCache3d = path.contains("/game-covers/") &&
+            (path.endsWith("_3d.png") || path.endsWith("_3d.jpg") || path.endsWith(".webp"))
+        val remote3d = (path.contains("/covers/3d/") || path.contains("/arcade/3d/")) &&
+            (path.endsWith(".png") || path.endsWith(".jpg") || path.endsWith(".webp"))
+        localCache3d || remote3d || path.endsWith(".webp")
+    } == true
+
 private const val COVER_LOAD_MAX_ATTEMPTS = 4
 private const val COVER_LOAD_RETRY_DELAY_MS = 750L
 
 private val imageLoadingSemaphore = Semaphore(4)
-private const val DEFAULT_COVER_DECODE_WIDTH = 720
-private const val DEFAULT_COVER_DECODE_HEIGHT = 1080
+private const val DEFAULT_COVER_DECODE_WIDTH = 512
+private const val DEFAULT_COVER_DECODE_HEIGHT = 512
 
 @Composable
 fun GameCoverArt(

@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.RectangleShape
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.data.GameItem
 import com.sbro.emucoreh.ui.theme.neon.neonShape
@@ -87,11 +88,12 @@ fun LibraryGamePicker(
             items(games, key = GameItem::path) { game ->
                 val selected = game.path == selectedPath
                 val interactionSource = remember { MutableInteractionSource() }
+                val is3d = isGenerated3dCover(game.coverArtPath)
                 val shape = neonShape(18.dp)
                 Surface(
                     modifier = Modifier
-                        .width(236.dp)
-                        .height(106.dp)
+                        .width(252.dp)
+                        .height(112.dp)
                         .tvGamepadFocusableCard(
                             shape = shape,
                             interactionSource = interactionSource,
@@ -122,8 +124,9 @@ fun LibraryGamePicker(
                             fallbackTitle = game.title,
                             contentScale = ContentScale.Fit,
                             modifier = Modifier
-                                .fillMaxHeight().aspectRatio(1f)
-                                .clip(neonShape(12.dp))
+                                .fillMaxHeight()
+                                .aspectRatio(GameCoverAspectRatio)
+                                .clip(if (is3d) RectangleShape else neonShape(10.dp))
                         )
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {

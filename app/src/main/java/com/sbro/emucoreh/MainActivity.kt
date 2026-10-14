@@ -15,6 +15,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableIntStateOf
@@ -143,6 +144,17 @@ open class MainActivity : ComponentActivity() {
             SideEffect {
                 appliedDarkTheme = darkTheme
                 applySystemBarTheme(darkTheme)
+            }
+
+            var previousEffectiveDarkTheme by remember { mutableStateOf<Boolean?>(null) }
+            LaunchedEffect(darkTheme) {
+                if (previousEffectiveDarkTheme != null && previousEffectiveDarkTheme != darkTheme) {
+                    if (preferences.getCoverArtStyleSync() == AppPreferences.COVER_ART_STYLE_3D) {
+                        com.sbro.emucoreh.ui.common.clearCoverImageMemoryCache()
+                        preferences.notifyCoverCacheCleared()
+                    }
+                }
+                previousEffectiveDarkTheme = darkTheme
             }
 
             CompositionLocalProvider(

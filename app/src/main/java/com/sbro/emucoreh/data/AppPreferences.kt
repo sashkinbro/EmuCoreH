@@ -1248,8 +1248,15 @@ class AppPreferences(private val context: Context) {
             ThemeMode.DARK, ThemeMode.PRO, ThemeMode.NEON -> false
             ThemeMode.CUSTOM -> !getCustomThemeSync().dark
             ThemeMode.SYSTEM -> {
-                val uiMode = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-                uiMode != android.content.res.Configuration.UI_MODE_NIGHT_YES
+                val systemUiMode = android.content.res.Resources.getSystem().configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                if (systemUiMode == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+                    false
+                } else if (systemUiMode == android.content.res.Configuration.UI_MODE_NIGHT_NO) {
+                    true
+                } else {
+                    val uiMode = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                    uiMode != android.content.res.Configuration.UI_MODE_NIGHT_YES
+                }
             }
         }
     }

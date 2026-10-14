@@ -65,8 +65,10 @@ import com.sbro.emucoreh.data.AchievementItem
 import com.sbro.emucoreh.data.RetroAchievementsGameData
 import com.sbro.emucoreh.data.RetroAchievementsLibraryGame
 import com.sbro.emucoreh.data.RetroAchievementsState
+import androidx.compose.ui.graphics.RectangleShape
 import com.sbro.emucoreh.ui.common.GameCoverArt
 import com.sbro.emucoreh.ui.common.GameCoverAspectRatio
+import com.sbro.emucoreh.ui.common.isGenerated3dCover
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import com.sbro.emucoreh.ui.common.navigationBarsHorizontalPaddingValues
@@ -445,6 +447,7 @@ private fun LibraryGameCard(game: RetroAchievementsLibraryGame, onClick: () -> U
         }
         ?: game.imageUrl.takeIf { it.isNotBlank() }
 
+    val is3d = isGenerated3dCover(coverPath)
     Surface(
         onClick = onClick,
         modifier = Modifier
@@ -464,9 +467,8 @@ private fun LibraryGameCard(game: RetroAchievementsLibraryGame, onClick: () -> U
                 fallbackTitle = game.title,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
-                    .width(120.dp)
-                    .aspectRatio(GameCoverAspectRatio)
-                    .clip(neonShape(12.dp))
+                    .size(84.dp)
+                    .clip(if (is3d) RectangleShape else neonShape(10.dp))
             )
             Column(
                 modifier = Modifier.weight(1f),
