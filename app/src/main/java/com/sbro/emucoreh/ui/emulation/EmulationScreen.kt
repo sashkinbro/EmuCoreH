@@ -124,6 +124,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
@@ -195,6 +196,7 @@ import com.sbro.emucoreh.ui.common.actionDrawableRes
 import com.sbro.emucoreh.ui.common.composeShape
 import com.sbro.emucoreh.ui.common.EmulationSideArtworkOverlay
 import com.sbro.emucoreh.ui.common.GameCoverArt
+import com.sbro.emucoreh.ui.common.isGenerated3dCover
 import com.sbro.emucoreh.ui.common.ProvideGamepadMenuAction
 import com.sbro.emucoreh.ui.common.ProvideGamepadShoulderActions
 import com.sbro.emucoreh.ui.common.ProvideGamepadUiNavigation
@@ -3159,13 +3161,12 @@ private fun EmulationSidebarMenu(
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            shape = neonShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
+                        val is3dCover = isGenerated3dCover(uiState.currentGameCoverPath)
+                        Box(
                             modifier = Modifier
-                                .width(64.dp)
+                                .width(78.dp)
                                 .aspectRatio(com.sbro.emucoreh.ui.common.GameCoverAspectRatio)
+                                .clip(if (is3dCover) RectangleShape else neonShape(12.dp))
                         ) {
                             GameCoverArt(
                                 coverPath = uiState.currentGameCoverPath,

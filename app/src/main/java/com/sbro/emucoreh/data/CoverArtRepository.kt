@@ -21,6 +21,7 @@ import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+import com.sbro.emucoreh.ui.common.clearCoverImageMemoryCache
 
 data class CoverCacheClearResult(
     val deletedFiles: Int,
@@ -84,6 +85,7 @@ class CoverArtRepository(context: Context) {
                         }
                     }
                     marker.createNewFile()
+                    clearCoverImageMemoryCache()
                 }
             }
             Log.d(TAG, "Box art cache directory created: $absolutePath")
