@@ -28,6 +28,13 @@
     <string name="home_sort_recent_asc">قدیمی‌ترین به‌روزرسانی</string>
     <string name="home_sort_size_desc">بزرگترین</string>
     <string name="home_sort_size_asc">کوچکترین</string>
+    <string name="home_sort_platform">بر اساس پلتفرم</string>
+    <string name="home_platform_dreamcast">Dreamcast</string>
+    <string name="home_platform_naomi">NAOMI</string>
+    <string name="home_platform_naomi_2">NAOMI 2</string>
+    <string name="home_platform_atomiswave">Atomiswave</string>
+    <string name="home_platform_system_sp">System SP</string>
+    <string name="home_platform_arcade">سایر بازی‌های آرکید</string>
     <string name="home_empty_search_title">بدون نتیجه</string>
     <string name="home_empty_search_subtitle">نام دیگری را امتحان کنید یا مرتب‌سازی را تغییر دهید.</string>
     <string name="home_status_ready">آماده</string>

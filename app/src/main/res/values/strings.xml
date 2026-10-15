@@ -29,6 +29,13 @@
     <string name="home_sort_recent_asc">Oldest updated</string>
     <string name="home_sort_size_desc">Largest</string>
     <string name="home_sort_size_asc">Smallest</string>
+    <string name="home_sort_platform">By platform</string>
+    <string name="home_platform_dreamcast">Dreamcast</string>
+    <string name="home_platform_naomi">NAOMI</string>
+    <string name="home_platform_naomi_2">NAOMI 2</string>
+    <string name="home_platform_atomiswave">Atomiswave</string>
+    <string name="home_platform_system_sp">System SP</string>
+    <string name="home_platform_arcade">Other arcade games</string>
     <string name="home_empty_search_title">No results</string>
     <string name="home_empty_search_subtitle">Try a different name or change the sorting.</string>
     <string name="home_status_ready">Ready</string>

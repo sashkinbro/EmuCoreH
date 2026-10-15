@@ -25,6 +25,8 @@ import com.sbro.emucoreh.data.CoreMaintenanceRepository
 import com.sbro.emucoreh.data.CoreUpdateResetAction
 import com.sbro.emucoreh.data.CustomGameCoverRepository
 import com.sbro.emucoreh.data.GameItem
+import com.sbro.emucoreh.data.LibraryPlatformResolver
+import com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository
 import com.sbro.emucoreh.data.MultiDiscLibrary
 import com.sbro.emucoreh.data.flattenLibraryGroups
 import com.sbro.emucoreh.data.recentLibraryGroups
@@ -53,21 +55,13 @@ import kotlinx.coroutines.withContext
 import java.text.Normalizer
 import kotlin.time.Duration.Companion.milliseconds
 
-enum class HomeSortOption {
-    TITLE_ASC,
-    TITLE_DESC,
-    RECENT_DESC,
-    RECENT_ASC,
-    SIZE_DESC,
-    SIZE_ASC
-}
-
 enum class HomeLibraryViewMode {
     GRID, LIST, SHELF
 }
 
 data class HomeUiState(
     val games: List<GameItem> = emptyList(),
+    val librarySections: List<HomeLibrarySection> = emptyList(),
     val recentGames: List<GameItem> = emptyList(),
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
@@ -114,6 +108,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private val repository = GameRepository()
+    private val arcadeCatalog = ArcadeCatalogRepository(application)
     private val libraryCacheRepository = GameLibraryCacheRepository(application)
     private val customGameCoverRepository = CustomGameCoverRepository(application)
     private val preferences = AppPreferences(application)
@@ -312,6 +307,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
+            preferences.homeSortOption.distinctUntilChanged().collect { saved ->
+                _uiState.value = _uiState.value.copy(sortOption = HomeSortOption.fromPreference(saved))
+                publishVisibleGames()
+            }
+        }
+        viewModelScope.launch {
             preferences.homeLibraryViewMode.distinctUntilChanged().collect { mode ->
                 val resolvedMode = when (mode) {
                     1 -> HomeLibraryViewMode.LIST
@@ -429,6 +430,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun updateSortOption(option: HomeSortOption) {
         _uiState.value = _uiState.value.copy(sortOption = option)
         publishVisibleGames()
+        viewModelScope.launch { preferences.setHomeSortOption(option.name) }
     }
 
     fun toggleLibraryViewMode() {
@@ -697,31 +699,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     normalizeSearchToken(disc.serial).contains(query) }
             )
         }
-        val sorted = when (state.sortOption) {
-            HomeSortOption.TITLE_ASC -> filtered.sortedWith(
-                compareBy<GameItem> { normalizeSortToken(it.title) }
-                    .thenBy { normalizeSortToken(it.fileName) }
-            )
-            HomeSortOption.TITLE_DESC -> filtered.sortedWith(
-                compareByDescending<GameItem> { normalizeSortToken(it.title) }
-                    .thenByDescending { normalizeSortToken(it.fileName) }
-            )
-            HomeSortOption.RECENT_DESC -> filtered.sortedWith(
-                compareByDescending<GameItem> { it.lastModified }
-                    .thenBy { normalizeSortToken(it.title) }
-            )
-            HomeSortOption.RECENT_ASC -> filtered.sortedWith(
-                compareBy<GameItem> { it.lastModified }
-                    .thenBy { normalizeSortToken(it.title) }
-            )
-            HomeSortOption.SIZE_DESC -> filtered.sortedWith(
-                compareByDescending<GameItem> { it.discSize ?: it.fileSize }
-                    .thenBy { normalizeSortToken(it.title) }
-            )
-            HomeSortOption.SIZE_ASC -> filtered.sortedWith(
-                compareBy<GameItem> { it.discSize ?: it.fileSize }
-                    .thenBy { normalizeSortToken(it.title) }
-            )
+        val sections = buildHomeLibrarySections(filtered, state.sortOption) { game ->
+            LibraryPlatformResolver.resolve(game, arcadeCatalog::find)
         }
         val recentGames = recentLibraryGroups(allGames, recentEntries.map { it.path }).filter { game ->
             query.isBlank() ||
@@ -732,7 +711,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     normalizeSearchToken(disc.serial).contains(query) }
         }.takeIf { state.showRecentGames }.orEmpty()
         _uiState.value = _uiState.value.copy(
-            games = sorted,
+            games = sections.flatMap { it.games },
+            librarySections = sections,
             recentGames = recentGames
         )
     }
@@ -934,15 +914,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
             .lowercase(Locale.ROOT)
             .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
-            .trim()
-    }
-
-    private fun normalizeSortToken(value: String?): String {
-        if (value.isNullOrBlank()) return ""
-        val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
-        return normalized
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
-            .lowercase(Locale.ROOT)
             .trim()
     }
 

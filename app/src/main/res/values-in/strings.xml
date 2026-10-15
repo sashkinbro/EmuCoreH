@@ -28,6 +28,13 @@
     <string name="home_sort_recent_asc">Pembaruan terlama</string>
     <string name="home_sort_size_desc">Terbesar</string>
     <string name="home_sort_size_asc">Terkecil</string>
+    <string name="home_sort_platform">Berdasarkan platform</string>
+    <string name="home_platform_dreamcast">Dreamcast</string>
+    <string name="home_platform_naomi">NAOMI</string>
+    <string name="home_platform_naomi_2">NAOMI 2</string>
+    <string name="home_platform_atomiswave">Atomiswave</string>
+    <string name="home_platform_system_sp">System SP</string>
+    <string name="home_platform_arcade">Game arkade lainnya</string>
     <string name="home_empty_search_title">Tidak ada hasil</string>
     <string name="home_empty_search_subtitle">Coba nama lain atau ubah penyortiran.</string>
     <string name="home_status_ready">Siap</string>

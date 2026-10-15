@@ -17,6 +17,13 @@
     <string name="home_recent_title">Abertos recentemente</string>
     <string name="home_sort_size_desc">Maior</string>
     <string name="home_sort_size_asc">Menor</string>
+    <string name="home_sort_platform">Por plataforma</string>
+    <string name="home_platform_dreamcast">Dreamcast</string>
+    <string name="home_platform_naomi">NAOMI</string>
+    <string name="home_platform_naomi_2">NAOMI 2</string>
+    <string name="home_platform_atomiswave">Atomiswave</string>
+    <string name="home_platform_system_sp">System SP</string>
+    <string name="home_platform_arcade">Outros jogos de arcade</string>
     <string name="home_empty_search_title">Sem resultados</string>
     <string name="home_empty_search_subtitle">Tente um nome diferente ou altere a classificação.</string>
     <string name="home_status_ready">Pronto</string>

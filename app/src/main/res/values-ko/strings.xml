@@ -26,6 +26,13 @@
     <string name="home_sort_recent_asc">오래된 업데이트순</string>
     <string name="home_sort_size_desc">크기순 (큰 순서)</string>
     <string name="home_sort_size_asc">크기순 (작은 순서)</string>
+    <string name="home_sort_platform">플랫폼별</string>
+    <string name="home_platform_dreamcast">Dreamcast</string>
+    <string name="home_platform_naomi">NAOMI</string>
+    <string name="home_platform_naomi_2">NAOMI 2</string>
+    <string name="home_platform_atomiswave">Atomiswave</string>
+    <string name="home_platform_system_sp">System SP</string>
+    <string name="home_platform_arcade">기타 아케이드 게임</string>
     <string name="home_empty_search_title">결과 없음</string>
     <string name="home_empty_search_subtitle">다른 이름을 시도하거나 정렬 방식을 변경해 보세요.</string>
     <string name="home_status_ready">준비됨</string>

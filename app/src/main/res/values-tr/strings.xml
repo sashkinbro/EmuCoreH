@@ -26,6 +26,13 @@
     <string name="home_sort_recent_asc">En eski güncellenenler</string>
     <string name="home_sort_size_desc">En büyük</string>
     <string name="home_sort_size_asc">En küçük</string>
+    <string name="home_sort_platform">Platforma göre</string>
+    <string name="home_platform_dreamcast">Dreamcast</string>
+    <string name="home_platform_naomi">NAOMI</string>
+    <string name="home_platform_naomi_2">NAOMI 2</string>
+    <string name="home_platform_atomiswave">Atomiswave</string>
+    <string name="home_platform_system_sp">System SP</string>
+    <string name="home_platform_arcade">Diğer arcade oyunları</string>
     <string name="home_empty_search_title">Sonuç yok</string>
     <string name="home_empty_search_subtitle">Farklı bir isim deneyin veya sıralamayı değiştirin.</string>
     <string name="home_status_ready">Hazır</string>

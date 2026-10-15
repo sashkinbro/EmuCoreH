@@ -424,6 +424,7 @@ class AppPreferences(private val context: Context) {
         private val PREFER_ENGLISH_GAME_TITLES = booleanPreferencesKey("prefer_english_game_titles")
         private val RECENT_GAMES = stringPreferencesKey("recent_games")
         private val HOME_LIBRARY_VIEW_MODE = intPreferencesKey("home_library_view_mode")
+        private val HOME_SORT_OPTION = stringPreferencesKey("home_sort_option")
         private const val MAX_RECENT_GAMES = 8
         // Overlay customization
         private val OVERLAY_SCALE = intPreferencesKey("overlay_scale")
@@ -1786,6 +1787,14 @@ class AppPreferences(private val context: Context) {
         context.dataStore.edit { it[HOME_LIBRARY_VIEW_MODE] = mode.coerceIn(0, 2) }
     }
 
+    val homeSortOption: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[HOME_SORT_OPTION] ?: "TITLE_ASC"
+    }
+
+    suspend fun setHomeSortOption(option: String) {
+        context.dataStore.edit { it[HOME_SORT_OPTION] = option }
+    }
+
     suspend fun markGameLaunched(path: String, title: String, serial: String? = null) {
         context.dataStore.edit { prefs ->
             val cleanTitle = sanitizeRecentTitle(path, title, serial)
@@ -2733,6 +2742,7 @@ class AppPreferences(private val context: Context) {
             put("preferEnglishGameTitles", prefs[PREFER_ENGLISH_GAME_TITLES] ?: false)
             put("recentGames", prefs[RECENT_GAMES] ?: "[]")
             put("homeLibraryViewMode", prefs[HOME_LIBRARY_VIEW_MODE] ?: 0)
+            put("homeSortOption", prefs[HOME_SORT_OPTION] ?: "TITLE_ASC")
             put("overlayScale", prefs[OVERLAY_SCALE] ?: 100)
             put(
                 "overlayOpacity",
@@ -2982,6 +2992,7 @@ class AppPreferences(private val context: Context) {
             prefs[PREFER_ENGLISH_GAME_TITLES] = json.optBoolean("preferEnglishGameTitles", false)
             prefs[RECENT_GAMES] = json.optString("recentGames", "[]")
             prefs[HOME_LIBRARY_VIEW_MODE] = json.optInt("homeLibraryViewMode", 0).coerceIn(0, 2)
+            prefs[HOME_SORT_OPTION] = json.optString("homeSortOption", "TITLE_ASC")
             prefs[OVERLAY_SCALE] = json.optInt("overlayScale", 100)
             prefs[OVERLAY_OPACITY] = json.optInt("overlayOpacity", DEFAULT_OVERLAY_OPACITY)
                 .coerceIn(OVERLAY_OPACITY_MIN, OVERLAY_OPACITY_MAX)

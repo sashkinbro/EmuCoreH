@@ -17,6 +17,13 @@
     <string name="home_recent_title">Недавно открытые</string>
     <string name="home_sort_size_desc">Самые большие</string>
     <string name="home_sort_size_asc">Самые маленькие</string>
+    <string name="home_sort_platform">По платформе</string>
+    <string name="home_platform_dreamcast">Dreamcast</string>
+    <string name="home_platform_naomi">NAOMI</string>
+    <string name="home_platform_naomi_2">NAOMI 2</string>
+    <string name="home_platform_atomiswave">Atomiswave</string>
+    <string name="home_platform_system_sp">System SP</string>
+    <string name="home_platform_arcade">Другие аркадные игры</string>
     <string name="home_empty_search_title">Нет результатов</string>
     <string name="home_empty_search_subtitle">Попробуйте другое название или измените сортировку.</string>
     <string name="home_status_ready">Готово</string>

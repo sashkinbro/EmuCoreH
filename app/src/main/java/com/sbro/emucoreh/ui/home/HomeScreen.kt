@@ -133,6 +133,9 @@ import com.sbro.emucoreh.core.TvUiMetrics
 import com.sbro.emucoreh.core.availableProSupportOffers
 import com.sbro.emucoreh.data.CustomGameCoverRepository
 import com.sbro.emucoreh.data.GameItem
+import com.sbro.emucoreh.data.LibraryPlatform
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import com.sbro.emucoreh.data.HomeBackgroundRepository
 import com.sbro.emucoreh.data.HomeBackgroundType
 import com.sbro.emucoreh.ui.common.GameCoverArt
@@ -592,61 +595,67 @@ fun HomeScreen(
                                 }
 
                                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                    // Keep the first game composed for the existing gamepad resume target.
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(horizontal = horizontalInset),
                                         verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 3.dp)
                                     ) {
-                                        uiState.games.chunked(if (isListView) 1 else columnsCount).forEach { rowGames ->
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 3.dp)
-                                            ) {
-                                                rowGames.forEach { game ->
-                                                    val showCoverPlaceholder = uiState.isCoverArtDisabled &&
-                                                        !customCoverRepository.isCustomCoverPath(game.coverArtPath)
-                                                    Box(modifier = Modifier.weight(1f)) {
-                                                        val itemFocusModifier = if (uiState.recentGames.isEmpty() && game == uiState.games.first()) {
-                                                            Modifier.focusRequester(initialGamepadFocusRequester)
-                                                        } else {
-                                                            Modifier
-                                                        }
-                                                        if (isListView) {
-                                                            GameListCard(
-                                                                focusModifier = itemFocusModifier,
-                                                                game = game,
-                                                                showCoverArt = !showCoverPlaceholder,
-                                                                onClick = { onGameClick(game) },
-                                                                onLongClickStart = { onGameClick(game) },
-                                                                onLongClickContinue = { onContinueGame(game) },
-                                                                onLongClickLoadSave = { onLoadSaveClick(game) },
-                                                                onLongClickManage = { onManageGameClick(game) },
-                                                                onLongClickCreateShortcut = { onCreateShortcutClick(game) },
-                                                                onLongClickCustomCover = {
-                                                                    gameAwaitingPickerLaunch = game
-                                                                }
-                                                            )
-                                                        } else {
-                                                            GameCard(
-                                                                focusModifier = itemFocusModifier,
-                                                                game = game,
-                                                                showCenteredTitlePlaceholder = showCoverPlaceholder,
-                                                                onClick = { onGameClick(game) },
-                                                                onLongClickStart = { onGameClick(game) },
-                                                                onLongClickContinue = { onContinueGame(game) },
-                                                                onLongClickLoadSave = { onLoadSaveClick(game) },
-                                                                onLongClickManage = { onManageGameClick(game) },
-                                                                onLongClickCreateShortcut = { onCreateShortcutClick(game) },
-                                                                onLongClickCustomCover = {
-                                                                    gameAwaitingPickerLaunch = game
-                                                                }
-                                                            )
+                                        uiState.librarySections.forEach { section ->
+                                            section.platform?.let { platform ->
+                                                HomePlatformHeader(platform, section.games.size)
+                                            }
+                                            section.games.chunked(if (isListView) 1 else columnsCount).forEach { rowGames ->
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 3.dp)
+                                                ) {
+                                                    rowGames.forEach { game ->
+                                                        val showCoverPlaceholder = uiState.isCoverArtDisabled &&
+                                                            !customCoverRepository.isCustomCoverPath(game.coverArtPath)
+                                                        Box(modifier = Modifier.weight(1f)) {
+                                                            val itemFocusModifier = if (uiState.recentGames.isEmpty() && game == uiState.games.first()) {
+                                                                Modifier.focusRequester(initialGamepadFocusRequester)
+                                                            } else {
+                                                                Modifier
+                                                            }
+                                                            if (isListView) {
+                                                                GameListCard(
+                                                                    focusModifier = itemFocusModifier,
+                                                                    game = game,
+                                                                    showCoverArt = !showCoverPlaceholder,
+                                                                    onClick = { onGameClick(game) },
+                                                                    onLongClickStart = { onGameClick(game) },
+                                                                    onLongClickContinue = { onContinueGame(game) },
+                                                                    onLongClickLoadSave = { onLoadSaveClick(game) },
+                                                                    onLongClickManage = { onManageGameClick(game) },
+                                                                    onLongClickCreateShortcut = { onCreateShortcutClick(game) },
+                                                                    onLongClickCustomCover = {
+                                                                        gameAwaitingPickerLaunch = game
+                                                                    }
+                                                                )
+                                                            } else {
+                                                                GameCard(
+                                                                    focusModifier = itemFocusModifier,
+                                                                    game = game,
+                                                                    showCenteredTitlePlaceholder = showCoverPlaceholder,
+                                                                    onClick = { onGameClick(game) },
+                                                                    onLongClickStart = { onGameClick(game) },
+                                                                    onLongClickContinue = { onContinueGame(game) },
+                                                                    onLongClickLoadSave = { onLoadSaveClick(game) },
+                                                                    onLongClickManage = { onManageGameClick(game) },
+                                                                    onLongClickCreateShortcut = { onCreateShortcutClick(game) },
+                                                                    onLongClickCustomCover = {
+                                                                        gameAwaitingPickerLaunch = game
+                                                                    }
+                                                                )
+                                                            }
                                                         }
                                                     }
-                                                }
-                                                repeat((if (isListView) 1 else columnsCount) - rowGames.size) {
-                                                    Spacer(modifier = Modifier.weight(1f))
+                                                    repeat((if (isListView) 1 else columnsCount) - rowGames.size) {
+                                                        Spacer(modifier = Modifier.weight(1f))
+                                                    }
                                                 }
                                             }
                                         }
@@ -879,6 +888,43 @@ private fun HomeSectionDivider(modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
     )
 
+}
+
+@Composable
+private fun HomePlatformHeader(platform: LibraryPlatform, count: Int) {
+    val label = when (platform) {
+        LibraryPlatform.DREAMCAST -> R.string.home_platform_dreamcast
+        LibraryPlatform.NAOMI -> R.string.home_platform_naomi
+        LibraryPlatform.NAOMI_2 -> R.string.home_platform_naomi_2
+        LibraryPlatform.ATOMISWAVE -> R.string.home_platform_atomiswave
+        LibraryPlatform.SYSTEM_SP -> R.string.home_platform_system_sp
+        LibraryPlatform.ARCADE -> R.string.home_platform_arcade
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .padding(top = 16.dp, bottom = 8.dp)
+            .semantics(mergeDescendants = true) { heading() },
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = stringResource(label),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = java.text.NumberFormat.getIntegerInstance().format(count),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        HomeSectionDivider()
+    }
 }
 
 @Composable
@@ -1152,6 +1198,11 @@ private fun HomeSearchField(
                             label = stringResource(R.string.home_sort_size_asc),
                             isSelected = sortOption == HomeSortOption.SIZE_ASC,
                             onClick = { onSortSelected(HomeSortOption.SIZE_ASC) }
+                        )
+                        SortMenuItem(
+                            label = stringResource(R.string.home_sort_platform),
+                            isSelected = sortOption == HomeSortOption.PLATFORM,
+                            onClick = { onSortSelected(HomeSortOption.PLATFORM) }
                         )
                     }
                 }

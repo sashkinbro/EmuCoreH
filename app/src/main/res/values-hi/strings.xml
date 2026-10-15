@@ -26,6 +26,13 @@
     <string name="home_sort_recent_asc">सबसे पुराने अपडेट किए गए</string>
     <string name="home_sort_size_desc">सबसे बड़े</string>
     <string name="home_sort_size_asc">सबसे छोटे</string>
+    <string name="home_sort_platform">प्लेटफ़ॉर्म के अनुसार</string>
+    <string name="home_platform_dreamcast">Dreamcast</string>
+    <string name="home_platform_naomi">NAOMI</string>
+    <string name="home_platform_naomi_2">NAOMI 2</string>
+    <string name="home_platform_atomiswave">Atomiswave</string>
+    <string name="home_platform_system_sp">System SP</string>
+    <string name="home_platform_arcade">अन्य आर्केड गेम</string>
     <string name="home_empty_search_title">कोई परिणाम नहीं</string>
     <string name="home_empty_search_subtitle">कोई अलग नाम आज़माएं या सॉर्टिंग बदलें।</string>
     <string name="home_status_ready">तैयार</string>
