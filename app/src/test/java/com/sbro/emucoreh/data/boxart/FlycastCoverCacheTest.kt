@@ -96,8 +96,9 @@ class FlycastCoverCacheTest {
         assertFalse(cache.isOnline(label))
     }
 
-    @Test fun `old poisoned miss marker does not block the fixed lookup`() = withCache { root, cache ->
+    @Test fun `old catalog miss does not block newly mapped artwork`() = withCache { root, cache ->
         File(root, "MK-51037.miss").writeText("not-found")
+        File(root, "MK-51037.miss-v3").writeText("not-found")
         assertFalse(cache.missFile("MK-51037").exists())
     }
 

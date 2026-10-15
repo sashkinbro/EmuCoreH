@@ -30,8 +30,8 @@ internal class FlycastCoverCache(private val directory: File, private val usable
         }
     }
 
-    // Earlier versions also recorded temporary lookup failures as definitive misses.
-    fun missFile(key: String) = File(directory, "$key.miss-v3")
+    // Retry misses recorded before the catalog and title matching corrections.
+    fun missFile(key: String) = File(directory, "$key.miss-v4")
 
     fun isOnline(file: File): Boolean {
         if (file.name.endsWith(".disc.png")) return false

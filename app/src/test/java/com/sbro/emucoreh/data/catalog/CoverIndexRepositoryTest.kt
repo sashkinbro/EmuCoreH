@@ -8,6 +8,116 @@ import java.io.File
 
 class CoverIndexRepositoryTest {
 
+    @Test fun discAndRegionTagsCanAppearInEitherOrderWithoutDiscardingEditions() {
+        val titles = JSONObject().put("shenmue", "covers/base.jpg")
+            .put("shenmue special edition", "covers/special.jpg")
+        for (suffix in listOf("(USA) (Disc 1)", "(Disc 1) (USA)", "(USA) [Disc 1 of 2]")) {
+            assertEquals(suffix, "covers/base.jpg", CoverIndexRepository.resolveTitlePath(
+                titles, "Shenmue $suffix.chd", allowFuzzy = false
+            ))
+            assertEquals(suffix, "covers/special.jpg", CoverIndexRepository.resolveTitlePath(
+                titles, "Shenmue (Special Edition) $suffix.chd", allowFuzzy = false
+            ))
+        }
+        assertEquals("covers/base.jpg", CoverIndexRepository.resolveTitlePath(
+            titles, "Shenmue v1.000 (Disc 1).chd", allowFuzzy = false
+        ))
+        assertEquals("covers/31200.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "DUX (v1.5) v1.000 (Europe).cdi", allowFuzzy = false
+        ))
+    }
+
+    @Test fun trademarksAndWidthVariantsDoNotBecomeExtraTitleLetters() {
+        assertEquals("covers/94999.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "Ｒｅｚ™ (USA).chd", allowFuzzy = false
+        ))
+    }
+
+    @Test fun parenthesizedNamedVersionsSurviveDumpMetadataCleanup() {
+        assertEquals("covers/131822.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "Phantasy Star Online (Ver. 2) (Japan) [!].chd", allowFuzzy = false
+        ))
+        assertEquals("covers/14989.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "Border Down (Limited Edition) (Japan).chd", allowFuzzy = false
+        ))
+    }
+
+    @Test fun dottedNamedEditionIsTriedBeforeTreatingTheVersionAsADiscRevision() {
+        assertEquals("covers/31200.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "DUX v1.5 (Europe).cdi", allowFuzzy = false
+        ))
+        assertEquals("covers/31200.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "DUX (v1.5) (Europe).cdi", allowFuzzy = false
+        ))
+    }
+
+    @Test fun meaningfulSubtitlesAreNotMistakenForCrackedDumpFlags() {
+        val titles = JSONObject().put("some game", "covers/base.jpg")
+            .put("some game crazy mode", "covers/mode.jpg")
+        for (name in listOf("Some Game (Crazy Mode) (USA).chd", "Some Game [Crazy Mode] (USA).chd")) {
+            assertEquals(name, "covers/mode.jpg", CoverIndexRepository.resolveTitlePath(titles, name, allowFuzzy = false))
+        }
+    }
+
+    @Test fun allCatalogTitlesKeepTheirExplicitArtworkThroughStandardDumpSuffixes() {
+        val titles = bundledTitles()
+        for (key in titles.keys()) {
+            assertEquals(key, titles.getString(key), CoverIndexRepository.resolveTitlePath(
+                titles, "$key v1.000 (1999)(Example Publisher)(US)[!][4S].CHD", allowFuzzy = false
+            ))
+        }
+    }
+
+    @Test fun articlePositionAndOmissionResolveAnUnambiguousCatalogTitle() {
+        for (name in listOf("House of the Dead 2, The (USA).chd", "House of the Dead 2")) {
+            assertEquals(name, "covers/112307.jpg", CoverIndexRepository.resolveTitlePath(
+                bundledTitles(), name, allowFuzzy = false
+            ))
+        }
+    }
+
+    @Test fun underscoreDumpSeparatorsAndPublisherTagsDoNotHideTheTitle() {
+        assertEquals("covers/125209.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "SEGA_RALLY_2_v1_000_(1999)(Sega)(US)[!][4S].CHD", allowFuzzy = false
+        ))
+        assertEquals("covers/112301.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "Chu Chu Rocket! (Europe) [T+Eng].GDI", allowFuzzy = false
+        ))
+    }
+
+    @Test fun unknownEditionQualifiersAreNeverDiscardedToForceAFastMatch() {
+        val titles = JSONObject().put("a game", "covers/base.jpg")
+        assertNull(CoverIndexRepository.resolveTitlePath(titles, "A Game (Unknown Edition) (USA).chd", allowFuzzy = false))
+    }
+
+    @Test fun twoCharacterTitlesCanMatchExactlyWithoutEnablingShortFuzzyQueries() {
+        val titles = JSONObject().put("d2", "covers/8117.jpg").put("es", "covers/115954.jpg")
+            .put("rez", "covers/94999.jpg")
+        assertEquals("covers/8117.jpg", CoverIndexRepository.resolveTitlePath(titles, "D2 (USA).chd", allowFuzzy = false))
+        assertEquals("covers/115954.jpg", CoverIndexRepository.resolveTitlePath(titles, "Es (Japan).chd", allowFuzzy = false))
+        assertNull(CoverIndexRepository.resolveTitlePath(titles, "Re"))
+    }
+
+    @Test fun fallbackPrefersTheSpecificSequelInsteadOfTheShortestParentTitle() {
+        val titles = JSONObject().put("sonic adventure", "covers/first.jpg")
+            .put("sonic adventure 2", "covers/second.jpg")
+        assertEquals("covers/second.jpg", CoverIndexRepository.resolveTitlePath(titles, "Sonic Adventure 2 Preview"))
+        assertNull(CoverIndexRepository.resolveTitlePath(titles, "Sonic Adventure 3"))
+    }
+
+    @Test fun equallyPlausibleFallbacksRemainUnresolved() {
+        val titles = JSONObject().put("super game alpha", "covers/first.jpg")
+            .put("super game beta", "covers/second.jpg")
+        assertNull(CoverIndexRepository.resolveTitlePath(titles, "Super Game"))
+    }
+
+    @Test fun fallbackDoesNotDiscardNamedEditionOrVersionTokens() {
+        val titles = JSONObject().put("capcom vs snk", "covers/base.jpg")
+            .put("phantasy star online", "covers/online.jpg")
+        assertNull(CoverIndexRepository.resolveTitlePath(titles, "Capcom vs SNK Kanzenban"))
+        assertNull(CoverIndexRepository.resolveTitlePath(titles, "Phantasy Star Online Ver. 2"))
+    }
+
     @Test fun fastLookupDoesNotFinalizeASequelUsingItsParentsFuzzyCover() {
         val titles = JSONObject().put("sonic adventure", "covers/first.jpg")
             .put("sonic adventure 2", "covers/second.jpg")
