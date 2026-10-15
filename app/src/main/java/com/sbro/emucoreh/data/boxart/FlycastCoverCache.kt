@@ -5,6 +5,22 @@ import java.io.File
 internal class FlycastCoverCache(private val directory: File, private val usable: (File) -> Boolean) {
     private val extensions = listOf("png", "jpg", "jpeg", "webp")
 
+    // Disc artwork has its own provenance, independent of online style/theme markers.
+    fun offlineFile(key: String) = File(directory, "$key.disc.png")
+
+    fun storeOffline(key: String, extract: (File) -> Unit): File? {
+        val target = offlineFile(key)
+        val temp = File.createTempFile("${key.take(40)}.disc.", ".tmp", directory)
+        try {
+            extract(temp)
+            if (!usable(temp)) return target.takeIf(usable)
+            if (!temp.renameTo(target)) temp.copyTo(target, overwrite = true)
+            return target.takeIf(usable)
+        } finally {
+            temp.delete()
+        }
+    }
+
     fun onlineFile(key: String, extension: String, isLight: Boolean? = null): File {
         return if (extension == "webp" && isLight != null) {
             val themeTag = if (isLight) "light" else "dark"
@@ -14,85 +30,71 @@ internal class FlycastCoverCache(private val directory: File, private val usable
         }
     }
 
-    // Old markers also represented network/download failures. Ignore them
-    // after upgrading, so users do not need to clear their covers manually.
-    fun missFile(key: String) = File(directory, "$key.miss-v2")
-    fun clearOnlineSource(key: String) {
-        File(directory, "$key.url").delete()
-        File(directory, "$key.light.url").delete()
-        File(directory, "$key.dark.url").delete()
-    }
+    // Earlier versions also recorded temporary lookup failures as definitive misses.
+    fun missFile(key: String) = File(directory, "$key.miss-v3")
 
     fun isOnline(file: File): Boolean {
+        if (file.name.endsWith(".disc.png")) return false
         if (file.name.contains(".online.")) return true
-        val baseKey = file.nameWithoutExtension.removeSuffix(".online").removeSuffix(".light").removeSuffix(".dark")
-        val source = runCatching {
-            listOf(
-                File(directory, "$baseKey.light.url"),
-                File(directory, "$baseKey.dark.url"),
-                File(directory, "$baseKey.url")
-            ).firstOrNull { it.isFile }?.readText()?.trim()
-        }.getOrNull().orEmpty()
+        val source = sourceUrl(file)
+        // Legacy disc PNGs can coexist with a newer 3D cover's source marker.
+        if (file.extension.equals("png", ignoreCase = true) && source.contains("/3d/")) return false
         return source.startsWith("https://") || source.startsWith("http://")
     }
 
     fun find(keys: List<String>, style: Int? = null, isLight: Boolean = false): File? {
-        val is3d = style == 2 // COVER_ART_STYLE_3D
-        val isFlat = style == 1 // COVER_ART_STYLE_FLAT
-        val allCandidates = keys.flatMap { key ->
-            if (is3d) {
-                if (isLight) {
-                    listOf(
-                        onlineFile(key, "webp", isLight = true),
-                        File(directory, "$key.light.webp"),
-                        File(directory, "${key}_light.webp"),
-                        onlineFile(key, "webp", isLight = null),
-                        File(directory, "$key.webp")
-                    )
-                } else {
-                    listOf(
-                        onlineFile(key, "webp", isLight = false),
-                        File(directory, "$key.dark.webp"),
-                        File(directory, "${key}_dark.webp"),
-                        onlineFile(key, "webp", isLight = null),
-                        File(directory, "$key.webp")
-                    )
+        if (style == 0) return null // COVER_ART_STYLE_DISABLED
+        val requested = keys.flatMap { key ->
+            when (style) {
+                2 -> {
+                    val theme = if (isLight) "light" else "dark"
+                    listOf(onlineFile(key, "webp", isLight), File(directory, "$key.$theme.webp"),
+                        File(directory, "${key}_$theme.webp"), onlineFile(key, "webp"), File(directory, "$key.webp"))
                 }
-            } else if (isFlat) {
-                listOf("jpg", "jpeg", "png").flatMap { ext ->
-                    listOf(onlineFile(key, ext), File(directory, "$key.$ext"))
+                1 -> listOf("jpg", "jpeg", "png").flatMap { extension ->
+                    listOf(onlineFile(key, extension), File(directory, "$key.$extension"))
                 }
-            } else {
-                extensions.flatMap { ext ->
-                    listOf(onlineFile(key, ext), File(directory, "$key.$ext"))
+                else -> extensions.flatMap { extension ->
+                    listOf(onlineFile(key, extension), File(directory, "$key.$extension"))
                 }
             }
-        }.filter(usable).filter { candidate ->
-            if (style != null) {
-                val candidateIsWebp = candidate.name.endsWith(".webp", ignoreCase = true)
-                val baseKey = candidate.nameWithoutExtension.removeSuffix(".online").removeSuffix(".light").removeSuffix(".dark")
-                val sourceUrl = runCatching {
-                    listOf(
-                        File(directory, "$baseKey.light.url"),
-                        File(directory, "$baseKey.dark.url"),
-                        File(directory, "$baseKey.url")
-                    ).firstOrNull { it.isFile }?.readText()?.trim()
-                }.getOrNull().orEmpty()
-                val candidateUrlIs3d = sourceUrl.contains("/3d/") || candidateIsWebp
-                val candidateUrlIsLight = candidate.name.contains(".light.") ||
-                    candidate.name.contains("_light.") ||
-                    sourceUrl.contains("/3d/light/") ||
-                    sourceUrl.contains("_light.")
+        }.filter(usable).filter { matchesStyle(it, style, isLight) }
+        requested.firstOrNull(::isOnline)?.let { return it }
+        requested.firstOrNull()?.let { return it }
+        // A selected online style must never hide locally extracted disc artwork.
+        // Keep legacy disc paths usable as well, without showing the wrong online style.
+        return keys.asSequence().flatMap { key ->
+            sequenceOf(offlineFile(key), File(directory, "$key.png"))
+        }.firstOrNull { usable(it) && !isOnline(it) }
+    }
 
-                if (is3d) {
-                    if (!candidateUrlIs3d) return@filter false
-                    if (isLight != candidateUrlIsLight) return@filter false
-                } else if (isFlat) {
-                    if (candidateUrlIs3d) return@filter false
-                }
-            }
-            true
+    private fun matchesStyle(file: File, style: Int?, isLight: Boolean): Boolean {
+        if (style == null) return true
+        val source = sourceUrl(file)
+        // Modern online filenames encode their format. A generic source marker
+        // belongs to the last download and may describe another cached style.
+        val is3d = file.extension.equals("webp", ignoreCase = true) ||
+            (!file.name.contains(".online.") && source.contains("/3d/"))
+        if (style == 1) return !is3d
+        if (style != 2 || !is3d) return false
+        val light = when {
+            file.name.contains(".light.") || file.name.contains("_light.") -> true
+            file.name.contains(".dark.") || file.name.contains("_dark.") -> false
+            else -> source.contains("/3d/light/") || source.contains("_light.")
         }
-        return allCandidates.firstOrNull(::isOnline) ?: allCandidates.firstOrNull()
+        return light == isLight
+    }
+
+    private fun sourceUrl(file: File): String {
+        val name = file.nameWithoutExtension.removeSuffix(".online")
+        val theme = when {
+            name.endsWith(".light") -> "light"
+            name.endsWith(".dark") -> "dark"
+            else -> null
+        }
+        val key = name.removeSuffix(".light").removeSuffix(".dark")
+        val sources = if (theme == null) listOf(File(directory, "$key.url"))
+            else listOf(File(directory, "$key.$theme.url"), File(directory, "$key.url"))
+        return runCatching { sources.firstOrNull { it.isFile }?.readText()?.trim() }.getOrNull().orEmpty()
     }
 }

@@ -8,6 +8,7 @@ import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.GameFormats
 import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.data.boxart.DiscGdtexExtractor
+import com.sbro.emucoreh.data.boxart.DiscScrapeAccess
 import com.sbro.emucoreh.data.boxart.BoxartRetryException
 import com.sbro.emucoreh.data.boxart.FlycastCoverCache
 import com.sbro.emucoreh.data.boxart.FlycastImageDownloader
@@ -33,11 +34,10 @@ data class CoverCacheClearResult(
 }
 
 /**
- * Box art retrieval mirroring the official Flycast scraper:
+ * Box art retrieval using Flycast's offline scraper and the EmuCoreH catalog:
  *  1. the 0GDTEX.PVR texture stored inside Dreamcast discs (offline scraper),
- *  2. arcade covers from the flycast-content site,
- *  3. TheGamesDB, matched by product code first and by name second.
- * The custom EmuCoreH cover server is no longer used.
+ *  2. full covers from EmuCoreH-Covers, matched by product code and title,
+ *  3. Flycast arcade artwork and TheGamesDB for games outside our catalog.
  */
 class CoverArtRepository(context: Context) {
 
@@ -127,7 +127,16 @@ class CoverArtRepository(context: Context) {
             val key = normalizeSerial(game.serial) ?: titleCoverKey(game.title) ?: return@flatMap emptyList()
             val scrape = scrapeDiscBoxart(game, key, extractCover = false)
             FlycastBoxartSource.uniqueIdCandidates(scrape?.uniqueId, game.serial)
-        }.distinct().filter { !prefetchedInfo.contains(it) && coverIndex.findCoverBySerial(it) == null }
+        }.distinct().filter { uniqueId ->
+            when {
+                prefetchedInfo.contains(uniqueId) -> false
+                coverIndex.findCoverBySerial(uniqueId) != null -> {
+                    prefetchedInfo.skipForCatalog(uniqueId)
+                    false
+                }
+                else -> true
+            }
+        }
         for (batch in ids.chunked(10)) {
             if (shouldAbort()) break
             try {
@@ -154,8 +163,8 @@ class CoverArtRepository(context: Context) {
         isManagedCoverCachePath(path) && !path.isNullOrBlank() && !isUsableCoverFile(File(path))
 
     /**
-     * Never flash an embedded icon or a previous style before the selected
-     * artwork loads. A missing managed-cache file must not erase a candidate
+     * Prefer the selected online artwork, with disc artwork as an offline
+     * fallback. A missing managed-cache file must not erase a candidate
      * that was already resolved: the caller keeps showing the previous cover
      * while the background sync re-downloads it.
      */
@@ -344,11 +353,9 @@ class CoverArtRepository(context: Context) {
 
             // 3. Fallback: TheGamesDB API (if game not found in our repository, e.g. homebrew)
             for (uniqueId in uniqueIds) {
-                val info = runCatching {
-                    prefetchedInfo.find(
-                        uniqueId, maxOf(nextOnlineRetryAtMillis, System.currentTimeMillis() + 1000L)
-                    ) { TheGamesDb.findByUniqueId(uniqueId) }
-                }.getOrNull()
+                val info = prefetchedInfo.find(
+                    uniqueId, maxOf(nextOnlineRetryAtMillis, System.currentTimeMillis() + 1000L)
+                ) { TheGamesDb.findByUniqueId(uniqueId) }
                 if (info != null) {
                     info.imageUrl?.let { url ->
                         downloadImage(url, key, "TheGamesDB")?.let {
@@ -359,7 +366,7 @@ class CoverArtRepository(context: Context) {
                 }
             }
             if (searchName.isNotBlank()) {
-                val info = runCatching { TheGamesDb.findByName(searchName, arcade = arcade) }.getOrNull()
+                val info = TheGamesDb.findByName(searchName, arcade = arcade)
                 if (info != null) {
                     info.imageUrl?.let { url ->
                         downloadImage(url, key, "TheGamesDB")?.let {
@@ -380,9 +387,9 @@ class CoverArtRepository(context: Context) {
         return existingCover?.absolutePath
     }
 
-    /** Drops the offline label artwork once the online cover replaced it. */
+    /** Retain disc artwork for offline fallback after a style or theme change. */
     private fun acceptOnlineCover(previousCover: File?, downloadedPath: String): String {
-        if (previousCover != null && previousCover.absolutePath != downloadedPath) {
+        if (previousCover != null && cache.isOnline(previousCover) && previousCover.absolutePath != downloadedPath) {
             runCatching { previousCover.delete() }
         }
         return downloadedPath
@@ -406,43 +413,41 @@ class CoverArtRepository(context: Context) {
         // ISO filesystem to scrape.
         val extension = game.fileName.substringAfterLast('.', "").lowercase(Locale.ROOT)
         if (extension !in GameFormats.discExtensions) return null
-        val nativePath = nativeDiscPath(game.path) ?: return null
-        val target = File(fetchDirectory, "$key.png")
-        if (extractCover) cache.clearOnlineSource(key)
-        if (extractCover && target.exists()) target.delete()
-        val metadata = NativeApp.scrapeDisc(nativePath, if (extractCover) target.absolutePath else null)
-            ?: return null
-        val fields = metadata.split('\n')
-        return DiscScrapeResult(
-            coverPath = if (extractCover) target.takeIf(::isUsableCoverFile)?.absolutePath else null,
-            searchName = fields.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() },
-            uniqueId = fields.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
-        ).also { discMetadata[game.path] = it }
-    }
-
-    /** The core's disc drivers only read real files, not SAF content URIs. */
-    private fun nativeDiscPath(path: String): String? {
-        if (!path.startsWith("content://")) return path
-        return runCatching {
-            DocumentPathResolver.resolveFilePath(context, path)?.takeIf { it.isNotBlank() }
-                ?: SafStorageBridge.prepare(context, path)
-        }.getOrNull()
+        return DiscScrapeAccess.read(
+            game.path,
+            prepareSaf = { SafStorageBridge.prepare(context, it) },
+            resolveLocal = { runCatching { DocumentPathResolver.resolveFilePath(context, it) }.getOrNull() },
+            scrape = scrape@{ nativePath ->
+                var metadata: String? = null
+                val cover = if (extractCover) {
+                    cache.storeOffline(key) { output ->
+                        metadata = NativeApp.scrapeDisc(nativePath, output.absolutePath)
+                    }
+                } else {
+                    metadata = NativeApp.scrapeDisc(nativePath, null)
+                    null
+                }
+                val fields = metadata?.split('\n') ?: return@scrape null
+                DiscScrapeResult(
+                    coverPath = cover?.absolutePath,
+                    searchName = fields.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() },
+                    uniqueId = fields.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
+                ).also { discMetadata[game.path] = it }
+            }
+        )
     }
 
     private fun extractDiscBoxart(game: GameItem, key: String): String? {
         if (isArcadeGame(game.fileName)) return null
         val bitmap = DiscGdtexExtractor.extractBitmap(context, game.path, game.fileName) ?: return null
-        val target = File(fetchDirectory, "$key.png")
         return runCatching {
-            cache.clearOnlineSource(key)
-            if (target.exists()) target.delete()
-            target.outputStream().use { output ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
-            }
-            target.takeIf(::isUsableCoverFile)?.absolutePath
+            cache.storeOffline(key) { target ->
+                target.outputStream().use { output ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+                }
+            }?.absolutePath
         }.getOrElse { error ->
             Log.w(TAG, "Unable to store GD-ROM texture: ${error.message}")
-            target.delete()
             null
         }
     }
