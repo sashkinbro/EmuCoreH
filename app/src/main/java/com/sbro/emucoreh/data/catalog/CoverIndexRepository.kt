@@ -52,13 +52,9 @@ class CoverIndexRepository(private val context: Context) {
         isLight: Boolean = false
     ): String? {
         if (style == AppPreferences.COVER_ART_STYLE_DISABLED) return null
-        val norm = normalizeTitle(title.orEmpty())
-        if (norm.length < 3) return null
         val index = load() ?: return null
         val titles = index.optJSONObject("titles") ?: return null
-        val exactPath = titles.optString(norm).takeIf { it.isNotBlank() }
-        val path = exactPath ?: fuzzyTitleMatch(titles, norm)
-        if (path.isNullOrBlank()) return null
+        val path = resolveTitlePath(titles, title) ?: return null
         return makeCoverUrl(path, style, isLight)
     }
 
@@ -119,24 +115,6 @@ class CoverIndexRepository(private val context: Context) {
 
 
 
-    private fun fuzzyTitleMatch(titles: JSONObject, query: String): String? {
-        if (query.length < 4) return null
-        val keys = titles.keys()
-        var bestPath: String? = null
-        var bestLength = Int.MAX_VALUE
-        while (keys.hasNext()) {
-            val key = keys.next()
-            if (key.length < 4) continue
-            val contains = key.contains(query) || query.contains(key)
-            if (!contains) continue
-            if (key.length < bestLength) {
-                bestLength = key.length
-                bestPath = titles.optString(key)
-            }
-        }
-        return bestPath?.takeIf { it.isNotBlank() }
-    }
-
     private fun load(): JSONObject? = cached ?: synchronized(lock) {
         cached ?: runCatching {
             val hasCoversIndex = runCatching {
@@ -153,6 +131,52 @@ class CoverIndexRepository(private val context: Context) {
         const val BASE_URL = "https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/main"
         private val lock = Any()
         @Volatile private var cached: JSONObject? = null
+
+        internal fun resolveTitlePath(titles: JSONObject, title: String?): String? {
+            val raw = title.orEmpty().trim()
+            val withoutDumpTags = raw
+                .replace(Regex("(?i)\\.(?:chd|gdi|cdi|cue|iso|bin|m3u)$"), "")
+                .replace(Regex("(?:\\s*(?:\\([^()]*\\)|\\[[^\\[\\]]*\\]))+\\s*$"), "")
+                .trim()
+            // Disc revisions are metadata; sequel numbers and titles such as
+            // "Phantasy Star Online Ver. 2" must remain part of the lookup.
+            val withoutRevision = withoutDumpTags.replace(
+                Regex("(?i)\\s+v(?:er(?:sion)?)?\\.?\\s*\\d+(?:[._]\\d+)+[a-z]?\\s*$"), ""
+            )
+            val queries = listOf(raw, withoutDumpTags, withoutRevision)
+                .map(::normalizeTitle).filter { it.length >= 3 }.distinct()
+            if (queries.isEmpty()) return null
+            // Preserve the catalogue's explicit spelling/region choice before
+            // comparing aliases such as "Soul Calibur" and "SoulCalibur".
+            for (query in queries) {
+                titles.optString(query).takeIf { it.isNotBlank() }?.let { return it }
+            }
+            for (query in queries) {
+                val compact = query.replace(" ", "")
+                val paths = titles.keys().asSequence()
+                    .filter { it.replace(" ", "") == compact }
+                    .map { titles.optString(it) }.filter { it.isNotBlank() }
+                    .distinct().take(2).toList()
+                if (paths.size > 1) return null
+                if (paths.size == 1) return paths.single()
+            }
+            val query = queries.last()
+            if (query.length < 4) return null
+            val keys = titles.keys()
+            var bestPath: String? = null
+            var bestLength = Int.MAX_VALUE
+            while (keys.hasNext()) {
+                val key = keys.next()
+                if (key.length < 4) continue
+                val contains = key.contains(query) || query.contains(key)
+                if (!contains) continue
+                if (key.length < bestLength) {
+                    bestLength = key.length
+                    bestPath = titles.optString(key)
+                }
+            }
+            return bestPath?.takeIf { it.isNotBlank() }
+        }
 
         fun normalizeSerial(serial: String?): String? {
             val norm = serial.orEmpty().uppercase(Locale.ROOT).replace(Regex("[^A-Z0-9]"), "")

@@ -3,8 +3,77 @@ package com.sbro.emucoreh.data.catalog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.json.JSONObject
+import java.io.File
 
 class CoverIndexRepositoryTest {
+
+    private fun bundledTitles(): JSONObject {
+        val asset = listOf(
+            File("src/main/assets/catalog/covers_index.json"),
+            File("app/src/main/assets/catalog/covers_index.json")
+        ).first { it.isFile }
+        return JSONObject(asset.readText()).getJSONObject("titles")
+    }
+
+    @Test
+    fun screenshotSoulCaliburRevisionResolvesBundledArtwork() {
+        assertEquals("covers/103173.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "Soul Calibur v1.000"
+        ))
+    }
+
+    @Test
+    fun soulCaliburDumpFilenameResolvesBundledArtwork() {
+        assertEquals("covers/103173.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "Soul Calibur v1.000 (1999)(Namco)(US)[!][4S].chd"
+        ))
+    }
+
+    @Test
+    fun revisionLookupPreservesSequelNumbers() {
+        val titles = bundledTitles()
+        // The title alias selects this catalogued Japanese edition; the US
+        // cover (2412) is selected only by its own product code MK-51136.
+        assertEquals("covers/125201.jpg", CoverIndexRepository.resolveTitlePath(titles, "Crazy Taxi 2 v1.000"))
+        assertNull(CoverIndexRepository.resolveTitlePath(titles, "Soul Calibur 2 v1.000"))
+    }
+
+    @Test
+    fun exactCatalogTitleWinsBeforeSpacingAliases() {
+        val titles = JSONObject().put("soul calibur", "covers/exact.jpg")
+            .put("soulcalibur", "covers/other.jpg")
+        assertEquals("covers/exact.jpg", CoverIndexRepository.resolveTitlePath(titles, "Soul Calibur"))
+    }
+
+    @Test
+    fun revisionStillPrefersAnExactSpellingWhenBundledSpacingAliasesConflict() {
+        assertEquals("covers/137280.jpg", CoverIndexRepository.resolveTitlePath(bundledTitles(), "MDK 2 v1.000"))
+    }
+
+    @Test
+    fun namedVersionIsPreservedAsPartOfTheCatalogTitle() {
+        assertEquals("covers/131822.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "Phantasy Star Online Ver. 2"
+        ))
+    }
+
+    @Test
+    fun resolvedSoulCaliburArtworkHasTheVerifiedFlatAndThemeVariants() {
+        val path = CoverIndexRepository.resolveTitlePath(bundledTitles(), "Soul Calibur v1.000")!!
+        assertEquals("https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/main/covers/103173.jpg",
+            CoverIndexRepository.makeCoverUrl(path, com.sbro.emucoreh.data.AppPreferences.COVER_ART_STYLE_FLAT))
+        assertEquals("https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/main/covers/3d/103173.webp",
+            CoverIndexRepository.makeCoverUrl(path, com.sbro.emucoreh.data.AppPreferences.COVER_ART_STYLE_3D))
+        assertEquals("https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/main/covers/3d/light/103173.webp",
+            CoverIndexRepository.makeCoverUrl(path, com.sbro.emucoreh.data.AppPreferences.COVER_ART_STYLE_3D, isLight = true))
+    }
+
+    @Test
+    fun conflictingSpacingAliasesDoNotChooseAnArbitraryGame() {
+        val titles = JSONObject().put("ab cd", "covers/first.jpg").put("a bcd", "covers/second.jpg")
+        assertNull(CoverIndexRepository.resolveTitlePath(titles, "ABC D v1.000"))
+    }
 
     @Test
     fun normalizesSerialsCorrectly() {
