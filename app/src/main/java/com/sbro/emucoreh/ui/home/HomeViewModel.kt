@@ -21,6 +21,7 @@ import com.sbro.emucoreh.data.HomeBackgroundPreset
 import com.sbro.emucoreh.data.HomeBackgroundType
 import com.sbro.emucoreh.data.CoverArtRepository
 import com.sbro.emucoreh.data.boxart.BoxartRetryPolicy
+import com.sbro.emucoreh.data.boxart.syncInitialCovers
 import com.sbro.emucoreh.data.CoreMaintenanceRepository
 import com.sbro.emucoreh.data.CoreUpdateResetAction
 import com.sbro.emucoreh.data.CustomGameCoverRepository
@@ -772,32 +773,27 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val semaphore = kotlinx.coroutines.sync.Semaphore(3)
 
             val shouldReschedule = AtomicBoolean(false)
-            coroutineScope {
-                gamesToProcess.forEach { game ->
-                    launch {
-                        semaphore.withPermit {
-                            if (EmulatorBridge.isVmActive()) {
-                                shouldReschedule.set(true)
-                                return@withPermit
-                            }
-                            val downloadedCover = repository.downloadCoverForGame(
-                                game, context, coverRepository, offlineOnly = true
-                            )
-                            if (downloadedCover != null && downloadedCover != game.coverArtPath) {
-                                synchronized(this@HomeViewModel) {
-                                    allGames = allGames.map {
-                                        if (it.path == game.path) it.copy(coverArtPath = downloadedCover) else it
-                                    }
-                                }
-                                publishVisibleGames()
+            val initial = syncInitialCovers(
+                games = gamesToProcess,
+                networkAvailable = coverRepository.isNetworkAvailable(),
+                shouldPause = { EmulatorBridge.isVmActive() },
+                fetch = { game, mode -> repository.downloadCoverForGame(game, context, coverRepository, mode) },
+                publish = { game, downloadedCover ->
+                    if (downloadedCover != game.coverArtPath) {
+                        synchronized(this@HomeViewModel) {
+                            allGames = allGames.map {
+                                if (it.path == game.path) it.copy(coverArtPath = downloadedCover) else it
                             }
                         }
+                        publishVisibleGames()
                     }
-                }
-            }
-            // Flycast shows the offline GD-ROM label first and swaps in the
-            // online box art a moment later. Covers extracted in the pass above
-            // are upgraded here within the same sync.
+                },
+                isFinalCover = { !coverRepository.isPendingOnlineCover(it) },
+                allowRepository = { coverRepository.nextOnlineRetryAtMillis == 0L }
+            )
+            if (initial.deferred) shouldReschedule.set(true)
+            // Only unresolved covers reach disc metadata and external services;
+            // known repository artwork has already been published above.
             for (attempt in 0 until 3) {
                 val upgradeTargets = allGames.filter {
                     it.coverArtPath == null || it.coverArtPath.startsWith("http") ||
@@ -806,6 +802,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 if (upgradeTargets.isEmpty()) break
                 if (EmulatorBridge.isVmActive()) {
                     shouldReschedule.set(true)
+                    break
+                }
+                if (!initial.canUpgradeOnline || !coverRepository.isNetworkAvailable()) {
+                    coverRepository.postponeOnlineCovers()
                     break
                 }
                 coverRepository.prepareOnlineCovers(upgradeTargets) { EmulatorBridge.isVmActive() }

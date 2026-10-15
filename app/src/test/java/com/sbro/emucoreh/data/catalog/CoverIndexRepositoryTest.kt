@@ -8,6 +8,18 @@ import java.io.File
 
 class CoverIndexRepositoryTest {
 
+    @Test fun fastLookupDoesNotFinalizeASequelUsingItsParentsFuzzyCover() {
+        val titles = JSONObject().put("sonic adventure", "covers/first.jpg")
+            .put("sonic adventure 2", "covers/second.jpg")
+        assertNull(CoverIndexRepository.resolveTitlePath(titles, "Sonic Adventure 2 Preview", allowFuzzy = false))
+    }
+
+    @Test fun fastLookupStillResolvesKnownDiscRevisionsAndSpacingAliases() {
+        assertEquals("covers/103173.jpg", CoverIndexRepository.resolveTitlePath(
+            bundledTitles(), "Soul Calibur v1.000 (1999)(Namco)(US)[!][4S].chd", allowFuzzy = false
+        ))
+    }
+
     private fun bundledTitles(): JSONObject {
         val asset = listOf(
             File("src/main/assets/catalog/covers_index.json"),

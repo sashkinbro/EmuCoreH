@@ -49,12 +49,13 @@ class CoverIndexRepository(private val context: Context) {
     fun findCoverByTitle(
         title: String?,
         style: Int = AppPreferences.COVER_ART_STYLE_3D,
-        isLight: Boolean = false
+        isLight: Boolean = false,
+        allowFuzzy: Boolean = true
     ): String? {
         if (style == AppPreferences.COVER_ART_STYLE_DISABLED) return null
         val index = load() ?: return null
         val titles = index.optJSONObject("titles") ?: return null
-        val path = resolveTitlePath(titles, title) ?: return null
+        val path = resolveTitlePath(titles, title, allowFuzzy) ?: return null
         return makeCoverUrl(path, style, isLight)
     }
 
@@ -132,7 +133,7 @@ class CoverIndexRepository(private val context: Context) {
         private val lock = Any()
         @Volatile private var cached: JSONObject? = null
 
-        internal fun resolveTitlePath(titles: JSONObject, title: String?): String? {
+        internal fun resolveTitlePath(titles: JSONObject, title: String?, allowFuzzy: Boolean = true): String? {
             val raw = title.orEmpty().trim()
             val withoutDumpTags = raw
                 .replace(Regex("(?i)\\.(?:chd|gdi|cdi|cue|iso|bin|m3u)$"), "")
@@ -160,6 +161,7 @@ class CoverIndexRepository(private val context: Context) {
                 if (paths.size > 1) return null
                 if (paths.size == 1) return paths.single()
             }
+            if (!allowFuzzy) return null
             val query = queries.last()
             if (query.length < 4) return null
             val keys = titles.keys()

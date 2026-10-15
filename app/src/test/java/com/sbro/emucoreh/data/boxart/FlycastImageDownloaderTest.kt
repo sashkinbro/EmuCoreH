@@ -46,6 +46,27 @@ class FlycastImageDownloaderTest {
         assertTrue(root.listFiles().orEmpty().isEmpty())
     }
 
+    @Test fun `repository HTTP success publishes a full cover without opening a game image`() = withImage(200, "valid cover") { downloader, url, root ->
+        val result = CoverFetchOrder.resolve(CoverFetchMode.FULL, null,
+            repository = { downloader.download(url, "soul") },
+            disc = { error("A successful repository download must not read the game image") },
+            fallback = { error("A successful repository download must not query TheGamesDB") },
+            onRetry = { throw it })
+        assertEquals("valid cover", File(result!!).readText())
+        assertTrue(FlycastCoverCache(root) { it.isFile }.isOnline(File(result)))
+    }
+
+    @Test fun `repository HTTP outage preserves the disc fallback and a future retry`() = withImage(503, "outage") { downloader, url, _ ->
+        var retryAt = 0L
+        val result = CoverFetchOrder.resolve(CoverFetchMode.FULL, null,
+            repository = { downloader.download(url, "soul") },
+            disc = { "local disc artwork" },
+            fallback = { error("An outage must not expand into more network requests") },
+            onRetry = { retryAt = it.retryAtMillis })
+        assertEquals("local disc artwork", result)
+        assertTrue(retryAt > System.currentTimeMillis())
+    }
+
     @Test fun `online PNG replaces label with a distinct observable path`() = withImage(200, "valid cover") { downloader, url, root ->
         val label = File(root, "daytona.png").apply { writeText("disc label") }
         val downloaded = downloader.download(url, "daytona")

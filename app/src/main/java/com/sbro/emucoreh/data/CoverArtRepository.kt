@@ -3,6 +3,8 @@ package com.sbro.emucoreh.data
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Log
 import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.GameFormats
@@ -10,6 +12,8 @@ import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.data.boxart.DiscGdtexExtractor
 import com.sbro.emucoreh.data.boxart.DiscScrapeAccess
 import com.sbro.emucoreh.data.boxart.BoxartRetryException
+import com.sbro.emucoreh.data.boxart.CoverFetchMode
+import com.sbro.emucoreh.data.boxart.CoverFetchOrder
 import com.sbro.emucoreh.data.boxart.FlycastCoverCache
 import com.sbro.emucoreh.data.boxart.FlycastImageDownloader
 import com.sbro.emucoreh.data.boxart.FlycastBoxartSource
@@ -35,9 +39,9 @@ data class CoverCacheClearResult(
 
 /**
  * Box art retrieval using Flycast's offline scraper and the EmuCoreH catalog:
- *  1. the 0GDTEX.PVR texture stored inside Dreamcast discs (offline scraper),
- *  2. full covers from EmuCoreH-Covers, matched by product code and title,
- *  3. Flycast arcade artwork and TheGamesDB for games outside our catalog.
+ *  1. cached artwork, then EmuCoreH-Covers by known product code and title,
+ *  2. the disc's 0GDTEX.PVR texture when offline or outside our catalog,
+ *  3. disc metadata, Flycast arcade artwork and TheGamesDB as fallbacks.
  */
 class CoverArtRepository(context: Context) {
 
@@ -48,7 +52,7 @@ class CoverArtRepository(context: Context) {
         private val downloadFlights = HashMap<String, PendingCoverDownload>()
     }
 
-    private class PendingCoverDownload {
+    private class PendingCoverDownload(val mode: CoverFetchMode) {
         val completed = CountDownLatch(1)
         @Volatile var result: String? = null
     }
@@ -58,6 +62,7 @@ class CoverArtRepository(context: Context) {
     private val coverCacheDirectory = File(this.context.cacheDir, "game-covers")
     private val remoteImageCacheDirectory = File(this.context.cacheDir, "remote-image-cache")
     private val discMetadata = ConcurrentHashMap<String, DiscScrapeResult>()
+    private val missingImageUrls = ConcurrentHashMap.newKeySet<String>()
     private val prefetchedInfo = PreparedBoxartLookup()
     private val retryAt = AtomicLong(0L)
     val nextOnlineRetryAtMillis: Long get() = retryAt.get()
@@ -116,6 +121,10 @@ class CoverArtRepository(context: Context) {
     fun prepareOnlineCovers(games: List<GameItem>, shouldAbort: () -> Boolean = { false }) {
         retryAt.set(0L)
         if (!isFetchBoxartEnabled()) return
+        if (!isNetworkAvailable()) {
+            postponeOnlineCovers()
+            return
+        }
         prefetchedInfo.begin()
         val ids = games.filter { game ->
             !isArcadeGame(game.fileName) &&
@@ -152,6 +161,15 @@ class CoverArtRepository(context: Context) {
     private fun noteRetry(atMillis: Long = System.currentTimeMillis() + 1000L) {
         retryAt.accumulateAndGet(atMillis, ::maxOf)
     }
+
+    fun postponeOnlineCovers() = noteRetry()
+
+    fun isNetworkAvailable(): Boolean = runCatching {
+        val manager = context.getSystemService(ConnectivityManager::class.java) ?: return@runCatching false
+        val network = manager.activeNetwork ?: return@runCatching false
+        manager.getNetworkCapabilities(network)
+            ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    }.getOrDefault(false)
 
     private fun hasRecentMiss(game: GameItem): Boolean {
         val key = normalizeSerial(game.serial) ?: titleCoverKey(game.title) ?: return false
@@ -212,7 +230,7 @@ class CoverArtRepository(context: Context) {
     private fun coverKeys(serial: String?, title: String?): List<String> =
         listOfNotNull(normalizeSerial(serial), titleCoverKey(title)).distinct()
 
-    fun downloadCover(game: GameItem, context: Context, offlineOnly: Boolean = false): String? {
+    fun downloadCover(game: GameItem, mode: CoverFetchMode = CoverFetchMode.FULL): String? {
         if (!isFetchBoxartEnabled()) {
             Log.d(TAG, "Cover download skipped: box art fetching is disabled")
             return null
@@ -228,10 +246,17 @@ class CoverArtRepository(context: Context) {
         findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
             ?.takeIf { !isPendingOnlineCover(it) }
             ?.let { return it }
+        val effectiveMode = if (mode != CoverFetchMode.OFFLINE_ONLY && !isNetworkAvailable()) {
+            postponeOnlineCovers()
+            if (mode == CoverFetchMode.REPOSITORY_ONLY) {
+                return findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
+            }
+            CoverFetchMode.OFFLINE_ONLY
+        } else mode
         lateinit var flight: PendingCoverDownload
         var ownsDownload = false
         synchronized(downloadFlightsLock) {
-            flight = downloadFlights[primaryKey] ?: PendingCoverDownload().also {
+            flight = downloadFlights[primaryKey] ?: PendingCoverDownload(effectiveMode).also {
                 downloadFlights[primaryKey] = it
                 ownsDownload = true
             }
@@ -243,10 +268,12 @@ class CoverArtRepository(context: Context) {
                 Thread.currentThread().interrupt()
                 return null
             }
-            return flight.result
+            // Serialize writes by cover key, but do not mistake a fast miss or
+            // an offline label for a completed lookup in another mode.
+            return if (flight.mode == effectiveMode) flight.result else downloadCover(game, mode)
         }
         return try {
-            downloadCoverResolved(game, primaryKey, offlineOnly).also {
+            downloadCoverResolved(game, primaryKey, effectiveMode).also {
                 flight.result = it
             }
         } finally {
@@ -257,9 +284,9 @@ class CoverArtRepository(context: Context) {
         }
     }
 
-    private fun downloadCoverResolved(game: GameItem, key: String, offlineOnly: Boolean): String? {
+    private fun downloadCoverResolved(game: GameItem, key: String, mode: CoverFetchMode): String? {
         Log.d(TAG, "========== BOX ART DOWNLOAD START ($key) ==========")
-        var existingCover = findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
+        val existingCover = findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
             ?.let(::File)
             ?: findCoverFile(key)
         val prefs = AppPreferences(context)
@@ -274,117 +301,109 @@ class CoverArtRepository(context: Context) {
             System.currentTimeMillis() - missFile.lastModified() < MISS_TTL_MS
 
         var scrape: DiscScrapeResult? = null
-        if (existingCover == null) {
-            // Offline scraper, exactly like Flycast: the core opens the disc
-            // image (GDI, CUE, ISO, CDI and CHD), reads the IP.BIN metadata and
-            // extracts the 0GDTEX.PVR label artwork. It is shown immediately;
-            // the online pass below upgrades it to the full box art later.
-            scrape = scrapeDiscBoxart(game, key, extractCover = true)
-            scrape?.coverPath?.let {
-                missFile.delete()
-                if (offlineOnly) return it
-                existingCover = File(it)
-            }
-            // Fallback for content:// images the core cannot open directly.
-            if (existingCover == null) extractDiscBoxart(game, key)?.let {
-                missFile.delete()
-                if (offlineOnly) return it
-                existingCover = File(it)
-            }
-        }
-        if (offlineOnly) return existingCover?.absolutePath
-        if (missFresh) {
-            Log.d(TAG, "Recent miss marker found, skipping")
-            return existingCover?.absolutePath
-        }
+        return CoverFetchOrder.resolve(
+            mode = mode,
+            cached = existingCover?.absolutePath,
+            repository = {
+                if (missFresh) null else downloadRepositoryCover(game, key, style, isLight)
+            },
+            disc = {
+                scrape = scrapeDiscBoxart(game, key, extractCover = true)
+                scrape?.coverPath ?: extractDiscBoxart(game, key)
+            },
+            fallback = fallback@{ labelPath ->
+                if (missFresh) return@fallback null
+                val label = labelPath?.let(::File)
+                val arcade = isArcadeGame(game.fileName)
+                if (arcade) {
+                    for (url in FlycastBoxartSource.arcadeImageUrls(game.fileName, game.serial)) {
+                        downloadImage(url, key, "Flycast arcade", mute = true)?.let {
+                            return@fallback acceptOnlineCover(label, it)
+                        }
+                    }
+                }
 
+                // Metadata for the online lookups when the label artwork already
+                // exists (the image itself was extracted on the first pass).
+                if (scrape == null) {
+                    scrape = scrapeDiscBoxart(game, key, extractCover = false)
+                }
+
+                val uniqueIds = if (arcade) emptyList() else
+                    FlycastBoxartSource.uniqueIdCandidates(scrape?.uniqueId, game.serial)
+
+                // 1. EmuCoreH-Covers GitHub repository by UID / product code first
+                for (uniqueId in uniqueIds) {
+                    val repoUrl = coverIndex.findCoverBySerial(uniqueId, style, isLight)
+                    if (repoUrl != null) {
+                        downloadImage(repoUrl, key, "EmuCoreH-Covers serial")?.let {
+                            Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers serial) ==========")
+                            return@fallback acceptOnlineCover(label, it)
+                        }
+                    }
+                }
+
+                // 2. EmuCoreH-Covers GitHub repository by game title second
+                val searchName = FlycastBoxartSource.searchName(
+                    scrape?.searchName ?: game.title.ifBlank { game.fileName.substringBeforeLast('.') }, arcade
+                )
+                if (searchName.isNotBlank()) {
+                    val repoTitleUrl = coverIndex.findCoverByTitle(searchName, style, isLight)
+                        ?: coverIndex.findCoverByTitle(game.title, style, isLight)
+                    if (repoTitleUrl != null) {
+                        downloadImage(repoTitleUrl, key, "EmuCoreH-Covers title")?.let {
+                            Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers title) ==========")
+                            return@fallback acceptOnlineCover(label, it)
+                        }
+                    }
+                }
+
+                // 3. Fallback: TheGamesDB API (if game not found in our repository, e.g. homebrew)
+                for (uniqueId in uniqueIds) {
+                    val info = prefetchedInfo.find(
+                        uniqueId, maxOf(nextOnlineRetryAtMillis, System.currentTimeMillis() + 1000L)
+                    ) { TheGamesDb.findByUniqueId(uniqueId) }
+                    if (info != null) {
+                        info.imageUrl?.let { url ->
+                            downloadImage(url, key, "TheGamesDB")?.let {
+                                Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB uid) ==========")
+                                return@fallback acceptOnlineCover(label, it)
+                            }
+                        }
+                    }
+                }
+                if (searchName.isNotBlank()) {
+                    val info = TheGamesDb.findByName(searchName, arcade = arcade)
+                    if (info != null) {
+                        info.imageUrl?.let { url ->
+                            downloadImage(url, key, "TheGamesDB")?.let {
+                                Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB name) ==========")
+                                return@fallback acceptOnlineCover(label, it)
+                            }
+                        }
+                    }
+                }
+                missFile.writeText("not-found at ${System.currentTimeMillis()}")
+                null
+            },
+            onRetry = { failure ->
+                noteRetry(failure.retryAtMillis)
+                Log.d(TAG, "Online cover postponed ($key): ${failure.message}")
+            }
+        )
+    }
+
+    /** Uses only library metadata and the bundled index; never opens a game image. */
+    private fun downloadRepositoryCover(game: GameItem, key: String, style: Int, isLight: Boolean): String? {
         val arcade = isArcadeGame(game.fileName)
-        try {
-            if (arcade) {
-                val arcadeCoverUrl = coverIndex.findArcadeCover(game.fileName, game.serial, style, isLight)
-                if (arcadeCoverUrl != null) {
-                    downloadImage(arcadeCoverUrl, key, "EmuCoreH-Covers arcade", mute = true)?.let {
-                        Log.d(TAG, "========== BOX ART DOWNLOAD END (arcade repo) ==========")
-                        return acceptOnlineCover(existingCover, it)
-                    }
-                }
-                for (url in FlycastBoxartSource.arcadeImageUrls(game.fileName, game.serial)) {
-                    downloadImage(url, key, "Flycast arcade", mute = true)?.let {
-                        Log.d(TAG, "========== BOX ART DOWNLOAD END (arcade) ==========")
-                        return acceptOnlineCover(existingCover, it)
-                    }
-                }
-            }
-
-            // Metadata for the online lookups when the label artwork already
-            // exists (the image itself was extracted on the first pass).
-            if (scrape == null) {
-                scrape = scrapeDiscBoxart(game, key, extractCover = false)
-            }
-
-            val uniqueIds = if (arcade) emptyList() else
-                FlycastBoxartSource.uniqueIdCandidates(scrape?.uniqueId, game.serial)
-
-            // 1. EmuCoreH-Covers GitHub repository by UID / product code first
-            for (uniqueId in uniqueIds) {
-                val repoUrl = coverIndex.findCoverBySerial(uniqueId, style, isLight)
-                if (repoUrl != null) {
-                    downloadImage(repoUrl, key, "EmuCoreH-Covers serial")?.let {
-                        Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers serial) ==========")
-                        return acceptOnlineCover(existingCover, it)
-                    }
-                }
-            }
-
-            // 2. EmuCoreH-Covers GitHub repository by game title second
-            val searchName = FlycastBoxartSource.searchName(
-                scrape?.searchName ?: game.title.ifBlank { game.fileName.substringBeforeLast('.') }, arcade
-            )
-            if (searchName.isNotBlank()) {
-                val repoTitleUrl = coverIndex.findCoverByTitle(searchName, style, isLight)
-                    ?: coverIndex.findCoverByTitle(game.title, style, isLight)
-                if (repoTitleUrl != null) {
-                    downloadImage(repoTitleUrl, key, "EmuCoreH-Covers title")?.let {
-                        Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers title) ==========")
-                        return acceptOnlineCover(existingCover, it)
-                    }
-                }
-            }
-
-            // 3. Fallback: TheGamesDB API (if game not found in our repository, e.g. homebrew)
-            for (uniqueId in uniqueIds) {
-                val info = prefetchedInfo.find(
-                    uniqueId, maxOf(nextOnlineRetryAtMillis, System.currentTimeMillis() + 1000L)
-                ) { TheGamesDb.findByUniqueId(uniqueId) }
-                if (info != null) {
-                    info.imageUrl?.let { url ->
-                        downloadImage(url, key, "TheGamesDB")?.let {
-                            Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB uid) ==========")
-                            return acceptOnlineCover(existingCover, it)
-                        }
-                    }
-                }
-            }
-            if (searchName.isNotBlank()) {
-                val info = TheGamesDb.findByName(searchName, arcade = arcade)
-                if (info != null) {
-                    info.imageUrl?.let { url ->
-                        downloadImage(url, key, "TheGamesDB")?.let {
-                            Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB name) ==========")
-                            return acceptOnlineCover(existingCover, it)
-                        }
-                    }
-                }
-            }
-            missFile.writeText("not-found at ${System.currentTimeMillis()}")
-        } catch (failure: BoxartRetryException) {
-            noteRetry(failure.retryAtMillis)
-            Log.d(TAG, "Online cover postponed ($key): ${failure.message}")
-        } finally {
-            Log.d(TAG, "========== BOX ART DOWNLOAD END ==========")
-        }
-        // No online artwork: keep the offline label art instead of a blank tile.
-        return existingCover?.absolutePath
+        val title = FlycastBoxartSource.searchName(game.title, arcade)
+        val urls = listOfNotNull(
+            if (arcade) coverIndex.findArcadeCover(game.fileName, game.serial, style, isLight)
+            else coverIndex.findCoverBySerial(game.serial, style, isLight),
+            coverIndex.findCoverByTitle(title, style, isLight, allowFuzzy = false)
+        ).distinct()
+        for (url in urls) downloadImage(url, key, "EmuCoreH-Covers")?.let { return it }
+        return null
     }
 
     /** Retain disc artwork for offline fallback after a style or theme change. */
@@ -476,9 +495,15 @@ class CoverArtRepository(context: Context) {
         key: String,
         sourceName: String,
         mute: Boolean = false
-    ): String? = imageDownloader.download(urlString, key).also { path ->
-        if (path != null) Log.d(TAG, "$sourceName: SUCCESS - $path")
-        else if (!mute) Log.d(TAG, "$sourceName: No artwork at $urlString")
+    ): String? {
+        if (urlString in missingImageUrls) return null
+        return imageDownloader.download(urlString, key).also { path ->
+            if (path != null) Log.d(TAG, "$sourceName: SUCCESS - $path")
+            else {
+                missingImageUrls.add(urlString)
+                if (!mute) Log.d(TAG, "$sourceName: No artwork at $urlString")
+            }
+        }
     }
     private fun findCoverFile(key: String): File? {
         val prefs = AppPreferences(context)

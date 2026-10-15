@@ -13,6 +13,7 @@ import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.GameMetadataReader
 import com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository
 import com.sbro.emucoreh.data.catalog.TitleIndexRepository
+import com.sbro.emucoreh.data.boxart.CoverFetchMode
 import java.io.File
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -161,12 +162,12 @@ class GameRepository {
         game: GameItem,
         context: Context,
         covers: CoverArtRepository = CoverArtRepository(context),
-        offlineOnly: Boolean = false
+        mode: CoverFetchMode = CoverFetchMode.FULL
     ): String? {
         CustomGameCoverRepository(context).findCustomCoverPath(game.path)?.let { return it }
-        // Covers come from the official Flycast sources: the disc's 0GDTEX
-        // texture, the flycast-content arcade artwork and TheGamesDB.
-        covers.downloadCover(game, context, offlineOnly)?.let { return it }
+        // Prefer our cover catalog without opening an image; retain Flycast's
+        // disc artwork and external sources as fallbacks.
+        covers.downloadCover(game, mode)?.let { return it }
         covers.findCachedCoverPath(game.serial, title = game.title)?.let { return it }
         return game.coverArtPath?.takeIf { File(it).isFile }
     }
