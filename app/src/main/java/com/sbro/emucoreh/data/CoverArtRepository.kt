@@ -14,6 +14,7 @@ import com.sbro.emucoreh.data.boxart.DiscScrapeAccess
 import com.sbro.emucoreh.data.boxart.BoxartRetryException
 import com.sbro.emucoreh.data.boxart.CoverFetchMode
 import com.sbro.emucoreh.data.boxart.CoverFetchOrder
+import com.sbro.emucoreh.data.boxart.ArcadeLandscapeCoverRefresh
 import com.sbro.emucoreh.data.boxart.FlycastCoverCache
 import com.sbro.emucoreh.data.boxart.FlycastImageDownloader
 import com.sbro.emucoreh.data.boxart.FlycastBoxartSource
@@ -240,13 +241,19 @@ class CoverArtRepository(context: Context) {
             Log.w(TAG, "Cannot download cover: no serial or title")
             return null
         }
+        // The replaced arcade assets keep the same URL. Refresh their downloaded
+        // copies once, before the ordinary cache hit can short-circuit the fetch.
+        val networkAvailable = mode != CoverFetchMode.OFFLINE_ONLY && isNetworkAvailable()
+        if (networkAvailable && ArcadeLandscapeCoverRefresh.refresh(fetchDirectory)) {
+            clearCoverImageMemoryCache()
+        }
         // Reuse artwork cached under the other key (title before the serial was
         // learned, or serial after a rename) instead of downloading a duplicate.
         // Offline label art is not final: it still needs the online upgrade.
         findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
             ?.takeIf { !isPendingOnlineCover(it) }
             ?.let { return it }
-        val effectiveMode = if (mode != CoverFetchMode.OFFLINE_ONLY && !isNetworkAvailable()) {
+        val effectiveMode = if (mode != CoverFetchMode.OFFLINE_ONLY && !networkAvailable) {
             postponeOnlineCovers()
             if (mode == CoverFetchMode.REPOSITORY_ONLY) {
                 return findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
