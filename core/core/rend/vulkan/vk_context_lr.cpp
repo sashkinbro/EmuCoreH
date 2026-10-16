@@ -24,6 +24,7 @@
 #include "oslib/oslib.h"
 #include "rend/transform_matrix.h"
 #include "texture.h"
+#include <cstring>
 #include <set>
 
 #if VULKAN_HPP_DISPATCH_LOADER_DYNAMIC == 1
@@ -345,15 +346,46 @@ bool VulkanContext::init(retro_hw_render_interface_vulkan *retro_render_if)
 	else
 	{
 		fseek(f, 0, SEEK_END);
-		size_t cacheSize = ftell(f);
+		const long fileSize = ftell(f);
 		fseek(f, 0, SEEK_SET);
-		u8 *cacheData = new u8[cacheSize];
-		if (fread(cacheData, 1, cacheSize, f) != cacheSize)
-			cacheSize = 0;
+		std::vector<u8> cacheData;
+		bool cacheValid = fileSize >= (long)sizeof(VkPipelineCacheHeaderVersionOne);
+		if (cacheValid)
+		{
+			cacheData.resize(fileSize);
+			cacheValid = fread(cacheData.data(), 1, cacheData.size(), f) == cacheData.size();
+		}
 		fclose(f);
-		pipelineCache = device.createPipelineCacheUnique(vk::PipelineCacheCreateInfo(vk::PipelineCacheCreateFlags(), cacheSize, cacheData));
-		delete [] cacheData;
-		INFO_LOG(RENDERER, "Vulkan pipeline cache loaded from %s: %zd bytes", cachePath.c_str(), cacheSize);
+		if (cacheValid)
+		{
+			// A cache blob written by another driver or device, or truncated by
+			// an interrupted write, must never reach the driver: some Android
+			// drivers (Mali in particular) crash on a mismatched cache instead
+			// of returning VK_ERROR_INCOMPATIBLE_DRIVER.
+			const VkPipelineCacheHeaderVersionOne *header =
+					(const VkPipelineCacheHeaderVersionOne *)cacheData.data();
+			cacheValid = header->headerVersion == VK_PIPELINE_CACHE_HEADER_VERSION_ONE
+					&& header->vendorID == properties->vendorID
+					&& header->deviceID == properties->deviceID
+					&& std::memcmp(header->pipelineCacheUUID, properties->pipelineCacheUUID.data(), VK_UUID_SIZE) == 0;
+		}
+		if (cacheValid)
+		{
+			try {
+				pipelineCache = device.createPipelineCacheUnique(vk::PipelineCacheCreateInfo(vk::PipelineCacheCreateFlags(), cacheData.size(), cacheData.data()));
+				INFO_LOG(RENDERER, "Vulkan pipeline cache loaded from %s: %zd bytes", cachePath.c_str(), cacheData.size());
+			} catch (const vk::SystemError& err) {
+				WARN_LOG(RENDERER, "Error loading pipeline cache: %s", err.what());
+				pipelineCache = device.createPipelineCacheUnique(vk::PipelineCacheCreateInfo());
+				remove(cachePath.c_str());
+			}
+		}
+		else
+		{
+			WARN_LOG(RENDERER, "Ignoring invalid Vulkan pipeline cache %s (%ld bytes)", cachePath.c_str(), fileSize);
+			pipelineCache = device.createPipelineCacheUnique(vk::PipelineCacheCreateInfo());
+			remove(cachePath.c_str());
+		}
 	}
 	allocator.Init(physicalDevice, device, instance);
 	depthFormat = findDepthFormat(physicalDevice);
@@ -531,11 +563,18 @@ void VulkanContext::term()
 			if (!cacheData.empty())
 			{
 				std::string cachePath = hostfs::getShaderCachePath("vulkan_pipeline.cache");
-				FILE *f = fopen(cachePath.c_str(), "wb");
+				// Write through a temporary file so a process killed mid-write
+				// can never leave a truncated cache behind: partial blobs crash
+				// some Android drivers on the next launch.
+				std::string tempPath = cachePath + ".tmp";
+				FILE *f = fopen(tempPath.c_str(), "wb");
 				if (f != nullptr)
 				{
 					(void)fwrite(&cacheData[0], 1, cacheData.size(), f);
 					fclose(f);
+					remove(cachePath.c_str());
+					if (rename(tempPath.c_str(), cachePath.c_str()) != 0)
+						remove(tempPath.c_str());
 				}
 			}
 		}

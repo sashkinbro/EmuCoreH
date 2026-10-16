@@ -297,17 +297,19 @@ bool EnsureInstance() {
     return true;
 }
 
+void DestroySwapchain();
+
 bool EnsureSurface(ANativeWindow* window, uint32_t window_generation) {
     if (window == nullptr) return false;
     if (g_vk.surface != VK_NULL_HANDLE) {
         if (g_vk.preparation_window == window && g_vk.preparation_generation == window_generation) return true;
-        if (g_vk.device != VK_NULL_HANDLE && g_vk.pfn_destroy_swapchain != nullptr &&
-            g_vk.swapchain != VK_NULL_HANDLE) {
+        if (g_vk.device != VK_NULL_HANDLE) {
             vkDeviceWaitIdle(g_vk.device);
-            g_vk.pfn_destroy_swapchain(g_vk.device, g_vk.swapchain, nullptr);
-            g_vk.swapchain = VK_NULL_HANDLE;
-            g_vk.swapchain_images.clear();
-            g_vk.swapchain_initialized.clear();
+            // Swapchain views, framebuffers and present semaphores belong to
+            // the swapchain images and must be released before the swapchain
+            // itself; tearing the swapchain down piecemeal leaves dangling
+            // objects that strict drivers can crash on.
+            DestroySwapchain();
         }
         g_vk.pfn_destroy_surface(g_vk.instance, g_vk.surface, nullptr);
         g_vk.surface = VK_NULL_HANDLE;
