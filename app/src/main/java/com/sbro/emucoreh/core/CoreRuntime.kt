@@ -40,6 +40,13 @@ internal object CoreRuntime {
     private val _failure = MutableStateFlow<RuntimeFailure?>(null)
     val failure = _failure.asStateFlow()
 
+    // Flycast-style renderer fallback: when the requested hardware renderer
+    // cannot initialize, the ViewModel relaunches the session on the fallback
+    // renderer instead of ending emulation with an error.
+    private val _rendererFallbackRequested = MutableStateFlow<Int?>(null)
+    val rendererFallbackRequested = _rendererFallbackRequested.asStateFlow()
+    private var rendererFallbackAttempted = false
+
     private val lifecycleLock = ReentrantLock()
     private val sessionLock = ReentrantLock()
     private var context: Context? = null
@@ -153,6 +160,25 @@ internal object CoreRuntime {
     fun isRunning(): Boolean = running && failure.value == null && sessionLock.withLock { session != 0L }
     fun hasSession(): Boolean = sessionLock.withLock { session != 0L }
 
+    /**
+     * Consumes a pending renderer fallback request. The ViewModel owns the
+     * relaunch: it persists the new renderer and reboots the session.
+     */
+    fun consumeRendererFallbackRequest(): Int? {
+        val requested = _rendererFallbackRequested.value
+        if (requested != null) _rendererFallbackRequested.value = null
+        return requested
+    }
+
+    private fun requestRendererFallback(): Boolean {
+        val target = RendererFallbackPolicy
+            .fallbackTarget(activeCoreRenderer, rendererFallbackAttempted)
+            ?: return false
+        rendererFallbackAttempted = true
+        _rendererFallbackRequested.value = target
+        return true
+    }
+
     fun setPerformanceMetricsEnabled(visible: Boolean, detailed: Boolean) {
         performanceMetricsEnabled = visible
         detailedPerformanceMetrics = visible && detailed
@@ -251,6 +277,10 @@ internal object CoreRuntime {
             }
         }
         if (!created) return false
+
+        // A freshly booted session may use its own renderer fallback budget.
+        rendererFallbackAttempted = false
+        _rendererFallbackRequested.value = null
 
         currentGamePath = gamePath
         currentBiosOnly = biosOnly
@@ -835,6 +865,15 @@ internal object CoreRuntime {
                 // only a real setup failure ends the session, with the native
                 // side having written the reason to the crash log.
                 if (!bridge.ensureHardwareContext() && bridge.hardwareContextFailed()) {
+                    // Flycast-style fallback: a Vulkan context that cannot be
+                    // created reboots the game on OpenGL instead of ending
+                    // the session with an error. The ViewModel performs the
+                    // relaunch so the renderer preference and UI stay in
+                    // sync; anything else is a terminal failure.
+                    if (requestRendererFallback()) {
+                        Log.w(TAG, "Hardware context failed; requesting OpenGL fallback")
+                        break
+                    }
                     reportFailure(
                         "${RendererDefaults.coreRendererName(activeCoreRenderer)} initialization failed"
                     )

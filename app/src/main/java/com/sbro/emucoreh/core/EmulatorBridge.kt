@@ -84,6 +84,15 @@ object EmulatorBridge {
     val sessionEnded: SharedFlow<Unit> = _sessionEnded.asSharedFlow()
     val runtimeFailure: StateFlow<RuntimeFailure?> get() = NativeApp.runtimeFailure
 
+    /**
+     * Renderer the runtime wants to switch to after a hardware-context
+     * failure (Flycast-style Vulkan to OpenGL fallback). The ViewModel
+     * consumes the request and relaunches the session.
+     */
+    val rendererFallbackRequested: StateFlow<Int?> get() = CoreRuntime.rendererFallbackRequested
+
+    fun consumeRendererFallbackRequest(): Int? = CoreRuntime.consumeRendererFallbackRequest()
+
     @Volatile
     private var shutdownRequested: Boolean = false
 

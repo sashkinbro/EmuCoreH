@@ -372,6 +372,11 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     private val playTimeSyncMutex = Mutex()
     init {
         viewModelScope.launch {
+            EmulatorBridge.rendererFallbackRequested.collect { requested ->
+                if (requested != null) viewModelScope.launch { handleRendererFallback(requested) }
+            }
+        }
+        viewModelScope.launch {
             preferences.migrateOverlayLayoutIfNeeded()
         }
         viewModelScope.launch {
@@ -2002,6 +2007,32 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             preferences.setFpsOverlayCorner(corner)
             _uiState.value = _uiState.value.copy(fpsOverlayCorner = corner)
+        }
+    }
+
+    /**
+     * Reboots the running session on [targetRenderer] after the runtime could
+     * not create the requested hardware context (Flycast-style fallback). The
+     * choice is persisted so the next launch does not hit the same wall, and
+     * the user is told about the automatic switch.
+     */
+    private suspend fun handleRendererFallback(targetRenderer: Int) {
+        val requested = EmulatorBridge.consumeRendererFallbackRequest() ?: return
+        if (isShuttingDown || cancelPendingStart) return
+        val path = currentGamePath
+        val bootToBios = path == null
+        NativeApp.logCrashBreadcrumb(
+            "renderer fallback engaged -> " +
+                "${RendererDefaults.coreRendererName(RendererDefaults.toCoreRenderer(requested))}($requested)"
+        )
+        persistRuntimeState(_uiState.value.copy(renderer = requested)) {
+            preferences.setRenderer(requested)
+        }
+        _uiState.value = _uiState.value.copy(toastMessage = "renderer_fallback")
+        startEmulation(path = path, bootToBios = bootToBios, rendererOverride = requested)
+        delay(2500.milliseconds)
+        if (_uiState.value.toastMessage == "renderer_fallback") {
+            _uiState.value = _uiState.value.copy(toastMessage = null)
         }
     }
 

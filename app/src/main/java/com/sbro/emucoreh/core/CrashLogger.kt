@@ -203,7 +203,7 @@ object CrashLogger {
      * text; keep the readable strings and fold the binary runs into dots so
      * the entry stays legible.
      */
-    private fun sanitizeTrace(raw: String): String {
+    internal fun sanitizeTrace(raw: String): String {
         val out = StringBuilder(raw.length)
         var inBinaryRun = false
         for (char in raw) {

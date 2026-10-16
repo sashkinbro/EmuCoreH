@@ -19,6 +19,7 @@
     along with Flycast.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "vulkan_context.h"
+#include "vk_device_retry_policy.h"
 #include "hw/pvr/Renderer_if.h"
 #include "compiler.h"
 #include "oslib/oslib.h"
@@ -246,8 +247,7 @@ bool VkCreateDevice(retro_vulkan_context* context, VkInstance instance, VkPhysic
 	// Some Android drivers (Mali blobs in particular) advertise a feature via
 	// vkGetPhysicalDeviceFeatures(2) and then refuse to enable it with
 	// VK_ERROR_FEATURE_NOT_PRESENT. Instead of failing the whole renderer,
-	// retry with progressively smaller feature sets: first only the features
-	// the renderer actually toggles, then none at all.
+	// retry with progressively smaller feature sets (see vk_device_retry_policy.h).
 	vk::Device newDevice;
 	for (int attempt = 0;; attempt++)
 	{
@@ -258,36 +258,37 @@ bool VkCreateDevice(retro_vulkan_context* context, VkInstance instance, VkPhysic
 		}
 		catch (const vk::SystemError& err)
 		{
-			if (err.code() != vk::make_error_code(vk::Result::eErrorFeatureNotPresent) || attempt >= 2)
+			if (err.code() != vk::make_error_code(vk::Result::eErrorFeatureNotPresent)
+					|| !vk_retry_policy::HasMoreAttempts(attempt))
 				throw;
 			WARN_LOG(RENDERER, "vkCreateDevice rejected the reported features (%s); retrying with a reduced feature set", err.what());
-			if (attempt == 0)
+			switch (vk_retry_policy::ProfileForAttempt(attempt + 1))
+			{
+			case vk_retry_policy::FeatureProfile::Core:
 			{
 				// Match the long-standing Flycast behavior that is known to
 				// work on quirky Android drivers: request only the two
 				// features the renderer actually toggles, with the optional
-				// extension features off.
+				// extension feature structs fully zeroed.
 				vk::PhysicalDeviceFeatures reduced;
 				reduced.samplerAnisotropy = features.samplerAnisotropy;
 				reduced.fragmentStoresAndAtomics = features.fragmentStoresAndAtomics;
 				featuresChain.features = reduced;
-				if (VulkanContext::bufferDeviceAddressSupported)
-				{
-					bufferDeviceAddressFeatures.bufferDeviceAddress = VK_FALSE;
-					VulkanContext::bufferDeviceAddressSupported = false;
-				}
-				if (VulkanContext::provokingVertexSupported)
-				{
-					provokingVertexFeatures.provokingVertexLast = VK_FALSE;
-					VulkanContext::provokingVertexSupported = false;
-				}
+				bufferDeviceAddressFeatures = vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR();
+				VulkanContext::bufferDeviceAddressSupported = false;
+				provokingVertexFeatures = vk::PhysicalDeviceProvokingVertexFeaturesEXT();
+				VulkanContext::provokingVertexSupported = false;
+				break;
 			}
-			else
-			{
-				// Last resort: no optional feature at all.
+			case vk_retry_policy::FeatureProfile::None:
+				// Last resort: no feature at all.
 				featuresChain.features = vk::PhysicalDeviceFeatures();
 				VulkanContext::samplerAnisotropy = false;
 				VulkanContext::fragmentStoresAndAtomics = false;
+				break;
+			case vk_retry_policy::FeatureProfile::Full:
+				// Unreachable: the schedule never reduces back to Full.
+				break;
 			}
 		}
 	}
