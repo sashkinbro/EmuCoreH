@@ -263,6 +263,10 @@ bool VkCreateDevice(retro_vulkan_context* context, VkInstance instance, VkPhysic
 			WARN_LOG(RENDERER, "vkCreateDevice rejected the reported features (%s); retrying with a reduced feature set", err.what());
 			if (attempt == 0)
 			{
+				// Match the long-standing Flycast behavior that is known to
+				// work on quirky Android drivers: request only the two
+				// features the renderer actually toggles, with the optional
+				// extension features off.
 				vk::PhysicalDeviceFeatures reduced;
 				reduced.samplerAnisotropy = features.samplerAnisotropy;
 				reduced.fragmentStoresAndAtomics = features.fragmentStoresAndAtomics;
@@ -272,15 +276,16 @@ bool VkCreateDevice(retro_vulkan_context* context, VkInstance instance, VkPhysic
 					bufferDeviceAddressFeatures.bufferDeviceAddress = VK_FALSE;
 					VulkanContext::bufferDeviceAddressSupported = false;
 				}
-			}
-			else
-			{
-				featuresChain.features = vk::PhysicalDeviceFeatures();
 				if (VulkanContext::provokingVertexSupported)
 				{
 					provokingVertexFeatures.provokingVertexLast = VK_FALSE;
 					VulkanContext::provokingVertexSupported = false;
 				}
+			}
+			else
+			{
+				// Last resort: no optional feature at all.
+				featuresChain.features = vk::PhysicalDeviceFeatures();
 				VulkanContext::samplerAnisotropy = false;
 				VulkanContext::fragmentStoresAndAtomics = false;
 			}
