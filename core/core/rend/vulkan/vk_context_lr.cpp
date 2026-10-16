@@ -242,8 +242,50 @@ bool VkCreateDevice(retro_vulkan_context* context, VkInstance instance, VkPhysic
 		deviceCreateInfo.pNext = &featuresChain;
 	else
 		deviceCreateInfo.setPEnabledFeatures(&features);
-	vk::Device newDevice = physicalDevice.createDevice(deviceCreateInfo);
 
+	// Some Android drivers (Mali blobs in particular) advertise a feature via
+	// vkGetPhysicalDeviceFeatures(2) and then refuse to enable it with
+	// VK_ERROR_FEATURE_NOT_PRESENT. Instead of failing the whole renderer,
+	// retry with progressively smaller feature sets: first only the features
+	// the renderer actually toggles, then none at all.
+	vk::Device newDevice;
+	for (int attempt = 0;; attempt++)
+	{
+		try
+		{
+			newDevice = physicalDevice.createDevice(deviceCreateInfo);
+			break;
+		}
+		catch (const vk::SystemError& err)
+		{
+			if (err.code() != vk::make_error_code(vk::Result::eErrorFeatureNotPresent) || attempt >= 2)
+				throw;
+			WARN_LOG(RENDERER, "vkCreateDevice rejected the reported features (%s); retrying with a reduced feature set", err.what());
+			if (attempt == 0)
+			{
+				vk::PhysicalDeviceFeatures reduced;
+				reduced.samplerAnisotropy = features.samplerAnisotropy;
+				reduced.fragmentStoresAndAtomics = features.fragmentStoresAndAtomics;
+				featuresChain.features = reduced;
+				if (VulkanContext::bufferDeviceAddressSupported)
+				{
+					bufferDeviceAddressFeatures.bufferDeviceAddress = VK_FALSE;
+					VulkanContext::bufferDeviceAddressSupported = false;
+				}
+			}
+			else
+			{
+				featuresChain.features = vk::PhysicalDeviceFeatures();
+				if (VulkanContext::provokingVertexSupported)
+				{
+					provokingVertexFeatures.provokingVertexLast = VK_FALSE;
+					VulkanContext::provokingVertexSupported = false;
+				}
+				VulkanContext::samplerAnisotropy = false;
+				VulkanContext::fragmentStoresAndAtomics = false;
+			}
+		}
+	}
 	context->device = (VkDevice)newDevice;
 #if VULKAN_HPP_DISPATCH_LOADER_DYNAMIC == 1
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(vk::Device(context->device));
