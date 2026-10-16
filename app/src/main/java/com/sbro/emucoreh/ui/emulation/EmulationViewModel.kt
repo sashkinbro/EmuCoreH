@@ -2013,8 +2013,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     /**
      * Reboots the running session on [targetRenderer] after the runtime could
      * not create the requested hardware context (Flycast-style fallback). The
-     * choice is persisted so the next launch does not hit the same wall, and
-     * the user is told about the automatic switch.
+     * switch is silent for the player: the choice is persisted so the next
+     * launch does not hit the same wall, and only the crash log records it.
      */
     private suspend fun handleRendererFallback(targetRenderer: Int) {
         val requested = EmulatorBridge.consumeRendererFallbackRequest() ?: return
@@ -2028,12 +2028,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         persistRuntimeState(_uiState.value.copy(renderer = requested)) {
             preferences.setRenderer(requested)
         }
-        _uiState.value = _uiState.value.copy(toastMessage = "renderer_fallback")
         startEmulation(path = path, bootToBios = bootToBios, rendererOverride = requested)
-        delay(2500.milliseconds)
-        if (_uiState.value.toastMessage == "renderer_fallback") {
-            _uiState.value = _uiState.value.copy(toastMessage = null)
-        }
     }
 
     fun setRenderer(renderer: Int) {

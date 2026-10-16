@@ -1223,7 +1223,6 @@
     <string name="emulation_swap_disc_success">Disc changed successfully.</string>
     <string name="emulation_swap_disc_failed">Couldn\'t change the disc. The previous disc has been restored.</string>
     <string name="emulation_swap_disc_invalid">Choose a supported Dreamcast disc image.</string>
-    <string name="emulation_renderer_fallback">Vulkan initialization failed — switched to OpenGL.</string>
     <string name="settings_customization_background_presets">Built-in backgrounds</string>
     <string name="settings_customization_background_preset_olympus">Olympus Inferno</string>
     <string name="settings_customization_background_preset_neon_racing">Neon Rush</string>

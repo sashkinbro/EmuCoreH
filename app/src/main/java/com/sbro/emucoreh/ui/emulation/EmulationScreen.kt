@@ -1226,7 +1226,6 @@ fun EmulationScreen(
                 "disc_swap_success" -> stringResource(R.string.emulation_swap_disc_success)
                 "disc_swap_failed" -> stringResource(R.string.emulation_swap_disc_failed)
                 "disc_swap_invalid" -> stringResource(R.string.emulation_swap_disc_invalid)
-                "renderer_fallback" -> stringResource(R.string.emulation_renderer_fallback)
                 else -> ""
             }
             Box(
