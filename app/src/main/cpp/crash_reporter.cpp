@@ -271,6 +271,27 @@ void CrashHandler(int signal_number, siginfo_t* info, void* context) {
 
 }  // namespace
 
+void LogNativeError(const char* message) {
+    const int fd = g_log_fd.load(std::memory_order_relaxed);
+    if (fd < 0 || message == nullptr || *message == '\0') return;
+
+    char buffer[4096];
+    Out out(buffer, sizeof(buffer));
+    out.ch('[');
+    AppendTimestamp(out);
+    out.str("] ERROR: [Native] ");
+    out.str(message);
+    out.ch('\n');
+
+    const size_t length = out.size();
+    size_t written = 0;
+    while (written < length) {
+        const ssize_t result = write(fd, buffer + written, length - written);
+        if (result <= 0) break;
+        written += static_cast<size_t>(result);
+    }
+}
+
 void InstallCrashReporter(const char* log_path) {
     if (log_path == nullptr || *log_path == '\0') return;
 

@@ -50,6 +50,13 @@ class NativeCoreBridge {
      * Must be invoked from the frame worker so GL state stays thread-affine.
      */
     external fun ensureHardwareContext(): Boolean
+
+    /**
+     * True once hardware context setup failed for the current window. Lets the
+     * frame loop tell a real renderer failure apart from the transient
+     * "surface not attached yet" state.
+     */
+    external fun hardwareContextFailed(): Boolean
     external fun setSurface(handle: Long, surface: Surface?, renderer: Int): Int
     /** 0 stretch, 1 core aspect, 2 4:3, 3 16:9, 4 10:7. */
     external fun setDisplayAspectRatio(mode: Int)

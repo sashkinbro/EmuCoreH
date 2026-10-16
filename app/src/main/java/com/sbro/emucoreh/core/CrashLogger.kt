@@ -194,9 +194,30 @@ object CrashLogger {
                 if (read <= 0) break
                 out.append(buffer, 0, read)
             }
-            out.toString().trim()
+            sanitizeTrace(out.toString())
         }.orEmpty()
     }.getOrDefault("")
+
+    /**
+     * Some ROMs hand the tombstone back as a binary protobuf instead of plain
+     * text; keep the readable strings and fold the binary runs into dots so
+     * the entry stays legible.
+     */
+    private fun sanitizeTrace(raw: String): String {
+        val out = StringBuilder(raw.length)
+        var inBinaryRun = false
+        for (char in raw) {
+            val printable = char == '\n' || char == '\t' || char.code in 0x20..0x7E
+            if (printable) {
+                inBinaryRun = false
+                out.append(char)
+            } else if (!inBinaryRun) {
+                inBinaryRun = true
+                out.append('·')
+            }
+        }
+        return out.toString().trim()
+    }
 
     @RequiresApi(Build.VERSION_CODES.R)
     private fun exitReasonName(reason: Int): String = when (reason) {

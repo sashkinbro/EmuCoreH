@@ -15,4 +15,11 @@ namespace emucoreh::crash {
 // crash.log file owned by CrashLogger on the Kotlin side.
 void InstallCrashReporter(const char* log_path);
 
+// Appends one "ERROR: [Native]" entry to the same crash log. Used for
+// recoverable native failures (e.g. caught C++ exceptions at the JNI
+// boundary) that must stay visible in release builds where logcat
+// diagnostics are compiled out. Safe to call from any thread outside
+// signal context; does nothing when the reporter was never installed.
+void LogNativeError(const char* message);
+
 }  // namespace emucoreh::crash

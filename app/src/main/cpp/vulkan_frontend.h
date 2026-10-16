@@ -30,6 +30,9 @@ bool FillHardwareRenderInterface(retro_hw_render_interface** out_interface);
 
 bool IsRequested();
 bool IsActive();
+// True when context setup failed for the current window/session; transient
+// "no window yet" states do not set it.
+bool HasFailed();
 
 void NotifyContextDestroy();
 void SetShaderEffect(int effect);

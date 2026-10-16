@@ -37,6 +37,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <mutex>
@@ -960,21 +961,38 @@ bool EnsureHardwareContextLocked() {
 }
 
 bool EnsureHardwareContext() {
-    if (vulkan::IsRequested()) {
-        ANativeWindow* window = nullptr;
-        uint32_t generation = 0;
-        {
-            std::lock_guard<std::mutex> lock(g_frontend.mutex);
-            window = g_frontend.window;
-            generation = g_frontend.window_generation;
-            if (window != nullptr) ANativeWindow_acquire(window);
+    // Backstop: this runs on a JVM frame thread, so even a stray exception
+    // from the renderer setup must be converted into a plain failure instead
+    // of unwinding into ART (which aborts the whole process).
+    try {
+        if (vulkan::IsRequested()) {
+            ANativeWindow* window = nullptr;
+            uint32_t generation = 0;
+            {
+                std::lock_guard<std::mutex> lock(g_frontend.mutex);
+                window = g_frontend.window;
+                generation = g_frontend.window_generation;
+                if (window != nullptr) ANativeWindow_acquire(window);
+            }
+            if (window == nullptr) return false;
+            const bool ready = vulkan::EnsureContext(window, generation);
+            ANativeWindow_release(window);
+            return ready;
         }
-        if (window == nullptr) return false;
-        const bool ready = vulkan::EnsureContext(window, generation);
-        ANativeWindow_release(window);
-        return ready;
+        return EnsureHardwareContextLocked();
+    } catch (const std::exception& error) {
+        emucoreh::crash::LogNativeError((std::string("Hardware context setup failed: ") + error.what()).c_str());
+        LOGE("Hardware context setup threw: %s", error.what());
+    } catch (...) {
+        emucoreh::crash::LogNativeError("Hardware context setup failed with an unknown exception");
+        LOGE("Hardware context setup threw an unknown exception");
     }
-    return EnsureHardwareContextLocked();
+    return false;
+}
+
+bool HardwareContextFailed() {
+    if (vulkan::IsRequested()) return vulkan::HasFailed();
+    return g_gl.failed;
 }
 
 void PresentHardwareFrame(GLsizei src_width, GLsizei src_height) {
@@ -1413,6 +1431,11 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_setTimeControl(JNIEnv*, jobject, ji
 JNIEXPORT jboolean JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_ensureHardwareContext(JNIEnv*, jobject) {
     return EnsureHardwareContext() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_hardwareContextFailed(JNIEnv*, jobject) {
+    return HardwareContextFailed() ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT void JNICALL

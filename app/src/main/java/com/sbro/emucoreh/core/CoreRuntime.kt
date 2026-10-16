@@ -831,7 +831,15 @@ internal object CoreRuntime {
             while (running) {
                 // Owns the thread-affine EGL context, so any queued save/load
                 // task must wait until the hardware context is ready here.
-                bridge.ensureHardwareContext()
+                // A false return is transient while no surface is attached;
+                // only a real setup failure ends the session, with the native
+                // side having written the reason to the crash log.
+                if (!bridge.ensureHardwareContext() && bridge.hardwareContextFailed()) {
+                    reportFailure(
+                        "${RendererDefaults.coreRendererName(activeCoreRenderer)} initialization failed"
+                    )
+                    break
+                }
                 drainFrameTasks()
                 if (paused) {
                     framePacer.reset()

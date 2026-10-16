@@ -3,6 +3,7 @@
 
 #include "vulkan_frontend.h"
 #include "vulkan_api_policy.h"
+#include "crash_reporter.h"
 #include "shader_chain.h"
 #include "shader_effects_spv.h"
 
@@ -17,7 +18,9 @@
 #include <atomic>
 #include <cmath>
 #include <cstring>
+#include <exception>
 #include <mutex>
+#include <string>
 #include <vector>
 
 #define VK_LOG_TAG "EmuCoreH-Vk"
@@ -393,11 +396,30 @@ bool CreateDevice() {
         return false;
     }
 
+    // The core builds its device through Vulkan-Hpp, which reports driver
+    // errors by throwing. This call runs on a JVM-managed thread, so an
+    // escaping exception would unwind into ART and abort the process with
+    // SIGABRT; every attempt stays contained here instead. The core throws
+    // before it creates any device object, which makes one retry safe.
     retro_vulkan_context context{};
     const char* required_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    const bool created =
-        g_vk.negotiation.create_device(&context, g_vk.instance, g_vk.physical_device, g_vk.surface,
-                                       &vkGetInstanceProcAddr, required_extensions, 1, nullptr, 0, nullptr);
+    bool created = false;
+    for (int attempt = 0; attempt < 2 && !created; ++attempt) {
+        context = retro_vulkan_context{};
+        try {
+            created = g_vk.negotiation.create_device(&context, g_vk.instance, g_vk.physical_device,
+                                                     g_vk.surface, &vkGetInstanceProcAddr,
+                                                     required_extensions, 1, nullptr, 0, nullptr);
+        } catch (const std::exception& error) {
+            emucoreh::crash::LogNativeError((std::string("Core Vulkan device creation failed: ") +
+                                             error.what())
+                                                .c_str());
+            VK_LOGE("Core create_device threw: %s", error.what());
+        } catch (...) {
+            emucoreh::crash::LogNativeError("Core Vulkan device creation failed with an unknown exception");
+            VK_LOGE("Core create_device threw an unknown exception");
+        }
+    }
     if (!created || context.device == VK_NULL_HANDLE) {
         VK_LOGE("Core failed to create the Vulkan device");
         return false;
@@ -1553,6 +1575,10 @@ bool IsActive() {
     return g_vk.active && !g_vk.failed;
 }
 
+bool HasFailed() {
+    return g_vk.failed;
+}
+
 void NotifyContextDestroy() {
     // The core's context_destroy tears down a render context it created during
     // context_reset. When a load failed before the context was ever created the
@@ -1580,7 +1606,7 @@ void SetDisplayCrop(int left, int top, int right, int bottom) {
     g_vk.crop_bottom = clamp(bottom);
 }
 
-bool EnsureContext(ANativeWindow* window, uint32_t window_generation) {
+static bool EnsureContextImpl(ANativeWindow* window, uint32_t window_generation) {
     if (!g_vk.requested) return false;
     if (window == nullptr) return false;
     if (g_vk.failed) {
@@ -1621,6 +1647,26 @@ bool EnsureContext(ANativeWindow* window, uint32_t window_generation) {
         VK_LOGI("Vulkan presentation surface rebound; core display kept");
     }
     return true;
+}
+
+bool EnsureContext(ANativeWindow* window, uint32_t window_generation) {
+    // Instance, device, swapchain and core context_reset work all run on the
+    // JVM frame worker. Any escaping C++ exception would unwind into ART and
+    // kill the process, so every failure mode is converted into a normal
+    // failed result that marks the context as dead for this window.
+    try {
+        return EnsureContextImpl(window, window_generation);
+    } catch (const std::exception& error) {
+        emucoreh::crash::LogNativeError((std::string("Vulkan context initialization failed: ") +
+                                         error.what())
+                                            .c_str());
+        VK_LOGE("Vulkan context initialization threw: %s", error.what());
+    } catch (...) {
+        emucoreh::crash::LogNativeError("Vulkan context initialization failed with an unknown exception");
+        VK_LOGE("Vulkan context initialization threw an unknown exception");
+    }
+    g_vk.failed = true;
+    return false;
 }
 
 bool Present(uint32_t source_width, uint32_t source_height, double display_aspect, bool stretch,
