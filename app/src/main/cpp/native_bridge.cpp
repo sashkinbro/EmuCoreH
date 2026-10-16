@@ -13,6 +13,7 @@
 //   * save-state (retro_serialize) file IO.
 #include <jni.h>
 #include "audio_resampler.h"
+#include "crash_reporter.h"
 #include "disc_control.h"
 #include "light_gun_input.h"
 #include "native_frame_boundary.h"
@@ -1284,6 +1285,12 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeInit(JNIEnv* env, jobject, js
         g_frontend.audio_ring.assign(kAudioRingCapacityFrames * 2, 0);
     }
     LOGI("nativeInit system=%s save=%s", g_frontend.system_dir.c_str(), g_frontend.save_dir.c_str());
+}
+
+JNIEXPORT void JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeInstallCrashReporter(JNIEnv* env, jobject,
+                                                                        jstring log_path) {
+    emucoreh::crash::InstallCrashReporter(ToString(env, log_path).c_str());
 }
 
 JNIEXPORT jlong JNICALL

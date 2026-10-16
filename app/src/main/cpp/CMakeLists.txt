@@ -73,6 +73,7 @@ endif()
 
 add_library(emucoreh_jni SHARED
     native_bridge.cpp
+    crash_reporter.cpp
     storage_vfs.cpp
     achievements_bridge.cpp
     shader_effect.cpp

@@ -147,6 +147,7 @@ internal object CoreRuntime {
             bridge.nativeInit(systemDirectory, saveDirectory, coreAssetsDirectory)
             bridge.apiVersion()
         }.onFailure { Log.e(TAG, "Unable to initialise libretro frontend", it) }
+        CrashLogger.installNativeCrashReporter()
     }
 
     fun isRunning(): Boolean = running && failure.value == null && sessionLock.withLock { session != 0L }

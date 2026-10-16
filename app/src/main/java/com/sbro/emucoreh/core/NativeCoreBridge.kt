@@ -79,6 +79,14 @@ class NativeCoreBridge {
     // ---------------------------------------------------------------------
     external fun getSystemInfo(): String
     external fun getDiagnostics(): String
+
+    /**
+     * Installs the native fatal-signal handler that appends a full report
+     * (signal, fault address, thread, backtrace) to [logPath] when the
+     * process dies from a native crash. Idempotent; writes nothing while
+     * the app runs normally.
+     */
+    external fun nativeInstallCrashReporter(logPath: String)
     external fun getDisplayRect(handle: Long): IntArray?
     /**
      * Presenter destination rect in window pixels as
