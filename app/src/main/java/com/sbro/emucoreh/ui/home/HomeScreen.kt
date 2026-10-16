@@ -53,10 +53,11 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Devices
 import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Link
@@ -66,8 +67,10 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SortByAlpha
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.material.icons.rounded.ViewCarousel
@@ -134,6 +137,7 @@ import com.sbro.emucoreh.core.availableProSupportOffers
 import com.sbro.emucoreh.data.CustomGameCoverRepository
 import com.sbro.emucoreh.data.GameItem
 import com.sbro.emucoreh.data.LibraryPlatform
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import com.sbro.emucoreh.data.HomeBackgroundRepository
@@ -342,7 +346,6 @@ fun HomeScreen(
         customCoverPicker.launch("image/*")
     }
 
-    var showSortMenu by remember { mutableStateOf(false) }
     LaunchedEffect(uiState.isLoading, uiState.games.size, uiState.recentGames.size, shouldRequestGamepadFocus) {
         if (shouldRequestGamepadFocus && !uiState.isLoading && uiState.games.isNotEmpty()) {
             initialGamepadFocusRequester.requestFocus()
@@ -497,6 +500,8 @@ fun HomeScreen(
                                     refreshEnabled = !uiState.isRefreshing,
                                     isShelfView = false,
                                     standardViewMode = standardViewMode,
+                                    sortOption = uiState.sortOption,
+                                    onSortSelected = viewModel::updateSortOption,
                                     onRefresh = viewModel::refreshGames,
                                     onToggleShelfMode = viewModel::toggleShelfMode,
                                     onToggleLibraryViewMode = viewModel::toggleLibraryViewMode,
@@ -508,16 +513,9 @@ fun HomeScreen(
                                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                     HomeSearchField(
                                         searchQuery = uiState.searchQuery,
-                                        sortOption = uiState.sortOption,
                                         horizontalInset = horizontalInset,
                                         sectionBottomSpacing = sectionTopSpacing,
-                                        showSortMenu = showSortMenu,
-                                        onSearchQueryChange = viewModel::updateSearchQuery,
-                                        onSortMenuChange = { showSortMenu = it },
-                                        onSortSelected = {
-                                            viewModel.updateSortOption(it)
-                                            showSortMenu = false
-                                        }
+                                        onSearchQueryChange = viewModel::updateSearchQuery
                                     )
                                 }
                             }
@@ -938,11 +936,15 @@ private fun HomeHeader(
     refreshEnabled: Boolean,
     isShelfView: Boolean,
     standardViewMode: HomeLibraryViewMode,
+    sortOption: HomeSortOption,
+    onSortSelected: (HomeSortOption) -> Unit,
     onRefresh: () -> Unit,
     onToggleShelfMode: () -> Unit,
     onToggleLibraryViewMode: () -> Unit,
     onMenuClick: (() -> Unit)? = null
 ) {
+    var showLibraryOptions by remember { mutableStateOf(false) }
+    val libraryOptionsDescription = stringResource(R.string.home_library_options)
     val standardToggleIcon = when {
         isShelfView && standardViewMode == HomeLibraryViewMode.LIST -> Icons.Rounded.ViewAgenda
         isShelfView && standardViewMode == HomeLibraryViewMode.GRID -> Icons.Rounded.ViewModule
@@ -1053,23 +1055,70 @@ private fun HomeHeader(
                 )
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        modifier = Modifier.size(42.dp),
-                        onClick = onRefresh,
-                        enabled = refreshEnabled
-                    ) {
-                        if (isRefreshing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(19.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Box {
+                        IconButton(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .semantics { contentDescription = libraryOptionsDescription },
+                            onClick = { showLibraryOptions = true }
+                        ) {
+                            if (isRefreshing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(19.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Rounded.Tune,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = showLibraryOptions,
+                            onDismissRequest = { showLibraryOptions = false },
+                            modifier = Modifier.widthIn(min = 248.dp, max = 310.dp),
+                            shape = neonShape(20.dp),
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 12.dp,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
+                        ) {
+                            GameContextMenuItem(
+                                text = stringResource(R.string.home_refresh),
+                                icon = Icons.Rounded.Refresh,
+                                emphasized = true,
+                                enabled = refreshEnabled,
+                                onClick = { showLibraryOptions = false; onRefresh() }
                             )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Rounded.Refresh,
-                                contentDescription = stringResource(R.string.home_refresh),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            GameContextMenuDivider()
+                            HomeSortOption.entries.forEach { option ->
+                                val label = when (option) {
+                                    HomeSortOption.TITLE_ASC -> R.string.home_sort_title_asc
+                                    HomeSortOption.TITLE_DESC -> R.string.home_sort_title_desc
+                                    HomeSortOption.RECENT_DESC -> R.string.home_sort_recent_desc
+                                    HomeSortOption.RECENT_ASC -> R.string.home_sort_recent_asc
+                                    HomeSortOption.SIZE_DESC -> R.string.home_sort_size_desc
+                                    HomeSortOption.SIZE_ASC -> R.string.home_sort_size_asc
+                                    HomeSortOption.PLATFORM -> R.string.home_sort_platform
+                                }
+                                GameContextMenuItem(
+                                    text = stringResource(label),
+                                    icon = when (option) {
+                                        HomeSortOption.TITLE_ASC,
+                                        HomeSortOption.TITLE_DESC -> Icons.Rounded.SortByAlpha
+                                        HomeSortOption.RECENT_DESC,
+                                        HomeSortOption.RECENT_ASC -> Icons.Rounded.History
+                                        HomeSortOption.SIZE_DESC,
+                                        HomeSortOption.SIZE_ASC -> Icons.Rounded.Storage
+                                        HomeSortOption.PLATFORM -> Icons.Rounded.Devices
+                                    },
+                                    selected = sortOption == option,
+                                    onClick = { onSortSelected(option); showLibraryOptions = false }
+                                )
+                            }
                         }
                     }
                     HomeHeaderActionDivider()
@@ -1117,13 +1166,9 @@ private fun HomeHeaderActionDivider() {
 @Composable
 private fun HomeSearchField(
     searchQuery: String,
-    sortOption: HomeSortOption,
     horizontalInset: androidx.compose.ui.unit.Dp,
     sectionBottomSpacing: androidx.compose.ui.unit.Dp,
-    showSortMenu: Boolean,
-    onSearchQueryChange: (String) -> Unit,
-    onSortMenuChange: (Boolean) -> Unit,
-    onSortSelected: (HomeSortOption) -> Unit
+    onSearchQueryChange: (String) -> Unit
 ) {
     OutlinedTextField(
         value = searchQuery,
@@ -1147,64 +1192,13 @@ private fun HomeSearchField(
             )
         },
         trailingIcon = {
-            Row {
-                if (searchQuery.isNotBlank()) {
-                    IconButton(onClick = { onSearchQueryChange("") }) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = stringResource(R.string.home_search_clear),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                Box {
-                    IconButton(onClick = { onSortMenuChange(true) }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.Sort,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showSortMenu,
-                        onDismissRequest = { onSortMenuChange(false) }
-                    ) {
-                        SortMenuItem(
-                            label = stringResource(R.string.home_sort_title_asc),
-                            isSelected = sortOption == HomeSortOption.TITLE_ASC,
-                            onClick = { onSortSelected(HomeSortOption.TITLE_ASC) }
-                        )
-                        SortMenuItem(
-                            label = stringResource(R.string.home_sort_title_desc),
-                            isSelected = sortOption == HomeSortOption.TITLE_DESC,
-                            onClick = { onSortSelected(HomeSortOption.TITLE_DESC) }
-                        )
-                        SortMenuItem(
-                            label = stringResource(R.string.home_sort_recent_desc),
-                            isSelected = sortOption == HomeSortOption.RECENT_DESC,
-                            onClick = { onSortSelected(HomeSortOption.RECENT_DESC) }
-                        )
-                        SortMenuItem(
-                            label = stringResource(R.string.home_sort_recent_asc),
-                            isSelected = sortOption == HomeSortOption.RECENT_ASC,
-                            onClick = { onSortSelected(HomeSortOption.RECENT_ASC) }
-                        )
-                        SortMenuItem(
-                            label = stringResource(R.string.home_sort_size_desc),
-                            isSelected = sortOption == HomeSortOption.SIZE_DESC,
-                            onClick = { onSortSelected(HomeSortOption.SIZE_DESC) }
-                        )
-                        SortMenuItem(
-                            label = stringResource(R.string.home_sort_size_asc),
-                            isSelected = sortOption == HomeSortOption.SIZE_ASC,
-                            onClick = { onSortSelected(HomeSortOption.SIZE_ASC) }
-                        )
-                        SortMenuItem(
-                            label = stringResource(R.string.home_sort_platform),
-                            isSelected = sortOption == HomeSortOption.PLATFORM,
-                            onClick = { onSortSelected(HomeSortOption.PLATFORM) }
-                        )
-                    }
+            if (searchQuery.isNotBlank()) {
+                IconButton(onClick = { onSearchQueryChange("") }) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.home_search_clear),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         },
@@ -1254,34 +1248,6 @@ private fun ScrollToTopButton(
             )
         }
     }
-}
-
-@Composable
-private fun SortMenuItem(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    DropdownMenuItem(
-        text = {
-            Text(
-                text = label,
-                color = if (isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface
-            )
-        },
-        onClick = onClick,
-        trailingIcon = {
-            if (isSelected) {
-                Icon(
-                    imageVector = Icons.Rounded.CheckCircle,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-    )
 }
 
 @Composable
@@ -1986,8 +1952,11 @@ private fun GameContextMenuItem(
     text: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    emphasized: Boolean = false
+    emphasized: Boolean = false,
+    enabled: Boolean = true,
+    selected: Boolean = false
 ) {
+    val contentAlpha = if (enabled) 1f else 0.38f
     DropdownMenuItem(
         text = {
             Text(
@@ -1995,37 +1964,53 @@ private fun GameContextMenuItem(
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = if (emphasized) FontWeight.SemiBold else FontWeight.Medium
                 ),
-                color = if (emphasized) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
+                color = (
+                    if (emphasized) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                ).copy(alpha = contentAlpha),
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
         },
         onClick = onClick,
+        enabled = enabled,
         leadingIcon = {
+            val iconBoxColor = if (emphasized) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.68f)
+            }
             Box(
                 modifier = Modifier
                     .size(34.dp)
                     .clip(neonShape(11.dp))
-                    .background(
-                        if (emphasized) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.68f)
-                        }
-                    ),
+                    .background(iconBoxColor.copy(alpha = iconBoxColor.alpha * contentAlpha)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(19.dp),
-                    tint = if (emphasized) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                    tint = (
+                        if (emphasized) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    ).copy(alpha = contentAlpha)
                 )
             }
+        },
+        trailingIcon = if (selected) {
+            {
+                Icon(
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        } else {
+            null
         },
         contentPadding = PaddingValues(horizontal = 12.dp)
     )

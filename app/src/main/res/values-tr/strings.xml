@@ -10,6 +10,7 @@
     <string name="home_empty_title">Oyun bulunamadı</string>
     <string name="home_empty_subtitle">Kütüphanenizi oluşturmak için oyun klasörünüzü seçin.</string>
     <string name="home_refresh">Yenile</string>
+    <string name="home_library_options">Kitaplık seçenekleri</string>
     <string name="home_view_list">Liste olarak göster</string>
     <string name="home_view_grid">Izgara olarak göster</string>
     <string name="home_view_shelf">Kapak rafını göster</string>

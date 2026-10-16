@@ -12,6 +12,7 @@
     <string name="home_empty_title">Nebyly nalezeny žádné hry</string>
     <string name="home_empty_subtitle">Přidejte složky s hrami a vytvořte si knihovnu.</string>
     <string name="home_refresh">Obnovit</string>
+    <string name="home_library_options">Možnosti knihovny</string>
     <string name="home_view_list">Zobrazit jako seznam</string>
     <string name="home_view_grid">Zobrazit jako mřížku</string>
     <string name="home_view_shelf">Zobrazit poličku s přebaly</string>

@@ -13,6 +13,7 @@
     <string name="home_empty_title">No games found</string>
     <string name="home_empty_subtitle">Add game folders to build your library.</string>
     <string name="home_refresh">Refresh</string>
+    <string name="home_library_options">Library options</string>
     <string name="home_view_list">Show as list</string>
     <string name="home_view_grid">Show as grid</string>
     <string name="home_view_shelf">Show cover shelf</string>

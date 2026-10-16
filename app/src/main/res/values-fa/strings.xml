@@ -12,6 +12,7 @@
     <string name="home_empty_title">هیچ بازی پیدا نشد</string>
     <string name="home_empty_subtitle">پوشه بازی‌های خود را برای ساخت کتابخانه انتخاب کنید.</string>
     <string name="home_refresh">تازه‌سازی</string>
+    <string name="home_library_options">گزینه‌های کتابخانه</string>
     <string name="home_view_list">نمایش به صورت لیست</string>
     <string name="home_view_grid">نمایش به صورت شبکه</string>
     <string name="home_view_shelf">نمایش قفسه کاورها</string>

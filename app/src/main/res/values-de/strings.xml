@@ -10,6 +10,7 @@
     <string name="home_empty_title">Keine Spiele gefunden</string>
     <string name="home_empty_subtitle">Wähle deinen Spieleordner, um deine Bibliothek aufzubauen.</string>
     <string name="home_refresh">Aktualisieren</string>
+    <string name="home_library_options">Bibliotheksoptionen</string>
     <string name="home_view_list">Als Liste anzeigen</string>
     <string name="home_view_grid">Als Raster anzeigen</string>
     <string name="home_search">Spiele suchen</string>

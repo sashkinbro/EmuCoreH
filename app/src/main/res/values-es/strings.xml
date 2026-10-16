@@ -10,6 +10,7 @@
     <string name="home_empty_title">No se encontraron juegos</string>
     <string name="home_empty_subtitle">Selecciona tu carpeta de juegos para crear tu biblioteca.</string>
     <string name="home_refresh">Actualizar</string>
+    <string name="home_library_options">Opciones de la biblioteca</string>
     <string name="home_view_list">Mostrar como lista</string>
     <string name="home_view_grid">Mostrar como cuadrícula</string>
     <string name="home_search">Buscar juegos</string>

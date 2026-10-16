@@ -10,6 +10,7 @@
     <string name="home_empty_title">Aucun jeu trouvé</string>
     <string name="home_empty_subtitle">Sélectionnez votre dossier de jeux pour créer votre bibliothèque.</string>
     <string name="home_refresh">Actualiser</string>
+    <string name="home_library_options">Options de la bibliothèque</string>
     <string name="home_view_list">Afficher en liste</string>
     <string name="home_view_grid">Afficher en grille</string>
     <string name="home_search">Rechercher des jeux</string>

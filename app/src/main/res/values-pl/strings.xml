@@ -12,6 +12,7 @@
     <string name="home_empty_title">Nie znaleziono gier</string>
     <string name="home_empty_subtitle">Dodaj foldery z grami, aby zbudować swoją bibliotekę.</string>
     <string name="home_refresh">Odśwież</string>
+    <string name="home_library_options">Opcje biblioteki</string>
     <string name="home_view_list">Pokaż jako listę</string>
     <string name="home_view_grid">Pokaż jako siatkę</string>
     <string name="home_view_shelf">Pokaż okładki na półce</string>

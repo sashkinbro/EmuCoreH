@@ -11,6 +11,7 @@
     <string name="home_empty_title">Ігор не знайдено</string>
     <string name="home_empty_subtitle">Виберіть папку з іграми, щоб створити свою бібліотеку.</string>
     <string name="home_refresh">Оновити</string>
+    <string name="home_library_options">Параметри бібліотеки</string>
     <string name="home_view_list">Показати списком</string>
     <string name="home_view_grid">Показати сіткою</string>
     <string name="home_search">Пошук ігор</string>

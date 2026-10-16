@@ -12,6 +12,7 @@
     <string name="home_empty_title">Tidak ada game ditemukan</string>
     <string name="home_empty_subtitle">Pilih folder game Anda untuk membangun pustaka.</string>
     <string name="home_refresh">Segarkan</string>
+    <string name="home_library_options">Opsi pustaka</string>
     <string name="home_view_list">Tampilkan sebagai daftar</string>
     <string name="home_view_grid">Tampilkan sebagai kisi</string>
     <string name="home_view_shelf">Tampilkan rak sampul</string>

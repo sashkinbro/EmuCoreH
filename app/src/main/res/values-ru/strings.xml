@@ -10,6 +10,7 @@
     <string name="home_empty_title">Игры не найдены</string>
     <string name="home_empty_subtitle">Выберите папку с играми, чтобы создать свою библиотеку.</string>
     <string name="home_refresh">Обновить</string>
+    <string name="home_library_options">Параметры библиотеки</string>
     <string name="home_view_list">Показать списком</string>
     <string name="home_view_grid">Показать сеткой</string>
     <string name="home_search">Поиск игр</string>
