@@ -290,6 +290,7 @@ fun SettingsScreen(
     var showDriveBackupDialog by rememberSaveable { mutableStateOf(false) }
     var includeSaveStatesInBackup by rememberSaveable { mutableStateOf(false) }
     var showClearCoverCacheDialog by rememberSaveable { mutableStateOf(false) }
+    var showResetCustomCoversDialog by rememberSaveable { mutableStateOf(false) }
     var showEmulatorDataLocationDialog by remember { mutableStateOf(false) }
     var showNaomiArcadeGuide by rememberSaveable { mutableStateOf(false) }
     var searchEnabled by remember { mutableStateOf(false) }
@@ -311,6 +312,8 @@ fun SettingsScreen(
     val backupRestoreFailureMessage = stringResource(R.string.settings_backup_restore_failed)
     val coverCacheClearedMessage = stringResource(R.string.settings_clear_cover_cache_success)
     val coverCachePartiallyClearedMessage = stringResource(R.string.settings_clear_cover_cache_partial)
+    val customCoversResetMessage = stringResource(R.string.settings_reset_custom_covers_success)
+    val customCoversResetFailedMessage = stringResource(R.string.settings_reset_custom_covers_partial)
     stringResource(R.string.settings_not_set)
     val settingsScrollState = rememberScrollState()
     val proPurchaseMessage = uiState.proPurchaseMessageResId?.let { stringResource(it) }
@@ -558,6 +561,7 @@ fun SettingsScreen(
                     shaderPackPicker.launch(arrayOf("application/zip", "application/octet-stream"))
                 },
                 onClearCoverCache = { showClearCoverCacheDialog = true },
+                onResetCustomCovers = { showResetCustomCoversDialog = true },
                 launchSettingsBackupExport = {
                     includeSaveStatesInBackup = false
                     showBackupExportDialog = true
@@ -722,6 +726,42 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearCoverCacheDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showResetCustomCoversDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetCustomCoversDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Rounded.DeleteOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            title = { Text(stringResource(R.string.settings_reset_custom_covers_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_reset_custom_covers_confirm_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showResetCustomCoversDialog = false
+                        viewModel.resetCustomCovers { result ->
+                            Toast.makeText(
+                                context,
+                                if (result) customCoversResetMessage else customCoversResetFailedMessage,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.settings_reset_custom_covers_action))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetCustomCoversDialog = false }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             }
@@ -983,6 +1023,7 @@ private fun SettingsContent(
     launchCustomFontPicker: () -> Unit,
     launchShaderPackPicker: () -> Unit,
     onClearCoverCache: () -> Unit,
+    onResetCustomCovers: () -> Unit,
     launchSettingsBackupExport: () -> Unit,
     launchSettingsBackupImport: () -> Unit,
     launchCloudBackup: () -> Unit,
@@ -1876,6 +1917,12 @@ private fun SettingsContent(
                             label = stringResource(R.string.settings_clear_cover_cache),
                             value = stringResource(R.string.settings_clear_cover_cache_desc),
                             onClick = onClearCoverCache
+                        )
+                        SettingsItem(
+                            icon = Icons.Rounded.Restore,
+                            label = stringResource(R.string.settings_reset_custom_covers),
+                            value = stringResource(R.string.settings_reset_custom_covers_desc),
+                            onClick = onResetCustomCovers
                         )
                     }
 
@@ -4259,6 +4306,7 @@ private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
         entry(SettingsTab.Library, R.string.settings_bios_path),
         entry(SettingsTab.Library, R.string.settings_fetch_boxart),
         entry(SettingsTab.Library, R.string.settings_clear_cover_cache),
+        entry(SettingsTab.Library, R.string.settings_reset_custom_covers),
         entry(SettingsTab.Library, R.string.settings_backup_export_title),
         entry(SettingsTab.Library, R.string.settings_backup_restore_title),
         entry(SettingsTab.Library, R.string.drive_title),

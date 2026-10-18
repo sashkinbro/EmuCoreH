@@ -2175,4 +2175,14 @@
     <string name="settings_cover_art_style_3d">3D</string>
     <string name="settings_cover_art_style_flat">Piatte</string>
     <string name="settings_cover_art_style_disabled">Disattivato</string>
+    <string name="home_game_menu_restore_cover">Ripristina copertina predefinita</string>
+    <string name="home_game_menu_restore_cover_success">Copertina predefinita ripristinata.</string>
+    <string name="home_game_menu_restore_cover_failed">Impossibile ripristinare la copertina predefinita.</string>
+    <string name="settings_reset_custom_covers">Reimposta copertine personalizzate</string>
+    <string name="settings_reset_custom_covers_desc">Ripristina le copertine predefinite di tutti i giochi.</string>
+    <string name="settings_reset_custom_covers_confirm_title">Reimpostare tutte le copertine personalizzate?</string>
+    <string name="settings_reset_custom_covers_confirm_body">Le copertine personalizzate saranno rimosse dalla libreria e sostituite con quelle predefinite. Le immagini originali e i file dei giochi saranno conservati.</string>
+    <string name="settings_reset_custom_covers_action">Reimposta</string>
+    <string name="settings_reset_custom_covers_success">Copertine personalizzate reimpostate.</string>
+    <string name="settings_reset_custom_covers_partial">Impossibile reimpostare alcune copertine personalizzate. Riprova.</string>
 </resources>

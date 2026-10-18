@@ -2179,4 +2179,14 @@
     <string name="settings_cover_art_style_3d">3D</string>
     <string name="settings_cover_art_style_flat">Плоские</string>
     <string name="settings_cover_art_style_disabled">Отключено</string>
+    <string name="home_game_menu_restore_cover">Вернуть стандартную обложку</string>
+    <string name="home_game_menu_restore_cover_success">Стандартная обложка восстановлена.</string>
+    <string name="home_game_menu_restore_cover_failed">Не удалось восстановить стандартную обложку.</string>
+    <string name="settings_reset_custom_covers">Сбросить пользовательские обложки</string>
+    <string name="settings_reset_custom_covers_desc">Вернуть стандартные обложки для всех игр.</string>
+    <string name="settings_reset_custom_covers_confirm_title">Сбросить все пользовательские обложки?</string>
+    <string name="settings_reset_custom_covers_confirm_body">Пользовательские обложки будут удалены из библиотеки и заменены стандартными. Исходные изображения и файлы игр сохранятся.</string>
+    <string name="settings_reset_custom_covers_action">Сбросить</string>
+    <string name="settings_reset_custom_covers_success">Пользовательские обложки сброшены.</string>
+    <string name="settings_reset_custom_covers_partial">Некоторые пользовательские обложки не удалось сбросить. Попробуйте ещё раз.</string>
 </resources>

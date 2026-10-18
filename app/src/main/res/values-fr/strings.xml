@@ -2177,4 +2177,14 @@
     <string name="settings_cover_art_style_3d">3D</string>
     <string name="settings_cover_art_style_flat">Plates</string>
     <string name="settings_cover_art_style_disabled">Désactivé</string>
+    <string name="home_game_menu_restore_cover">Rétablir la jaquette par défaut</string>
+    <string name="home_game_menu_restore_cover_success">Jaquette par défaut rétablie.</string>
+    <string name="home_game_menu_restore_cover_failed">Impossible de rétablir la jaquette par défaut.</string>
+    <string name="settings_reset_custom_covers">Réinitialiser les jaquettes personnalisées</string>
+    <string name="settings_reset_custom_covers_desc">Rétablir les jaquettes par défaut de tous les jeux.</string>
+    <string name="settings_reset_custom_covers_confirm_title">Réinitialiser toutes les jaquettes personnalisées ?</string>
+    <string name="settings_reset_custom_covers_confirm_body">Les jaquettes personnalisées seront retirées de la bibliothèque et remplacées par les jaquettes par défaut. Vos images originales et les fichiers des jeux seront conservés.</string>
+    <string name="settings_reset_custom_covers_action">Réinitialiser</string>
+    <string name="settings_reset_custom_covers_success">Jaquettes personnalisées réinitialisées.</string>
+    <string name="settings_reset_custom_covers_partial">Certaines jaquettes personnalisées n’ont pas pu être réinitialisées. Veuillez réessayer.</string>
 </resources>

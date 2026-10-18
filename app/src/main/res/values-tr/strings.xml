@@ -2175,4 +2175,14 @@
     <string name="settings_cover_art_style_3d">3D</string>
     <string name="settings_cover_art_style_flat">Düz</string>
     <string name="settings_cover_art_style_disabled">Devre Dışı</string>
+    <string name="home_game_menu_restore_cover">Varsayılan kapağı geri yükle</string>
+    <string name="home_game_menu_restore_cover_success">Varsayılan kapak geri yüklendi.</string>
+    <string name="home_game_menu_restore_cover_failed">Varsayılan kapak geri yüklenemedi.</string>
+    <string name="settings_reset_custom_covers">Özel kapakları sıfırla</string>
+    <string name="settings_reset_custom_covers_desc">Tüm oyunların varsayılan kapaklarını geri yükle.</string>
+    <string name="settings_reset_custom_covers_confirm_title">Tüm özel kapaklar sıfırlansın mı?</string>
+    <string name="settings_reset_custom_covers_confirm_body">Özel kapaklar kütüphaneden kaldırılacak ve varsayılan kapaklarla değiştirilecek. Özgün görselleriniz ve oyun dosyalarınız korunacak.</string>
+    <string name="settings_reset_custom_covers_action">Sıfırla</string>
+    <string name="settings_reset_custom_covers_success">Özel kapaklar sıfırlandı.</string>
+    <string name="settings_reset_custom_covers_partial">Bazı özel kapaklar sıfırlanamadı. Lütfen tekrar deneyin.</string>
 </resources>

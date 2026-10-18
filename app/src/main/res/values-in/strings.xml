@@ -2189,4 +2189,14 @@
     <string name="settings_cover_art_style_3d">3D</string>
     <string name="settings_cover_art_style_flat">Datar</string>
     <string name="settings_cover_art_style_disabled">Dinonaktifkan</string>
+    <string name="home_game_menu_restore_cover">Pulihkan sampul bawaan</string>
+    <string name="home_game_menu_restore_cover_success">Sampul bawaan dipulihkan.</string>
+    <string name="home_game_menu_restore_cover_failed">Tidak dapat memulihkan sampul bawaan.</string>
+    <string name="settings_reset_custom_covers">Reset sampul kustom</string>
+    <string name="settings_reset_custom_covers_desc">Pulihkan sampul bawaan untuk semua gim.</string>
+    <string name="settings_reset_custom_covers_confirm_title">Reset semua sampul kustom?</string>
+    <string name="settings_reset_custom_covers_confirm_body">Sampul kustom akan dihapus dari pustaka dan diganti dengan sampul bawaan. Gambar asli dan berkas gim Anda akan tetap disimpan.</string>
+    <string name="settings_reset_custom_covers_action">Reset</string>
+    <string name="settings_reset_custom_covers_success">Sampul kustom direset.</string>
+    <string name="settings_reset_custom_covers_partial">Beberapa sampul kustom tidak dapat direset. Silakan coba lagi.</string>
 </resources>

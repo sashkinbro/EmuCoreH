@@ -27,6 +27,7 @@ class GameLibraryCacheRepository(context: Context) {
     private val appContext = context.applicationContext
     private val cacheFile = File(appContext.filesDir, "library/game_library_cache.json")
     private val learnedSerials = LearnedSerialRepository.forContext(appContext)
+    private val customCovers = CustomGameCoverRepository(appContext)
     private val lock = Any()
 
     fun load(rootPath: String): List<GameItem> {
@@ -74,6 +75,7 @@ class GameLibraryCacheRepository(context: Context) {
                             decoded.copy(
                                 title = title,
                                 fileName = fileName,
+                                coverArtPath = decoded.coverArtPath?.takeUnless(customCovers::isMissingCustomCover),
                                 serial = serial,
                                 discs = decoded.discs.map { disc ->
                                     val discName = sanitizeCachedFileName(disc.path, disc.fileName)

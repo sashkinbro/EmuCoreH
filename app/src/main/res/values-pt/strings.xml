@@ -2177,4 +2177,14 @@
     <string name="settings_cover_art_style_3d">3D</string>
     <string name="settings_cover_art_style_flat">Planas</string>
     <string name="settings_cover_art_style_disabled">Desativado</string>
+    <string name="home_game_menu_restore_cover">Restaurar capa padrão</string>
+    <string name="home_game_menu_restore_cover_success">Capa padrão restaurada.</string>
+    <string name="home_game_menu_restore_cover_failed">Não foi possível restaurar a capa padrão.</string>
+    <string name="settings_reset_custom_covers">Redefinir capas personalizadas</string>
+    <string name="settings_reset_custom_covers_desc">Restaurar as capas padrão de todos os jogos.</string>
+    <string name="settings_reset_custom_covers_confirm_title">Redefinir todas as capas personalizadas?</string>
+    <string name="settings_reset_custom_covers_confirm_body">As capas personalizadas serão removidas da biblioteca e substituídas pelas capas padrão. As imagens originais e os arquivos dos jogos serão preservados.</string>
+    <string name="settings_reset_custom_covers_action">Redefinir</string>
+    <string name="settings_reset_custom_covers_success">Capas personalizadas redefinidas.</string>
+    <string name="settings_reset_custom_covers_partial">Não foi possível redefinir algumas capas personalizadas. Tente novamente.</string>
 </resources>

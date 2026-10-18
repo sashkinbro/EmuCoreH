@@ -2177,4 +2177,14 @@
     <string name="settings_cover_art_style_3d">3D</string>
     <string name="settings_cover_art_style_flat">Planas</string>
     <string name="settings_cover_art_style_disabled">Desactivado</string>
+    <string name="home_game_menu_restore_cover">Restaurar carátula predeterminada</string>
+    <string name="home_game_menu_restore_cover_success">Carátula predeterminada restaurada.</string>
+    <string name="home_game_menu_restore_cover_failed">No se pudo restaurar la carátula predeterminada.</string>
+    <string name="settings_reset_custom_covers">Restablecer carátulas personalizadas</string>
+    <string name="settings_reset_custom_covers_desc">Restaurar las carátulas predeterminadas de todos los juegos.</string>
+    <string name="settings_reset_custom_covers_confirm_title">¿Restablecer todas las carátulas personalizadas?</string>
+    <string name="settings_reset_custom_covers_confirm_body">Las carátulas personalizadas se eliminarán de la biblioteca y se sustituirán por las predeterminadas. Se conservarán las imágenes originales y los archivos de los juegos.</string>
+    <string name="settings_reset_custom_covers_action">Restablecer</string>
+    <string name="settings_reset_custom_covers_success">Carátulas personalizadas restablecidas.</string>
+    <string name="settings_reset_custom_covers_partial">No se pudieron restablecer algunas carátulas personalizadas. Inténtalo de nuevo.</string>
 </resources>
