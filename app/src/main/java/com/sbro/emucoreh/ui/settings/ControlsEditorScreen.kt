@@ -242,6 +242,37 @@ private fun dpadClusterArrowSlots(clusterSize: Dp): List<DpadClusterArrowSlot> =
 internal fun dpadClusterDragBase(spec: OverlayCanvasDpadClusterSpec): Pair<Dp, Dp> =
     (spec.baseX + spec.surface.offset.x) to (spec.baseY + spec.surface.offset.y)
 
+internal data class ControlVisibilityToggle(
+    val controlVisible: Boolean,
+    val pairedControlId: String? = null,
+    val pairedControlVisible: Boolean = false
+)
+
+/**
+ * Resolves what a visibility click in the controls editor should update.
+ *
+ * The stick and its toggle D-pad share one slot: turning either on hides the other,
+ * but turning one off never forces the counterpart back on, so both may stay hidden.
+ * This mirrors the in-game stick/toggle behaviour without changing it.
+ */
+internal fun resolveControlVisibilityToggle(
+    controlId: String,
+    nextVisible: Boolean,
+    toggleStickId: String
+): ControlVisibilityToggle = when (controlId) {
+    toggleStickId -> ControlVisibilityToggle(
+        controlVisible = nextVisible,
+        pairedControlId = "dpad_toggle",
+        pairedControlVisible = false
+    )
+    "dpad_toggle" -> ControlVisibilityToggle(
+        controlVisible = nextVisible,
+        pairedControlId = if (nextVisible) toggleStickId else null,
+        pairedControlVisible = false
+    )
+    else -> ControlVisibilityToggle(controlVisible = nextVisible)
+}
+
 internal data class NormalizedPositionRange(
     val min: Float,
     val max: Float
@@ -887,12 +918,17 @@ fun ControlsEditorScreen(
                                 }
                                 controlId !in ControlGroupIds -> {
                                     val nextVisible = !(selectedLayout?.visible ?: true)
-                                    setControlVisibleLocally(controlId, nextVisible)
-                                    // The left stick and its toggle D-pad are two faces of
-                                    // the same control: showing one always hides the other.
-                                    when (controlId) {
-                                        "left_stick" -> setControlVisibleLocally("dpad_toggle", !nextVisible)
-                                        "dpad_toggle" -> setControlVisibleLocally("left_stick", !nextVisible)
+                                    // The stick and its toggle D-pad share one slot. Showing
+                                    // either hides the other, but hiding one never forces its
+                                    // counterpart back on, so both can stay hidden.
+                                    val visibility = resolveControlVisibilityToggle(
+                                        controlId = controlId,
+                                        nextVisible = nextVisible,
+                                        toggleStickId = "left_stick"
+                                    )
+                                    setControlVisibleLocally(controlId, visibility.controlVisible)
+                                    visibility.pairedControlId?.let { pairedId ->
+                                        setControlVisibleLocally(pairedId, visibility.pairedControlVisible)
                                     }
                                 }
                             }

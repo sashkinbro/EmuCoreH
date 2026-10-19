@@ -177,6 +177,8 @@ data class EmulationUiState(
     val stickyButtons: Set<String> = emptySet(),
     val touchscreenRightStick: Boolean = AppPreferences.DEFAULT_TOUCHSCREEN_RIGHT_STICK,
     val touchscreenRightStickSensitivity: Int = AppPreferences.DEFAULT_TOUCHSCREEN_RIGHT_STICK_SENSITIVITY,
+    val touchscreenLeftStick: Boolean = AppPreferences.DEFAULT_TOUCHSCREEN_LEFT_STICK,
+    val touchscreenLeftStickSensitivity: Int = AppPreferences.DEFAULT_TOUCHSCREEN_LEFT_STICK_SENSITIVITY,
     val touchHaptics: Boolean = false,
     val touchHapticsPreset: Int = AppPreferences.DEFAULT_TOUCH_HAPTICS_PRESET,
     val touchHapticsStrength: Int = AppPreferences.DEFAULT_TOUCH_HAPTICS_STRENGTH,
@@ -282,6 +284,8 @@ private data class LiveRuntimeSnapshot(
     val stickyButtons: Set<String>,
     val touchscreenRightStick: Boolean,
     val touchscreenRightStickSensitivity: Int,
+    val touchscreenLeftStick: Boolean,
+    val touchscreenLeftStickSensitivity: Int,
     val touchHaptics: Boolean,
     val touchHapticsPreset: Int,
     val touchHapticsStrength: Int,
@@ -694,6 +698,16 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             preferences.touchscreenRightStickSensitivity.collect { value ->
                 applyGlobalRuntimePreferenceUpdate { it.copy(touchscreenRightStickSensitivity = value) }
+            }
+        }
+        viewModelScope.launch {
+            preferences.touchscreenLeftStick.collect { enabled ->
+                applyGlobalRuntimePreferenceUpdate { it.copy(touchscreenLeftStick = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            preferences.touchscreenLeftStickSensitivity.collect { value ->
+                applyGlobalRuntimePreferenceUpdate { it.copy(touchscreenLeftStickSensitivity = value) }
             }
         }
         viewModelScope.launch {
@@ -1198,6 +1212,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     stickyButtons = liveRuntime.stickyButtons,
                     touchscreenRightStick = liveRuntime.touchscreenRightStick,
                     touchscreenRightStickSensitivity = liveRuntime.touchscreenRightStickSensitivity,
+                    touchscreenLeftStick = liveRuntime.touchscreenLeftStick,
+                    touchscreenLeftStickSensitivity = liveRuntime.touchscreenLeftStickSensitivity,
                     touchHaptics = liveRuntime.touchHaptics,
                     touchHapticsPreset = liveRuntime.touchHapticsPreset,
                     touchHapticsStrength = liveRuntime.touchHapticsStrength,
@@ -1810,6 +1826,46 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 preferences.setGamepadRightStickDownToL2(enabled)
             }
             syncGamepadRightStickTriggerMapping(newState)
+        }
+    }
+
+    fun setTouchscreenRightStick(enabled: Boolean) {
+        viewModelScope.launch {
+            persistRuntimeState(_uiState.value.copy(touchscreenRightStick = enabled)) {
+                preferences.setTouchscreenRightStick(enabled)
+            }
+        }
+    }
+
+    fun setTouchscreenRightStickSensitivity(value: Int) {
+        viewModelScope.launch {
+            val normalized = value.coerceIn(
+                AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MIN,
+                AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MAX
+            )
+            persistRuntimeState(_uiState.value.copy(touchscreenRightStickSensitivity = normalized)) {
+                preferences.setTouchscreenRightStickSensitivity(normalized)
+            }
+        }
+    }
+
+    fun setTouchscreenLeftStick(enabled: Boolean) {
+        viewModelScope.launch {
+            persistRuntimeState(_uiState.value.copy(touchscreenLeftStick = enabled)) {
+                preferences.setTouchscreenLeftStick(enabled)
+            }
+        }
+    }
+
+    fun setTouchscreenLeftStickSensitivity(value: Int) {
+        viewModelScope.launch {
+            val normalized = value.coerceIn(
+                AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MIN,
+                AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MAX
+            )
+            persistRuntimeState(_uiState.value.copy(touchscreenLeftStickSensitivity = normalized)) {
+                preferences.setTouchscreenLeftStickSensitivity(normalized)
+            }
         }
     }
 
@@ -2626,6 +2682,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             stickyButtons = settings.stickyButtons,
             touchscreenRightStick = settings.touchscreenRightStick,
             touchscreenRightStickSensitivity = settings.touchscreenRightStickSensitivity,
+            touchscreenLeftStick = settings.touchscreenLeftStick,
+            touchscreenLeftStickSensitivity = settings.touchscreenLeftStickSensitivity,
             touchHaptics = settings.touchHaptics,
             touchHapticsPreset = settings.touchHapticsPreset,
             touchHapticsStrength = settings.touchHapticsStrength,
@@ -2703,6 +2761,11 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 "touchscreenRightStickSensitivity",
                 touchscreenRightStickSensitivity
             ) { touchscreenRightStickSensitivity },
+            touchscreenLeftStick = pick("touchscreenLeftStick", touchscreenLeftStick) { touchscreenLeftStick },
+            touchscreenLeftStickSensitivity = pick(
+                "touchscreenLeftStickSensitivity",
+                touchscreenLeftStickSensitivity
+            ) { touchscreenLeftStickSensitivity },
             touchHaptics = pick("touchHaptics", touchHaptics) { touchHaptics },
             touchHapticsPreset = pick("touchHapticsPreset", touchHapticsPreset) { touchHapticsPreset },
             touchHapticsStrength = touchHapticsStrength,
@@ -2778,6 +2841,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             stickyButtons = stickyButtons,
             touchscreenRightStick = touchscreenRightStick,
             touchscreenRightStickSensitivity = touchscreenRightStickSensitivity,
+            touchscreenLeftStick = touchscreenLeftStick,
+            touchscreenLeftStickSensitivity = touchscreenLeftStickSensitivity,
             touchHaptics = touchHaptics,
             touchHapticsPreset = touchHapticsPreset,
             touchControlVisualStyle = touchControlVisualStyle.takeIf { it != settings.touchControlVisualStyle },
@@ -2825,6 +2890,10 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         if (touchscreenRightStick != settings.touchscreenRightStick) add("touchscreenRightStick")
         if (touchscreenRightStickSensitivity != settings.touchscreenRightStickSensitivity) {
             add("touchscreenRightStickSensitivity")
+        }
+        if (touchscreenLeftStick != settings.touchscreenLeftStick) add("touchscreenLeftStick")
+        if (touchscreenLeftStickSensitivity != settings.touchscreenLeftStickSensitivity) {
+            add("touchscreenLeftStickSensitivity")
         }
         if (touchHaptics != settings.touchHaptics) add("touchHaptics")
         if (touchHapticsPreset != settings.touchHapticsPreset) add("touchHapticsPreset")

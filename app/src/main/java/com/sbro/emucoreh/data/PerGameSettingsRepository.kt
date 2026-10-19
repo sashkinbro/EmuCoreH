@@ -26,6 +26,8 @@ data class PerGameSettings(
     val stickyButtons: Set<String> = emptySet(),
     val touchscreenRightStick: Boolean = AppPreferences.DEFAULT_TOUCHSCREEN_RIGHT_STICK,
     val touchscreenRightStickSensitivity: Int = AppPreferences.DEFAULT_TOUCHSCREEN_RIGHT_STICK_SENSITIVITY,
+    val touchscreenLeftStick: Boolean = AppPreferences.DEFAULT_TOUCHSCREEN_LEFT_STICK,
+    val touchscreenLeftStickSensitivity: Int = AppPreferences.DEFAULT_TOUCHSCREEN_LEFT_STICK_SENSITIVITY,
     val touchHaptics: Boolean = false,
     val touchHapticsPreset: Int = AppPreferences.DEFAULT_TOUCH_HAPTICS_PRESET,
     val gyroMode: Int = AppPreferences.GYRO_MODE_OFF,
@@ -210,6 +212,17 @@ internal fun JSONObject.toPerGameSettings(): PerGameSettings {
             AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MIN,
             AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MAX
         ),
+        touchscreenLeftStick = optBoolean(
+            "touchscreenLeftStick",
+            AppPreferences.DEFAULT_TOUCHSCREEN_LEFT_STICK
+        ),
+        touchscreenLeftStickSensitivity = optInt(
+            "touchscreenLeftStickSensitivity",
+            AppPreferences.DEFAULT_TOUCHSCREEN_LEFT_STICK_SENSITIVITY
+        ).coerceIn(
+            AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MIN,
+            AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MAX
+        ),
         touchHaptics = optBoolean("touchHaptics", false),
         touchHapticsPreset = optInt("touchHapticsPreset", AppPreferences.DEFAULT_TOUCH_HAPTICS_PRESET)
             .coerceIn(AppPreferences.TOUCH_HAPTICS_PRESET_SOFT, AppPreferences.TOUCH_HAPTICS_PRESET_STRONG),
@@ -305,6 +318,10 @@ internal fun PerGameSettings.toJson(): JSONObject {
         if (shouldWrite("touchscreenRightStick")) put("touchscreenRightStick", touchscreenRightStick)
         if (shouldWrite("touchscreenRightStickSensitivity")) {
             put("touchscreenRightStickSensitivity", touchscreenRightStickSensitivity)
+        }
+        if (shouldWrite("touchscreenLeftStick")) put("touchscreenLeftStick", touchscreenLeftStick)
+        if (shouldWrite("touchscreenLeftStickSensitivity")) {
+            put("touchscreenLeftStickSensitivity", touchscreenLeftStickSensitivity)
         }
         if (shouldWrite("touchHaptics")) put("touchHaptics", touchHaptics)
         if (shouldWrite("touchHapticsPreset")) put("touchHapticsPreset", touchHapticsPreset)

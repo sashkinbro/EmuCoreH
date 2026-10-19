@@ -1140,6 +1140,35 @@ private fun GameSettingsTabContent(
                         fullBleedPadding = GameSettingsSectionContentPadding
                     )
                     ToggleRow(
+                        title = stringResource(R.string.settings_touchscreen_left_stick),
+                        checked = draft.touchscreenLeftStick,
+                        onCheckedChange = { onDraftChange(draft.copy(touchscreenLeftStick = it)) },
+                        helpText = stringResource(R.string.settings_help_touchscreen_left_stick),
+                        onResetToDefault = { onDraftChange(draft.copy(touchscreenLeftStick = defaultProfile.touchscreenLeftStick)) }
+                    )
+                    if (draft.touchscreenLeftStick) {
+                        SliderRow(
+                            title = stringResource(R.string.settings_touchscreen_left_stick_sensitivity),
+                            value = draft.touchscreenLeftStickSensitivity.toFloat(),
+                            valueLabel = "${draft.touchscreenLeftStickSensitivity}%",
+                            range = AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MIN.toFloat()..
+                                AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MAX.toFloat(),
+                            steps = AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MAX -
+                                AppPreferences.TOUCHSCREEN_RIGHT_STICK_SENSITIVITY_MIN - 1,
+                            onValueChange = {
+                                onDraftChange(draft.copy(touchscreenLeftStickSensitivity = it.roundToInt()))
+                            },
+                            helpText = stringResource(R.string.settings_help_touchscreen_left_stick_sensitivity),
+                            onResetToDefault = {
+                                onDraftChange(
+                                    draft.copy(
+                                        touchscreenLeftStickSensitivity = defaultProfile.touchscreenLeftStickSensitivity
+                                    )
+                                )
+                            }
+                        )
+                    }
+                    ToggleRow(
                         title = stringResource(R.string.settings_touchscreen_right_stick),
                         checked = draft.touchscreenRightStick,
                         onCheckedChange = { onDraftChange(draft.copy(touchscreenRightStick = it)) },
@@ -1703,6 +1732,8 @@ private fun SettingsSnapshot.toPerGameSettings(game: GameItem): PerGameSettings 
         stickyButtons = stickyButtons,
         touchscreenRightStick = touchscreenRightStick,
         touchscreenRightStickSensitivity = touchscreenRightStickSensitivity,
+        touchscreenLeftStick = touchscreenLeftStick,
+        touchscreenLeftStickSensitivity = touchscreenLeftStickSensitivity,
         touchHaptics = touchHaptics,
         touchHapticsPreset = touchHapticsPreset,
         gyroMode = gyroMode,
@@ -1757,6 +1788,12 @@ internal fun PerGameSettings.resolveAgainst(defaultProfile: PerGameSettings): Pe
             "touchscreenRightStickSensitivity",
             touchscreenRightStickSensitivity,
             defaultProfile.touchscreenRightStickSensitivity
+        ),
+        touchscreenLeftStick = pick("touchscreenLeftStick", touchscreenLeftStick, defaultProfile.touchscreenLeftStick),
+        touchscreenLeftStickSensitivity = pick(
+            "touchscreenLeftStickSensitivity",
+            touchscreenLeftStickSensitivity,
+            defaultProfile.touchscreenLeftStickSensitivity
         ),
         touchHaptics = pick("touchHaptics", touchHaptics, defaultProfile.touchHaptics),
         touchHapticsPreset = pick("touchHapticsPreset", touchHapticsPreset, defaultProfile.touchHapticsPreset),
