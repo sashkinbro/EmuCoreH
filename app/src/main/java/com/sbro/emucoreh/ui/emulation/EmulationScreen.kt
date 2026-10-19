@@ -3679,6 +3679,13 @@ private fun EmulationSidebarMenu(
                         )
 
                         MenuButton(
+                            icon = Icons.Rounded.TouchApp,
+                            text = stringResource(R.string.settings_edit_controls),
+                            onClick = onOpenControlsEditor,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f)
+                        )
+
+                        MenuButton(
                             icon = if (uiState.controlsVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
                             text = stringResource(if (uiState.controlsVisible) R.string.emulation_hide_controls else R.string.emulation_show_controls),
                             onClick = onToggleControls,
@@ -3896,13 +3903,6 @@ private fun EmulationSidebarMenu(
                             onCheckedChange = onSetInvertRightStickHorizontal,
                             helpText = stringResource(R.string.settings_help_invert_right_stick_horizontal),
                             onResetToDefault = { onSetInvertRightStickHorizontal(false) }
-                        )
-
-                        MenuButton(
-                            icon = Icons.Rounded.TouchApp,
-                            text = stringResource(R.string.settings_edit_controls),
-                            onClick = onOpenControlsEditor,
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f)
                         )
 
                                     }
