@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.FolderOpen
@@ -105,15 +106,19 @@ import com.sbro.emucoreh.data.SettingsSnapshot
 import com.sbro.emucoreh.data.TouchControlPressEffect
 import com.sbro.emucoreh.data.TouchControlVisualStyle
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import com.sbro.emucoreh.ui.common.GameCoverArt
 import com.sbro.emucoreh.ui.common.isGenerated3dCover
 import com.sbro.emucoreh.ui.common.ScreenTopBar
+import com.sbro.emucoreh.ui.common.gameCoverContentScale
+import com.sbro.emucoreh.ui.common.gameCoverShape
+import com.sbro.emucoreh.ui.common.gamepadActionLabel
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import com.sbro.emucoreh.ui.common.SettingHelpButton
 import com.sbro.emucoreh.ui.common.SettingsStyledDialog
-import com.sbro.emucoreh.ui.common.gamepadActionLabel
+import com.sbro.emucoreh.ui.common.StickyTabHeader
 import com.sbro.emucoreh.ui.common.gamepadFocusableCard
+import com.sbro.emucoreh.ui.common.rememberStickyTabHeaderPinned
+import com.sbro.emucoreh.ui.common.stickyTabTopInset
 import com.sbro.emucoreh.ui.common.tvGamepadFocusableCard
 import com.sbro.emucoreh.ui.common.tvFocusGroup
 import com.sbro.emucoreh.ui.common.navigationBarsHorizontalPaddingValues
@@ -127,6 +132,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import com.sbro.emucoreh.ui.theme.neon.neonChipShape
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 
 private enum class GameSettingsManagerTab {
@@ -178,6 +184,9 @@ fun PerGameSettingsManagerScreen(
     val topInset = appScreenTopPadding()
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val horizontalSystemBarPadding = navigationBarsHorizontalPaddingValues()
+    val listState = rememberLazyListState()
+    val stickyTabInset = stickyTabTopInset()
+    val tabsPinned = rememberStickyTabHeaderPinned(listState, "game-settings-tabs")
     val exportSuccess = stringResource(R.string.game_settings_manager_export_success)
     val exportFailure = stringResource(R.string.game_settings_manager_export_failure)
     val importSuccess = stringResource(R.string.game_settings_manager_import_success)
@@ -321,15 +330,19 @@ fun PerGameSettingsManagerScreen(
     }
 
     val neonThemeActive = LocalNeonTheme.current
+    LaunchedEffect(selectedTab) {
+        listState.scrollToItem(0)
+    }
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontalSystemBarPadding),
+            .padding(horizontalSystemBarPadding)
+            .padding(top = stickyTabInset),
         contentPadding = PaddingValues(
             start = ScreenHorizontalPadding,
             end = ScreenHorizontalPadding,
-            top = topInset,
             bottom = 24.dp + bottomInset
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -338,6 +351,9 @@ fun PerGameSettingsManagerScreen(
             ScreenTopBar(
                 title = stringResource(R.string.game_settings_manager_title),
                 onBackClick = onBackClick,
+                modifier = Modifier.padding(
+                    top = (topInset - stickyTabInset).coerceAtLeast(0.dp)
+                ),
                 actions = {
                     Box {
                         IconButton(onClick = { showTopBarMenu = true }) {
@@ -490,11 +506,16 @@ fun PerGameSettingsManagerScreen(
                 }
             }
 
-            item {
-                GameSettingsManagerTabRow(
-                    selectedTab = selectedTab,
-                    onSelected = { selectedTab = it }
-                )
+            stickyHeader(key = "game-settings-tabs") {
+                StickyTabHeader(
+                    showDivider = tabsPinned,
+                    modifier = Modifier.gameManagerFullBleed()
+                ) {
+                    GameSettingsManagerTabRow(
+                        selectedTab = selectedTab,
+                        onSelected = { selectedTab = it }
+                    )
+                }
             }
 
             selectedGame?.let { game ->
@@ -684,16 +705,20 @@ private fun GamePickerCard(
         ) {
             Surface(
                 modifier = Modifier.fillMaxHeight().aspectRatio(1f),
-                shape = if (is3d) RectangleShape else neonShape(12.dp),
-                color = if (is3d) Color.Transparent else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.26f)
+                shape = gameCoverShape(game.coverArtPath, neonShape(12.dp)),
+                color = if (is3d) {
+                    Color.Transparent
+                } else {
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.26f)
+                }
             ) {
                 GameCoverArt(
                     coverPath = game.coverArtPath,
                     fallbackTitle = game.title,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(if (is3d) RectangleShape else neonShape(12.dp)),
-                    contentScale = ContentScale.Fit
+                        .clip(gameCoverShape(game.coverArtPath, neonShape(12.dp))),
+                    contentScale = gameCoverContentScale(game.coverArtPath, ContentScale.Fit)
                 )
             }
             Column(
@@ -736,7 +761,6 @@ private fun GameSettingsManagerTabRow(
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .gameManagerFullBleed()
             .tvFocusGroup(),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(
@@ -752,9 +776,11 @@ private fun GameSettingsManagerTabRow(
                     interactionSource = interactionSource,
                     addFocusTarget = false
                 ),
+                shape = neonChipShape(),
                 selected = selectedTab == tab,
                 onClick = { onSelected(tab) },
                 interactionSource = interactionSource,
+                colors = premiumFilterChipColors(),
                 label = {
                     Text(
                         text = when (tab) {
@@ -1473,9 +1499,11 @@ private fun SelectionRow(
                         interactionSource = optionInteractionSource,
                         addFocusTarget = false
                     ),
+                    shape = neonChipShape(),
                     selected = selectedValue == value,
                     onClick = { onSelected(value) },
                     interactionSource = optionInteractionSource,
+                    colors = premiumFilterChipColors(),
                     label = { Text(label) }
                 )
             }
@@ -1920,7 +1948,7 @@ private fun PerGameGamepadMappingDialog(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(0, 1).forEach { padIndex ->
                 FilterChip(
-                    shape = neonShape(16.dp),
+                    shape = neonChipShape(),
                     selected = selectedPadIndex == padIndex,
                     onClick = {
                         if (pendingActionId == null) selectedPadIndex = padIndex

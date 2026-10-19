@@ -97,7 +97,10 @@ import com.sbro.emucoreh.data.hub.HubItem
 import com.sbro.emucoreh.data.hub.HubKind
 import com.sbro.emucoreh.ui.common.ProvideGamepadShoulderActions
 import com.sbro.emucoreh.ui.common.RequestFocusOnResume
+import com.sbro.emucoreh.ui.common.StickyTabHeader
 import com.sbro.emucoreh.ui.common.gamepadFocusableCard
+import com.sbro.emucoreh.ui.common.rememberStickyTabHeaderPinned
+import com.sbro.emucoreh.ui.common.stickyTabTopInset
 import com.sbro.emucoreh.ui.common.navigationBarsHorizontalPaddingValues
 import com.sbro.emucoreh.ui.common.rememberDebouncedClick
 import com.sbro.emucoreh.ui.common.shimmer
@@ -129,6 +132,7 @@ fun HubScreen(
     val tvUiEnabled = LocalTvUiEnvironment.current.enabled
     val shouldRequestGamepadFocus = tvUiEnabled || remember { GamepadManager.isGamepadConnected() }
     val topInset = appScreenTopPadding()
+    val stickyTabInset = stickyTabTopInset()
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val compact = LocalConfiguration.current.screenWidthDp < 600
     val horizontalPadding = if (compact) 12.dp else ScreenHorizontalPadding
@@ -165,6 +169,7 @@ fun HubScreen(
             .padding(navigationBarsHorizontalPaddingValues())
     ) {
         val gridState = rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
+        val hubTabsPinned = rememberStickyTabHeaderPinned(gridState, "hub-tabs")
         val listMode = "${uiState.selectedTab.name}:${uiState.sortOrder.name}:${uiState.productFilter.name}:${uiState.featuredOnly}"
         var lastListMode by rememberSaveable { mutableStateOf(listMode) }
         val showScrollToTop by remember {
@@ -186,7 +191,9 @@ fun HubScreen(
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(300.dp),
                 state = gridState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = stickyTabInset),
                 contentPadding = PaddingValues(
                     start = horizontalPadding,
                     end = horizontalPadding,
@@ -196,27 +203,25 @@ fun HubScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item(key = "hub-header", span = { GridItemSpan(maxLineSpan) }) {
-                    HubTopBar(
-                        topInset = topInset,
-                        onBackClick = onBackClick,
-                        onSearchClick = {
-                            searchVisible = !searchVisible
-                            if (!searchVisible) viewModel.clearSearch()
-                        },
-                        onRefresh = { viewModel.refresh(force = true) },
-                        refreshing = uiState.isRefreshing,
-                        sortOrder = uiState.sortOrder,
-                        productFilter = uiState.productFilter,
-                        featuredOnly = uiState.featuredOnly,
-                        hasActiveFilters = uiState.hasActiveFilters,
-                        onSortOrderSelected = viewModel::setSortOrder,
-                        onProductFilterSelected = viewModel::setProductFilter,
-                        onFeaturedOnlyChanged = viewModel::setFeaturedOnly,
-                        onClearFilters = viewModel::clearFilters
-                    )
-                }
-                item(key = "hub-navigation", span = { GridItemSpan(maxLineSpan) }) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column {
+                        HubTopBar(
+                            topInset = (topInset - stickyTabInset).coerceAtLeast(0.dp),
+                            onBackClick = onBackClick,
+                            onSearchClick = {
+                                searchVisible = !searchVisible
+                                if (!searchVisible) viewModel.clearSearch()
+                            },
+                            onRefresh = { viewModel.refresh(force = true) },
+                            refreshing = uiState.isRefreshing,
+                            sortOrder = uiState.sortOrder,
+                            productFilter = uiState.productFilter,
+                            featuredOnly = uiState.featuredOnly,
+                            hasActiveFilters = uiState.hasActiveFilters,
+                            onSortOrderSelected = viewModel::setSortOrder,
+                            onProductFilterSelected = viewModel::setProductFilter,
+                            onFeaturedOnlyChanged = viewModel::setFeaturedOnly,
+                            onClearFilters = viewModel::clearFilters
+                        )
                         AnimatedVisibility(
                             visible = searchVisible,
                             enter = expandVertically(
@@ -256,6 +261,13 @@ fun HubScreen(
                                 }
                             )
                         }
+                    }
+                }
+                stickyHeader(key = "hub-tabs") {
+                    StickyTabHeader(
+                        showDivider = hubTabsPinned,
+                        modifier = Modifier.expandIntoHorizontalPadding(horizontalPadding)
+                    ) {
                         HubTabRow(
                             selected = uiState.selectedTab,
                             onSelected = viewModel::selectTab,
@@ -263,20 +275,25 @@ fun HubScreen(
                             compact = compact,
                             horizontalPadding = horizontalPadding
                         )
-                        if (uiState.isOffline) {
-                            HubStatusBanner(
-                                text = stringResource(R.string.hub_offline_cached),
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                        } else if (uiState.fallbackLocale != null) {
-                            HubStatusBanner(
-                                text = stringResource(R.string.hub_language_fallback),
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
+                    }
+                }
+                if (uiState.isOffline || uiState.fallbackLocale != null) {
+                    item(key = "hub-status", span = { GridItemSpan(maxLineSpan) }) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            if (uiState.isOffline) {
+                                HubStatusBanner(
+                                    text = stringResource(R.string.hub_offline_cached),
+                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            } else if (uiState.fallbackLocale != null) {
+                                HubStatusBanner(
+                                    text = stringResource(R.string.hub_language_fallback),
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
                         }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.38f))
                     }
                 }
 
@@ -567,7 +584,7 @@ private fun HubTabRow(
         selectedTabFocusRequester = selectedFocusRequester,
         compact = compact,
         horizontalContentPadding = horizontalPadding,
-        modifier = Modifier.expandIntoHorizontalPadding(horizontalPadding)
+        verticalPadding = 0.dp
     )
 }
 

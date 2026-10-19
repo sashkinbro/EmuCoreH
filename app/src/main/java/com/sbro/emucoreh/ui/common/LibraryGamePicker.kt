@@ -31,7 +31,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.RectangleShape
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.data.GameItem
 import com.sbro.emucoreh.ui.theme.neon.neonShape
@@ -88,7 +87,6 @@ fun LibraryGamePicker(
             items(games, key = GameItem::path) { game ->
                 val selected = game.path == selectedPath
                 val interactionSource = remember { MutableInteractionSource() }
-                val is3d = isGenerated3dCover(game.coverArtPath)
                 val shape = neonShape(18.dp)
                 Surface(
                     modifier = Modifier
@@ -122,11 +120,11 @@ fun LibraryGamePicker(
                         GameCoverArt(
                             coverPath = game.coverArtPath,
                             fallbackTitle = game.title,
-                            contentScale = ContentScale.Fit,
+                            contentScale = gameCoverContentScale(game.coverArtPath, ContentScale.Fit),
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .aspectRatio(GameCoverAspectRatio)
-                                .clip(if (is3d) RectangleShape else neonShape(10.dp))
+                                .clip(gameCoverShape(game.coverArtPath, neonShape(10.dp)))
                         )
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
