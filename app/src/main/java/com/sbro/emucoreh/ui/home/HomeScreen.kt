@@ -111,6 +111,8 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -890,6 +892,10 @@ private fun HomeHeader(
     onMenuClick: (() -> Unit)? = null
 ) {
     var showLibraryOptions by remember { mutableStateOf(false) }
+    val screenDensity = LocalDensity.current
+    val libraryMenuMaxHeight = with(screenDensity) {
+        (LocalWindowInfo.current.containerSize.height.toDp() - 24.dp).coerceAtLeast(240.dp)
+    }
     val libraryOptionsDescription = stringResource(R.string.home_library_options)
     val standardToggleIcon = when {
         isShelfView && standardViewMode == HomeLibraryViewMode.LIST -> Icons.Rounded.ViewAgenda
@@ -1025,13 +1031,17 @@ private fun HomeHeader(
                         DropdownMenu(
                             expanded = showLibraryOptions,
                             onDismissRequest = { showLibraryOptions = false },
-                            modifier = Modifier.widthIn(min = 248.dp, max = 310.dp),
+                            modifier = Modifier
+                                .widthIn(min = 248.dp, max = 310.dp)
+                                .heightIn(max = libraryMenuMaxHeight)
+                                .compensateDropdownMenuPadding(),
                             shape = neonShape(20.dp),
                             containerColor = MaterialTheme.colorScheme.surface,
                             tonalElevation = 0.dp,
                             shadowElevation = 12.dp,
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
                         ) {
+                            Spacer(modifier = Modifier.height(8.dp))
                             GameContextMenuItem(
                                 text = stringResource(R.string.home_refresh),
                                 icon = Icons.Rounded.Refresh,
@@ -1065,6 +1075,7 @@ private fun HomeHeader(
                                     onClick = { onSortSelected(option); showLibraryOptions = false }
                                 )
                             }
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                     HomeHeaderActionDivider()
@@ -1096,6 +1107,30 @@ private fun HomeHeader(
                 }
             }
         }
+    }
+}
+
+private val DropdownMenuVerticalPaddingCompensation = 8.dp
+
+/**
+ * Material's DropdownMenu applies its 8dp vertical padding outside the scroll viewport,
+ * which leaves fixed empty strips at the top and bottom and clips the content early.
+ * Expanding the measured height by that padding lets the internal scroll use the full
+ * menu surface, so every item scrolls through completely without visible bands.
+ */
+private fun Modifier.compensateDropdownMenuPadding(): Modifier = layout { measurable, constraints ->
+    val padding = DropdownMenuVerticalPaddingCompensation.roundToPx()
+    val childMaxHeight = if (constraints.hasBoundedHeight) {
+        constraints.maxHeight + padding * 2
+    } else {
+        Constraints.Infinity
+    }
+    val placeable = measurable.measure(
+        constraints.copy(minHeight = 0, maxHeight = childMaxHeight)
+    )
+    val height = (placeable.height - padding * 2).coerceAtLeast(0)
+    layout(placeable.width, height) {
+        placeable.place(0, -padding)
     }
 }
 
@@ -1871,17 +1906,25 @@ internal fun GameCardContextMenu(
     val hasCustomCover = remember(game.coverArtPath, customCovers) {
         customCovers.isCustomCoverPath(game.coverArtPath)
     }
+    val screenDensity = LocalDensity.current
+    val contextMenuMaxHeight = with(screenDensity) {
+        (LocalWindowInfo.current.containerSize.height.toDp() - 24.dp).coerceAtLeast(240.dp)
+    }
     DropdownMenu(
         expanded = expanded,
         offset = offset,
         onDismissRequest = onDismiss,
-        modifier = Modifier.widthIn(min = 248.dp, max = 310.dp),
+        modifier = Modifier
+            .widthIn(min = 248.dp, max = 310.dp)
+            .heightIn(max = contextMenuMaxHeight)
+            .compensateDropdownMenuPadding(),
         shape = neonShape(20.dp),
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
         shadowElevation = 12.dp,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
     ) {
+        Spacer(modifier = Modifier.height(8.dp))
         GameContextMenuItem(
             text = stringResource(R.string.home_game_menu_start),
             icon = Icons.Rounded.PlayArrow,
@@ -1920,6 +1963,7 @@ internal fun GameCardContextMenu(
             icon = Icons.Rounded.Restore,
             onClick = onRestoreCover
         )
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

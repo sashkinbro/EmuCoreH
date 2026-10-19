@@ -454,6 +454,9 @@
     <string name="settings_gamepad_mapping_auto_format">Auto</string>
     <string name="settings_gamepad_mapping_reset_title">Resetovat mapování gamepadu</string>
     <string name="settings_gamepad_mapping_reset_desc">Obnoví (Zresetuje) základní originální výchozí rozvržení fyzických (gamepadových) kláves/tlačítek.</string>
+    <string name="settings_gamepad_mapping_configure">Nastavit mapování</string>
+    <string name="settings_gamepad_mapping_game_desc">Změny zde se ukládají pouze pro tuto hru. Tlačítka bez přepsání používají globální rozložení.</string>
+    <string name="settings_gamepad_mapping_use_global">Použít globální mapování</string>
     <string name="settings_gamepad_mapping_listening_title">Čeká se na stisknutí tlačítka</string>
     <string name="settings_gamepad_mapping_listening_player_desc">Stiskněte tlačítko pro %1$s k jeho namapování pro %2$s.</string>
     <string name="settings_gamepad_mapping_clear">Vymazat</string>
@@ -479,6 +482,14 @@
     <string name="settings_gamepad_action_dpad_down">D-Pad Dolů</string>
     <string name="settings_gamepad_action_dpad_left">D-Pad Vlevo</string>
     <string name="settings_gamepad_action_dpad_right">D-Pad Vpravo</string>
+    <string name="settings_gamepad_action_left_stick_up">Levá páčka nahoru</string>
+    <string name="settings_gamepad_action_left_stick_down">Levá páčka dolů</string>
+    <string name="settings_gamepad_action_left_stick_left">Levá páčka vlevo</string>
+    <string name="settings_gamepad_action_left_stick_right">Levá páčka vpravo</string>
+    <string name="settings_gamepad_action_right_stick_up">Pravá páčka nahoru</string>
+    <string name="settings_gamepad_action_right_stick_down">Pravá páčka dolů</string>
+    <string name="settings_gamepad_action_right_stick_left">Pravá páčka vlevo</string>
+    <string name="settings_gamepad_action_right_stick_right">Pravá páčka vpravo</string>
 <string name="settings_gamepad_action_dc_a">A</string>
 <string name="settings_gamepad_action_dc_b">B</string>
 <string name="settings_gamepad_action_dc_x">X</string>
