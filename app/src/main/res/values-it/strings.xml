@@ -41,6 +41,7 @@
 
     <string name="detail_resume">Riprendi</string>
     <string name="detail_save_states">Salvataggi</string>
+    <string name="detail_slot">Slot %d</string>
     <string name="detail_overview">Panoramica</string>
     <string name="detail_igdb_source_note">La descrizione del gioco e i metadati in questa schermata sono forniti tramite l\'API di IGDB.</string>
     <string name="detail_screenshots">Screenshot</string>

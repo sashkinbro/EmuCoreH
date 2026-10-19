@@ -41,6 +41,7 @@
 
     <string name="detail_resume">फिर से शुरू करें</string>
     <string name="detail_save_states">सेव्स</string>
+    <string name="detail_slot">स्लॉट %d</string>
     <string name="detail_overview">अवलोकन</string>
     <string name="detail_igdb_source_note">इस स्क्रीन पर गेम का विवरण और मेटाडेटा IGDB API के माध्यम से प्रदान किए जाते हैं।</string>
     <string name="detail_screenshots">स्क्रीनशॉट</string>

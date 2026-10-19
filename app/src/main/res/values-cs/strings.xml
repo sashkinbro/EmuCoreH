@@ -44,6 +44,7 @@
     <!-- Game Detail Screen -->
     <string name="detail_resume">Pokračovat</string>
     <string name="detail_save_states">Uložení</string>
+    <string name="detail_slot">Slot %d</string>
     <string name="detail_overview">Přehled</string>
     <string name="detail_igdb_source_note">Popis hry a metadata na této obrazovce poskytuje IGDB API.</string>
     <string name="detail_screenshots">Snímky obrazovky</string>

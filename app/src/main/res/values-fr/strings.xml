@@ -32,6 +32,7 @@
 
     <string name="detail_resume">Reprendre</string>
     <string name="detail_save_states">Sauvegardes</string>
+    <string name="detail_slot">Emplacement %d</string>
     <string name="detail_overview">Aperçu</string>
     <string name="detail_screenshots">Captures d\'écran</string>
     <string name="detail_videos">Vidéos</string>

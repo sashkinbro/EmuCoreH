@@ -33,6 +33,7 @@
 
     <string name="detail_resume">Продовжити</string>
     <string name="detail_save_states">Збереження</string>
+    <string name="detail_slot">Слот %d</string>
     <string name="detail_overview">Огляд</string>
     <string name="detail_screenshots">Скріншоти</string>
     <string name="detail_videos">Відео</string>

@@ -45,6 +45,7 @@
     <!-- Game Detail Screen -->
     <string name="detail_resume">Resume</string>
     <string name="detail_save_states">Saves</string>
+    <string name="detail_slot">Slot %d</string>
     <string name="detail_overview">Overview</string>
     <string name="detail_igdb_source_note">Game description and metadata on this screen are provided via the IGDB API.</string>
     <string name="detail_screenshots">Screenshots</string>

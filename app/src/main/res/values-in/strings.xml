@@ -44,6 +44,7 @@
     <!-- Game Detail Screen -->
     <string name="detail_resume">Lanjutkan</string>
     <string name="detail_save_states">Simpanan</string>
+    <string name="detail_slot">Slot %d</string>
     <string name="detail_overview">Ikhtisar</string>
     <string name="detail_igdb_source_note">Deskripsi game dan metadata di layar ini disediakan melalui API IGDB.</string>
     <string name="detail_screenshots">Tangkapan Layar</string>

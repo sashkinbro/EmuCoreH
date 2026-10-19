@@ -32,6 +32,7 @@
 
     <string name="detail_resume">Reanudar</string>
     <string name="detail_save_states">Guardados</string>
+    <string name="detail_slot">Ranura %d</string>
     <string name="detail_overview">Resumen</string>
     <string name="detail_screenshots">Capturas de pantalla</string>
     <string name="detail_videos">Videos</string>

@@ -41,6 +41,7 @@
 
     <string name="detail_resume">Devam Et</string>
     <string name="detail_save_states">Kayıtlar</string>
+    <string name="detail_slot">Yuva %d</string>
     <string name="detail_overview">Genel Bakış</string>
     <string name="detail_igdb_source_note">Bu ekrandaki oyun açıklaması ve meta veriler IGDB API aracılığıyla sağlanmaktadır.</string>
     <string name="detail_screenshots">Ekran Görüntüleri</string>

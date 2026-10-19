@@ -32,6 +32,7 @@
 
     <string name="detail_resume">繼續</string>
     <string name="detail_save_states">存檔</string>
+    <string name="detail_slot">存档位 %d</string>
     <string name="detail_overview">總覽</string>
     <string name="detail_screenshots">螢幕截圖</string>
     <string name="detail_videos">影片</string>

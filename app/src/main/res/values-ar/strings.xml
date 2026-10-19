@@ -41,6 +41,7 @@
 
     <string name="detail_resume">متابعة</string>
     <string name="detail_save_states">الحفظ</string>
+    <string name="detail_slot">الفتحة %d</string>
     <string name="detail_overview">نظرة عامة</string>
     <string name="detail_igdb_source_note">يتم توفير وصف اللعبة والبيانات الوصفية في هذه الشاشة عبر واجهة IGDB API.</string>
     <string name="detail_screenshots">لقطات الشاشة</string>

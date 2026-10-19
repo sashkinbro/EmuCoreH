@@ -44,6 +44,7 @@
     <!-- Game Detail Screen -->
     <string name="detail_resume">Wznów</string>
     <string name="detail_save_states">Zapisy</string>
+    <string name="detail_slot">Slot %d</string>
     <string name="detail_overview">Przegląd</string>
     <string name="detail_igdb_source_note">Opis gry i metadane na tym ekranie są dostarczane przez API IGDB.</string>
     <string name="detail_screenshots">Zrzuty ekranu</string>

@@ -32,6 +32,7 @@
 
     <string name="detail_resume">Retomar</string>
     <string name="detail_save_states">Saves</string>
+    <string name="detail_slot">Espaço %d</string>
     <string name="detail_overview">Visão Geral</string>
     <string name="detail_screenshots">Capturas de Tela</string>
     <string name="detail_videos">Vídeos</string>

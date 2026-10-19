@@ -32,6 +32,7 @@
 
     <string name="detail_resume">Fortsetzen</string>
     <string name="detail_save_states">Speicherstände</string>
+    <string name="detail_slot">Slot %d</string>
     <string name="detail_overview">Übersicht</string>
     <string name="detail_screenshots">Screenshots</string>
     <string name="detail_videos">Videos</string>

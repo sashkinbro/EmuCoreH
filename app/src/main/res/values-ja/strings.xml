@@ -41,6 +41,7 @@
 
     <string name="detail_resume">再開</string>
     <string name="detail_save_states">セーブ</string>
+    <string name="detail_slot">スロット %d</string>
     <string name="detail_overview">概要</string>
     <string name="detail_igdb_source_note">この画面のゲーム説明とメタデータはIGDB APIから提供されています。</string>
     <string name="detail_screenshots">スクリーンショット</string>

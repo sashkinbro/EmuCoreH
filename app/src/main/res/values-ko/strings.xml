@@ -41,6 +41,7 @@
 
     <string name="detail_resume">이어서 하기</string>
     <string name="detail_save_states">저장 데이터</string>
+    <string name="detail_slot">슬롯 %d</string>
     <string name="detail_overview">개요</string>
     <string name="detail_igdb_source_note">이 화면의 게임 설명 및 메타데이터는 IGDB API를 통해 제공됩니다.</string>
     <string name="detail_screenshots">스크린샷</string>

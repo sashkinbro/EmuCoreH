@@ -44,6 +44,7 @@
     <!-- Game Detail Screen -->
     <string name="detail_resume">ادامه</string>
     <string name="detail_save_states">ذخیره‌ها</string>
+    <string name="detail_slot">شکاف %d</string>
     <string name="detail_overview">بررسی اجمالی</string>
     <string name="detail_igdb_source_note">توضیحات بازی و متادیتا در این صفحه از طریق IGDB API ارائه می‌شوند.</string>
     <string name="detail_screenshots">اسکرین‌شات‌ها</string>
