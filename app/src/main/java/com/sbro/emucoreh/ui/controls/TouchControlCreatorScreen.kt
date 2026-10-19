@@ -76,6 +76,7 @@ import com.sbro.emucoreh.ui.common.CustomControlVisual
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.actionLabel
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
+import com.sbro.emucoreh.ui.common.premiumFilterChipColors
 import com.sbro.emucoreh.ui.theme.ScreenHorizontalPadding
 import java.util.UUID
 import kotlin.math.min
@@ -489,6 +490,7 @@ fun TouchControlCreatorScreen(
                                 null
                             },
                             shape = creatorControlShape(),
+                            colors = premiumFilterChipColors(),
                             modifier = Modifier.testTag(
                                 "touch_control_creator_category_${category.name.lowercase()}"
                             )
@@ -561,7 +563,8 @@ fun TouchControlCreatorScreen(
                             updateDraft { it.copy(content = CustomTouchControlContent.SYMBOL) }
                         },
                         label = { Text(stringResource(R.string.touch_control_creator_content_symbol), maxLines = 1, softWrap = false) },
-                        shape = creatorControlShape()
+                        shape = creatorControlShape(),
+                        colors = premiumFilterChipColors()
                     )
                     FilterChip(
                         selected = draft.content == CustomTouchControlContent.TEXT,
@@ -569,7 +572,8 @@ fun TouchControlCreatorScreen(
                             updateDraft { it.copy(content = CustomTouchControlContent.TEXT) }
                         },
                         label = { Text(stringResource(R.string.touch_control_creator_content_text), maxLines = 1, softWrap = false) },
-                        shape = creatorControlShape()
+                        shape = creatorControlShape(),
+                        colors = premiumFilterChipColors()
                     )
                     FilterChip(
                         selected = draft.content == CustomTouchControlContent.NONE,
@@ -577,7 +581,8 @@ fun TouchControlCreatorScreen(
                             updateDraft { it.copy(content = CustomTouchControlContent.NONE) }
                         },
                         label = { Text(stringResource(R.string.touch_control_creator_content_none), maxLines = 1, softWrap = false) },
-                        shape = creatorControlShape()
+                        shape = creatorControlShape(),
+                        colors = premiumFilterChipColors()
                     )
                 }
                 OutlinedTextField(
@@ -619,7 +624,8 @@ fun TouchControlCreatorScreen(
                             selected = draft.shape == shape,
                             onClick = { updateDraft { it.copy(shape = shape) } },
                             label = { Text(stringResource(shape.titleRes()), maxLines = 1, softWrap = false) },
-                            shape = neonShape(14.dp)
+                            shape = neonShape(14.dp),
+                            colors = premiumFilterChipColors()
                         )
                     }
                 }
@@ -747,6 +753,7 @@ fun TouchControlCreatorScreen(
                         },
                         label = { Text(stringResource(R.string.touch_control_creator_press_hold), maxLines = 1, softWrap = false) },
                         shape = creatorControlShape(),
+                        colors = premiumFilterChipColors(),
                         modifier = Modifier.weight(1f)
                     )
                     FilterChip(
@@ -756,6 +763,7 @@ fun TouchControlCreatorScreen(
                         },
                         label = { Text(stringResource(R.string.touch_control_creator_press_toggle), maxLines = 1, softWrap = false) },
                         shape = creatorControlShape(),
+                        colors = premiumFilterChipColors(),
                         modifier = Modifier.weight(1f)
                     )
                 }

@@ -210,6 +210,7 @@ import com.sbro.emucoreh.ui.common.VectorOverlayButton
 import com.sbro.emucoreh.ui.common.buildOverlayCanvasLayout
 import com.sbro.emucoreh.ui.common.gamepadActionLabel
 import com.sbro.emucoreh.ui.common.gamepadFocusableCard
+import com.sbro.emucoreh.ui.common.premiumFilterChipColors
 import com.sbro.emucoreh.ui.common.fullBleedScrollViewport
 import com.sbro.emucoreh.ui.common.rememberDebouncedClick
 import com.sbro.emucoreh.ui.common.tvFocusGroup
@@ -1972,6 +1973,7 @@ fun EmulationScreen(
                         shape = neonChipShape(),
                         selected = selectedGamepadPadIndex == padIndex,
                         onClick = { selectedGamepadPadIndex = padIndex },
+                        colors = premiumFilterChipColors(),
                         label = { Text(gamepadPlayerLabel(padIndex), maxLines = 1, softWrap = false) }
                     )
                 }
@@ -4709,7 +4711,7 @@ private fun GameMenuNavigationTile(
         shape = shape,
         color = when {
             destructive -> MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
-            selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+            selected -> MaterialTheme.colorScheme.primaryContainer
             else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.26f)
         },
         border = BorderStroke(
@@ -4735,7 +4737,7 @@ private fun GameMenuNavigationTile(
                 contentDescription = resolvedLabel,
                 tint = when {
                     destructive -> MaterialTheme.colorScheme.error
-                    selected -> MaterialTheme.colorScheme.primary
+                    selected -> MaterialTheme.colorScheme.onPrimaryContainer
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },
                 modifier = Modifier.size(21.dp)
@@ -4744,7 +4746,11 @@ private fun GameMenuNavigationTile(
                 Text(
                     text = resolvedLabel,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    color = when {
+                        destructive -> MaterialTheme.colorScheme.error
+                        selected -> MaterialTheme.colorScheme.onPrimaryContainer
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -4809,7 +4815,7 @@ private fun EmulationMenuRailButton(
         shape = shape,
         color = when {
             isDestructive -> MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
-            selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+            selected -> MaterialTheme.colorScheme.primaryContainer
             else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.32f)
         },
         border = border
@@ -4824,7 +4830,7 @@ private fun EmulationMenuRailButton(
                 contentDescription = contentDescription,
                 tint = when {
                     isDestructive -> MaterialTheme.colorScheme.error
-                    selected -> MaterialTheme.colorScheme.primary
+                    selected -> MaterialTheme.colorScheme.onPrimaryContainer
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },
                 modifier = Modifier
@@ -5420,6 +5426,7 @@ private fun LiveSelectionChip(
         modifier = modifier,
         selected = selected,
         onClick = onClick,
+        colors = premiumFilterChipColors(),
         leadingIcon = option.icon?.takeUnless { iconOnly }?.let { icon ->
             {
                 Icon(
@@ -5730,6 +5737,7 @@ private fun LiveBitmaskChoiceRow(
                     shape = neonChipShape(),
                     selected = PerformanceOverlayMetrics.isEnabled(selectedMask, metric),
                     onClick = { onToggle(metric) },
+                    colors = premiumFilterChipColors(),
                     label = { Text(text = label) }
                 )
             }

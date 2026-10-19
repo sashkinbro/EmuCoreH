@@ -47,6 +47,7 @@ import com.sbro.emucoreh.data.ProfileDeviceInfoProvider
 import com.sbro.emucoreh.data.drive.DriveBackupArchive
 import com.sbro.emucoreh.data.drive.DriveBackupEntry
 import com.sbro.emucoreh.data.drive.DriveOperation
+import com.sbro.emucoreh.ui.common.premiumFilterChipColors
 import coil3.compose.AsyncImage
 import java.text.DateFormat
 import java.text.NumberFormat
@@ -161,8 +162,9 @@ internal fun DriveBackupPanel(viewModel: DriveBackupViewModel = sharedDriveViewM
                 ) {
                     listOf(0, 6, 12, 24).forEach { hours ->
                         FilterChip(
-                            shape = neonChipShape(),selected = settings.intervalHours == hours, enabled = !state.busy,
+                            shape = neonChipShape(), selected = settings.intervalHours == hours, enabled = !state.busy,
                             onClick = { viewModel.configure { it.copy(intervalHours = hours) } },
+                            colors = premiumFilterChipColors(),
                             label = { Text(if (hours == 0) stringResource(R.string.drive_manual) else stringResource(R.string.drive_hours, hours)) })
                     }
                 }
@@ -179,8 +181,8 @@ internal fun DriveBackupPanel(viewModel: DriveBackupViewModel = sharedDriveViewM
                 ) {
                     listOf(1, 3, 5, 10, 20).forEach { count ->
                         FilterChip(
-                            shape = neonChipShape(),selected = settings.keepCopies == count, enabled = !state.busy,
-                            onClick = { viewModel.configure { it.copy(keepCopies = count) } }, label = { Text(count.toString()) })
+                            shape = neonChipShape(), selected = settings.keepCopies == count, enabled = !state.busy,
+                            onClick = { viewModel.configure { it.copy(keepCopies = count) } }, colors = premiumFilterChipColors(), label = { Text(count.toString()) })
                     }
                 }
             }

@@ -150,6 +150,7 @@ import com.sbro.emucoreh.ui.common.gameCoverContentScale
 import com.sbro.emucoreh.ui.common.gameCoverShape
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
+import com.sbro.emucoreh.ui.common.premiumFilterChipColors
 import com.sbro.emucoreh.ui.common.shimmer
 import com.sbro.emucoreh.ui.common.tvGamepadFocusableCard
 import com.sbro.emucoreh.ui.theme.ScreenHorizontalPadding
@@ -1135,6 +1136,7 @@ private fun AchievementFilterRow(selected: String, onSelect: (String) -> Unit) {
                 selected = selected == key,
                 onClick = { onSelect(key) },
                 label = { Text(stringResource(label), maxLines = 1) },
+                colors = premiumFilterChipColors(),
                 modifier = Modifier.weight(1f)
             )
         }
@@ -1433,9 +1435,9 @@ internal fun CloudProfilesDialog(
     ProfileFeatureDialog(title = stringResource(R.string.profile_cloud_title), onDismiss = onDismiss) {
         if (firebaseAvailable) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
-                shape = neonChipShape(),selected = cloudTab == 0, onClick = { cloudTab = 0 }, label = { Text(stringResource(R.string.drive_settings_tab)) })
+                shape = neonChipShape(), selected = cloudTab == 0, onClick = { cloudTab = 0 }, colors = premiumFilterChipColors(), label = { Text(stringResource(R.string.drive_settings_tab)) })
             FilterChip(
-                shape = neonChipShape(),selected = cloudTab == 1, onClick = { cloudTab = 1 }, label = { Text(stringResource(R.string.drive_title)) })
+                shape = neonChipShape(), selected = cloudTab == 1, onClick = { cloudTab = 1 }, colors = premiumFilterChipColors(), label = { Text(stringResource(R.string.drive_title)) })
         }
         if (cloudTab == 1 || !firebaseAvailable) {
             DriveBackupPanel()
