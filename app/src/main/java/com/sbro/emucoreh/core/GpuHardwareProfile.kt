@@ -68,7 +68,8 @@ object GpuHardwareProfiles {
         val hints = rawHints.lowercase()
         return when {
             listOf("powervr", "imgtec", "imagination technologies").any(hints::contains) -> POWERVR
-            listOf("qualcomm", "qcom", "snapdragon", "adreno").any(hints::contains) -> ADRENO
+            listOf("qualcomm", "qcom", "qti", "snapdragon", "adreno").any(hints::contains) ||
+                QUALCOMM_SOC_CODE.containsMatchIn(hints) -> ADRENO
             hasMediaTekSocHints(hints) -> MALI
             listOf("samsung", "exynos", "xclipse").any(hints::contains) -> MALI
             listOf("mali", "immortalis", "arm").any(hints::contains) -> MALI
@@ -78,7 +79,7 @@ object GpuHardwareProfiles {
 
     /** Human-readable GPU name for UI/statistics (e.g. "Adreno 750"). */
     fun gpuDisplayName(): String {
-        adrenoModelForSoc(MobileSocNameMapper.currentDeviceName())?.let { return "Adreno $it" }
+        SocGpuCatalog.forSoc(MobileSocNameMapper.currentDeviceName())?.let { return it.displayName }
         return when (detectHardwareProfile()) {
             POWERVR -> "PowerVR"
             MALI -> "Mali"
@@ -86,37 +87,6 @@ object GpuHardwareProfiles {
         }
     }
 
-    private val SOC_GPU_MODELS = listOf(
-        listOf("8 elite gen 5") to "840",
-        listOf("8 gen 5") to "829",
-        listOf("8 elite") to "830",
-        listOf("8s gen 4") to "825",
-        listOf("8 gen 3") to "750",
-        listOf("8s gen 3") to "735",
-        listOf("8 gen 2") to "740",
-        listOf("8+ gen 1", "8 gen 1") to "730",
-        listOf("7 gen 4") to "722",
-        listOf("7+ gen 3") to "732",
-        listOf("7s gen 3") to "710",
-        listOf("7 gen 3") to "720",
-        listOf("7+ gen 2", "7s gen 2") to "710",
-        listOf("6 gen 4") to "810",
-        listOf("6 gen 3", "6 gen 1") to "710",
-        listOf("888") to "660",
-        listOf("865") to "650",
-        listOf("855") to "640",
-        listOf("845") to "630",
-        listOf("7 gen 1") to "644",
-        listOf("780g", "778g") to "642",
-        listOf("765") to "620",
-        listOf("750g") to "619",
-        listOf("730", "720g") to "618",
-        listOf("695", "690", "680", "665", "662") to "6xx"
-    )
-
-    private fun adrenoModelForSoc(socName: String): String? {
-        val normalized = socName.lowercase()
-        if (!normalized.contains("snapdragon")) return null
-        return SOC_GPU_MODELS.firstOrNull { (tokens, _) -> tokens.any(normalized::contains) }?.second
-    }
+    private val QUALCOMM_SOC_CODE =
+        Regex("""\b(?:sm|msm|sdm|apq|qcs|qcm)\d{3,4}[a-z]*\b""", RegexOption.IGNORE_CASE)
 }
