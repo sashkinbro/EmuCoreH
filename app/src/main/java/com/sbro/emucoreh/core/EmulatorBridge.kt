@@ -928,6 +928,19 @@ object EmulatorBridge {
         } catch (_: Exception) { }
     }
 
+    fun setPadButtonFromSource(
+        padIndex: Int,
+        index: Int,
+        range: Int,
+        pressed: Boolean,
+        source: Int
+    ) {
+        if (!isNativeLoaded) return
+        try {
+            NativeApp.setPadButtonFromSource(padIndex, index, range, pressed, source)
+        } catch (_: Exception) { }
+    }
+
     fun resetKeyStatus() {
         if (!isNativeLoaded || !isVmActive) return
         launchSerial {

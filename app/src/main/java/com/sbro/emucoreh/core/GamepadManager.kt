@@ -330,6 +330,7 @@ object GamepadManager {
     )
     private val actionsById = mappableActions.associateBy { it.id }
     private val shortcutActionIds = setOf(ACTION_QUICK_SAVE, ACTION_QUICK_LOAD)
+    private val TRIGGER_ONLY_ACTION_IDS = setOf("l2", "r2", "l3", "r3")
     private val gunActionIds = setOf("gun_trigger", "gun_pedal", "gun_reload", "gun_recalibrate")
     @Volatile private var arcadeModeActive = false
     @Volatile private var lightGunPorts: Set<Int> = emptySet()
@@ -512,8 +513,14 @@ object GamepadManager {
         refreshConnectedGamepads()
     }
 
-    fun mappableButtonActions(): List<MappableButtonAction> =
-        mappableActions.filterNot { it.id in setOf("l2", "r2", "l3", "r3") }
+    fun mappableButtonActions(
+        includeTriggerActions: Boolean = false
+    ): List<MappableButtonAction> =
+        if (includeTriggerActions) {
+            mappableActions
+        } else {
+            mappableActions.filterNot { it.id in TRIGGER_ONLY_ACTION_IDS }
+        }
 
     fun resolveBindingForAction(actionId: String, customBindings: Map<String, Int>): Int? {
         return customBindings[actionId] ?: actionsById[actionId]?.defaultKeyCodes?.firstOrNull()
@@ -577,10 +584,34 @@ object GamepadManager {
         return true
     }
 
+    fun handleMotionBindingCapture(event: MotionEvent): Boolean {
+        val captureState = bindingCaptureState ?: return false
+        if (!isGameController(event.device) || event.action != MotionEvent.ACTION_MOVE) {
+            return false
+        }
+        if (resolvePadIndexForDevice(event.deviceId) != captureState.padIndex) return true
+        val left = getAxisValueWithFallback(event, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_BRAKE)
+        val right = getAxisValueWithFallback(event, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_GAS)
+        val capturedKey = when {
+            left > 0.65f && left >= right -> KeyEvent.KEYCODE_BUTTON_L2
+            right > 0.65f -> KeyEvent.KEYCODE_BUTTON_R2
+            else -> null
+        }
+        if (capturedKey != null) {
+            bindingCaptureState = null
+            captureState.onCaptured(capturedKey)
+        }
+        return true
+    }
+
     fun isGameController(device: InputDevice?): Boolean {
         if (device == null) return false
         if (device.isVirtual) return false
         if (isFingerprintUinputDevice(device)) return false
+        val deviceName = device.name.lowercase()
+        if (deviceName.contains("system control") || deviceName.contains("consumer control")) {
+            return false
+        }
         val sources = device.sources
         val hasControllerSource =
             (sources and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
@@ -608,6 +639,16 @@ object GamepadManager {
             stopAllGamepadVibrations()
             EmulatorBridge.resetKeyStatus()
         }
+        KeyboardMouseManager.setEmulationInputEnabled(enabled)
+    }
+
+    /** Allows keyboard/mouse mappings to reuse the existing quick save/load flow. */
+    fun triggerShortcutAction(padIndex: Int, actionId: String) {
+        if (!emulationInputEnabled) return
+        if (actionId != ACTION_QUICK_SAVE && actionId != ACTION_QUICK_LOAD) return
+        _gamepadShortcutActions.tryEmit(
+            GamepadShortcutAction(normalizePadIndex(padIndex), actionId)
+        )
     }
 
     fun setRightStickTriggerMapping(upToR2: Boolean, downToL2: Boolean) {

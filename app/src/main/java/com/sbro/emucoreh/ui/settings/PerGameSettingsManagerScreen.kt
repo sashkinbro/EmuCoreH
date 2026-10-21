@@ -94,6 +94,7 @@ import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.data.AppPreferences
 import com.sbro.emucoreh.data.DisplayCrop
+import com.sbro.emucoreh.data.KeyboardMouseSettings
 import com.sbro.emucoreh.data.GameLibraryCacheRepository
 import com.sbro.emucoreh.data.GameItem
 import com.sbro.emucoreh.data.GamepadBindingRules
@@ -869,6 +870,11 @@ private fun GameSettingsTabContent(
     onDraftChange: (PerGameSettings) -> Unit
 ) {
     val nativeUpscaleLabel = stringResource(R.string.settings_upscale_native)
+    val context = LocalContext.current
+    val preferences = remember(context) { AppPreferences(context) }
+    val globalKeyboardMouseSettings by preferences.keyboardMouseSettings.collectAsState(
+        initial = KeyboardMouseSettings()
+    )
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -1353,6 +1359,13 @@ private fun GameSettingsTabContent(
                         onDraftChange(draft.copy(gamepadBindingsByPad = bindings))
                     }
                 )
+                PerGameKeyboardMouseSettingsSection(
+                    override = draft.keyboardMouse,
+                    globalSettings = globalKeyboardMouseSettings,
+                    onOverrideChange = { keyboardMouse ->
+                        onDraftChange(draft.copy(keyboardMouse = keyboardMouse))
+                    }
+                )
 
                 EditorSection(title = stringResource(R.string.settings_core_input)) {
                     CoreOptionManagerRows(
@@ -1799,6 +1812,7 @@ internal fun PerGameSettings.resolveAgainst(defaultProfile: PerGameSettings): Pe
         gameKey = gameKey,
         gameTitle = gameTitle,
         gameSerial = gameSerial,
+        keyboardMouse = pick("keyboardMouse", keyboardMouse, defaultProfile.keyboardMouse),
         renderer = pick("renderer", renderer, defaultProfile.renderer),
         upscaleMultiplier = pick("upscaleMultiplier", upscaleMultiplier, defaultProfile.upscaleMultiplier),
         aspectRatio = pick("aspectRatio", aspectRatio, defaultProfile.aspectRatio),

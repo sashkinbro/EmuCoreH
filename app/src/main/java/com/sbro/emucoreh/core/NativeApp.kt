@@ -63,9 +63,19 @@ object NativeApp {
     // the writer and every listing agree even when the core needs a prepared
     // (materialized) launch path.
     @Volatile private var saveStateIdentityPath: String? = null
-    private val padButtons = intArrayOf(0xFFFF, 0xFFFF)
+    // Keyboard and mouse publish into separate source slots. All sources are merged
+    // before the active-low pad state is sent to the core, so releasing one physical
+    // source can never clear a button another source is still holding.
+    private val padButtons = intArrayOf(ALL_BUTTONS_RELEASED, ALL_BUTTONS_RELEASED)
+    private val padKeyboardButtons = intArrayOf(ALL_BUTTONS_RELEASED, ALL_BUTTONS_RELEASED)
+    private val padMouseButtons = intArrayOf(ALL_BUTTONS_RELEASED, ALL_BUTTONS_RELEASED)
     private val padAnalogMode = booleanArrayOf(false, false)
     private val padAnalogHalfAxes = Array(2) { IntArray(8) }
+    private val padKeyboardAnalogHalfAxes = Array(2) { IntArray(8) }
+    private val padMouseAnalogHalfAxes = Array(2) { IntArray(8) }
+    // Bitmask of input sources holding a momentary action (Start, Start tap, light gun
+    // buttons, cabinet switches and the analog toggle) per pad and pad key.
+    private val specialButtonSources = Array(2) { mutableMapOf<Int, Int>() }
     private val timeControlHandler = Handler(Looper.getMainLooper())
     private val timeControlButtons = Array(2) { Array(4) { HoldButton() } }
     private val timeControlTapPulse = Array(2) { BooleanArray(2) }
@@ -170,20 +180,59 @@ object NativeApp {
         CoreRuntime.bridge.setAudioLowLatency(enabled)
     }
     @JvmStatic @Synchronized fun setPadButton(padIndex: Int, index: Int, range: Int, pressed: Boolean) {
+        setPadButtonFromSource(padIndex, index, range, pressed, INPUT_SOURCE_LEGACY)
+    }
+
+    /**
+     * Applies one physical source without touching the other sources' state.
+     * [KeyboardMouseBindings.PAD_SOURCE_KEYBOARD] and
+     * [KeyboardMouseBindings.PAD_SOURCE_MOUSE] use their own slots; anything else
+     * behaves exactly like [setPadButton].
+     */
+    @JvmStatic @Synchronized fun setPadButtonFromSource(
+        padIndex: Int,
+        index: Int,
+        range: Int,
+        pressed: Boolean,
+        source: Int
+    ) {
         if (padIndex !in 0..1) return
+        val normalizedSource = if (source == KeyboardMouseBindings.PAD_SOURCE_KEYBOARD ||
+            source == KeyboardMouseBindings.PAD_SOURCE_MOUSE
+        ) {
+            source
+        } else {
+            INPUT_SOURCE_LEGACY
+        }
+
         if (index in PAD_GUN_TRIGGER..PAD_GUN_RELOAD) {
-            CoreRuntime.setLightGunButton(padIndex, index - PAD_GUN_TRIGGER, pressed)
+            updateSpecialButton(padIndex, index, normalizedSource, pressed) { isPressed ->
+                CoreRuntime.setLightGunButton(
+                    padIndex,
+                    index - PAD_GUN_TRIGGER,
+                    isPressed
+                )
+            }
             return
         }
         if (index in PAD_ARCADE_COIN..PAD_ARCADE_SERVICE) {
-            CoreRuntime.setLightGunButton(padIndex, index - PAD_ARCADE_COIN + 3, pressed)
+            updateSpecialButton(padIndex, index, normalizedSource, pressed) { isPressed ->
+                CoreRuntime.setLightGunButton(
+                    padIndex,
+                    index - PAD_ARCADE_COIN + 3,
+                    isPressed
+                )
+            }
             return
         }
         if (index == PAD_GUN_RECALIBRATE) {
-            if (pressed) {
-                CoreRuntime.setLightGunAim(padIndex, .5f, .5f, false)
-                _lightGunRecenterRequests.value = _lightGunRecenterRequests.value.mapIndexed { port, value ->
-                    if (port == padIndex) value + 1 else value
+            updateSpecialButton(padIndex, index, normalizedSource, pressed) { isPressed ->
+                if (isPressed) {
+                    CoreRuntime.setLightGunAim(padIndex, .5f, .5f, false)
+                    _lightGunRecenterRequests.value = _lightGunRecenterRequests.value
+                        .mapIndexed { port, value ->
+                            if (port == padIndex) value + 1 else value
+                        }
                 }
             }
             return
@@ -191,28 +240,69 @@ object NativeApp {
         // Fast forward only: holding Start (or the dedicated button) speeds the
         // emulation up. The core has no rewind support, so it is not exposed.
         if (index == PAD_START || index == PAD_FAST_FORWARD) {
-            handleTimeControlHold(padIndex, index, pressed)
+            updateSpecialButton(padIndex, index, normalizedSource, pressed) { isPressed ->
+                handleTimeControlHold(padIndex, index, isPressed)
+            }
             return
         }
-            if (index == PAD_ANALOG_TOGGLE) {
-            if (pressed) {
-                val analog = CoreRuntime.togglePadAnalogMode(padIndex)
-                if (analog != null) {
-                    padAnalogMode[padIndex] = analog
+        if (index == PAD_ANALOG_TOGGLE) {
+            updateSpecialButton(padIndex, index, normalizedSource, pressed) { isPressed ->
+                if (isPressed) {
+                    val analog = CoreRuntime.togglePadAnalogMode(padIndex)
+                    if (analog != null) {
+                        padAnalogMode[padIndex] = analog
+                    }
                 }
             }
             return
         }
         val halfAxis = analogHalfAxisIndex(index)
         if (halfAxis != null) {
-            padAnalogHalfAxes[padIndex][halfAxis] = if (pressed) range.coerceIn(0, 255) else 0
+            val axes = when (normalizedSource) {
+                KeyboardMouseBindings.PAD_SOURCE_KEYBOARD -> padKeyboardAnalogHalfAxes
+                KeyboardMouseBindings.PAD_SOURCE_MOUSE -> padMouseAnalogHalfAxes
+                else -> padAnalogHalfAxes
+            }
+            axes[padIndex][halfAxis] = if (pressed) range.coerceIn(0, 255) else 0
             dispatchPadAnalog(padIndex)
             return
         }
         val bit = padButtonBit(index) ?: return
-        padButtons[padIndex] = if (pressed) padButtons[padIndex] and (1 shl bit).inv()
-        else padButtons[padIndex] or (1 shl bit)
-        CoreRuntime.setPadButtons(padIndex, padButtons[padIndex])
+        val buttons = when (normalizedSource) {
+            KeyboardMouseBindings.PAD_SOURCE_KEYBOARD -> padKeyboardButtons
+            KeyboardMouseBindings.PAD_SOURCE_MOUSE -> padMouseButtons
+            else -> padButtons
+        }
+        buttons[padIndex] = if (pressed) {
+            buttons[padIndex] and (1 shl bit).inv()
+        } else {
+            buttons[padIndex] or (1 shl bit)
+        }
+        CoreRuntime.setPadButtons(padIndex, mergedPadButtons(padIndex))
+    }
+
+    private fun mergedPadButtons(padIndex: Int): Int =
+        padButtons[padIndex] and padKeyboardButtons[padIndex] and padMouseButtons[padIndex]
+
+    private fun updateSpecialButton(
+        padIndex: Int,
+        index: Int,
+        source: Int,
+        pressed: Boolean,
+        onChange: (Boolean) -> Unit
+    ) {
+        val sourceBit = 1 shl source
+        val holds = specialButtonSources[padIndex]
+        val previous = holds[index] ?: 0
+        val updated = if (pressed) previous or sourceBit else previous and sourceBit.inv()
+        val wasHeld = previous != 0
+        val isHeld = updated != 0
+        if (isHeld) {
+            holds[index] = updated
+        } else {
+            holds.remove(index)
+        }
+        if (wasHeld != isHeld) onChange(isHeld)
     }
     @JvmStatic fun onHostKeyEvent(keyCode: Int, pressed: Boolean) {
         setPadButton(0, keyCode, 0, pressed)
@@ -223,8 +313,13 @@ object NativeApp {
         timeControlButtons[padIndex].forEach { it.reset() }
         timeControlTapPulse[padIndex].fill(false)
         updateTimeControl()
-        padButtons[padIndex] = 0xFFFF
+        padButtons[padIndex] = ALL_BUTTONS_RELEASED
+        padKeyboardButtons[padIndex] = ALL_BUTTONS_RELEASED
+        padMouseButtons[padIndex] = ALL_BUTTONS_RELEASED
         padAnalogHalfAxes[padIndex].fill(0)
+        padKeyboardAnalogHalfAxes[padIndex].fill(0)
+        padMouseAnalogHalfAxes[padIndex].fill(0)
+        specialButtonSources[padIndex].clear()
         CoreRuntime.resetPadInput(padIndex)
     }
 
@@ -484,7 +579,7 @@ object NativeApp {
                 timeControlTapPulse[padIndex][slot] = false
                 val bit = padButtonBit(index) ?: return
                 padButtons[padIndex] = padButtons[padIndex] or (1 shl bit)
-                CoreRuntime.setPadButtons(padIndex, padButtons[padIndex])
+                CoreRuntime.setPadButtons(padIndex, mergedPadButtons(padIndex))
             }
             timeControlHandler.postDelayed({
                 synchronized(this) {
@@ -502,13 +597,13 @@ object NativeApp {
                 val bit = padButtonBit(index) ?: return
                 timeControlTapPulse[padIndex][slot] = true
                 padButtons[padIndex] = padButtons[padIndex] and (1 shl bit).inv()
-                CoreRuntime.setPadButtons(padIndex, padButtons[padIndex])
+                CoreRuntime.setPadButtons(padIndex, mergedPadButtons(padIndex))
                 timeControlHandler.postDelayed({
                     synchronized(this) {
                         if (button.generation == generation) {
                             timeControlTapPulse[padIndex][slot] = false
                             padButtons[padIndex] = padButtons[padIndex] or (1 shl bit)
-                            CoreRuntime.setPadButtons(padIndex, padButtons[padIndex])
+                            CoreRuntime.setPadButtons(padIndex, mergedPadButtons(padIndex))
                         }
                     }
                 }, TIME_CONTROL_TAP_MS)
@@ -565,11 +660,15 @@ object NativeApp {
     }
 
     private fun dispatchPadAnalog(padIndex: Int) {
-        val axes = padAnalogHalfAxes[padIndex]
-        val lx = mergeHalfAxes(axes[3], axes[1])
-        val ly = mergeHalfAxes(axes[0], axes[2])
-        val rx = mergeHalfAxes(axes[7], axes[5])
-        val ry = mergeHalfAxes(axes[4], axes[6])
+        val legacy = padAnalogHalfAxes[padIndex]
+        val keyboard = padKeyboardAnalogHalfAxes[padIndex]
+        val mouse = padMouseAnalogHalfAxes[padIndex]
+        fun merged(axis: Int): Int =
+            maxOf(legacy[axis], keyboard[axis], mouse[axis])
+        val lx = mergeHalfAxes(merged(3), merged(1))
+        val ly = mergeHalfAxes(merged(0), merged(2))
+        val rx = mergeHalfAxes(merged(7), merged(5))
+        val ry = mergeHalfAxes(merged(4), merged(6))
         CoreRuntime.setPadAnalog(padIndex, lx, ly, rx, ry)
     }
 
@@ -594,6 +693,8 @@ object NativeApp {
         .joinToString("") { byte -> "%02x".format(byte) }
 
     private const val BIOS_SIZE_BYTES = 512L * 1024L
+    private const val INPUT_SOURCE_LEGACY = 0
+    private const val ALL_BUTTONS_RELEASED = 0xFFFF
     private const val PAD_ANALOG_TOGGLE = 125
     private const val PAD_FAST_FORWARD = 126
     private const val PAD_START = 108

@@ -47,6 +47,8 @@ data class PerGameSettings(
     val gamepadLeftStickSensitivity: Int = AppPreferences.DEFAULT_GAMEPAD_STICK_SENSITIVITY,
     val gamepadRightStickSensitivity: Int = AppPreferences.DEFAULT_GAMEPAD_STICK_SENSITIVITY,
     val gamepadBindingsByPad: Map<Int, Map<String, Int>> = emptyMap(),
+    /** Null means this game inherits the global keyboard/mouse configuration. */
+    val keyboardMouse: KeyboardMouseSettings? = null,
     val pressureModifierAmount: Int = AppPreferences.DEFAULT_PRESSURE_MODIFIER_AMOUNT,
     val autoSaveOnExit: Boolean = false,
     val autoLoadOnStart: Boolean = false,
@@ -246,6 +248,7 @@ internal fun JSONObject.toPerGameSettings(): PerGameSettings {
         gamepadRightStickSensitivity = optInt("gamepadRightStickSensitivity", AppPreferences.DEFAULT_GAMEPAD_STICK_SENSITIVITY)
             .coerceIn(50, 200),
         gamepadBindingsByPad = decodeGamepadBindingsByPerGameJson(optJSONObject("gamepadBindingsByPad")),
+        keyboardMouse = KeyboardMouseSettingsCodec.decode(optJSONObject("keyboardMouse")),
         pressureModifierAmount = optInt("pressureModifierAmount", AppPreferences.DEFAULT_PRESSURE_MODIFIER_AMOUNT).coerceIn(1, 100),
         autoSaveOnExit = optBoolean("autoSaveOnExit", false),
         autoLoadOnStart = optBoolean("autoLoadOnStart", false),
@@ -343,6 +346,9 @@ internal fun PerGameSettings.toJson(): JSONObject {
         if (shouldWrite("gamepadRightStickSensitivity")) put("gamepadRightStickSensitivity", gamepadRightStickSensitivity.coerceIn(50, 200))
         if (shouldWrite("gamepadBindingsByPad") && gamepadBindingsByPad.isNotEmpty()) {
             put("gamepadBindingsByPad", encodeGamepadBindingsPerGameJson(gamepadBindingsByPad))
+        }
+        if (shouldWrite("keyboardMouse") && keyboardMouse != null) {
+            put("keyboardMouse", KeyboardMouseSettingsCodec.encode(keyboardMouse))
         }
         if (shouldWrite("pressureModifierAmount")) put("pressureModifierAmount", pressureModifierAmount.coerceIn(1, 100))
         if (shouldWrite("autoSaveOnExit")) put("autoSaveOnExit", autoSaveOnExit)

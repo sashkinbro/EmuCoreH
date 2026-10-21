@@ -70,7 +70,9 @@ import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Gamepad
+import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.Mouse
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Restore
@@ -171,6 +173,7 @@ import com.sbro.emucoreh.core.AndroidTouchHaptics.ButtonPhase
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.core.GamepadManager
+import com.sbro.emucoreh.core.KeyboardMouseManager
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
 import com.sbro.emucoreh.core.buildUpscaleOptions
 import com.sbro.emucoreh.core.upscaleKeyToMultiplier
@@ -218,6 +221,7 @@ import com.sbro.emucoreh.ui.settings.arcadeDeviceOptions
 import com.sbro.emucoreh.ui.settings.gyroStickTargetOptions
 import com.sbro.emucoreh.ui.settings.lightGunAimSourceOptions
 import com.sbro.emucoreh.ui.settings.ControlsEditorScreen
+import com.sbro.emucoreh.ui.settings.KeyboardMouseSettingsDialog
 import com.sbro.emucoreh.ui.settings.toControlsEditorState
 import com.sbro.emucoreh.core.FlycastCoreOptions
 import com.sbro.emucoreh.data.AchievementItem
@@ -485,12 +489,18 @@ fun EmulationScreen(
     var showAutoSaveLoadDialog by remember { mutableStateOf(false) }
     var showControlsEditor by remember { mutableStateOf(false) }
     var showGamepadMappingDialog by remember { mutableStateOf(false) }
+    var showKeyboardMouseSettingsDialog by remember { mutableStateOf(false) }
     var pendingGamepadActionId by remember { mutableStateOf<String?>(null) }
     var pendingGamepadPadIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedGamepadPadIndex by rememberSaveable { mutableIntStateOf(0) }
     var resumeAfterEditor by remember { mutableStateOf(false) }
     val connectedGamepadCount by GamepadManager.connectedGamepadCountState.collectAsState()
     val gamepadConnected = connectedGamepadCount > 0
+    val keyboardMouseConnection by KeyboardMouseManager.connection.collectAsState()
+    val keyboardMouseOverride by viewModel.keyboardMouseOverride.collectAsState()
+    val globalKeyboardMouseSettings by KeyboardMouseManager.globalSettings.collectAsState()
+    val keyboardConnected = keyboardMouseConnection.keyboardConnected
+    val mouseConnected = keyboardMouseConnection.mouseConnected
     val touchPadIndex = GamepadManager.resolveTouchPadIndex()
     val overlayPadIndex = touchPadIndex ?: 0
     val currentOverlayPadIndex by rememberUpdatedState(overlayPadIndex)
@@ -517,12 +527,27 @@ fun EmulationScreen(
     }
     val arcadeInputActive = uiState.isRunning && hostResumed && !uiState.isPaused &&
         !uiState.showMenu && !showControlsEditor && !showExitDialog && !exitDispatched &&
-        !showGamepadMappingDialog && !showQuickSaveDialog && !showQuickLoadDialog &&
+        !showGamepadMappingDialog && !showKeyboardMouseSettingsDialog &&
+        !showQuickSaveDialog && !showQuickLoadDialog &&
         !showAutoSaveLoadDialog
     val currentGunPorts by rememberUpdatedState(gunPorts)
     val currentArcadeInputActive by rememberUpdatedState(arcadeInputActive)
     val currentGyroStickTarget by rememberUpdatedState(uiState.gyroStickTarget)
     val currentLightGunAimSource by rememberUpdatedState(uiState.lightGunAimSource)
+    val lightGunPointerActive = uiState.isRunning && hostResumed && !uiState.isPaused &&
+        !uiState.showMenu &&
+        overlayPadIndex in gunPorts &&
+        uiState.lightGunAimSource == AppPreferences.LIGHT_GUN_AIM_TOUCH
+    LaunchedEffect(lightGunPointerActive) {
+        KeyboardMouseManager.setPointerCaptureSuppressed(lightGunPointerActive)
+        KeyboardMouseManager.setMouseInputSuppressed(lightGunPointerActive)
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            KeyboardMouseManager.setPointerCaptureSuppressed(false)
+            KeyboardMouseManager.setMouseInputSuppressed(false)
+        }
+    }
     val physicalGunSticks by GamepadManager.lightGunStickByPad.collectAsState()
     val currentPhysicalGunSticks by rememberUpdatedState(physicalGunSticks)
     val touchGunSticks = remember { mutableStateMapOf<Int, Offset>() }
@@ -803,6 +828,7 @@ fun EmulationScreen(
         showQuickLoadDialog ||
         showAutoSaveLoadDialog ||
         showGamepadMappingDialog ||
+        showKeyboardMouseSettingsDialog ||
         pendingGamepadActionId != null
 
     // The back gesture and the back button always open the in-game menu; the
@@ -939,14 +965,21 @@ fun EmulationScreen(
         )
     }
 
-    LaunchedEffect(gamepadConnected, uiState.showMenu) {
-        if (gamepadConnected && !uiState.showMenu) {
-            showGamepadIndicator = true
-            delay(5000.milliseconds)
-            showGamepadIndicator = false
-        } else {
-            showGamepadIndicator = false
+    LaunchedEffect(gamepadConnected, keyboardConnected, mouseConnected, uiState.showMenu) {
+        val anyConnected = gamepadConnected || keyboardConnected || mouseConnected
+        if (!anyConnected || uiState.showMenu) {
+            if (showGamepadIndicator) {
+                delay(700.milliseconds)
+                val stillDisconnected =
+                    !(gamepadConnected || keyboardConnected || mouseConnected) &&
+                        !uiState.showMenu
+                if (stillDisconnected) showGamepadIndicator = false
+            }
+            return@LaunchedEffect
         }
+        showGamepadIndicator = true
+        delay(5000.milliseconds)
+        showGamepadIndicator = false
     }
 
     LaunchedEffect(showControlsEditor) {
@@ -1184,25 +1217,41 @@ fun EmulationScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Gamepad indicator
+                // Connected input indicators
                 AnimatedVisibility(
-                    visible = gamepadConnected && !uiState.showMenu && showGamepadIndicator,
+                    visible = (gamepadConnected || keyboardConnected || mouseConnected) &&
+                        !uiState.showMenu &&
+                        showGamepadIndicator,
                     enter = fadeIn(tween(300)),
                     exit = fadeOut(tween(300))
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(neonShape(12.dp))
-                            .background(Color(0xFF50D9A0).copy(alpha = 0.20f))
-                            .padding(horizontal = 9.dp, vertical = 9.dp),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Gamepad,
-                            contentDescription = stringResource(R.string.gamepad_connected),
-                            tint = Color(0xFF50D9A0),
-                            modifier = Modifier.size(16.dp)
-                        )
+                        if (gamepadConnected) {
+                            ConnectedInputBadge(
+                                icon = Icons.Rounded.Gamepad,
+                                contentDescription = stringResource(R.string.gamepad_connected),
+                                active = true
+                            )
+                        }
+                        if (keyboardConnected) {
+                            ConnectedInputBadge(
+                                icon = Icons.Rounded.Keyboard,
+                                contentDescription =
+                                    stringResource(R.string.settings_keyboard_connected),
+                                active = true
+                            )
+                        }
+                        if (mouseConnected) {
+                            ConnectedInputBadge(
+                                icon = Icons.Rounded.Mouse,
+                                contentDescription =
+                                    stringResource(R.string.settings_mouse_connected),
+                                active = true
+                            )
+                        }
                     }
                 }
 
@@ -1756,6 +1805,7 @@ fun EmulationScreen(
                     onToggleControls = toggleControlsClick,
                     onOpenControlsEditor = { showControlsEditor = true },
                     onOpenGamepadMapping = { showGamepadMappingDialog = true },
+                    onOpenKeyboardMouseSettings = { showKeyboardMouseSettingsDialog = true },
                     onSetRenderer = { viewModel.setRenderer(it) },
                     onSetUpscale = { viewModel.setUpscale(it) },
                     onSetAspectRatio = { viewModel.setAspectRatio(it) },
@@ -2075,6 +2125,19 @@ fun EmulationScreen(
                 )
             }
         }
+    }
+
+    if (showKeyboardMouseSettingsDialog && uiState.runtimeFailure == null) {
+        KeyboardMouseSettingsDialog(
+            settings = keyboardMouseOverride ?: globalKeyboardMouseSettings,
+            onSettingsChange = viewModel::setKeyboardMouseSettings,
+            onUseGlobal = if (keyboardMouseOverride != null) {
+                { viewModel.setKeyboardMouseSettings(null) }
+            } else {
+                null
+            },
+            onDismiss = { showKeyboardMouseSettingsDialog = false }
+        )
     }
 
     if (pendingGamepadActionId != null && uiState.runtimeFailure == null) {
@@ -3125,6 +3188,7 @@ private fun EmulationSidebarMenu(
     onToggleControls: () -> Unit,
     onOpenControlsEditor: () -> Unit,
     onOpenGamepadMapping: () -> Unit,
+    onOpenKeyboardMouseSettings: () -> Unit,
     onSetRenderer: (Int) -> Unit,
     onSetUpscale: (Float) -> Unit,
     onSetAspectRatio: (Int) -> Unit,
@@ -4017,6 +4081,12 @@ private fun EmulationSidebarMenu(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.40f)
                         )
 
+                        MenuButton(
+                            icon = Icons.Rounded.Keyboard,
+                            text = stringResource(R.string.settings_keyboard_mouse_section),
+                            onClick = onOpenKeyboardMouseSettings,
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.40f)
+                        )
                                     }
 
                                     else -> Unit
@@ -4917,6 +4987,29 @@ private fun gamepadPlayerLabel(padIndex: Int): String {
     return stringResource(
         if (padIndex == 0) R.string.settings_gamepad_player_1 else R.string.settings_gamepad_player_2
     )
+}
+
+@Composable
+private fun ConnectedInputBadge(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    active: Boolean
+) {
+    val accent = Color(0xFF50D9A0)
+    Box(
+        modifier = Modifier
+            .clip(neonShape(12.dp))
+            .background(accent.copy(alpha = if (active) 0.20f else 0.10f))
+            .padding(horizontal = 9.dp, vertical = 9.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (active) accent else accent.copy(alpha = 0.45f),
+            modifier = Modifier.size(16.dp)
+        )
+    }
 }
 
 @Composable

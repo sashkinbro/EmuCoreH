@@ -72,7 +72,7 @@
 
         <activity
             android:name=".MainActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden|navigation"
             android:exported="true"
             android:theme="@style/Theme.EmuCoreH.Splash">
             <intent-filter>
@@ -157,7 +157,7 @@
         <activity
             android:name=".TvActivity"
             android:banner="@drawable/tv_banner"
-            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden|navigation"
             android:exported="true"
             android:screenOrientation="landscape"
             android:theme="@style/Theme.EmuCoreH.Splash"
