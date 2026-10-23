@@ -384,7 +384,7 @@ internal fun PerGameSettings.toJson(): JSONObject {
     }
 }
 
-private fun TouchControlsLayoutProfile.toJson(): JSONObject {
+internal fun TouchControlsLayoutProfile.toJson(): JSONObject {
     return JSONObject().apply {
         put("dpadOffset", dpadOffset.toJson())
         put("lstickOffset", lstickOffset.toJson())
@@ -401,7 +401,7 @@ private fun TouchControlsLayoutProfile.toJson(): JSONObject {
     }
 }
 
-private fun JSONObject.toTouchControlsLayoutProfile(): TouchControlsLayoutProfile {
+internal fun JSONObject.toTouchControlsLayoutProfile(): TouchControlsLayoutProfile {
     val stickScale = optInt("stickScale", AppPreferences.OVERLAY_CONTROL_SCALE_DEFAULT)
         .coerceIn(AppPreferences.OVERLAY_CONTROL_SCALE_MIN, AppPreferences.OVERLAY_CONTROL_SCALE_MAX)
     val layouts = optJSONObject("controlLayouts")

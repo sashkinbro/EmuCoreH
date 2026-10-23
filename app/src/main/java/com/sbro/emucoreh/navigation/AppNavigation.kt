@@ -180,7 +180,8 @@ data class GameSettingsManagerRoute(val gamePath: String? = null)
 data class ControlsLayoutEditorRoute(
     val gamePath: String? = null,
     val gameTitle: String? = null,
-    val gameSerial: String? = null
+    val gameSerial: String? = null,
+    val platform: String? = null
 )
 
 internal enum class StartupDestination {
@@ -827,8 +828,8 @@ fun AppNavigation(
                                 launchSingleTop = true
                             }
                         },
-                        onOpenControlsLayoutEditor = {
-                            navController.navigate(ControlsLayoutEditorRoute()) {
+                        onOpenControlsLayoutEditor = { platform ->
+                            navController.navigate(ControlsLayoutEditorRoute(platform = platform.name)) {
                                 launchSingleTop = true
                             }
                         },
@@ -913,7 +914,8 @@ fun AppNavigation(
                             ControlsLayoutEditorRoute(
                                 gamePath = game.path,
                                 gameTitle = game.title,
-                                gameSerial = game.serial
+                                gameSerial = game.serial,
+                                platform = game.platform
                             )
                         ) {
                             launchSingleTop = true
@@ -929,6 +931,8 @@ fun AppNavigation(
                     gamePath = route.gamePath,
                     gameTitle = route.gameTitle,
                     gameSerial = route.gameSerial,
+                    platform = com.sbro.emucoreh.core.EmulationPlatform.fromName(route.platform)
+                        ?: com.sbro.emucoreh.core.EmulationPlatform.DREAMCAST,
                     onBackClick = { navController.popBackStack() }
                 )
             }

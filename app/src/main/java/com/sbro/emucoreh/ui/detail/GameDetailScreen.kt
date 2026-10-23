@@ -103,6 +103,7 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFram
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import androidx.compose.ui.graphics.RectangleShape
 import com.sbro.emucoreh.R
+import com.sbro.emucoreh.ui.catalog.catalogPlatformLabel
 import com.sbro.emucoreh.core.GamepadManager
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
 import com.sbro.emucoreh.ui.common.GameCoverArt
@@ -261,6 +262,12 @@ fun GameDetailScreen(
                     )
                 }
 
+                if (catalog.platforms.isNotEmpty()) {
+                    FlowRow(modifier = Modifier.padding(horizontal = horizontalInset),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        catalog.platforms.forEach { platform -> GenreChip(text = catalogPlatformLabel(platform)) }
+                    }
+                }
                 if (catalog.genres.isNotEmpty()) {
                     Box(
                         modifier = Modifier

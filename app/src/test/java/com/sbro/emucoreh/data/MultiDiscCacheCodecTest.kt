@@ -6,6 +6,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MultiDiscCacheCodecTest {
+    @Test fun segaPlatformSurvivesCacheRoundTripAndLegacyCacheDefaultsToNull() {
+        val game = GameItem("Game", "/game.md", "game.md", 1, 1, platform = "GENESIS")
+        assertEquals(game, game.toLibraryCacheJson().readCachedGameItem())
+        assertEquals(null, JSONObject("""{"path":"/game.chd","file_name":"game.chd"}""").readCachedGameItem()!!.platform)
+    }
+
     @Test
     fun groupedPlaylistRoundTripsEveryPhysicalDiscField() {
         val game = GameItem(

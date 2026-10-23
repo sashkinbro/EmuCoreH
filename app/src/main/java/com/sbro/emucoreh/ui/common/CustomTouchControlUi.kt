@@ -37,6 +37,8 @@ import com.sbro.emucoreh.R
 import com.sbro.emucoreh.data.CustomTouchControl
 import com.sbro.emucoreh.data.CustomTouchControlContent
 import com.sbro.emucoreh.data.CustomTouchControlShape
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.data.SegaTouchLayouts
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 
 val OverlayCustomControlSelectionColor = Color(0xFF7CC8FF).copy(alpha = 0.9f)
@@ -95,7 +97,8 @@ fun CustomControlVisual(
     control: CustomTouchControl,
     pressed: Boolean,
     modifier: Modifier = Modifier,
-    selected: Boolean = false
+    selected: Boolean = false,
+    labelOverride: String? = null
 ) {
     val shape = control.composeShape()
     val opacity = control.opacity / 100f
@@ -121,7 +124,7 @@ fun CustomControlVisual(
                 if (control.content != CustomTouchControlContent.NONE) {
                     Text(
                         text = if (control.content == CustomTouchControlContent.SYMBOL) {
-                            CustomTouchControl.defaultLabelFor(control.actionId)
+                            labelOverride?.let { localizedOverlayLabel(it) } ?: CustomTouchControl.defaultLabelFor(control.actionId)
                         } else {
                             control.label
                         },
@@ -154,6 +157,7 @@ fun ActionSelector(
     allowNone: Boolean = false,
     testTagPrefix: String? = null,
     horizontalContentPadding: Dp = 0.dp,
+    platform: EmulationPlatform = EmulationPlatform.DREAMCAST,
     onSelect: (String?) -> Unit
 ) {
     Row(
@@ -181,12 +185,19 @@ fun ActionSelector(
         }
         CustomTouchControl.ALLOWED_ACTION_IDS
             .filterNot { it in setOf("l2", "r2", "l3", "r3") }
-            .filterNot { it == excludedActionId }
+            .filter { !platform.isSega || SegaTouchLayouts.keyCode(platform, it) != null }
+            .filterNot { it == excludedActionId || (platform.isSega && excludedActionId != null &&
+                SegaTouchLayouts.canonicalId(it) == SegaTouchLayouts.canonicalId(excludedActionId)) }
+            .distinctBy { if (platform.isSega) SegaTouchLayouts.canonicalId(it) else it }
             .forEach { action ->
                 FilterChip(
-                    selected = selectedActionId == action,
+                    selected = selectedActionId == action || (platform.isSega && selectedActionId != null &&
+                        SegaTouchLayouts.canonicalId(selectedActionId) == SegaTouchLayouts.canonicalId(action)),
                     onClick = { onSelect(action) },
-                    label = { Text(actionLabel(action), maxLines = 1, softWrap = false) },
+                    label = { Text(
+                        SegaTouchLayouts.label(platform, action)?.let { localizedOverlayLabel(it) } ?: actionLabel(action),
+                        maxLines = 1, softWrap = false
+                    ) },
                     leadingIcon = if (selectedActionId == action) {
                         { Icon(Icons.Rounded.Check, contentDescription = null) }
                     } else {

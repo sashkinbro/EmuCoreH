@@ -161,7 +161,8 @@ fun VectorOverlayButton(
     visualStyle: TouchControlVisualStyle = TouchControlVisualStyle.CLASSIC,
     pressEffect: TouchControlPressEffect = TouchControlPressEffect.GROW,
     onClick: (() -> Unit)? = null,
-    onPressChange: ((Boolean) -> Unit)? = null
+    onPressChange: ((Boolean) -> Unit)? = null,
+    labelOverride: String? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -337,7 +338,21 @@ fun VectorOverlayButton(
             }
             else -> Unit
         }
-        if (visualStyle == TouchControlVisualStyle.CLASSIC || isGunButton) {
+        if (labelOverride != null) {
+            if (visualStyle == TouchControlVisualStyle.CLASSIC) {
+                Box(Modifier.fillMaxSize().padding(minOf(width.value, height.value).dp * 0.025f)
+                    .border(minOf(width.value, height.value).dp * 0.02f, Color(0xFFEEEEEE), styleShape))
+            }
+            Text(
+                text = localizedOverlayLabel(labelOverride),
+                color = if (visualStyle == TouchControlVisualStyle.CLASSIC) Color(0xFFEEEEEE)
+                    else MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                fontSize = (height.value * if (labelOverride.length <= 2) 0.43f else 0.29f).sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        } else if (visualStyle == TouchControlVisualStyle.CLASSIC || isGunButton) {
             Image(
                 painter = painterResource(drawableRes),
                 contentDescription = null,

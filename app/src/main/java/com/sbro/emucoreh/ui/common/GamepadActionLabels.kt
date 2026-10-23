@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.GamepadManager
+import com.sbro.emucoreh.core.EmulationPlatform
 
 @StringRes
 fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
@@ -48,7 +49,22 @@ fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
 }
 
 @Composable
-fun gamepadActionLabel(actionId: String, arcade: Boolean = false): String {
+fun gamepadActionLabel(actionId: String, arcade: Boolean = false, platform: EmulationPlatform = EmulationPlatform.DREAMCAST): String {
+    if (platform.isSega) {
+        val twoButtons = platform in setOf(EmulationPlatform.MASTER_SYSTEM, EmulationPlatform.GAME_GEAR, EmulationPlatform.SG_1000)
+        return when (actionId) {
+            "cross" -> if (twoButtons) "1" else "B"
+            "circle" -> if (twoButtons) "2" else "C"
+            "square" -> "A"
+            "triangle" -> "Y"
+            "l1" -> "X"
+            "r1" -> "Z"
+            "select" -> stringResource(R.string.sega_mode)
+            "start" -> if (platform == EmulationPlatform.MASTER_SYSTEM || platform == EmulationPlatform.SG_1000)
+                stringResource(R.string.sega_pause) else stringResource(R.string.settings_gamepad_action_start)
+            else -> stringResource(gamepadActionLabelRes(actionId))
+        }
+    }
     if (arcade) {
         // Flycast numbers the arcade buttons 1..8; the ids keep their legacy
         // PlayStation values, the core maps them to Naomi/Atomiswave buttons.
@@ -77,3 +93,6 @@ fun gamepadActionLabel(actionId: String, arcade: Boolean = false): String {
         else -> stringResource(gamepadActionLabelRes(actionId))
     }
 }
+
+fun gamepadActionSupported(actionId: String, platform: EmulationPlatform): Boolean =
+    com.sbro.emucoreh.core.SegaControlProfiles.supports(platform, actionId)

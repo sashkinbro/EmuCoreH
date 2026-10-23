@@ -11,6 +11,9 @@ import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.SetupValidator
 import com.sbro.emucoreh.core.GameMetadataReader
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.core.SegaPlatformDetector
+import com.sbro.emucoreh.core.JGenesisContentPreparer
 import com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository
 import com.sbro.emucoreh.data.catalog.TitleIndexRepository
 import com.sbro.emucoreh.data.boxart.CoverFetchMode
@@ -39,7 +42,8 @@ data class GameItem(
     val serial: String? = null,
     /** Total size of every track a multi-file disc image references. */
     val discSize: Long? = null,
-    val discs: List<GameDisc> = emptyList()
+    val discs: List<GameDisc> = emptyList(),
+    val platform: String? = null
 )
 
 class GameRepository {
@@ -53,6 +57,9 @@ class GameRepository {
         private const val MAX_DOCUMENT_SCAN_ENTRIES = 20_000
         // CUE/GDI/M3U descriptors are a few kilobytes at most.
         private const val MAX_CONTAINER_BYTES = 1L * 1024L * 1024L
+
+        internal fun isStandaloneSegaBin(name: String, platform: EmulationPlatform, referencedByCue: Boolean): Boolean =
+            name.endsWith(".bin", true) && platform.isSega && !platform.supportsDisc && !referencedByCue
         internal fun libraryIdentity(path: String): String {
             if (!path.startsWith("content://")) {
                 return runCatching { File(path).canonicalPath }
@@ -148,14 +155,15 @@ class GameRepository {
         serial: String? = null,
         title: String? = null
     ): String? {
+        val platform = SegaPlatformDetector.detect(context, path).takeIf { it.isSega }?.name
         val candidate = if (path.startsWith("content://")) {
-            runCatching { findDocumentCover(path, context, serial, title) }
+            runCatching { findDocumentCover(path, context, serial, title, platform) }
                 .onFailure { error -> Log.w(TAG, "Unable to find cover for document URI: $path", error) }
                 .getOrNull()
         } else {
-            findLocalCover(path, context, serial, title)
+            findLocalCover(path, context, serial, title, platform)
         }
-        return CoverArtRepository(context).displayCoverPath(serial, title, candidate)
+        return CoverArtRepository(context).displayCoverPath(serial, title, candidate, platform = platform)
     }
 
     fun downloadCoverForGame(
@@ -168,7 +176,7 @@ class GameRepository {
         // Prefer our cover catalog without opening an image; retain Flycast's
         // disc artwork and external sources as fallbacks.
         covers.downloadCover(game, mode)?.let { return it }
-        covers.findCachedCoverPath(game.serial, title = game.title)?.let { return it }
+        covers.findCachedCoverPath(game.serial, title = game.title, platform = game.platform)?.let { return it }
         return game.coverArtPath?.takeIf { File(it).isFile }
     }
 
@@ -184,6 +192,9 @@ class GameRepository {
         val siblingsByName = children
             .filter { it.isFile }
             .associateBy { it.name.lowercase(Locale.US) }
+        val cueTracks = children.filter { it.isFile && it.extension.equals("cue", true) && it.length() <= MAX_CONTAINER_BYTES }
+            .flatMap { cue -> runCatching { JGenesisContentPreparer.cueReferences(cue.readText()) }.getOrDefault(emptyList()) }
+            .map { it.replace('\\', '/').removePrefix("./").lowercase(Locale.ROOT) }.toSet()
         val coverCandidates = buildLocalCoverCandidates(children)
         val coverRepository = CoverArtRepository(context)
         val customCoverRepository = CustomGameCoverRepository(context)
@@ -205,11 +216,13 @@ class GameRepository {
                     )
                 }
 
-                file.isFile && com.sbro.emucoreh.core.GameFormats.isSupportedName(file.name) -> {
-                    if (!isLibraryContent(file.name, arcadeCatalog)) return@forEach
+                file.isFile && (com.sbro.emucoreh.core.GameFormats.isSupportedName(file.name) || file.extension.equals("bin", true)) -> {
+                    val platform = SegaPlatformDetector.detectFile(file)
+                    if (file.extension.equals("bin", true) && !isStandaloneSegaBin(file.name, platform, file.name.lowercase(Locale.ROOT) in cueTracks)) return@forEach
+                    if (!isLibraryContent(file.name, arcadeCatalog, platform)) return@forEach
                     val entrySize = file.length()
                     val cachedGame = cachedGamesByPath[file.absolutePath]
-                    val canReuseCachedMetadata = cachedGame != null &&
+                    val canReuseCachedMetadata = !platform.isSega && cachedGame != null &&
                         cachedGame.fileSize == entrySize &&
                         cachedGame.lastModified == file.lastModified() &&
                         cachedGame.fileName == file.name &&
@@ -222,7 +235,7 @@ class GameRepository {
                             sourcePath,
                             readDiscMetadata = false
                         )
-                        val discMetadata = GameMetadataReader.read(context, sourcePath)
+                        val discMetadata = if (platform.isSega) null else GameMetadataReader.read(context, sourcePath)
                         sourceMetadata.copy(
                             title = discMetadata?.title ?: sourceMetadata.title,
                             serial = discMetadata?.serial ?: sourceMetadata.serial
@@ -234,7 +247,7 @@ class GameRepository {
 
                     val cleanTitle = EmulatorBridge.cleanGameDisplayTitle(metadata.title, file.name)
                     val serial = metadata.serial
-                    val title = if (preferEnglishTitles) {
+                    val title = if (preferEnglishTitles && !platform.isSega) {
                         titleIndex.titleForSerial(serial) ?: cleanTitle
                     } else {
                         cleanTitle
@@ -255,11 +268,12 @@ class GameRepository {
                         ),
                         lastModified = file.lastModified(),
                         coverArtPath = customCoverRepository.findCustomCoverPath(file.absolutePath)
-                            ?: coverRepository.findCachedCoverPath(serial, title = title)
+                            ?: coverRepository.findCachedCoverPath(serial, title = title, platform = platform.takeIf { it.isSega }?.name)
                             ?: cachedGame?.coverArtPath?.takeIf { File(it).exists() }
                             ?: coverCandidates[normalizeBaseName(file.nameWithoutExtension)]?.absolutePath
                             ?: coverCandidates[normalizeBaseName(cleanGameName(title))]?.absolutePath,
-                        serial = serial
+                        serial = serial,
+                        platform = platform.takeIf { it.isSega }?.name
                     )
                 }
             }
@@ -289,6 +303,15 @@ class GameRepository {
                 documentDisplayName(context, child)?.lowercase(Locale.US)?.let { it to child }
             }.toMap()
         }
+        val cueTracks = lazy {
+            children.filter { child -> documentDisplayName(context, child).endsWith(".cue", true) }
+                .flatMap { cue -> runCatching {
+                    context.contentResolver.openInputStream(cue.uri)?.use { stream ->
+                        stream.readPlaylistText()?.let(JGenesisContentPreparer::cueReferences)
+                    }.orEmpty()
+                }.getOrDefault(emptyList()) }
+                .map { it.replace('\\', '/').removePrefix("./").lowercase(Locale.ROOT) }.toSet()
+        }
         val coverCandidates = buildDocumentCoverCandidates(children)
         val coverRepository = CoverArtRepository(context)
         val customCoverRepository = CustomGameCoverRepository(context)
@@ -299,7 +322,9 @@ class GameRepository {
             if (shouldAbort() || !budget.tryVisitEntry()) return items
             val mimeType = runCatching { file.type }.getOrNull()
             val name = documentDisplayName(context, file)
-            when (SetupValidator.classifyDocumentEntry(mimeType, name)) {
+            val kind = if (name.endsWith(".bin", true)) SetupValidator.DocumentEntryKind.GAME_FILE else
+                SetupValidator.classifyDocumentEntry(mimeType, name)
+            when (kind) {
                 SetupValidator.DocumentEntryKind.DIRECTORY,
                 SetupValidator.DocumentEntryKind.UNKNOWN -> {
                     if (normalizeBaseName(name) !in COVER_DIRECTORY_NAMES) {
@@ -321,12 +346,14 @@ class GameRepository {
                 SetupValidator.DocumentEntryKind.GAME_FILE -> {
                     val uriPath = file.uri.toString()
                     val fileSize = runCatching { file.length() }.getOrDefault(0L)
-                    if (!isLibraryContent(name, arcadeCatalog)) continue
+                    val platform = SegaPlatformDetector.detect(context, uriPath)
+                    if (name.endsWith(".bin", true) && !isStandaloneSegaBin(name, platform, name.lowercase(Locale.ROOT) in cueTracks.value)) continue
+                    if (!isLibraryContent(name, arcadeCatalog, platform)) continue
                     val entrySize = fileSize
                     val lastModified = runCatching { file.lastModified() }.getOrDefault(0L)
 
                     val cachedGame = cachedGamesByPath[uriPath]
-                    val canReuseCachedMetadata = cachedGame != null &&
+                    val canReuseCachedMetadata = !platform.isSega && cachedGame != null &&
                         cachedGame.fileSize == entrySize &&
                         cachedGame.lastModified == lastModified &&
                         cachedGame.fileName == name &&
@@ -339,7 +366,7 @@ class GameRepository {
                             sourcePath,
                             readDiscMetadata = false
                         )
-                        val discMetadata = GameMetadataReader.read(context, sourcePath)
+                        val discMetadata = if (platform.isSega) null else GameMetadataReader.read(context, sourcePath)
                         sourceMetadata.copy(
                             title = discMetadata?.title ?: sourceMetadata.title,
                             serial = discMetadata?.serial ?: sourceMetadata.serial
@@ -352,7 +379,7 @@ class GameRepository {
 
                     val cleanTitle = cleanScannedTitle(metadata.title, name)
                     val serial = metadata.serial
-                    val title = if (preferEnglishTitles) {
+                    val title = if (preferEnglishTitles && !platform.isSega) {
                         titleIndex.titleForSerial(serial) ?: cleanTitle
                     } else {
                         cleanTitle
@@ -388,11 +415,12 @@ class GameRepository {
                         ),
                         lastModified = lastModified,
                         coverArtPath = customCoverRepository.findCustomCoverPath(uriPath)
-                            ?: coverRepository.findCachedCoverUri(serial, title = title)
+                            ?: coverRepository.findCachedCoverUri(serial, title = title, platform = platform.takeIf { it.isSega }?.name)
                             ?: cachedGame?.coverArtPath
                             ?: coverCandidates[normalizeBaseName(name.substringBeforeLast('.'))]?.uri?.toString()
                             ?: coverCandidates[normalizeBaseName(cleanGameName(title))]?.uri?.toString(),
-                        serial = serial
+                        serial = serial,
+                        platform = platform.takeIf { it.isSega }?.name
                     )
                 }
                 SetupValidator.DocumentEntryKind.OTHER -> Unit
@@ -485,21 +513,21 @@ class GameRepository {
         val segments: List<String>
     )
 
-    private fun findLocalCover(path: String, context: Context, serial: String?, title: String?): String? {
+    private fun findLocalCover(path: String, context: Context, serial: String?, title: String?, platform: String? = null): String? {
         val file = File(path)
         val parent = file.parentFile ?: return null
         val baseName = normalizeBaseName(file.nameWithoutExtension)
         val titleKey = normalizeBaseName(cleanGameName(title ?: EmulatorBridge.getGameTitle(path)))
         val coverCandidates = buildLocalCoverCandidates(parent.listFiles().orEmpty())
         return CustomGameCoverRepository(context).findCustomCoverPath(path)
-            ?: CoverArtRepository(context).findCachedCoverPath(serial, title = title)
+            ?: CoverArtRepository(context).findCachedCoverPath(serial, title = title, platform = platform)
             ?: coverCandidates[baseName]?.absolutePath
             ?: coverCandidates[titleKey]?.absolutePath
     }
 
-    private fun findDocumentCover(path: String, context: Context, serial: String?, title: String?): String? {
+    private fun findDocumentCover(path: String, context: Context, serial: String?, title: String?, platform: String? = null): String? {
         CustomGameCoverRepository(context).findCustomCoverPath(path)?.let { return it }
-        CoverArtRepository(context).findCachedCoverUri(serial, title = title)?.let { return it }
+        CoverArtRepository(context).findCachedCoverUri(serial, title = title, platform = platform)?.let { return it }
 
         val uri = path.toUri()
         val document = DocumentFile.fromSingleUri(context, uri) ?: return null
@@ -549,7 +577,8 @@ class GameRepository {
      * the core rejects archives it does not know, so listing them as games
      * would only produce broken entries.
      */
-    private fun isLibraryContent(name: String, arcadeCatalog: ArcadeCatalogRepository): Boolean {
+    private fun isLibraryContent(name: String, arcadeCatalog: ArcadeCatalogRepository, platform: EmulationPlatform): Boolean {
+        if (platform.isSega) return true
         val extension = name.substringAfterLast('.', "").lowercase(Locale.US)
         return when (extension) {
             in com.sbro.emucoreh.core.GameFormats.archives -> {

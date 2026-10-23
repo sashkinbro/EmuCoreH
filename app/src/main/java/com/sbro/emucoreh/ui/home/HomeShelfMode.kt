@@ -548,13 +548,13 @@ private fun ShelfCoverCard(
     ) {
         Box(Modifier.fillMaxSize()) {
             if (!shelfCoverPath.isNullOrBlank()) {
-                GameCoverArt(
+                LibraryCoverArt(
                     coverPath = shelfCoverPath,
                     fallbackTitle = game.title,
+                            platform = game.platform,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = horizontalCoverPadding, vertical = verticalCoverPadding),
-                    contentScale = ContentScale.Fit
+                        .padding(horizontal = horizontalCoverPadding, vertical = verticalCoverPadding)
                 )
             } else {
                 ShelfMissingCoverCard(

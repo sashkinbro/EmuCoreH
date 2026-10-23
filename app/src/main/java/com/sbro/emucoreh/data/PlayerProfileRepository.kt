@@ -64,7 +64,9 @@ data class PlayerGamePlayStat(
     val totalPlayTimeMs: Long,
     val sessions: Int,
     val lastPlayedAtMs: Long?,
-    val arcade: Boolean = false
+    val arcade: Boolean = false,
+    /** Null preserves pre-Sega Dreamcast/arcade records. */
+    val platform: String? = null
 )
 
 data class PlayerLeaderboardEntry(
@@ -119,7 +121,9 @@ data class PlayerPlayTimeDelta(
     val durationMs: Long,
     val sessionCount: Long = 0L,
     val lastPlayedAtMs: Long = System.currentTimeMillis(),
-    val arcade: Boolean = false
+    val arcade: Boolean = false,
+    /** Null preserves pre-Sega Dreamcast/arcade records. */
+    val platform: String? = null
 )
 
 class PlayerProfileRepository(context: Context) {
@@ -413,7 +417,7 @@ class PlayerProfileRepository(context: Context) {
                     !entry.title.equals(BIOS_TITLE, ignoreCase = true) &&
                     !isAutotestPlayTimeEntry(entry)
             }
-            .groupBy { entry -> buildGameKey(entry.serial, entry.gamePath.orEmpty()) }
+            .groupBy { entry -> playerGameKey(entry.serial, entry.gamePath.orEmpty(), entry.platform) }
             .map { (gameKey, gameEntries) ->
                 val latestEntry = gameEntries.maxBy { it.lastPlayedAtMs }
                 gameKey to latestEntry.copy(
@@ -451,9 +455,10 @@ class PlayerProfileRepository(context: Context) {
                     put(GAME_SESSIONS, existingGame.longValue(GAME_SESSIONS) + entry.sessionCount)
                     put(GAME_LAST_PLAYED_AT_MS, entry.lastPlayedAtMs)
                     put(GAME_ARCADE, entry.arcade || existingGame.booleanValue(GAME_ARCADE))
+                    (entry.platform ?: playerGamePlatform(existingGame))?.let { put(GAME_PLATFORM, it) }
                     entry.serial?.takeIf { it.isNotBlank() }?.let { put(GAME_SERIAL, it.take(MAX_SERIAL_LENGTH)) }
                     val existingCover = existingGame.stringValue(GAME_COVER_ART_PATH).takeIf { it.isNotBlank() }
-                    val shareableCover = buildShareableCoverPath(entry.coverArtPath, entry.serial, cleanTitle)
+                    val shareableCover = buildShareableCoverPath(entry.coverArtPath, entry.serial, cleanTitle, entry.platform)
                         ?: existingCover
                     shareableCover?.let { put(GAME_COVER_ART_PATH, it.take(MAX_COVER_PATH_LENGTH)) }
                 }
@@ -820,15 +825,17 @@ class PlayerProfileRepository(context: Context) {
         val map = toGameMap()
         val title = map.stringValue(GAME_TITLE).takeIf { it.isNotBlank() } ?: return null
         val serial = map.stringValue(GAME_SERIAL).takeIf { it.isNotBlank() }
+        val platform = playerGamePlatform(map)
         return PlayerGamePlayStat(
             gameKey = gameKey,
             title = title,
             serial = serial,
-            coverArtPath = resolveReadableCoverPath(map.stringValue(GAME_COVER_ART_PATH), serial, title),
+            coverArtPath = resolveReadableCoverPath(map.stringValue(GAME_COVER_ART_PATH), serial, title, platform),
             totalPlayTimeMs = map.longValue(GAME_TOTAL_MS),
             sessions = map.longValue(GAME_SESSIONS).toInt(),
             lastPlayedAtMs = map.longValue(GAME_LAST_PLAYED_AT_MS).takeIf { it > 0L },
-            arcade = map.booleanValue(GAME_ARCADE)
+            arcade = map.booleanValue(GAME_ARCADE),
+            platform = platform
         )
     }
 
@@ -874,6 +881,7 @@ class PlayerProfileRepository(context: Context) {
             put(GAME_SESSIONS, source.longValue(GAME_SESSIONS).coerceAtLeast(0L))
             put(GAME_LAST_PLAYED_AT_MS, source.longValue(GAME_LAST_PLAYED_AT_MS).coerceAtLeast(0L))
             put(GAME_ARCADE, source.booleanValue(GAME_ARCADE))
+            playerGamePlatform(source)?.let { put(GAME_PLATFORM, it) }
             source.stringValue(GAME_SERIAL).takeIf { it.isNotBlank() }?.let {
                 put(GAME_SERIAL, it.take(MAX_SERIAL_LENGTH))
             }
@@ -882,7 +890,8 @@ class PlayerProfileRepository(context: Context) {
             buildShareableCoverPath(
                 coverArtPath = source.stringValue(GAME_COVER_ART_PATH),
                 serial = source.stringValue(GAME_SERIAL).takeIf { it.isNotBlank() },
-                title = source.stringValue(GAME_TITLE).takeIf { it.isNotBlank() }
+                title = source.stringValue(GAME_TITLE).takeIf { it.isNotBlank() },
+                platform = playerGamePlatform(source)
             )?.let { put(GAME_COVER_ART_PATH, it.take(MAX_COVER_PATH_LENGTH)) }
         }
     }
@@ -906,15 +915,6 @@ class PlayerProfileRepository(context: Context) {
         return this?.trim()?.takeIf { it.isNotBlank() }?.take(MAX_DISPLAY_NAME_LENGTH) ?: fallback
     }
 
-    private fun buildGameKey(serial: String?, gamePath: String): String {
-        val serialKey = serial
-            ?.trim()
-            ?.uppercase()
-            ?.replace(Regex("[^A-Z0-9_-]"), "_")
-            ?.takeIf { it.isNotBlank() }
-        return serialKey ?: "P_${gamePath.sha256().take(32)}"
-    }
-
     private fun buildPlayerTag(uid: String): String {
         return PLAYER_TAG_PREFIX + uid.sha256().take(7).uppercase(Locale.ROOT)
     }
@@ -930,24 +930,24 @@ class PlayerProfileRepository(context: Context) {
         return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestampMs))
     }
 
-    private fun buildShareableCoverPath(coverArtPath: String?, serial: String?, title: String?): String? {
+    private fun buildShareableCoverPath(coverArtPath: String?, serial: String?, title: String?, platform: String? = null): String? {
         val cover = coverArtPath?.trim().orEmpty()
         return when {
             cover.startsWith("http://") || cover.startsWith("https://") -> cover
-            else -> coverArtRepository.buildPublicCoverUrl(serial, title = title)
+            else -> coverArtRepository.buildPublicCoverUrl(serial, title = title, platform = platform)
         }
     }
 
-    private fun resolveReadableCoverPath(coverArtPath: String, serial: String?, title: String?): String? {
+    private fun resolveReadableCoverPath(coverArtPath: String, serial: String?, title: String?, platform: String? = null): String? {
         val cover = coverArtPath.trim()
         val prefs = AppPreferences(appContext)
         val style = prefs.getCoverArtStyleSync()
         val is3d = style == AppPreferences.COVER_ART_STYLE_3D
         if (is3d) {
-            coverArtRepository.findCachedCoverPath(serial, title = title)?.let { return it }
-            coverArtRepository.buildPublicCoverUrl(serial, title = title)?.let { return it }
+            coverArtRepository.findCachedCoverPath(serial, title = title, platform = platform)?.let { return it }
+            coverArtRepository.buildPublicCoverUrl(serial, title = title, platform = platform)?.let { return it }
         } else {
-            coverArtRepository.findCachedCoverPath(serial, title = title)?.let { return it }
+            coverArtRepository.findCachedCoverPath(serial, title = title, platform = platform)?.let { return it }
         }
         return when {
             cover.startsWith("http://") || cover.startsWith("https://") -> cover
@@ -956,8 +956,8 @@ class PlayerProfileRepository(context: Context) {
             // The stored path is stale or absent: reuse the artwork the local
             // library already downloaded, matched by serial or title exactly
             // like the library cache does.
-            else -> coverArtRepository.findCachedCoverPath(serial, title = title)
-                ?: coverArtRepository.buildPublicCoverUrl(serial, title = title)
+            else -> coverArtRepository.findCachedCoverPath(serial, title = title, platform = platform)
+                ?: coverArtRepository.buildPublicCoverUrl(serial, title = title, platform = platform)
         }
     }
 
@@ -997,7 +997,7 @@ class PlayerProfileRepository(context: Context) {
         private const val MAX_FAVORITE_GAMES = 3
         private const val MAX_DAILY_GAMES = 100
         private const val PLAYER_TAG_PREFIX = "EX-"
-        private const val PROFILE_SCHEMA_VERSION = 2
+        private const val PROFILE_SCHEMA_VERSION = 3
         private const val MAX_DISPLAY_NAME_LENGTH = 32
         private const val MAX_GAME_TITLE_LENGTH = 120
         private const val MAX_SERIAL_LENGTH = 32
@@ -1040,5 +1040,6 @@ class PlayerProfileRepository(context: Context) {
         private const val GAME_SERIAL = "s"
         private const val GAME_COVER_ART_PATH = "c"
         private const val GAME_ARCADE = "aw"
+        private const val GAME_PLATFORM = "p"
     }
 }

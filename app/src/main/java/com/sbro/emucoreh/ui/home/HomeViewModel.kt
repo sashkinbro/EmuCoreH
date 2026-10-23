@@ -27,6 +27,7 @@ import com.sbro.emucoreh.data.CoreMaintenanceRepository
 import com.sbro.emucoreh.data.CoreUpdateResetAction
 import com.sbro.emucoreh.data.CustomGameCoverRepository
 import com.sbro.emucoreh.data.GameItem
+import com.sbro.emucoreh.data.LibraryPlatform
 import com.sbro.emucoreh.data.LibraryPlatformResolver
 import com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository
 import com.sbro.emucoreh.data.MultiDiscLibrary
@@ -80,7 +81,9 @@ data class HomeUiState(
     val homeBackgroundRevision: Int = 0,
     val homeBackgroundDim: Int = AppPreferences.DEFAULT_HOME_BACKGROUND_DIM,
     val searchQuery: String = "",
-    val sortOption: HomeSortOption = HomeSortOption.TITLE_ASC,
+    val sortOption: HomeSortOption = HomeSortOption.PLATFORM,
+    val platformFilter: LibraryPlatform? = null,
+    val availablePlatforms: List<LibraryPlatform> = emptyList(),
     val libraryViewMode: HomeLibraryViewMode = HomeLibraryViewMode.GRID,
     val lastStandardLibraryViewMode: HomeLibraryViewMode = HomeLibraryViewMode.GRID,
     val isCoverArtDisabled: Boolean = true,
@@ -472,6 +475,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updatePlatformFilter(platform: LibraryPlatform?) {
+        _uiState.value = _uiState.value.copy(platformFilter = platform)
+        publishVisibleGames()
+    }
+
     fun updateSortOption(option: HomeSortOption) {
         _uiState.value = _uiState.value.copy(sortOption = option)
         publishVisibleGames()
@@ -719,7 +727,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private fun publishVisibleGames() {
         val covers = CoverArtRepository(getApplication())
         allGames = allGames.map { game ->
-            val selected = covers.displayCoverPath(game.serial, game.title, game.coverArtPath)
+            val selected = covers.displayCoverPath(game.serial, game.title, game.coverArtPath, platform = game.platform)
             when {
                 selected == game.coverArtPath -> game
                 selected != null -> game.copy(coverArtPath = selected)
@@ -729,9 +737,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 else -> game
             }
         }
-        val state = _uiState.value
+        val storedState = _uiState.value
+        val presentPlatforms = allGames.filterNot { game ->
+            BiosValidator.isLikelyBiosLibraryEntry(game.fileName, game.title, game.serial)
+        }.mapTo(mutableSetOf()) { LibraryPlatformResolver.resolve(it, arcadeCatalog::find) }
+        val availablePlatforms = LibraryPlatform.entries.filter { it in presentPlatforms }
+        val state = if (storedState.platformFilter != null && storedState.platformFilter !in presentPlatforms)
+            storedState.copy(platformFilter = null) else storedState
         val query = normalizeSearchToken(state.searchQuery)
-        val filtered = allGames.filter { game ->
+        val platformGames = allGames.filter { game ->
+            state.platformFilter == null || LibraryPlatformResolver.resolve(game, arcadeCatalog::find) == state.platformFilter
+        }
+        val filtered = platformGames.filter { game ->
             !BiosValidator.isLikelyBiosLibraryEntry(
                 fileName = game.fileName,
                 title = game.title,
@@ -748,7 +765,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val sections = buildHomeLibrarySections(filtered, state.sortOption) { game ->
             LibraryPlatformResolver.resolve(game, arcadeCatalog::find)
         }
-        val recentGames = recentLibraryGroups(allGames, recentEntries.map { it.path }).filter { game ->
+        val recentGames = recentLibraryGroups(platformGames, recentEntries.map { it.path }).filter { game ->
             query.isBlank() ||
                 normalizeSearchToken(game.title).contains(query) ||
                 normalizeSearchToken(game.fileName).contains(query) ||
@@ -758,6 +775,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }.takeIf { state.showRecentGames }.orEmpty()
         _uiState.value = _uiState.value.copy(
             games = sections.flatMap { it.games },
+            availablePlatforms = availablePlatforms,
+            platformFilter = state.platformFilter,
             librarySections = sections,
             recentGames = recentGames
         )
@@ -921,7 +940,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     return@map game
                 }
                 if (currentPath != null && currentPath.startsWith(cachePrefix, ignoreCase = true)) {
-                    game.copy(coverArtPath = coverRepository.findCachedCoverPath(game.serial, title = game.title))
+                    game.copy(coverArtPath = coverRepository.findCachedCoverPath(game.serial, title = game.title, platform = game.platform))
                 } else {
                     game
                 }

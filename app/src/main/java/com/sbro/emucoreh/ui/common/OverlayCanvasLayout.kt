@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.data.AppPreferences
 import com.sbro.emucoreh.data.OverlayControlLayout
+import com.sbro.emucoreh.core.EmulationPlatform
 
 data class OverlayCanvasButtonSpec(
     val id: String,
@@ -21,7 +22,8 @@ data class OverlayCanvasButtonSpec(
     val y: Dp,
     val shape: Shape,
     val opacity: Int,
-    val visible: Boolean
+    val visible: Boolean,
+    val labelOverride: String? = null
 )
 
 data class OverlayCanvasStickSpec(
@@ -98,8 +100,14 @@ fun buildOverlayCanvasLayout(
     safeRightInset: Dp,
     safeTopInset: Dp,
     safeBottomInset: Dp,
-    previewMode: Boolean = false
+    previewMode: Boolean = false,
+    platform: EmulationPlatform = EmulationPlatform.DREAMCAST
 ): OverlayCanvasLayout {
+    if (platform.isSega) return buildSegaOverlayCanvasLayout(
+        platform, canvasWidth, canvasHeight, density, scaleFactor, controlLayouts,
+        safeLeftInset, safeRightInset, safeTopInset, safeBottomInset,
+        dpadOffset, actionOffset, centerOffset, previewMode
+    )
     fun pxToDp(value: Float): Dp = with(density) { value.toDp() }
 
     val isLandscape = canvasWidth >= canvasHeight

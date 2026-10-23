@@ -15,10 +15,12 @@ class IgdbCatalogRepository(private val context: Context) {
         private const val TAG = "IgdbCatalogRepository"
         private const val DB_NAME = "games.db"
         private const val ASSET_PATH = "catalog/games.db"
+        private val installLock = Any()
     }
 
     private val dbFile: File by lazy { File(context.noBackupFilesDir, DB_NAME) }
     private var database: SQLiteDatabase? = null
+    @Volatile private var assetReady = false
 
     private val defaultSortOrder = """
         CASE WHEN rating IS NULL THEN 1 ELSE 0 END,
@@ -29,27 +31,24 @@ class IgdbCatalogRepository(private val context: Context) {
     """.trimIndent()
 
     fun ensureDatabaseReady(): Boolean {
-        if (dbFile.exists() && dbFile.length() > 0L) {
-            return true
-        }
-
-        return runCatching {
-            dbFile.parentFile?.mkdirs()
-            context.assets.open(ASSET_PATH).use { input ->
-                FileOutputStream(dbFile).use { output ->
-                    input.copyTo(output)
-                }
+        if (assetReady && dbFile.isFile) return true
+        return synchronized(installLock) {
+            runCatching {
+                val expected = context.assets.open("catalog/games.sha256").bufferedReader().use { it.readText().trim() }
+                close()
+                installBundledCatalog(dbFile, expected) { context.assets.open(ASSET_PATH) }
+                assetReady = true
+                true
+            }.getOrElse {
+                Log.w(TAG, "Catalog asset installation failed: ${it.message}")
+                false
             }
-            true
-        }.getOrElse {
-            Log.w(TAG, "Catalog DB is not bundled yet: ${it.message}")
-            false
         }
     }
 
     fun hasCatalog(): Boolean = ensureDatabaseReady()
 
-    fun search(query: String, limit: Int = 60, offset: Int = 0): List<IgdbCatalogSummary> {
+    fun search(query: String, limit: Int = 60, offset: Int = 0, platform: String? = null): List<IgdbCatalogSummary> {
         if (!ensureDatabaseReady()) return emptyList()
         return search(
             query = query,
@@ -57,7 +56,8 @@ class IgdbCatalogRepository(private val context: Context) {
             year = null,
             minRating = null,
             limit = limit,
-            offset = offset
+            offset = offset,
+            platform = platform
         )
     }
 
@@ -67,7 +67,8 @@ class IgdbCatalogRepository(private val context: Context) {
         year: Int?,
         minRating: Double?,
         limit: Int = 60,
-        offset: Int = 0
+        offset: Int = 0,
+        platform: String? = null
     ): List<IgdbCatalogSummary> {
         if (!ensureDatabaseReady()) return emptyList()
         val normalized = normalizeSearchText(query)
@@ -77,7 +78,8 @@ class IgdbCatalogRepository(private val context: Context) {
                 year = year,
                 minRating = minRating,
                 limit = limit,
-                offset = offset
+                offset = offset,
+                platform = platform
             )
         }
 
@@ -91,7 +93,8 @@ class IgdbCatalogRepository(private val context: Context) {
             genre = genre,
             year = year,
             minRating = minRating,
-            limit = fetchWindow
+            limit = fetchWindow,
+            platform = platform
         ).forEach { summary ->
             if (seen.add(summary.igdbId)) {
                 out += summary
@@ -105,7 +108,8 @@ class IgdbCatalogRepository(private val context: Context) {
                 genre = genre,
                 year = year,
                 minRating = minRating,
-                limit = fetchWindow
+                limit = fetchWindow,
+                platform = platform
             ).forEach { summary ->
                 if (seen.add(summary.igdbId)) {
                     out += summary
@@ -133,7 +137,7 @@ class IgdbCatalogRepository(private val context: Context) {
         }
     }
 
-    fun findBestMatchId(serial: String?, title: String?): Long? {
+    fun findBestMatchId(serial: String?, title: String?, platform: String = "Dreamcast"): Long? {
         if (!ensureDatabaseReady()) return null
         val candidateSerials = listOfNotNull(serial)
             .map { it.normalizeSerialForMatch() }
@@ -141,11 +145,12 @@ class IgdbCatalogRepository(private val context: Context) {
             .distinct()
 
         val db = getDatabase() ?: return null
-        findIdByDatabaseSerial(db, candidateSerials)?.let { id ->
+        val catalogPlatform = catalogPlatformName(platform)
+        findIdByDatabaseSerial(db, candidateSerials, catalogPlatform)?.let { id ->
             Log.d(TAG, "Catalog match by database serial: $serial -> $id")
             return id
         }
-        findIdBySerialIndex(db, candidateSerials)?.let { id ->
+        findIdBySerialIndex(db, candidateSerials, catalogPlatform)?.let { id ->
             Log.d(TAG, "Catalog match by cover-index serial: $serial -> $id")
             return id
         }
@@ -154,11 +159,11 @@ class IgdbCatalogRepository(private val context: Context) {
             .map(::normalizeIdentityTitle)
             .filter { it.isNotBlank() }
             .distinct()
-        findExactTitleId(db, candidateTitles)?.let { id ->
+        findExactTitleId(db, candidateTitles, catalogPlatform)?.let { id ->
             Log.d(TAG, "Catalog match by exact title: $title -> $id")
             return id
         }
-        findFuzzyTitleId(db, candidateTitles)?.let { id ->
+        findFuzzyTitleId(db, candidateTitles, catalogPlatform)?.let { id ->
             Log.d(TAG, "Catalog match by fuzzy title: $title -> $id")
             return id
         }
@@ -167,7 +172,7 @@ class IgdbCatalogRepository(private val context: Context) {
         return null
     }
 
-    private fun findIdByDatabaseSerial(db: SQLiteDatabase, serials: List<String>): Long? {
+    private fun findIdByDatabaseSerial(db: SQLiteDatabase, serials: List<String>, platform: String): Long? {
         if (serials.isEmpty()) return null
         return runCatching {
             val placeholders = serials.joinToString(",") { "?" }
@@ -177,9 +182,10 @@ class IgdbCatalogRepository(private val context: Context) {
                 FROM game_serials
                 WHERE UPPER(REPLACE(REPLACE(REPLACE(REPLACE(serial, '-', ''), '_', ''), '.', ''), ' ', ''))
                     IN ($placeholders)
+                    AND EXISTS(SELECT 1 FROM game_platforms p WHERE p.igdb_id=game_serials.igdb_id AND p.platform=?)
                 LIMIT 1
                 """.trimIndent(),
-                serials.toTypedArray()
+                (serials + platform).toTypedArray()
             ).use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else null }
         }.getOrNull()
     }
@@ -189,23 +195,25 @@ class IgdbCatalogRepository(private val context: Context) {
      * serial -> IGDB map from the cover index is used as a fallback. The id is
      * only accepted when the database actually contains that game.
      */
-    private fun findIdBySerialIndex(db: SQLiteDatabase, serials: List<String>): Long? {
+    private fun findIdBySerialIndex(db: SQLiteDatabase, serials: List<String>, platform: String): Long? {
         val index = CoverIndexRepository(context)
         for (serial in serials) {
-            val id = index.gameIdForSerial(serial) ?: continue
+            val id = index.gameIdForSerial(serial, platform) ?: continue
             db.rawQuery(
-                "SELECT igdb_id FROM games WHERE igdb_id = ? LIMIT 1",
-                arrayOf(id.toString())
+                "SELECT igdb_id FROM game_platforms WHERE igdb_id = ? AND platform = ? LIMIT 1",
+                arrayOf(id.toString(), platform)
             ).use { cursor -> if (cursor.moveToFirst()) return cursor.getLong(0) }
         }
         return null
     }
 
-    private fun findExactTitleId(db: SQLiteDatabase, titles: List<String>): Long? {
+    private fun findExactTitleId(db: SQLiteDatabase, titles: List<String>, platform: String): Long? {
         titles.forEach { title ->
             db.rawQuery(
-                "SELECT igdb_id FROM games WHERE normalized_name = ? LIMIT 1",
-                arrayOf(title)
+                """SELECT g.igdb_id FROM games g JOIN game_platforms p ON p.igdb_id=g.igdb_id
+                    WHERE p.platform=? AND (g.normalized_name=? OR EXISTS(SELECT 1 FROM game_aliases a
+                        WHERE a.igdb_id=g.igdb_id AND a.platform=? AND a.normalized_name=?)) LIMIT 1""",
+                arrayOf(platform, title, platform, title)
             ).use { cursor ->
                 if (cursor.moveToFirst()) return cursor.getLong(0)
             }
@@ -213,11 +221,12 @@ class IgdbCatalogRepository(private val context: Context) {
         return null
     }
 
-    private fun findFuzzyTitleId(db: SQLiteDatabase, titles: List<String>): Long? {
+    private fun findFuzzyTitleId(db: SQLiteDatabase, titles: List<String>, platform: String): Long? {
         if (titles.isEmpty()) return null
         var bestId: Long? = null
         var bestScore = 0.0
-        db.rawQuery("SELECT igdb_id, normalized_name FROM games", null).use { cursor ->
+        db.rawQuery("""SELECT g.igdb_id,g.normalized_name FROM games g JOIN game_platforms p ON p.igdb_id=g.igdb_id
+            WHERE p.platform=?""", arrayOf(platform)).use { cursor ->
             while (cursor.moveToNext()) {
                 val catalogTitle = cursor.getString(1)
                 titles.forEach { candidateTitle ->
@@ -237,7 +246,8 @@ class IgdbCatalogRepository(private val context: Context) {
         year: Int?,
         minRating: Double?,
         limit: Int = 60,
-        offset: Int = 0
+        offset: Int = 0,
+        platform: String? = null
     ): List<IgdbCatalogSummary> {
         if (!ensureDatabaseReady()) return emptyList()
         val db = getDatabase() ?: return emptyList()
@@ -247,7 +257,8 @@ class IgdbCatalogRepository(private val context: Context) {
             genre = genre,
             year = year,
             minRating = minRating,
-            includeOffset = true
+            includeOffset = true,
+            platform = platform
         ).let { (sql, args) ->
             db.rawQuery(sql, (args + limit.toString() + offset.toString()).toTypedArray()).use { cursor ->
                 while (cursor.moveToNext()) {
@@ -256,6 +267,14 @@ class IgdbCatalogRepository(private val context: Context) {
             }
         }
         return items
+    }
+
+    fun getAvailablePlatforms(): List<String> {
+        if (!ensureDatabaseReady()) return emptyList()
+        val db = getDatabase() ?: return emptyList()
+        return db.rawQuery("SELECT DISTINCT platform FROM game_platforms ORDER BY platform COLLATE NOCASE", null).use { cursor ->
+            buildList { while (cursor.moveToNext()) add(cursor.getString(0)) }
+        }
     }
 
     fun getAvailableGenres(limit: Int = 18): List<String> {
@@ -329,7 +348,8 @@ class IgdbCatalogRepository(private val context: Context) {
         genre: String?,
         year: Int?,
         minRating: Double?,
-        limit: Int
+        limit: Int,
+        platform: String? = null
     ): List<IgdbCatalogSummary> {
         val out = ArrayList<IgdbCatalogSummary>(limit)
         buildCatalogQuery(
@@ -337,7 +357,8 @@ class IgdbCatalogRepository(private val context: Context) {
             genre = genre,
             year = year,
             minRating = minRating,
-            includeOffset = false
+            includeOffset = false,
+            platform = platform
         ).let { (sql, args) ->
             db.rawQuery(sql, (args + limit.toString()).toTypedArray()).use { cursor ->
                 while (cursor.moveToNext()) {
@@ -353,10 +374,15 @@ class IgdbCatalogRepository(private val context: Context) {
         genre: String?,
         year: Int?,
         minRating: Double?,
-        includeOffset: Boolean
+        includeOffset: Boolean,
+        platform: String? = null
     ): Pair<String, List<String>> {
         val where = ArrayList<String>(4)
         val args = ArrayList<String>(4)
+        if (!platform.isNullOrBlank()) {
+            where += "EXISTS(SELECT 1 FROM game_platforms p WHERE p.igdb_id=games.igdb_id AND p.platform=?)"
+            args += catalogPlatformName(platform)
+        }
 
         if (!namePattern.isNullOrBlank()) {
             where += "normalized_name LIKE ?"
@@ -456,7 +482,8 @@ class IgdbCatalogRepository(private val context: Context) {
             videos = videos,
             coverUrl = toHighResImageUrl(summary.coverUrl),
             heroUrl = toHighResImageUrl(summary.heroUrl),
-            primarySerial = summary.primarySerial
+            primarySerial = summary.primarySerial,
+            platforms = summary.platforms
         )
     }
 
@@ -474,9 +501,15 @@ class IgdbCatalogRepository(private val context: Context) {
             coverUrl = cursor.getStringOrNull(7),
             heroUrl = cursor.getStringOrNull(8),
             genres = loadGenresPreview(db, igdbId),
-            primarySerial = loadPrimarySerial(db, igdbId)
+            primarySerial = loadPrimarySerial(db, igdbId),
+            platforms = loadPlatforms(db, igdbId)
         )
     }
+
+    private fun loadPlatforms(db: SQLiteDatabase, igdbId: Long): List<String> = db.rawQuery(
+        "SELECT platform FROM game_platforms WHERE igdb_id=? ORDER BY platform COLLATE NOCASE",
+        arrayOf(igdbId.toString())
+    ).use { cursor -> buildList { while (cursor.moveToNext()) add(cursor.getString(0)) } }
 
     private fun loadPrimarySerial(db: SQLiteDatabase, igdbId: Long): String? = db.rawQuery(
         "SELECT serial FROM game_serials WHERE igdb_id = ? ORDER BY serial LIMIT 1",

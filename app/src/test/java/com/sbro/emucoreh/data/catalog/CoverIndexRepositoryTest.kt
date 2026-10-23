@@ -7,6 +7,14 @@ import org.json.JSONObject
 import java.io.File
 
 class CoverIndexRepositoryTest {
+    @Test fun segaFoldersHaveIndependentDarkAndLightCaseUrls() {
+        val base = CoverIndexRepository.BASE_URL
+        for (folder in listOf("genesis", "sega_cd", "32x", "master_system", "game_gear", "sg_1000")) {
+            assertEquals("$base/$folder/3d/1.webp", CoverIndexRepository.makeCoverUrl("$folder/1.jpg"))
+            assertEquals("$base/$folder/3d/light/1.webp", CoverIndexRepository.makeCoverUrl("$folder/1.jpg", isLight = true))
+        }
+    }
+
 
     @Test fun discAndRegionTagsCanAppearInEitherOrderWithoutDiscardingEditions() {
         val titles = JSONObject().put("shenmue", "covers/base.jpg")

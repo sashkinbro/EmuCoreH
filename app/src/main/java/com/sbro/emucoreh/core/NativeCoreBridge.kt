@@ -23,6 +23,10 @@ class NativeCoreBridge {
     // Lifecycle / configuration.
     // ---------------------------------------------------------------------
     external fun nativeInit(systemDir: String, saveDir: String, coreAssetsDir: String)
+    /** Only switch after the previous session has fully stopped. 0 Flycast, 1 jgenesis. */
+    external fun nativeSelectCore(coreId: Int): Boolean
+    /** Read-only CHD/CUE identification, independent of the active session. */
+    external fun probeSegaDisc(path: String): Int
     external fun createSession(): Long
     external fun destroySession(handle: Long)
     external fun nativeSetOption(key: String, value: String)
@@ -86,6 +90,7 @@ class NativeCoreBridge {
     // ---------------------------------------------------------------------
     external fun getSystemInfo(): String
     external fun getDiagnostics(): String
+    external fun nativeLastBootError(): String?
 
     /**
      * Installs the native fatal-signal handler that appends a full report

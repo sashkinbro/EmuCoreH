@@ -5,7 +5,7 @@
 
     <!-- Navigation -->
     <string name="shell_library">Knihovna</string>
-    <string name="shell_catalog_search">Vyhledávání Dreamcast</string>
+    <string name="shell_catalog_search">Hledání her</string>
     <string name="shell_supported_formats">Podporované formáty</string>
 
     <!-- Home Screen -->
@@ -52,8 +52,8 @@
     <string name="detail_show_more">Zobrazit více</string>
     <string name="detail_show_less">Zobrazit méně</string>
     <string name="detail_no_data_title">Nejsou k dispozici žádné podrobnosti</string>
-    <string name="detail_no_data_body">Tuto hru se zatím nepodařilo přiřadit k místnímu katalogu Dreamcast.</string>
-    <string name="detail_catalog_missing_body">Podrobnosti katalogu Dreamcast jsou dočasně nedostupné.</string>
+    <string name="detail_no_data_body">Tuto hru se zatím nepodařilo najít v místním katalogu.</string>
+    <string name="detail_catalog_missing_body">Podrobnosti katalogu her jsou dočasně nedostupné.</string>
     <string name="detail_save_screenshot">Uložit snímek obrazovky</string>
     <string name="detail_screenshot_saved">Snímek obrazovky uložen</string>
     <string name="detail_screenshot_save_failed">Nelze uložit snímek obrazovky</string>
@@ -222,23 +222,23 @@
     <string name="game_folders_remove">Odstranit složku</string>
     <string name="settings_emulator_data_path">Složka emulátoru</string>
     <string name="settings_fetch_boxart">Načítat obaly</string>
-    <string name="settings_fetch_boxart_desc">Stahovat obaly ze zdrojů Flycast: grafika GD-ROM z disku, obaly arkádových her z flycast-content a TheGamesDB.</string>
+    <string name="settings_fetch_boxart_desc">Stahovat obaly pro jednotlivé platformy z katalogů EmuCoreH, IGDB, grafiky disků a arkád a TheGamesDB.</string>
     <string name="settings_not_set">Nenastaveno</string>
 
     <string name="settings_about">O aplikaci</string>
     <string name="settings_version">Verze</string>
     <string name="settings_emulator_core">Jádro emulace</string>
     <string name="settings_about_app">O aplikaci EmuCoreH</string>
-    <string name="settings_about_app_desc">EmuCoreH je emulátor a herní knihovna pro Dreamcast, Naomi, Naomi 2 a Atomiswave postavený na jádře Flycast – rychlé nastavení, přehledná navigace a rozhraní vhodné pro přenosná zařízení.</string>
+    <string name="settings_about_app_desc">EmuCoreH spojuje herní knihovnu s Flycast pro Dreamcast a arkádové systémy a s jgenesis pro Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear a SG-1000.</string>
     <string name="settings_about_studio">Vývojář</string>
     <string name="settings_about_studio_desc">Vytvořilo studio Sashkin Apps.</string>
     <string name="settings_about_app_source">Repozitář EmuCoreH</string>
     <string name="settings_about_app_source_desc">Otevřít repozitář EmuCoreH na GitHubu pro zdrojové kódy aplikace a projektu.</string>
     <string name="settings_about_app_source_link">Otevřít EmuCoreH na GitHubu</string>
     <string name="settings_about_app_source_url">https://github.com/sashkinbro/EmuCoreH</string>
-    <string name="settings_about_core_source">Emulační jádro</string>
-    <string name="settings_about_core_source_desc">Založeno na Flycast, jádru emulace Dreamcast.</string>
-    <string name="settings_about_core_source_link">Zobrazit zdroj jádra na GitHub</string>
+    <string name="settings_about_core_source">Flycast (GNU GPLv2)</string>
+    <string name="settings_about_core_source_desc">Flycast emuluje Dreamcast a arkádové systémy pod licencí GNU GPLv2.</string>
+    <string name="settings_about_core_source_link">Zobrazit zdroj Flycast na GitHubu</string>
     <string name="settings_about_core_source_url">https://github.com/flyinghead/flycast</string>
     <string name="settings_about_support_project">Podpořit projekt</string>
     <string name="settings_about_support_project_desc">Podpořte probíhající vývoj a budoucí aktualizace EmuCoreH.</string>
@@ -306,7 +306,7 @@
     <string name="settings_help_prefer_english_game_titles">Používá anglické názvy z databáze GameIndex emulátoru EmuCoreH pro hry, které mají výchozí japonské nebo jiné regionální názvy. To pomáhá hlavně k tomu, aby se dovezené vydání v knihovně četla jasněji. Hry bez anglického názvu v databázi si zachovají své normální jméno.</string>
     <string name="settings_help_game_path">Přidává složky do herní knihovny. EmuCoreH rekurzivně prohledá každou vybranou složku a sloučí výsledky bez duplicitních cest. Klepnutím na uvedenou složku ji odeberete. Aktuální jádro podporuje obrazy disků GDI, CHD, CDI a CUE/BIN.</string>
     <string name="settings_help_renderer">Vybírá grafický backend používaný pro hardwarové vykreslování. Vulkan je obvykle nejrychlejší na moderních zařízeních, OpenGL může být na některých GPU bezpečnější pro kompatibilitu a Software (softwarové vykreslování) je hlavně záložní možností pro testování nebo pro hry, které se v hardwarovém režimu hodně rozbíjejí.</string>
-    <string name="settings_help_aspect_ratio">Určuje, jak se výsledný obraz zarámuje na displeji. Auto následuje hru, 4:3 zachovává původní vzhled většiny titulů Dreamcast, 16:9 se hodí pro hry s widescreen patchem a Roztáhnout používejte jen tehdy, pokud vám nevadí geometrické zkreslení.</string>
+    <string name="settings_help_aspect_ratio">Zvolte Auto, 4:3, 16:9, 10:7 nebo Roztažení. Auto se řídí systémem; roztažení může obraz zkreslit.</string>
     <string name="settings_help_overlay_scale">Mění velikost tlačítek a páček na obrazovce. Zvyšte, pokud je dotyková přesnost důležitější než prostor na obrazovce; snižte, pokud překrytí zakrývá příliš velkou část obrazu.</string>
     <string name="settings_help_overlay_opacity">Určuje, jak plně nebo průhledně vypadá dotykové ovládání. Nižší neprůhlednost udržuje čistší pohled na hru, zatímco vyšší neprůhlednost usnadňuje zobrazení tlačítek ve tmavých nebo rušných scénách.</string>
     <string name="settings_help_racing_mode">Způsobí, že dotyková akční tlačítka a postranní tlačítka přepínají svůj stisknutý stav klepnutím. Užitečné pro závodní hry, kde je třeba držet zrychlení, zatímco tlačítka Start, Select, páčky a D-pad si zachovávají své normální chování.</string>
@@ -504,9 +504,9 @@
 
     <!-- Onboarding -->
     <string name="onboarding_page_1_title">Vítejte v EmuCoreH</string>
-    <string name="onboarding_page_1_subtitle">Vaše knihovna a launcher Dreamcast – rychlé nastavení, přehledná navigace a plynulý provoz na jakékoli obrazovce.</string>
+    <string name="onboarding_page_1_subtitle">Vaše knihovna her Sega připravená pro každou obrazovku.</string>
     <string name="onboarding_page_2_title">Výkonná Emulace</string>
-    <string name="onboarding_page_2_subtitle">Hrajte své oblíbené hry Dreamcast s pokročilými grafickými možnostmi, přizpůsobitelným ovládáním a optimalizací výkonu.</string>
+    <string name="onboarding_page_2_subtitle">Flycast a jgenesis spojují podporované konzole Sega a arkádové systémy.</string>
     <string name="onboarding_page_3_title">Vaše Herní Knihovna</string>
     <string name="onboarding_page_3_subtitle">Sestavte si svou osobní herní knihovnu s krásnými přebaly, podrobnými informacemi a rychlým přístupem k oblíbeným titulům.</string>
     <string name="onboarding_page_4_title">Připraveno ke Hraní (Ready to Play)</string>
@@ -515,7 +515,7 @@
     <string name="settings_mediatek_notice_title">Kompatibilita MediaTek</string>
     <string name="settings_mediatek_notice_message">Podpora pro MediaTek je stále experimentální. Během naší práce na vylepšení kompatibility a výkonu může docházet k pádům, vizuálním chybám a nestabilnímu chování.\n\nPokud zaznamenáte grafické problémy, zkuste OpenGL se zapnutým ANGLE. Pokud problémy přetrvávají, použijte softwarový vykreslovač.</string>
     <string name="onboarding_title">Připravte se hrát</string>
-    <string name="onboarding_subtitle">Vyberte složky s hrami Dreamcast a udělte přístup k souborům.</string>
+    <string name="onboarding_subtitle">Vyberte složky s hrami a povolte přístup k souborům.</string>
     <string name="onboarding_bios_desc">Vyberte slozku s vlastnimi soubory BIOS Dreamcast (dc_boot.bin, dc_flash.bin) nebo sadami BIOS pro arkady (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="onboarding_bios_optional">Nepovinné, ale doporučené</string>
     <string name="onboarding_games_title">Přidat složky s hrami</string>
@@ -542,7 +542,7 @@
     <string name="back">Zpět</string>
 
     <!-- Catalog Search -->
-    <string name="catalog_search_title">Katalog Dreamcast</string>
+    <string name="catalog_search_title">Katalog her</string>
     <string name="catalog_filters_title">Filtry</string>
     <string name="catalog_filter_genre">Žánr</string>
     <string name="catalog_filter_year">Rok</string>
@@ -552,7 +552,7 @@
     <string name="catalog_filter_any_rating">Jakékoliv hodnocení</string>
     <string name="catalog_filters_clear">Vymazat filtry</string>
     <string name="catalog_missing_title">Databáze katalogu nenalezena</string>
-    <string name="catalog_missing_body">Katalog Dreamcast je momentálně dočasně nedostupný.</string>
+    <string name="catalog_missing_body">Katalog her je dočasně nedostupný.</string>
     <string name="catalog_empty_title">Nebyly nalezeny žádné shody</string>
     <string name="catalog_empty_body">Zkuste jiný název hry nebo kratší hledanou frázi.</string>
     <string name="formats_title">Podporované formáty</string>
@@ -1130,7 +1130,7 @@
     <string name="hub_title">EmuCoreH - Centrum</string>
     <string name="hub_tab_news">Novinky</string>
     <string name="hub_tab_videos">Videa</string>
-    <string name="hub_tab_history">Historie Dreamcast</string>
+    <string name="hub_tab_history">Historie Sega</string>
     <string name="hub_tab_manuals">Manuály</string>
     <string name="hub_related_materials">Související materiály</string>
     <string name="hub_tab_favorites">Uložené</string>
@@ -1147,7 +1147,7 @@
     <string name="hub_empty_news">Zatím nejsou k dispozici žádné novinky.</string>
     <string name="hub_empty_videos">Zatím nejsou k dispozici žádná videa.</string>
     <string name="hub_empty_history">Zatím nejsou k dispozici žádné články o historii.</string>
-    <string name="hub_empty_manuals">Manuály k emulaci Dreamcast zatím nejsou k dispozici.</string>
+    <string name="hub_empty_manuals">Zatím nejsou k dispozici žádné návody k emulaci.</string>
     <string name="hub_empty_favorites">Zde se zobrazí uložené články, manuály a videa.</string>
     <string name="hub_no_search_results">Nebyl nalezen žádný odpovídající obsah.</string>
     <string name="hub_load_failed">Obsah Centra se nepodařilo načíst.</string>
@@ -1212,7 +1212,7 @@
     <string name="emulation_swap_disc">Vyměnit disk</string>
     <string name="emulation_swap_disc_success">Disk byl úspěšně vyměněn.</string>
     <string name="emulation_swap_disc_failed">Disk se nepodařilo vyměnit. Předchozí disk byl obnoven.</string>
-    <string name="emulation_swap_disc_invalid">Vyberte podporovaný obraz disku Dreamcast.</string>
+    <string name="emulation_swap_disc_invalid">Vyberte podporovaný obraz disku.</string>
     <string name="settings_customization_background_presets">Vestavěná pozadí</string>
     <string name="settings_customization_background_preset_olympus">Peklo Olympu</string>
     <string name="settings_customization_background_preset_neon_racing">Neonový sprint</string>
@@ -1243,7 +1243,7 @@
     <string name="discord_share_serial">Zobrazit sériové číslo hry</string>
     <string name="discord_preview_game_title">Název hry</string>
     <string name="discord_preview_serial">Sériové číslo</string>
-    <string name="discord_share_serial_desc">Uveďte sériové číslo disku Dreamcast, například MK-51000</string>
+    <string name="discord_share_serial_desc">Zahrnout sériové číslo hry, například MK-51000</string>
     <string name="discord_preview_title">Náhled stavu</string>
     <string name="discord_privacy_note">Přihlášení používá Discord OAuth s PKCE. Přístupový token je šifrován pomocí Android Keystore a nikdy se neodesílá na servery EmuCoreH.</string>
     <string name="discord_status_disabled">Vypnuto</string>
@@ -1257,7 +1257,7 @@
     <string name="settings_discord_service_error">Pomocnou službu Discordu se nepodařilo spustit.</string>
     <string name="settings_discord_token_error">Přihlašovací token Discordu se nepodařilo zabezpečit.</string>
     <string name="discord_presence_library">Prochází knihovnu her</string>
-    <string name="discord_presence_private_game">Hraje hru Dreamcast</string>
+    <string name="discord_presence_private_game">Hraje hru</string>
     <string name="discord_presence_paused">Pozastaveno</string>
     <string name="discord_presence_playing">Hraje %1$s</string>
     <string name="discord_friends_title">Přátelé v EmuCoreH</string>
@@ -1282,7 +1282,7 @@
     <string name="settings_frame_limit">Limit snímků</string>
     <string name="settings_frame_limit_desc">Omezuje emulaci na obnovovací frekvenci konzole. Vypnutím poběží tak rychle, jak zařízení dovolí.</string>
     <string name="settings_target_fps">Cílová frekvence snímků</string>
-    <string name="settings_target_fps_desc">Auto používá snímkovou frekvenci hlášenou Flycast. Ruční hodnoty nastavují rychlost emulace; hra může vykreslovat méně snímků.</string>
+    <string name="settings_target_fps_desc">Automatická volba používá snímkovou frekvenci hlášenou aktivním jádrem. Ruční hodnoty určují rychlost emulace; hry mohou vykreslovat méně snímků.</string>
     <string name="settings_display_crop">Ořez obrazu</string>
     <string name="settings_display_crop_desc">Ořízne stejný počet pixelů ze všech čtyř okrajů před změnou velikosti. Výběrem 0 ořez vypnete.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1320,7 +1320,7 @@
     <string name="achievements_unavailable">Tato verze RetroAchievements nepodporuje.</string>
     <string name="shell_achievements">Úspěchy</string>
     <string name="formats_psp_supported_title">Podporované formáty Dreamcast</string>
-    <string name="formats_psp_supported_body">Přiložené jádro Flycast otevírá tyto herní soubory přímo.</string>
+    <string name="formats_psp_supported_body">Obrazy disků Dreamcast používají Flycast. Kazetové systémy a Sega CD používají jgenesis; jejich formáty jsou uvedeny níže.</string>
     <string name="formats_psp_recommended_title">Obrazy disků GD-ROM</string>
     <string name="formats_psp_recommended_body">GDI je standardní dump GD-ROM. Podporovány jsou také obrazy CHD, CDI a CUE/BIN.</string>
     <string name="formats_psp_homebrew_title">Arcade ROM sady</string>
@@ -2095,7 +2095,7 @@
     <string name="profile_player">Hráč</string>
     <string name="profile_player_blocked">Player blocked.</string>
     <string name="profile_player_card_brand">KARTA HRÁČE EMUCOREH</string>
-    <string name="profile_player_card_footer">Vzpomínky na Dreamcast, sledováno EmuCoreH</string>
+    <string name="profile_player_card_footer">Herní vzpomínky zaznamenané v EmuCoreH</string>
     <string name="profile_player_card_share">Sdílet kartu hráče</string>
     <string name="profile_player_card_share_text">Najdi mě na EmuCoreH: %1$s</string>
     <string name="profile_player_id_format">ID hráče: %1$s</string>
@@ -2272,4 +2272,40 @@
     <string name="settings_mouse_vertical_sensitivity">Vertikální citlivost</string>
     <string name="settings_mouse_wheel_shoulders">L1 / R1</string>
     <string name="settings_gamepad_mapping_use_global_desc">Odstraní přepisy tlačítek ovladače pro tuto hru.</string>
+
+    <!-- Sega systems: labels, firmware and supported core options. -->
+    <string name="sega_flycast_systems">Dreamcast / arkády</string>
+    <string name="sega_six_button_controls">Šestitlačítkový ovladač: A, B, C, X, Y, Z, Start a Mode.</string>
+    <string name="sega_two_button_controls">Dvoutlačítkový ovladač: 1 a 2, se Start nebo Pause podle systému.</string>
+    <string name="sega_bios_title">BIOS Sega CD</string>
+    <string name="sega_bios_description">Vyberte region a importujte vlastní soubor BIOS o velikosti 128 KiB.</string>
+    <string name="sega_bios_import">Importovat BIOS</string>
+    <string name="sega_bios_installed">BIOS nainstalován</string>
+    <string name="sega_bios_invalid">Vyberte soubor BIOS o velikosti přesně 128 KiB.</string>
+    <string name="sega_bios_missing">Chybí BIOS Sega CD. Otevřete Nastavení, vyberte Sega CD a importujte BIOS pro region disku.</string>
+    <string name="formats_sega_body">ROM pro Mega Drive, 32X, Master System, Game Gear a SG-1000; disky Sega CD CUE/BIN a CHD. ZIP podporuje jednu ROM kazety. Sega CD vyžaduje vlastní BIOS.</string>
+    <string name="sega_region">Region</string>
+    <string name="sega_timing">Časování videa</string>
+    <string name="sega_restart_required">Projeví se po restartování hry.</string>
+    <string name="sega_remove_sprite_limit">Odstranit limit spritů</string>
+    <string name="sega_low_pass_filter">Dolní propust zvuku</string>
+    <string name="sega_fm_audio">Zvuk FM pro Master System</string>
+    <string name="sega_crop_border">Oříznout svislý okraj</string>
+    <string name="sega_gg_resolution">Plné rozlišení SMS pro Game Gear</string>
+    <string name="sega_pause">Pauza</string>
+    <string name="sega_mode">Režim</string>
+    <string name="home_platform_genesis">Mega Drive / Genesis</string>
+    <string name="home_platform_sega_cd">Sega CD / Mega-CD</string>
+    <string name="home_platform_sega_32x">Sega 32X</string>
+    <string name="home_platform_master_system">Master System</string>
+    <string name="home_platform_game_gear">Game Gear</string>
+    <string name="home_platform_sg_1000">SG-1000</string>
+    <string name="formats_sega_title">Sega</string>
+    <string name="sega_ntsc">NTSC</string>
+    <string name="sega_pal">PAL</string>
+    <string name="settings_about_jgenesis_source_desc">Emulace Sega pod licencí GNU GPLv3. Odkaz otevře původní zdroj; zdrojový strom EmuCoreH obsahuje integraci libretro. Licence a údaje o verzi jsou přiloženy. BIOS Sega CD dodává uživatel; původní firmware 32X zůstává vložený.</string>
+    <string name="settings_about_jgenesis_source_link">Zobrazit zdroj jgenesis na GitHubu</string>
+    <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
+    <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
+    <string name="sega_ds_collection_unsupported">Tato ROM ze Sonic Classic Collection vyžaduje emulátor Nintendo DS. Použijte původní ROM pro Mega Drive / Genesis.</string>
 </resources>

@@ -48,6 +48,7 @@ import com.sbro.emucoreh.core.upscaleKeyToMultiplier
 import com.sbro.emucoreh.core.upscaleMultiplierKey
 import com.sbro.emucoreh.core.CoreOptionStore
 import com.sbro.emucoreh.core.FlycastCoreOptions
+import com.sbro.emucoreh.core.EmulationPlatform
 import com.sbro.emucoreh.core.GamepadManager
 import androidx.compose.material.icons.rounded.Tune
 import com.sbro.emucoreh.ui.common.AppAlertDialog as AlertDialog
@@ -113,6 +114,7 @@ import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.gameCoverContentScale
 import com.sbro.emucoreh.ui.common.gameCoverShape
 import com.sbro.emucoreh.ui.common.gamepadActionLabel
+import com.sbro.emucoreh.ui.common.gamepadActionSupported
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import com.sbro.emucoreh.ui.common.SettingHelpButton
 import com.sbro.emucoreh.ui.common.SettingsStyledDialog
@@ -331,6 +333,9 @@ fun PerGameSettingsManagerScreen(
         }
     }
 
+    val platform = rememberGamePlatform(selectedGame?.path, selectedGame?.platform)
+    val supportedTabs = if (platform.isSega) SupportedGameSettingsManagerTabs.filter { it != GameSettingsManagerTab.Network } else SupportedGameSettingsManagerTabs
+    LaunchedEffect(platform) { if (selectedTab !in supportedTabs) selectedTab = GameSettingsManagerTab.Core }
     val neonThemeActive = LocalNeonTheme.current
     LaunchedEffect(selectedTab) {
         listState.scrollToItem(0)
@@ -514,6 +519,7 @@ fun PerGameSettingsManagerScreen(
                     modifier = Modifier.gameManagerFullBleed()
                 ) {
                     GameSettingsManagerTabRow(
+                        tabs = supportedTabs,
                         selectedTab = selectedTab,
                         onSelected = { selectedTab = it }
                     )
@@ -757,6 +763,7 @@ private fun GamePickerCard(
 
 @Composable
 private fun GameSettingsManagerTabRow(
+    tabs: List<GameSettingsManagerTab>,
     selectedTab: GameSettingsManagerTab,
     onSelected: (GameSettingsManagerTab) -> Unit
 ) {
@@ -770,7 +777,7 @@ private fun GameSettingsManagerTabRow(
             end = ScreenHorizontalPadding
         )
     ) {
-        items(SupportedGameSettingsManagerTabs, key = { it.name }) { tab ->
+        items(tabs, key = { it.name }) { tab ->
             val interactionSource = remember { MutableInteractionSource() }
             FilterChip(
                 modifier = Modifier.tvGamepadFocusableCard(
@@ -810,6 +817,7 @@ private fun GameSettingsManagerEditorPanel(
     onOpenControlsLayoutEditor: () -> Unit,
     onDraftChange: (PerGameSettings) -> Unit
 ) {
+    val platform = rememberGamePlatform(game.path, game.platform)
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -850,6 +858,7 @@ private fun GameSettingsManagerEditorPanel(
             )
         }
         GameSettingsTabContent(
+            platform = platform,
             draft = draft,
             defaultProfile = defaultProfile,
             selectedTab = selectedTab,
@@ -862,6 +871,7 @@ private fun GameSettingsManagerEditorPanel(
 
 @Composable
 private fun GameSettingsTabContent(
+    platform: EmulationPlatform,
     draft: PerGameSettings,
     defaultProfile: PerGameSettings,
     selectedTab: GameSettingsManagerTab,
@@ -882,6 +892,7 @@ private fun GameSettingsTabContent(
         when (selectedTab) {
             GameSettingsManagerTab.Core -> {
                 EditorSection(title = stringResource(R.string.game_settings_manager_section_profile)) {
+                    if (!platform.isSega) {
                     SelectionRow(
                         title = stringResource(R.string.settings_renderer),
                         options = listOf(
@@ -896,6 +907,7 @@ private fun GameSettingsTabContent(
                             onDraftChange(draft.copy(renderer = normalizeManagerRenderer(defaultProfile.renderer)))
                         }
                     )
+                    }
                     // Internal resolution is the app-level per-game setting
                     // (draft.upscaleMultiplier) - the same value the in-game
                     // resolution selector edits. Exposing the raw core option
@@ -904,6 +916,7 @@ private fun GameSettingsTabContent(
                     // while the game ran the in-game value, and a single edit
                     // here pinned a core-option override that shadowed the
                     // app-level value at launch forever.
+                    if (!platform.isSega) {
                     SelectionRow(
                         title = stringResource(R.string.settings_upscale),
                         options = buildUpscaleOptions(nativeUpscaleLabel, maxUpscaleMultiplier),
@@ -922,6 +935,7 @@ private fun GameSettingsTabContent(
                             )
                         }
                     )
+                    }
                     SelectionRow(
                         title = stringResource(R.string.settings_aspect_ratio),
                         options = listOf(
@@ -947,7 +961,7 @@ private fun GameSettingsTabContent(
                         onResetToDefault = { onDraftChange(draft.copy(displayCrop = defaultProfile.displayCrop)) }
                     )
                     CoreOptionManagerRows(
-                        options = FlycastCoreOptions.videoOptions(),
+                        options = if (platform.isSega) com.sbro.emucoreh.core.SegaCoreOptions.options(platform).filter { it.category == "video" } else FlycastCoreOptions.videoOptions(),
                         draft = draft,
                         onDraftChange = onDraftChange
                     )
@@ -1036,7 +1050,9 @@ private fun GameSettingsTabContent(
                 }
 
                 EditorSection(title = stringResource(R.string.settings_core_cpu)) {
-                    CoreOptionManagerRows(
+                    if (platform.isSega) SegaCoreOptionRows(platform, overrides = draft.coreOptions, category = "system",
+                        onChange = { key, value -> onDraftChange(draft.copy(coreOptions = draft.coreOptions + (key to value))) })
+                    else CoreOptionManagerRows(
                         options = FlycastCoreOptions.systemOptions(),
                         draft = draft,
                         onDraftChange = onDraftChange
@@ -1054,6 +1070,8 @@ private fun GameSettingsTabContent(
                 }
             }
             GameSettingsManagerTab.Audio -> {
+                if (platform.isSega) SegaCoreOptionRows(platform, overrides = draft.coreOptions, category = "audio",
+                    onChange = { key, value -> onDraftChange(draft.copy(coreOptions = draft.coreOptions + (key to value))) })
                 EditorSection(title = stringResource(R.string.settings_audio_control)) {
                     ToggleRow(
                         title = stringResource(R.string.settings_audio_mute),
@@ -1155,6 +1173,7 @@ private fun GameSettingsTabContent(
                     )
                 }
                 EditorSection(title = stringResource(R.string.settings_controls_tab)) {
+                    if (!platform.isSega) {
                     ToggleRow(
                         title = stringResource(R.string.settings_racing_mode),
                         checked = draft.racingMode,
@@ -1162,7 +1181,9 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_racing_mode),
                         onResetToDefault = { onDraftChange(draft.copy(racingMode = defaultProfile.racingMode)) }
                     )
+                    }
                     StickyButtonsSelector(
+                        platform = platform,
                         selected = draft.stickyButtons,
                         onSelectionChange = { onDraftChange(draft.copy(stickyButtons = it)) },
                         helpText = stringResource(R.string.settings_help_sticky_buttons),
@@ -1172,6 +1193,7 @@ private fun GameSettingsTabContent(
                         horizontalPadding = GameSettingsSectionContentPadding,
                         fullBleedPadding = GameSettingsSectionContentPadding
                     )
+                    if (!platform.isSega) {
                     ToggleRow(
                         title = stringResource(R.string.settings_touchscreen_left_stick),
                         checked = draft.touchscreenLeftStick,
@@ -1179,7 +1201,8 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_touchscreen_left_stick),
                         onResetToDefault = { onDraftChange(draft.copy(touchscreenLeftStick = defaultProfile.touchscreenLeftStick)) }
                     )
-                    if (draft.touchscreenLeftStick) {
+                    }
+                    if (!platform.isSega && draft.touchscreenLeftStick) {
                         SliderRow(
                             title = stringResource(R.string.settings_touchscreen_left_stick_sensitivity),
                             value = draft.touchscreenLeftStickSensitivity.toFloat(),
@@ -1201,6 +1224,7 @@ private fun GameSettingsTabContent(
                             }
                         )
                     }
+                    if (!platform.isSega) {
                     ToggleRow(
                         title = stringResource(R.string.settings_touchscreen_right_stick),
                         checked = draft.touchscreenRightStick,
@@ -1208,7 +1232,8 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_touchscreen_right_stick),
                         onResetToDefault = { onDraftChange(draft.copy(touchscreenRightStick = defaultProfile.touchscreenRightStick)) }
                     )
-                    if (draft.touchscreenRightStick) {
+                    }
+                    if (!platform.isSega && draft.touchscreenRightStick) {
                         SliderRow(
                             title = stringResource(R.string.settings_touchscreen_right_stick_sensitivity),
                             value = draft.touchscreenRightStickSensitivity.toFloat(),
@@ -1245,6 +1270,7 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_touch_haptics_preset),
                         onResetToDefault = { onDraftChange(draft.copy(touchHapticsPreset = defaultProfile.touchHapticsPreset)) }
                     )
+                    if (!platform.isSega) {
                     SelectionRow(
                         title = stringResource(R.string.settings_gyro_mode),
                         options = gyroModeOptions(draft.gyroStickTarget),
@@ -1253,7 +1279,8 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_gyro_mode),
                         onResetToDefault = { onDraftChange(draft.copy(gyroMode = defaultProfile.gyroMode)) }
                     )
-                    if (draft.gyroMode == AppPreferences.GYRO_MODE_AIM) {
+                    }
+                    if (!platform.isSega && draft.gyroMode == AppPreferences.GYRO_MODE_AIM) {
                         SelectionRow(
                             title = stringResource(R.string.settings_gyro_stick),
                             options = gyroStickTargetOptions(),
@@ -1262,6 +1289,7 @@ private fun GameSettingsTabContent(
                             onResetToDefault = { onDraftChange(draft.copy(gyroStickTarget = defaultProfile.gyroStickTarget)) }
                         )
                     }
+                    if (!platform.isSega) {
                     SelectionRow(
                         title = stringResource(R.string.settings_arcade_device_player_1),
                         options = arcadeDeviceOptions(),
@@ -1269,6 +1297,8 @@ private fun GameSettingsTabContent(
                         onSelected = { onDraftChange(draft.copy(arcadeDevice1 = it)) },
                         onResetToDefault = { onDraftChange(draft.copy(arcadeDevice1 = defaultProfile.arcadeDevice1)) }
                     )
+                    }
+                    if (!platform.isSega) {
                     SelectionRow(
                         title = stringResource(R.string.settings_arcade_device_player_2),
                         options = arcadeDeviceOptions(),
@@ -1276,6 +1306,8 @@ private fun GameSettingsTabContent(
                         onSelected = { onDraftChange(draft.copy(arcadeDevice2 = it)) },
                         onResetToDefault = { onDraftChange(draft.copy(arcadeDevice2 = defaultProfile.arcadeDevice2)) }
                     )
+                    }
+                    if (!platform.isSega) {
                     SelectionRow(
                         title = stringResource(R.string.settings_light_gun_aim),
                         options = lightGunAimSourceOptions(),
@@ -1283,6 +1315,8 @@ private fun GameSettingsTabContent(
                         onSelected = { onDraftChange(draft.copy(lightGunAimSource = it)) },
                         onResetToDefault = { onDraftChange(draft.copy(lightGunAimSource = defaultProfile.lightGunAimSource)) }
                     )
+                    }
+                    if (!platform.isSega) {
                     ToggleRow(
                         title = stringResource(R.string.settings_light_gun_cursor),
                         checked = draft.lightGunCursorEnabled,
@@ -1290,6 +1324,7 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_light_gun_cursor),
                         onResetToDefault = { onDraftChange(draft.copy(lightGunCursorEnabled = defaultProfile.lightGunCursorEnabled)) }
                     )
+                    }
                     val gunUsesGyro = draft.lightGunAimSource == AppPreferences.LIGHT_GUN_AIM_GYRO
                     val sensorControlsVisible = gunUsesGyro ||
                         draft.gyroMode == AppPreferences.GYRO_MODE_AIM ||
@@ -1297,7 +1332,7 @@ private fun GameSettingsTabContent(
                     val sensorMode = if (draft.gyroMode == AppPreferences.GYRO_MODE_OFF && gunUsesGyro) {
                         AppPreferences.GYRO_MODE_LIGHT_GUN
                     } else draft.gyroMode
-                    if (sensorControlsVisible &&
+                    if (!platform.isSega && sensorControlsVisible &&
                         !AndroidGyroscopeInput.isModeAvailable(LocalContext.current, sensorMode)
                     ) {
                         Text(
@@ -1306,7 +1341,7 @@ private fun GameSettingsTabContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    if (sensorControlsVisible) {
+                    if (!platform.isSega && sensorControlsVisible) {
                         SliderRow(stringResource(R.string.settings_gyro_sensitivity), draft.gyroSensitivity.toFloat(), "${draft.gyroSensitivity}%", 25f..300f, 10, { onDraftChange(draft.copy(gyroSensitivity = it.roundToInt())) }, helpText = stringResource(R.string.settings_help_gyro_sensitivity), onResetToDefault = { onDraftChange(draft.copy(gyroSensitivity = defaultProfile.gyroSensitivity)) })
                         SliderRow(stringResource(R.string.settings_gyro_smoothing), draft.gyroSmoothing.toFloat(), "${draft.gyroSmoothing}%", 0f..90f, 8, { onDraftChange(draft.copy(gyroSmoothing = it.roundToInt())) }, helpText = stringResource(R.string.settings_help_gyro_smoothing), onResetToDefault = { onDraftChange(draft.copy(gyroSmoothing = defaultProfile.gyroSmoothing)) })
                         ToggleRow(stringResource(R.string.settings_gyro_invert_x), draft.gyroInvertX, { onDraftChange(draft.copy(gyroInvertX = it)) }, helpText = stringResource(R.string.settings_help_gyro_invert_x), onResetToDefault = { onDraftChange(draft.copy(gyroInvertX = defaultProfile.gyroInvertX)) })
@@ -1341,6 +1376,7 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_gamepad_left_stick_sensitivity),
                         onResetToDefault = { onDraftChange(draft.copy(gamepadLeftStickSensitivity = defaultProfile.gamepadLeftStickSensitivity)) }
                     )
+                    if (!platform.isSega) {
                     SliderRow(
                         title = stringResource(R.string.settings_gamepad_right_stick_sensitivity),
                         value = draft.gamepadRightStickSensitivity.toFloat(),
@@ -1351,15 +1387,18 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_gamepad_right_stick_sensitivity),
                         onResetToDefault = { onDraftChange(draft.copy(gamepadRightStickSensitivity = defaultProfile.gamepadRightStickSensitivity)) }
                     )
+                    }
                 }
 
                 PerGameGamepadMappingSection(
+                    platform = platform,
                     bindingsByPad = draft.gamepadBindingsByPad,
                     onBindingsChange = { bindings ->
                         onDraftChange(draft.copy(gamepadBindingsByPad = bindings))
                     }
                 )
                 PerGameKeyboardMouseSettingsSection(
+                    platform = platform,
                     override = draft.keyboardMouse,
                     globalSettings = globalKeyboardMouseSettings,
                     onOverrideChange = { keyboardMouse ->
@@ -1367,7 +1406,7 @@ private fun GameSettingsTabContent(
                     }
                 )
 
-                EditorSection(title = stringResource(R.string.settings_core_input)) {
+                if (!platform.isSega) EditorSection(title = stringResource(R.string.settings_core_input)) {
                     CoreOptionManagerRows(
                         options = FlycastCoreOptions.inputOptions(),
                         draft = draft,
@@ -1418,10 +1457,13 @@ private fun CoreOptionManagerRows(
     draft: PerGameSettings,
     onDraftChange: (PerGameSettings) -> Unit
 ) {
+    val context = LocalContext.current
+    val platform = rememberGamePlatform(draft.gameKey)
     options.forEach { option ->
         val values = option.choices.map { it.value }
         val current = draft.coreOptions[option.key]
-            ?: CoreOptionStore.value(option.key)
+            ?: (if (option.key.startsWith("jgenesis_")) com.sbro.emucoreh.core.SegaCoreOptions.value(context, option.key, platform)
+                else CoreOptionStore.value(option.key))
             ?: option.defaultValue
         val index = values.indexOf(current).let { if (it >= 0) it else 0 }
         val title = stringResource(option.labelRes)
@@ -1880,6 +1922,7 @@ internal fun PerGameSettings.resolveAgainst(defaultProfile: PerGameSettings): Pe
 
 @Composable
 private fun PerGameGamepadMappingSection(
+    platform: EmulationPlatform = EmulationPlatform.DREAMCAST,
     bindingsByPad: Map<Int, Map<String, Int>>,
     onBindingsChange: (Map<Int, Map<String, Int>>) -> Unit
 ) {
@@ -1910,7 +1953,9 @@ private fun PerGameGamepadMappingSection(
 
     if (showMappingDialog) {
         PerGameGamepadMappingDialog(
-            globalBindingsByPad = globalBindingsByPad,
+            platform = platform,
+            globalBindingsByPad = if (platform.isSega) com.sbro.emucoreh.core.SegaControlProfiles.resolve(platform,
+                com.sbro.emucoreh.core.SegaControlProfiles.load(context, platform)) else globalBindingsByPad,
             bindingsByPad = bindingsByPad,
             onBindingsChange = onBindingsChange,
             onDismiss = { showMappingDialog = false }
@@ -1919,7 +1964,8 @@ private fun PerGameGamepadMappingSection(
 }
 
 @Composable
-private fun PerGameGamepadMappingDialog(
+internal fun PerGameGamepadMappingDialog(
+    platform: EmulationPlatform,
     globalBindingsByPad: Map<Int, Map<String, Int>>,
     bindingsByPad: Map<Int, Map<String, Int>>,
     onBindingsChange: (Map<Int, Map<String, Int>>) -> Unit,
@@ -1992,7 +2038,7 @@ private fun PerGameGamepadMappingDialog(
                 text = stringResource(
                     R.string.settings_gamepad_mapping_listening_player_desc,
                     gamepadPlayerLabel(selectedPadIndex),
-                    gamepadActionLabel(actionId)
+                    gamepadActionLabel(actionId, platform = platform)
                 ),
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.primary
@@ -2002,14 +2048,14 @@ private fun PerGameGamepadMappingDialog(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            gamepadActions.forEach { action ->
+            gamepadActions.filter { gamepadActionSupported(it.id, platform) }.forEach { action ->
                 val assignedKeyCode = GamepadManager.resolveBindingForAction(
                     actionId = action.id,
                     customBindings = selectedBindings
                 )
                 val isOverride = overrides.containsKey(action.id)
                 ManagerGamepadBindingRow(
-                    title = gamepadActionLabel(action.id),
+                    title = gamepadActionLabel(action.id, platform = platform),
                     value = assignedKeyCode?.let(GamepadManager::keyCodeLabel)
                         ?: stringResource(R.string.settings_not_set),
                     autoLabel = if (isOverride || action.defaultKeyCodes.isEmpty()) {

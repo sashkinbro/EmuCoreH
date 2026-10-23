@@ -109,6 +109,10 @@ import com.sbro.emucoreh.ui.common.snapOverlayDragDelta
 import com.sbro.emucoreh.ui.common.VectorAnalogStick
 import com.sbro.emucoreh.ui.common.VectorDpadCluster
 import com.sbro.emucoreh.ui.common.VectorOverlayButton
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.data.SegaTouchLayouts
+import com.sbro.emucoreh.data.segaCustomControlBounds
+import com.sbro.emucoreh.ui.common.localizedOverlayLabel
 import com.sbro.emucoreh.ui.common.actionLabel
 import com.sbro.emucoreh.ui.common.actionDrawableRes
 import com.sbro.emucoreh.ui.common.buildOverlayCanvasLayout
@@ -120,6 +124,7 @@ import java.util.UUID
 import kotlin.math.roundToInt
 
 data class ControlsEditorState(
+    val platform: EmulationPlatform = EmulationPlatform.DREAMCAST,
     val overlayScale: Int = 100,
     val touchControlVisualStyle: TouchControlVisualStyle = TouchControlVisualStyle.CLASSIC,
     val touchControlPressEffect: TouchControlPressEffect = TouchControlPressEffect.GROW,
@@ -442,7 +447,8 @@ fun ControlsEditorScreen(
     onSetControlVisible: (String, Boolean) -> Unit,
     onSetStickSurfaceMode: (String, Boolean) -> Unit,
     onResetLayout: () -> Unit,
-    onCustomControlsChange: (CustomTouchControlLibrary) -> Unit = {}
+    onCustomControlsChange: (CustomTouchControlLibrary) -> Unit = {},
+    platform: EmulationPlatform = state.platform
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -461,7 +467,10 @@ fun ControlsEditorScreen(
     var groupScalePercent by remember { mutableStateOf(100) }
     val groupScaleAction = remember { mutableStateOf<((Float) -> Unit)?>(null) }
     val resetSelectedToast = stringResource(R.string.settings_reset_to_default_toast)
-    val defaultLayouts = remember(state.stickScale) { AppPreferences.defaultOverlayControlLayouts(state.stickScale) }
+    val defaultLayouts = remember(platform, state.stickScale) {
+        if (platform.isSega) SegaTouchLayouts.defaultProfile(platform).controlLayouts
+        else AppPreferences.defaultOverlayControlLayouts(state.stickScale)
+    }
     val selectedLayout = selectedControlId?.let { id ->
         editorControlLayouts[id] ?: defaultLayouts[id] ?: OverlayControlLayout()
     }
@@ -475,7 +484,7 @@ fun ControlsEditorScreen(
     val selectedStickSurfaceMode = selectedIsStick && (selectedLayout?.surfaceOnly == true)
     val selectedStandardTitle = selectedControlId
         ?.takeUnless { it in ControlGroupIds || it.toCustomControlIdOrNull() != null }
-        ?.let { controlTitle(it) }
+        ?.let { controlTitle(it, platform) }
         .orEmpty()
     val canDuplicateSelected = when {
         editorCustomControls.controls.size >= CustomTouchControlLibrary.MAX_CONTROLS -> false
@@ -548,7 +557,7 @@ fun ControlsEditorScreen(
                     name = copiedNameFor(selectedStandardTitle.ifEmpty { controlId }),
                     actionId = actionId,
                     secondaryActionId = selectedLayout?.secondaryActionId,
-                    label = CustomTouchControl.defaultLabelFor(actionId),
+                    label = SegaTouchLayouts.label(platform, actionId) ?: CustomTouchControl.defaultLabelFor(actionId),
                     positionX = (geometry.positionX + CustomTouchControl.DEFAULT_DUPLICATE_OFFSET)
                         .coerceIn(CustomTouchControl.MIN_POSITION, CustomTouchControl.MAX_POSITION),
                     positionY = (geometry.positionY + CustomTouchControl.DEFAULT_DUPLICATE_OFFSET)
@@ -581,7 +590,7 @@ fun ControlsEditorScreen(
 
     fun createComboControl(actionId: String, secondaryActionId: String?) {
         if (editorCustomControls.controls.size >= CustomTouchControlLibrary.MAX_CONTROLS) return
-        if (actionId !in CustomTouchControl.ALLOWED_ACTION_IDS) return
+        if (actionId !in CustomTouchControl.ALLOWED_ACTION_IDS || (platform.isSega && SegaTouchLayouts.keyCode(platform, actionId) == null)) return
         val now = System.currentTimeMillis()
         val created = editorAppearance(controlShapeKindForAction(actionId)).applyTo(
             CustomTouchControl(
@@ -593,7 +602,7 @@ fun ControlsEditorScreen(
                 actionId = actionId,
                 secondaryActionId = secondaryActionId
                     ?.takeIf { it in CustomTouchControl.ALLOWED_ACTION_IDS && it != actionId },
-                label = CustomTouchControl.defaultLabelFor(actionId),
+                label = SegaTouchLayouts.label(platform, actionId) ?: CustomTouchControl.defaultLabelFor(actionId),
                 positionX = 0.5f,
                 positionY = 0.5f,
                 createdAtMillis = now,
@@ -611,7 +620,7 @@ fun ControlsEditorScreen(
                     actionId = actionId,
                     secondaryActionId = secondaryActionId?.takeUnless { it == actionId },
                     label = if (control.content == CustomTouchControlContent.SYMBOL) {
-                        CustomTouchControl.defaultLabelFor(actionId)
+                        SegaTouchLayouts.label(platform, actionId) ?: CustomTouchControl.defaultLabelFor(actionId)
                     } else {
                         control.label
                     },
@@ -703,7 +712,9 @@ fun ControlsEditorScreen(
         val current = currentLayoutFor(controlId)
         val primary = actionIdForControlId(controlId)
         val sanitized = secondaryActionId
-            ?.takeIf { it in CustomTouchControl.ALLOWED_ACTION_IDS && it != primary }
+            ?.takeIf { it in CustomTouchControl.ALLOWED_ACTION_IDS && it != primary &&
+                (!platform.isSega || (SegaTouchLayouts.keyCode(platform, it) != null &&
+                    SegaTouchLayouts.canonicalId(it) != primary?.let(SegaTouchLayouts::canonicalId))) }
         editorControlLayouts = editorControlLayouts.toMutableMap().apply {
             put(controlId, current.copy(secondaryActionId = sanitized))
         }
@@ -771,7 +782,7 @@ fun ControlsEditorScreen(
         } else {
             val ids = when (selectedId) {
                 ControlGroupDpad -> DpadControlIds.toList()
-                ControlGroupActions -> ActionControlIds.toList()
+                ControlGroupActions -> if (platform.isSega) (ActionControlIds + setOf("l1", "r1")).toList() else ActionControlIds.toList()
                 else -> listOf(selectedId)
             }
             ids.forEach(::resetControlLayout)
@@ -807,7 +818,7 @@ fun ControlsEditorScreen(
         )
 
         PreviewLayout(
-            state = state,
+            state = state.copy(platform = platform),
             controlLayouts = editorControlLayouts,
             customControls = editorCustomControls.controls,
             selectedControlId = selectedControlId,
@@ -862,7 +873,7 @@ fun ControlsEditorScreen(
                     }
                     selectedControlId?.let {
                         Text(
-                            text = selectedCustomControl?.name ?: controlTitle(it),
+                            text = selectedCustomControl?.name ?: controlTitle(it, platform),
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White.copy(alpha = 0.84f)
                         )
@@ -1102,7 +1113,7 @@ fun ControlsEditorScreen(
                 val comboActionSupported = customControl != null || actionIdForControlId(controlId) != null
                 if (showControlAdjustPanel && selectedIsGroup) {
                     AdjustPanel(
-                        title = controlTitle(controlId),
+                        title = controlTitle(controlId, platform),
                         onDismiss = { showControlAdjustPanel = false },
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
@@ -1156,7 +1167,7 @@ fun ControlsEditorScreen(
                     }
 
                     AdjustPanel(
-                        title = customControl?.name ?: controlTitle(controlId),
+                        title = customControl?.name ?: controlTitle(controlId, platform),
                         onDismiss = { showControlAdjustPanel = false },
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
@@ -1279,6 +1290,7 @@ fun ControlsEditorScreen(
 
     if (showCreateComboDialog) {
         ComboActionDialog(
+            platform = platform,
             title = stringResource(R.string.touch_control_creator_create),
             initialActionId = CustomTouchControl.DEFAULT_ACTION_ID,
             initialSecondaryActionId = null,
@@ -1296,6 +1308,7 @@ fun ControlsEditorScreen(
     }
     if (comboDialogControl != null) {
         ComboActionDialog(
+            platform = platform,
             title = comboDialogControl.name.ifBlank {
                 stringResource(R.string.touch_control_creator_combo_action)
             },
@@ -1316,7 +1329,8 @@ fun ControlsEditorScreen(
         actionIdForControlId(standardComboControlId) != null
     ) {
         ComboActionDialog(
-            title = controlTitle(standardComboControlId),
+            platform = platform,
+            title = controlTitle(standardComboControlId, platform),
             initialActionId = actionIdForControlId(standardComboControlId)
                 ?: CustomTouchControl.DEFAULT_ACTION_ID,
             initialSecondaryActionId = secondaryActionFor(standardComboControlId),
@@ -1454,6 +1468,7 @@ private fun AdjustStepper(
 
 @Composable
 private fun ComboActionDialog(
+    platform: EmulationPlatform = EmulationPlatform.DREAMCAST,
     title: String,
     initialActionId: String,
     initialSecondaryActionId: String?,
@@ -1509,8 +1524,8 @@ private fun ComboActionDialog(
                 }
 
                 ComboActionPreview(
-                    primaryLabel = actionLabel(actionId),
-                    secondaryLabel = secondaryActionId?.let { actionLabel(it) }
+                    primaryLabel = SegaTouchLayouts.label(platform, actionId)?.let { localizedOverlayLabel(it) } ?: actionLabel(actionId),
+                    secondaryLabel = secondaryActionId?.let { id -> SegaTouchLayouts.label(platform, id)?.let { localizedOverlayLabel(it) } ?: actionLabel(id) }
                 )
 
                 ComboActionSection(
@@ -1518,6 +1533,7 @@ private fun ComboActionDialog(
                 ) {
                     if (primaryEditable) {
                         ActionSelector(
+                            platform = platform,
                             selectedActionId = actionId,
                         horizontalContentPadding = 20.dp,
                             testTagPrefix = "controls_editor_combo_primary",
@@ -1530,7 +1546,7 @@ private fun ComboActionDialog(
                         )
                     } else {
                         ComboActionBadge(
-                            label = actionLabel(actionId),
+                            label = SegaTouchLayouts.label(platform, actionId)?.let { localizedOverlayLabel(it) } ?: actionLabel(actionId),
                             highlighted = true
                         )
                     }
@@ -1541,6 +1557,7 @@ private fun ComboActionDialog(
                     description = stringResource(R.string.touch_control_creator_combo_action_desc)
                 ) {
                     ActionSelector(
+                            platform = platform,
                         selectedActionId = secondaryActionId,
                         horizontalContentPadding = 20.dp,
                         excludedActionId = actionId,
@@ -1668,7 +1685,9 @@ private fun ComboActionSection(
 }
 
 @Composable
-private fun controlTitle(controlId: String): String = when (controlId) {
+private fun controlTitle(controlId: String, platform: EmulationPlatform = EmulationPlatform.DREAMCAST): String {
+    if (platform.isSega) SegaTouchLayouts.label(platform, controlId)?.let { return localizedOverlayLabel(it) }
+    return when (controlId) {
     "l2" -> "L2"
     "l1" -> "L"
     "r2" -> "R2"
@@ -1705,6 +1724,7 @@ private fun controlTitle(controlId: String): String = when (controlId) {
     "l3" -> stringResource(R.string.settings_gamepad_action_l3)
     "r3" -> stringResource(R.string.settings_gamepad_action_r3)
     else -> controlId
+    }
 }
 
 @SuppressLint("ConfigurationScreenWidthHeight")
@@ -1807,7 +1827,8 @@ private fun PreviewLayout(
             safeRightInset = safeRightInset,
             safeTopInset = safeTop,
             safeBottomInset = safeBottom,
-            previewMode = true
+            previewMode = true,
+            platform = state.platform
         )
 
         val showLeftStick = layout.leftStick?.visible == true
@@ -2025,7 +2046,7 @@ private fun PreviewLayout(
         }
 
         val visibleButtonSpecs = layout.allButtons.filter { shouldShowButton(it.id) }
-        val actionGroupSpecs = visibleButtonSpecs.filter { it.id in ActionControlIds }
+        val actionGroupSpecs = visibleButtonSpecs.filter { it.id in ActionControlIds || (state.platform.isSega && it.id in setOf("l1", "r1")) }
         val dpadGroupSpecs = visibleButtonSpecs.filter { it.id in DpadControlIds }
 
         // Group scaling needs the live canvas geometry, so the action is published from
@@ -2227,13 +2248,29 @@ private fun PreviewLayout(
         val safeTopPx = with(density) { safeTop.toPx() }
         val safeBottomPx = with(density) { safeBottom.toPx() }
 
+        fun customBounds(control: CustomTouchControl) = if (state.platform.isSega) segaCustomControlBounds(
+            (maxWidth - safeLeftInset - safeRightInset).value, (maxHeight - safeTop - safeBottom).value,
+            control.widthDp.toFloat(), control.heightDp.toFloat(), control.positionX, control.positionY,
+            maxVisualScale = if (control.usesVectorStyle) 1.3f else control.pressedScalePercent / 100f,
+            rotationDegrees = if (control.usesVectorStyle) 0f else control.rotationDegrees.toFloat()
+        ) else null
+
         customControls.forEach { control ->
-            val widthPx = with(density) { control.widthDp.dp.toPx() }
-            val heightPx = with(density) { control.heightDp.dp.toPx() }
-            val travelX = (canvasWidthPx - safeLeftPx - safeRightPx - widthPx).coerceAtLeast(1f)
-            val travelY = (canvasHeightPx - safeTopPx - safeBottomPx - heightPx).coerceAtLeast(1f)
-            val positionRangeX = normalizedPositionRange(safeLeftPx, safeRightPx, travelX)
-            val positionRangeY = normalizedPositionRange(safeTopPx, safeBottomPx, travelY)
+            val bounds = customBounds(control)
+            val controlWidth = bounds?.width?.dp ?: control.widthDp.dp
+            val controlHeight = bounds?.height?.dp ?: control.heightDp.dp
+            val widthPx = with(density) { controlWidth.toPx() }
+            val heightPx = with(density) { controlHeight.toPx() }
+            val originX = safeLeftPx + with(density) { (bounds?.minX ?: 0f).dp.toPx() }
+            val originY = safeTopPx + with(density) { (bounds?.minY ?: 0f).dp.toPx() }
+            val travelX = bounds?.let { with(density) { it.travelX.dp.toPx() } }
+                ?: (canvasWidthPx - safeLeftPx - safeRightPx - widthPx).coerceAtLeast(1f)
+            val travelY = bounds?.let { with(density) { it.travelY.dp.toPx() } }
+                ?: (canvasHeightPx - safeTopPx - safeBottomPx - heightPx).coerceAtLeast(1f)
+            val positionRangeX = if (bounds != null) NormalizedPositionRange(0f, 1f) else normalizedPositionRange(safeLeftPx, safeRightPx, travelX)
+            val positionRangeY = if (bounds != null) NormalizedPositionRange(0f, 1f) else normalizedPositionRange(safeTopPx, safeBottomPx, travelY)
+            val positionX = if (bounds != null) control.positionX.coerceIn(0f, 1f) else control.positionX
+            val positionY = if (bounds != null) control.positionY.coerceIn(0f, 1f) else control.positionY
             val selectionId = customControlSelectionId(control.id)
             val selected = selectedControlId == selectionId
             DraggableControl(
@@ -2243,15 +2280,15 @@ private fun PreviewLayout(
                 onMoveControlBy = { _, delta ->
                     val snapped = snapDeltaPx(
                         customControlSelectionId(control.id),
-                        safeLeftPx + travelX * control.positionX,
-                        safeTopPx + travelY * control.positionY,
+                        originX + travelX * positionX,
+                        originY + travelY * positionY,
                         delta
                     )
                     onSetCustomControlPosition(
                         control.id,
-                        (control.positionX + snapped.first / travelX)
+                        (positionX + snapped.first / travelX.coerceAtLeast(1f))
                             .coerceIn(positionRangeX.min, positionRangeX.max),
-                        (control.positionY + snapped.second / travelY)
+                        (positionY + snapped.second / travelY.coerceAtLeast(1f))
                             .coerceIn(positionRangeY.min, positionRangeY.max)
                     )
                 },
@@ -2259,8 +2296,8 @@ private fun PreviewLayout(
                 baseZIndex = 4f,
                 modifier = Modifier.offset {
                     IntOffset(
-                        (safeLeftPx + travelX * control.positionX).roundToInt(),
-                        (safeTopPx + travelY * control.positionY).roundToInt()
+                        (originX + travelX * positionX).roundToInt(),
+                        (originY + travelY * positionY).roundToInt()
                     )
                 }
             ) {
@@ -2269,8 +2306,9 @@ private fun PreviewLayout(
                 if (vectorDrawable != null) {
                     VectorOverlayButton(
                         drawableRes = vectorDrawable,
-                        width = control.widthDp.dp,
-                        height = control.heightDp.dp,
+                        labelOverride = if (state.platform.isSega) SegaTouchLayouts.label(state.platform, control.actionId) else null,
+                        width = controlWidth,
+                        height = controlHeight,
                         shape = control.composeShape(),
                         alpha = if (control.enabled) control.opacity / 100f else 0.38f,
                         selected = selected,
@@ -2282,10 +2320,11 @@ private fun PreviewLayout(
                 } else {
                     CustomControlVisual(
                         control = control,
+                        labelOverride = if (state.platform.isSega) SegaTouchLayouts.label(state.platform, control.actionId) else null,
                         pressed = selected,
                         selected = selected,
                         modifier = Modifier
-                            .size(control.widthDp.dp, control.heightDp.dp)
+                            .size(controlWidth, controlHeight)
                             .graphicsLayer(alpha = if (control.enabled) 1f else 0.38f)
                             .testTag("controls_editor_custom_${control.id}")
                     )
@@ -2483,6 +2522,7 @@ private fun PreviewCanvasButton(
     ) {
         VectorOverlayButton(
             drawableRes = spec.drawableRes,
+            labelOverride = spec.labelOverride,
             width = spec.width,
             height = spec.height,
             shape = spec.shape,

@@ -31,9 +31,6 @@ internal object CoreRuntime {
     private const val TAG = "CoreRuntime"
     private const val DEFAULT_FRAME_WIDTH = 320
     private const val DEFAULT_FRAME_HEIGHT = 240
-    private const val SAVE_STATE_MAGIC = 0x54534345
-    private const val SAVE_STATE_VERSION = 1
-    private const val SAVE_STATE_HEADER_BYTES = 8
 
     val bridge: NativeCoreBridge by lazy { NativeCoreBridge() }
     val settings = ConcurrentHashMap<String, String>()
@@ -57,9 +54,14 @@ internal object CoreRuntime {
     private var systemDirectory = ""
     private var saveDirectory = ""
     private var coreAssetsDirectory = ""
+    @Volatile var platform: EmulationPlatform = EmulationPlatform.DREAMCAST
+        private set
+    private var dataRootOverride: String? = null
+    @Volatile var launchCoreOptions: Map<String, String> = emptyMap()
+    @Volatile var launchIdentityPath: String? = null
 
     /** Directory holding the shared VMU images (`<system>/dc`). */
-    val vmuDirPath: String get() = File(systemDirectory, "dc").apply { mkdirs() }.absolutePath
+    val vmuDirPath: String get() = File(context?.filesDir, "flycast/system/dc").apply { mkdirs() }.absolutePath
 
     @Volatile private var running = false
     @Volatile private var paused = false
@@ -145,6 +147,7 @@ internal object CoreRuntime {
 
     fun initialize(context: Context) {
         this.context = context.applicationContext
+        if (!hasSession()) JGenesisContentPreparer.cleanupAbandonedContent(context)
         val root = File(context.filesDir, "flycast")
         systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath
         saveDirectory = File(root, "save").apply { mkdirs() }.absolutePath
@@ -256,10 +259,26 @@ internal object CoreRuntime {
             Log.e(TAG, "Unsupported disc image: $gamePath")
             return false
         }
-        val requestedCore = RendererDefaults.toCoreRenderer(requestedRenderer)
+        val app = context ?: return false
+        val detectedPlatform = if (biosOnly) EmulationPlatform.DREAMCAST else SegaPlatformDetector.detect(app, gamePath)
+        val requestedCore = if (detectedPlatform.isSega) RendererDefaults.CORE_OPENGL
+            else RendererDefaults.toCoreRenderer(requestedRenderer)
         val candidates = listOf(requestedCore)
 
         shutdownSession()
+        platform = detectedPlatform
+        val root = File(app.filesDir, if (platform.isSega) "jgenesis" else "flycast")
+        systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath
+        saveDirectory = (if (platform.isSega) {
+            File(EmulatorStorage.runtimeDirectories(app, dataRootOverride).root, "saves/jgenesis/${platform.name.lowercase(Locale.ROOT)}")
+        } else File(root, "save")).apply { mkdirs() }.absolutePath
+        coreAssetsDirectory = File(root, "assets").apply { mkdirs() }.absolutePath
+        if (!bridge.nativeSelectCore(platform.coreId)) {
+            Log.e(TAG, "Unable to select core for $platform")
+            return false
+        }
+        bridge.nativeInit(systemDirectory, saveDirectory, coreAssetsDirectory)
+        if (!platform.isSega) bridge.setDataRootOverride(dataRootOverride)
         // The native audio ring is shared between sessions; clear it so the new
         // AAudio stream does not replay the tail of the previous game.
         bridge.resetAudioQueue()
@@ -327,9 +346,28 @@ internal object CoreRuntime {
                                     coreRenderer: Int): Boolean = sessionLock.withLock {
         // Publish core options before retro_init so the core's initial settings
         // load already sees them.
-        applyStartOptions(coreRenderer)
+        if (platform.isSega) {
+            pushAspectRatio(displayAspectRatioPreference() ?: ASPECT_RATIO_AUTO)
+            pushShaderEffect()
+            pushShaderPreset()
+            context?.let { app ->
+                val identity = launchIdentityPath ?: gamePath
+                val displayName = if (identity.startsWith("content://"))
+                    DocumentPathResolver.getDisplayName(app, identity) else File(identity).name
+                bridge.nativeSetOption("jgenesis_save_id", SegaContentIdentity.batteryKey(identity, displayName))
+                val values = SegaCoreOptions.persistedEntries(app) + launchCoreOptions
+                SegaCoreOptions.options(platform).forEach { option ->
+                    val value = values[option.key]?.takeIf { candidate -> option.choices.any { it.value == candidate } }
+                        ?: option.defaultValue
+                    bridge.nativeSetOption(option.key, value)
+                }
+            }
+        } else applyStartOptions(coreRenderer)
         val handle = bridge.createSession()
-        if (handle == 0L) return@withLock false
+        if (handle == 0L) {
+            if (platform.isSega) context?.let(JGenesisContentPreparer::releasePreparedContent)
+            return@withLock false
+        }
         // Attach the surface before loading content: SET_HW_RENDER fires inside
         // retro_load_game and needs a window to build the render context.
         if (bridge.setSurface(handle, surface, coreRenderer) != 0) {
@@ -346,6 +384,7 @@ internal object CoreRuntime {
             }
         } else if (loadDisc(handle, gamePath) != 0) {
             bridge.destroySession(handle)
+            if (platform.isSega) context?.let(JGenesisContentPreparer::releasePreparedContent)
             return@withLock false
         }
         session = handle
@@ -398,8 +437,10 @@ internal object CoreRuntime {
 
     /** Persists and forwards a Flycast core option. */
     fun setCoreOption(key: String, value: String) {
-        CoreOptionStore.set(key, value)
-        bridge.nativeSetOption(key, value)
+        if (key.startsWith("jgenesis_")) {
+            context?.let { SegaCoreOptions.set(it, key, value) }
+        } else CoreOptionStore.set(key, value)
+        applyCoreOption(key, value)
     }
 
     fun setTimeControl(mode: Int) {
@@ -412,13 +453,16 @@ internal object CoreRuntime {
 
     /** Effective value of a core option (user override or core default). */
     fun coreOptionValue(key: String): String? =
-        CoreOptionStore.value(key) ?: FlycastCoreOptions.option(key)?.defaultValue
+        if (key.startsWith("jgenesis_")) context?.let { SegaCoreOptions.value(it, key) }
+            ?: SegaCoreOptions.options(platform).firstOrNull { it.key == key }?.defaultValue
+        else CoreOptionStore.value(key) ?: FlycastCoreOptions.option(key)?.defaultValue
 
     /**
      * Forwards a core option without persisting it. Used for per-game overrides
      * that must not pollute the global option store.
      */
     fun applyCoreOption(key: String, value: String) {
+        if (platform.isSega != key.startsWith("jgenesis_")) return
         bridge.nativeSetOption(key, value)
     }
 
@@ -473,6 +517,7 @@ internal object CoreRuntime {
     }
 
     private fun shutdownSession() {
+        val releaseSegaContent = platform.isSega && session != 0L
         val activeWorker = worker
         check(activeWorker !== Thread.currentThread()) {
             "The frame worker cannot synchronously shut itself down"
@@ -510,6 +555,7 @@ internal object CoreRuntime {
                     session = 0L
                 }
             }
+            if (releaseSegaContent) context?.let(JGenesisContentPreparer::releasePreparedContent)
             paused = false
             renderedFirstFrame = false
             sessionStartedAtNanos = 0L
@@ -521,9 +567,12 @@ internal object CoreRuntime {
     }
 
     fun changeDisc(path: String): Boolean {
+        if (!platform.supportsDisc) return false
         if (!isSupportedDiscPath(path, replacementOnly = true)) return false
         val app = context ?: return false
-        val preparedPath = if (path.startsWith("content://")) {
+        val preparedPath = if (platform.isSega) {
+            runCatching { JGenesisContentPreparer.prepare(app, path) }.getOrNull() ?: return false
+        } else if (path.startsWith("content://")) {
             SafStorageBridge.prepare(app, path) ?: return false
         } else path
         return runOnFrameThread {
@@ -559,14 +608,8 @@ internal object CoreRuntime {
             val raw = File(file.parentFile, ".${file.name}.loading")
             val prepared = runCatching {
                 val bytes = file.readBytes()
-                val payload = if (
-                    bytes.size > SAVE_STATE_HEADER_BYTES &&
-                    readSaveStateMagic(bytes) == SAVE_STATE_MAGIC
-                ) {
-                    bytes.copyOfRange(SAVE_STATE_HEADER_BYTES, bytes.size)
-                } else {
-                    bytes
-                }
+                val payload = CoreSaveState.unwrap(bytes, platform.coreId)
+                    ?: error("Save state belongs to a different core or has an invalid header")
                 raw.writeBytes(payload)
             }.isSuccess
             val loaded = prepared && runOnFrameThread {
@@ -592,13 +635,7 @@ internal object CoreRuntime {
         val staging = File(target.parentFile, ".${target.name}.tmp")
         return try {
             staging.outputStream().use { output ->
-                val header = ByteArray(SAVE_STATE_HEADER_BYTES)
-                for (index in 0 until 4) {
-                    header[index] = (SAVE_STATE_MAGIC ushr (index * 8)).toByte()
-                    header[4 + index] = (SAVE_STATE_VERSION ushr (index * 8)).toByte()
-                }
-                output.write(header)
-                output.write(payload)
+                output.write(CoreSaveState.wrap(payload, platform.coreId))
             }
             if (staging.renameTo(target)) {
                 true
@@ -610,12 +647,6 @@ internal object CoreRuntime {
             staging.delete()
             false
         }
-    }
-
-    private fun readSaveStateMagic(bytes: ByteArray): Int {
-        var value = 0
-        for (index in 0 until 4) value = value or ((bytes[index].toInt() and 0xFF) shl (index * 8))
-        return value
     }
 
     @Volatile private var lastCheatFilePath: String? = null
@@ -631,7 +662,9 @@ internal object CoreRuntime {
     }
 
     fun setDataRootOverride(path: String?) {
-        runCatching { bridge.setDataRootOverride(path?.takeIf(String::isNotBlank)) }
+        dataRootOverride = path?.takeIf(String::isNotBlank)
+        if (platform.isSega) return
+        runCatching { bridge.setDataRootOverride(dataRootOverride) }
             .onFailure { Log.w(TAG, "Unable to set the Flycast data root", it) }
     }
 
@@ -781,6 +814,7 @@ internal object CoreRuntime {
             pushShaderEffect()
             pushShaderPreset()
         }
+        if (platform.isSega) return
         val bool = value.toBooleanStrictOrNull()
         val target: Pair<String, String>? = when ("$section:$key") {
             "EmuCoreH/Display:Upscale" -> value.toFloatOrNull()?.let {
@@ -811,11 +845,11 @@ internal object CoreRuntime {
                                           timing: EmulationTiming.Metrics?, audioStats: LongArray?,
                                           cpuLoadPercent: Double) {
         if (frames <= 0 || !performanceMetricsEnabled) return
-        val softwareRenderer = activeCoreRenderer == RendererDefaults.CORE_SOFTWARE
+        val softwareRenderer = platform.isSega || activeCoreRenderer == RendererDefaults.CORE_SOFTWARE
         val targetFps = activeFrameRate
         val displayFps = timing?.fps ?: fps
         val speed = timing?.speedPercent ?: (fps / targetFps * 100.0)
-        val renderer = RendererDefaults.coreRendererName(activeCoreRenderer)
+        val renderer = if (platform.isSega) "jgenesis" else RendererDefaults.coreRendererName(activeCoreRenderer)
         val frameMs = frameNanos / frames / 1_000_000.0
         val gpuLoad = if (detailedPerformanceMetrics) GpuLoadReader.loadPercent() else null
         val overlay = buildString {
@@ -943,7 +977,7 @@ internal object CoreRuntime {
                         null
                     } else {
                         for (port in 0..1) {
-                            val device = if (ArcadeInputPolicy.isLightGun(requestedInputDevices.get(port), arcadeInputMode)) 4 else 1
+                            val device = if (!platform.isSega && ArcadeInputPolicy.isLightGun(requestedInputDevices.get(port), arcadeInputMode)) 4 else 1
                             if (appliedInputDevices[port] != device) {
                                 bridge.setControllerDevice(session, port, device)
                                 appliedInputDevices[port] = device
@@ -1081,14 +1115,17 @@ internal object CoreRuntime {
         // SAF documents are exposed to the core through the frontend VFS: the
         // bridge hands out detached descriptors, so a multi-file CUE/GDI set is
         // streamed in place and nothing is copied into app storage.
-        val path = if (gamePath.startsWith("content://")) {
+        val path = if (platform.isSega) {
+            runCatching { JGenesisContentPreparer.prepare(app, gamePath) }
+                .onFailure { Log.e(TAG, "Unable to prepare Sega content", it) }.getOrNull() ?: return -1
+        } else if (gamePath.startsWith("content://")) {
             SafStorageBridge.prepare(app, gamePath) ?: return -1
         } else gamePath
         return bridge.loadDisc(handle, path)
     }
 
     fun hasDiscMedia(): Boolean = sessionLock.withLock {
-        session != 0L && runCatching { bridge.hasDiscMedia(session) }.getOrDefault(false)
+        session != 0L && platform.supportsDisc && runCatching { bridge.hasDiscMedia(session) }.getOrDefault(false)
     }
 
     private fun isSupportedDiscPath(path: String, replacementOnly: Boolean = false): Boolean {

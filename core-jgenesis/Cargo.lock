@@ -2157,6 +2157,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "cdrom",
+ "crc",
  "genesis-config",
  "genesis-core",
  "jgenesis-common",

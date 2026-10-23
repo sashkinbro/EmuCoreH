@@ -2,6 +2,9 @@ package com.sbro.emucoreh.ui.settings
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollTo
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.data.SegaTouchLayouts
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.sbro.emucoreh.data.CustomTouchControl
@@ -21,12 +24,15 @@ class ControlsEditorScreenInstrumentedTest {
 
     private fun showEditor(
         customControls: CustomTouchControlLibrary,
-        onCustomControlsChange: (CustomTouchControlLibrary) -> Unit
+        onCustomControlsChange: (CustomTouchControlLibrary) -> Unit,
+        platform: EmulationPlatform = EmulationPlatform.DREAMCAST
     ) {
         composeRule.setContent {
             EmuCoreHTheme {
                 ControlsEditorScreen(
-                    state = ControlsEditorState(customControls = customControls),
+                    state = ControlsEditorState(customControls = customControls,
+                        controlLayouts = SegaTouchLayouts.defaultProfile(platform).controlLayouts),
+                    platform = platform,
                     onBackClick = {},
                     onUpdateControlOffset = { _, _ -> },
                     onUpdateControlOffsets = {},
@@ -113,4 +119,32 @@ class ControlsEditorScreenInstrumentedTest {
             assertEquals("circle", control?.secondaryActionId)
         }
     }
+    @Test fun genesisEditorCreatesSixButtonCombosAndHidesUnsupportedHardware() {
+        val saved = AtomicReference<CustomTouchControlLibrary?>()
+        showEditor(CustomTouchControlLibrary.Empty, saved::set, EmulationPlatform.GENESIS)
+        composeRule.onNodeWithTag("controls_editor_add_button").performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_primary_l2").assertDoesNotExist()
+        composeRule.onNodeWithTag("controls_editor_combo_primary_x").performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_secondary_l1").performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_confirm").performScrollTo().performClick()
+        composeRule.runOnIdle {
+            val button = saved.get()?.controls?.single()
+            assertEquals("x", button?.actionId)
+            assertEquals("l1", button?.secondaryActionId)
+            assertEquals(99, SegaTouchLayouts.keyCode(EmulationPlatform.GENESIS, button!!.actionId))
+        }
+    }
+
+    @Test fun sg1000EditorOffersTwoButtonsWithoutStartOrSixButtonActions() {
+        val saved = AtomicReference<CustomTouchControlLibrary?>()
+        showEditor(CustomTouchControlLibrary.Empty, saved::set, EmulationPlatform.SG_1000)
+        composeRule.onNodeWithTag("controls_editor_add_button").performClick()
+        for (unsupported in listOf("start", "select", "x", "y", "l1", "r1", "l2")) {
+            composeRule.onNodeWithTag("controls_editor_combo_primary_$unsupported").assertDoesNotExist()
+        }
+        composeRule.onNodeWithTag("controls_editor_combo_primary_a").performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_confirm").performScrollTo().performClick()
+        composeRule.runOnIdle { assertEquals("a", saved.get()?.controls?.single()?.actionId) }
+    }
+
 }

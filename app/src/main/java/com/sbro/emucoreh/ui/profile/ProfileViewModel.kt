@@ -516,7 +516,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 runCatching {
                     catalogRepository.findBestMatchId(
                         serial = game.serial,
-                        title = game.title
+                        title = game.title,
+                        platform = com.sbro.emucoreh.data.igdb.catalogPlatformName(game.platform)
                     )
                 }.getOrNull()
             }

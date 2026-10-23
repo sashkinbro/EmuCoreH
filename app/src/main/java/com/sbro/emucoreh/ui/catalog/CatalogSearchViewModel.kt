@@ -24,6 +24,8 @@ data class CatalogSearchUiState(
     val availableGenres: List<String> = emptyList(),
     val availableYears: List<Int> = emptyList(),
     val selectedGenre: String? = null,
+    val availablePlatforms: List<String> = emptyList(),
+    val selectedPlatform: String? = null,
     val selectedYear: Int? = null,
     val minRating: Double? = null
 )
@@ -60,6 +62,11 @@ class CatalogSearchViewModel(application: Application) : AndroidViewModel(applic
         scheduleRefresh()
     }
 
+    fun updatePlatform(platform: String?) {
+        _uiState.value = _uiState.value.copy(selectedPlatform = platform)
+        refresh(showFullscreenLoader = false)
+    }
+
     fun updateGenre(genre: String?) {
         _uiState.value = _uiState.value.copy(selectedGenre = genre)
         refresh(showFullscreenLoader = false)
@@ -78,6 +85,7 @@ class CatalogSearchViewModel(application: Application) : AndroidViewModel(applic
     fun clearFilters() {
         _uiState.value = _uiState.value.copy(
             selectedGenre = null,
+            selectedPlatform = null,
             selectedYear = null,
             minRating = null
         )
@@ -116,7 +124,8 @@ class CatalogSearchViewModel(application: Application) : AndroidViewModel(applic
             val results = if (hasCatalog) {
                 repository.search(
                     query = snapshot.query,
-                    genre = snapshot.selectedGenre,
+                        genre = snapshot.selectedGenre,
+                    platform = snapshot.selectedPlatform,
                     year = snapshot.selectedYear,
                     minRating = snapshot.minRating,
                     limit = PAGE_SIZE,
@@ -131,7 +140,8 @@ class CatalogSearchViewModel(application: Application) : AndroidViewModel(applic
                 hasMore = hasCatalog && results.size >= PAGE_SIZE,
                 results = results,
                 availableGenres = availableGenres,
-                availableYears = availableYears
+                availableYears = availableYears,
+                availablePlatforms = if (hasCatalog) repository.getAvailablePlatforms() else emptyList()
             )
         }
     }
@@ -148,6 +158,7 @@ class CatalogSearchViewModel(application: Application) : AndroidViewModel(applic
             val nextPage = repository.search(
                 query = snapshot.query,
                 genre = snapshot.selectedGenre,
+                platform = snapshot.selectedPlatform,
                 year = snapshot.selectedYear,
                 minRating = snapshot.minRating,
                 limit = PAGE_SIZE,

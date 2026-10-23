@@ -68,8 +68,7 @@ object EmulatorBridge {
     @Volatile
     private var lastSurfaceHeight: Int = 0
 
-    @Volatile
-    private var surfaceEventVersion: Long = 0
+    private val surfaceEpoch = PresentationSurfaceEpoch()
 
     private val _presentationSurfaceGeneration = MutableStateFlow(0L)
     val presentationSurfaceGeneration: StateFlow<Long> =
@@ -433,7 +432,7 @@ object EmulatorBridge {
                 // The bundled core silently boots the BIOS when a disc image
                 // cannot be opened. Surface that as a failed launch instead of
                 // leaving the user on a misleading BIOS screen.
-                if (!NativeApp.hasDiscMedia()) {
+                if (!CoreRuntime.platform.isSega && !NativeApp.hasDiscMedia()) {
                     NativeApp.logCrashBreadcrumb("disc image failed to mount; aborting launch")
                     Log.w(TAG, "Disc image could not be mounted; aborting $pathType launch")
                     runCatching { NativeApp.shutdown() }
@@ -443,6 +442,7 @@ object EmulatorBridge {
             isVmActive = NativeApp.hasOwnedVm()
             if (!isVmActive) {
                 DocumentPathResolver.releasePreparedLaunchHandles()
+                getContext()?.let(JGenesisContentPreparer::releasePreparedContent)
             }
             if (result && !allowBiosBoot && !path.isBlank()) {
                 recordLearnedGameSerial(path)
@@ -538,6 +538,14 @@ object EmulatorBridge {
                 NativeApp.shutdown()
                 isVmActive = false
                 DocumentPathResolver.releasePreparedLaunchHandles()
+                synchronized(surfaceEpoch) {
+                    // The core is fully stopped before a new SurfaceView can own its window.
+                    NativeApp.onNativeSurfaceDestroyed()
+                    lastSurface = null
+                    lastSurfaceWidth = 0
+                    lastSurfaceHeight = 0
+                    _presentationSurfaceGeneration.value = surfaceEpoch.sessionEnded()
+                }
             } finally {
                 // A failed teardown must retain ownership and its descriptors.
                 shutdownRequested = false
@@ -599,6 +607,13 @@ object EmulatorBridge {
         }
         val extension = extensionSource.substringAfterLast('.', "").lowercase()
 
+        getContext()?.let { context ->
+            if (SegaPlatformDetector.detect(context, path).isSega) {
+                return SegaMetadataReader.read(context, path)?.let { metadata ->
+                    metadata.copy(title = normalizeNativeGameTitle(metadata.title, inferredMetadata.title))
+                } ?: inferredMetadata
+            }
+        }
         if (!readDiscMetadata || !isNativeLoaded) return inferredMetadata
         if (isVmActive) return inferredMetadata
 
@@ -703,7 +718,8 @@ object EmulatorBridge {
 
     fun parseMetadataFromName(rawName: String): GameMetadata {
         val ext = rawName.substringAfterLast('.', "").lowercase()
-        val cleanName = if (ext in setOf("iso", "bin", "cue", "img", "mdf", "gz", "chd", "zip", "7z", "dat", "lst", "m3u")) {
+        val cleanName = if (ext in setOf("iso", "bin", "cue", "img", "mdf", "gz", "chd", "zip", "7z", "dat", "lst", "m3u",
+                "md", "gen", "smd", "32x", "sms", "gg", "sg")) {
             rawName.substringBeforeLast('.').trim()
         } else {
             rawName.trim()
@@ -967,7 +983,7 @@ object EmulatorBridge {
 
     fun onSurfaceCreated(generation: Long) {
         if (!isNativeLoaded) return
-        if (generation != _presentationSurfaceGeneration.value) return
+        if (!synchronized(surfaceEpoch) { surfaceEpoch.accepts(generation) }) return
         Log.i(TAG, "onSurfaceCreated: generation=$generation")
         NativeApp.setCrashContextString("emu_surface_state", "created")
         NativeApp.logCrashBreadcrumb("surfaceCreated")
@@ -983,62 +999,66 @@ object EmulatorBridge {
 
     fun onSurfaceChanged(surface: Surface, width: Int, height: Int, generation: Long) {
         if (!isNativeLoaded) return
-        if (generation != _presentationSurfaceGeneration.value) {
-            Log.i(TAG, "Ignoring stale surfaceChanged generation=$generation")
-            return
+        val eventVersion = synchronized(surfaceEpoch) {
+            val version = surfaceEpoch.changed(generation, surface)
+            if (version == null) {
+                Log.i(TAG, "Ignoring stale surfaceChanged generation=$generation")
+                return
+            }
+            lastSurface = surface
+            lastSurfaceWidth = width
+            lastSurfaceHeight = height
+            version
         }
-        val eventVersion = ++surfaceEventVersion
         Log.i(TAG, "onSurfaceChanged: width=$width height=$height valid=${surface.isValid} generation=$generation eventVersion=$eventVersion")
-        lastSurface = surface
-        lastSurfaceWidth = width
-        lastSurfaceHeight = height
         NativeApp.setCrashContextString("emu_surface_state", "changed")
         NativeApp.setCrashContextInt("emu_surface_width", width)
         NativeApp.setCrashContextInt("emu_surface_height", height)
         NativeApp.setCrashContextBool("emu_surface_valid", surface.isValid)
         NativeApp.logCrashBreadcrumb("surfaceChanged width=$width height=$height valid=${surface.isValid}")
         launchSerial {
-            if (surfaceEventVersion != eventVersion) {
-                Log.w(TAG, "onSurfaceChanged: eventVersion mismatch ($eventVersion != $surfaceEventVersion), skipping")
-                return@launchSerial
-            }
-            try {
-                NativeApp.onNativeSurfaceChanged(surface, width, height)
-                Log.i(TAG, "onSurfaceChanged: native callback done")
-            } catch (e: Exception) {
-                Log.e(TAG, "onSurfaceChanged: native callback failed", e)
+            synchronized(surfaceEpoch) {
+                if (!surfaceEpoch.isCurrent(generation, eventVersion)) {
+                    Log.w(TAG, "onSurfaceChanged: stale generation/event=$generation/$eventVersion, skipping")
+                    return@launchSerial
+                }
+                try {
+                    NativeApp.onNativeSurfaceChanged(surface, width, height)
+                    Log.i(TAG, "onSurfaceChanged: native callback done")
+                } catch (e: Exception) {
+                    Log.e(TAG, "onSurfaceChanged: native callback failed", e)
+                }
             }
         }
     }
 
-    fun onSurfaceDestroyed(generation: Long) {
+    fun onSurfaceDestroyed(generation: Long, destroyedSurface: Surface? = null) {
         if (!isNativeLoaded) return
-        if (generation != _presentationSurfaceGeneration.value) {
-            Log.i(TAG, "Ignoring stale surfaceDestroyed generation=$generation")
-            return
-        }
-        val oldVersion = surfaceEventVersion
-        ++surfaceEventVersion
-        lastSurface = null
-        lastSurfaceWidth = 0
-        lastSurfaceHeight = 0
-        Log.i(TAG, "onSurfaceDestroyed: called, version $oldVersion -> $surfaceEventVersion")
-        NativeApp.setCrashContextString("emu_surface_state", "destroyed")
-        NativeApp.logCrashBreadcrumb("surfaceDestroyed")
-        runCatching { NativeApp.pause() }
-        Log.i(TAG, "onSurfaceDestroyed: pause done, calling native destroy")
-        // Android invalidates the BufferQueue as soon as this callback returns.
-        // Detach the core's renderer synchronously so it cannot keep presenting
-        // to an abandoned Surface.
-        try {
-            NativeApp.onNativeSurfaceDestroyed()
-            Log.i(TAG, "onSurfaceDestroyed: native destroy done")
-        } catch (e: Exception) {
-            Log.e(TAG, "onSurfaceDestroyed: native destroy failed", e)
+        synchronized(surfaceEpoch) {
+            if (!surfaceEpoch.destroyed(generation, destroyedSurface)) {
+                Log.i(TAG, "Ignoring destruction of a stale or replaced SurfaceView generation=$generation")
+                return
+            }
+            lastSurface = null
+            lastSurfaceWidth = 0
+            lastSurfaceHeight = 0
+            Log.i(TAG, "onSurfaceDestroyed: generation=$generation eventVersion=${surfaceEpoch.eventVersion}")
+            NativeApp.setCrashContextString("emu_surface_state", "destroyed")
+            NativeApp.logCrashBreadcrumb("surfaceDestroyed")
+            runCatching { NativeApp.pause() }
+            Log.i(TAG, "onSurfaceDestroyed: pause done, calling native destroy")
+            // Android invalidates the BufferQueue as soon as this callback returns.
+            // Detach the renderer synchronously while this callback still owns it.
+            try {
+                NativeApp.onNativeSurfaceDestroyed()
+                Log.i(TAG, "onSurfaceDestroyed: native destroy done")
+            } catch (e: Exception) {
+                Log.e(TAG, "onSurfaceDestroyed: native destroy failed", e)
+            }
         }
     }
 
-    private fun rebindSurface() {
+    private fun rebindSurface() = synchronized(surfaceEpoch) {
         val surface = lastSurface ?: return
         val width = lastSurfaceWidth
         val height = lastSurfaceHeight

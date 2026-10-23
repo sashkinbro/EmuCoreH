@@ -2,6 +2,7 @@ package com.sbro.emucoreh.data.catalog
 
 import android.content.Context
 import com.sbro.emucoreh.data.AppPreferences
+import com.sbro.emucoreh.data.igdb.catalogPlatformName
 import org.json.JSONObject
 import java.text.Normalizer
 import java.util.Locale
@@ -29,15 +30,17 @@ class CoverIndexRepository(private val context: Context) {
     fun findCoverBySerial(
         serial: String?,
         style: Int = AppPreferences.COVER_ART_STYLE_3D,
-        isLight: Boolean = false
+        isLight: Boolean = false,
+        platform: String = "Dreamcast"
     ): String? {
         if (style == AppPreferences.COVER_ART_STYLE_DISABLED) return null
         val norm = normalizeSerial(serial) ?: return null
-        val learnedPath = learned.getString(norm, null)
+        val key = learnedKey(norm, platform)
+        val learnedPath = learned.getString(key, null)
         if (!learnedPath.isNullOrBlank()) {
             return makeCoverUrl(learnedPath, style, isLight)
         }
-        val index = load() ?: return null
+        val index = loadForPlatform(platform) ?: return null
         val serials = index.optJSONObject("serials") ?: return null
         val path = serials.optString(norm).takeIf { it.isNotBlank() } ?: return null
         return makeCoverUrl(path, style, isLight)
@@ -50,14 +53,30 @@ class CoverIndexRepository(private val context: Context) {
         title: String?,
         style: Int = AppPreferences.COVER_ART_STYLE_3D,
         isLight: Boolean = false,
-        allowFuzzy: Boolean = true
+        allowFuzzy: Boolean = true,
+        platform: String = "Dreamcast"
     ): String? {
         if (style == AppPreferences.COVER_ART_STYLE_DISABLED) return null
-        val index = load() ?: return null
+        val index = loadForPlatform(platform) ?: return null
         val titles = index.optJSONObject("titles") ?: return null
-        val path = resolveTitlePath(titles, title, allowFuzzy) ?: return null
+        val path = if (isSegaPlatform(platform)) SegaCoverTitleMatcher.resolve(titles, title, null)
+            else resolveTitlePath(titles, title, allowFuzzy)
+        if (path == null) return null
         return makeCoverUrl(path, style, isLight)
     }
+
+    fun findSegaCover(
+        title: String?, fileName: String?, platform: String,
+        style: Int = AppPreferences.COVER_ART_STYLE_3D, isLight: Boolean = false,
+    ): String? {
+        if (style == AppPreferences.COVER_ART_STYLE_DISABLED || !isSegaPlatform(platform)) return null
+        val titles = loadForPlatform(platform)?.optJSONObject("titles") ?: return null
+        val path = SegaCoverTitleMatcher.resolve(titles, title, fileName) ?: return null
+        return makeCoverUrl(path, style, isLight)
+    }
+
+    private fun isSegaPlatform(platform: String): Boolean = catalogPlatformName(platform) in
+        setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000")
 
     /**
      * Resolves an arcade cover URL by archive romset name (e.g. 18wheelr) or ROM unique ID.
@@ -85,33 +104,47 @@ class CoverIndexRepository(private val context: Context) {
     }
 
     /** Legacy method maintained for backward compatibility with IgdbCatalogRepository. */
-    fun find(serial: String?, title: String?, threeDimensional: Boolean = false): Cover? {
+    fun find(serial: String?, title: String?, threeDimensional: Boolean = false, platform: String = "Dreamcast"): Cover? {
         val style = if (threeDimensional) AppPreferences.COVER_ART_STYLE_3D else AppPreferences.COVER_ART_STYLE_FLAT
-        val url = findCoverBySerial(serial, style)
-            ?: findCoverByTitle(title, style)
-            ?: findArcadeCover(title, serial, style)
+        val url = findCoverBySerial(serial, style, platform = platform)
+            ?: findCoverByTitle(title, style, platform = platform)
+            ?: (if (catalogPlatformName(platform) == "Dreamcast") findArcadeCover(title, serial, style) else null)
             ?: return null
         return Cover(url, url, "")
     }
 
     /** Product code -> catalogue id from the bundled serial map plus learned aliases. */
-    fun gameIdForSerial(serial: String?): Long? {
+    fun gameIdForSerial(serial: String?, platform: String = "Dreamcast"): Long? {
         val norm = normalizeSerial(serial) ?: return null
-        val index = load() ?: return null
+        val index = loadForPlatform(platform) ?: return null
         val serials = index.optJSONObject("serials") ?: return null
-        val path = learned.getString(norm, null)
+        val path = learned.getString(learnedKey(norm, platform), null)
             ?: serials.optString(norm).takeIf { it.isNotBlank() }
             ?: return null
         return path.substringAfterLast('/').substringBeforeLast('.').toLongOrNull()
     }
 
-    fun recordLearnedSerial(serial: String?, pathOrTitle: String?) {
+    fun recordLearnedSerial(serial: String?, pathOrTitle: String?, platform: String = "Dreamcast") {
         val norm = normalizeSerial(serial) ?: return
         if (norm.length < 4) return
         val normTitle = normalizeTitle(pathOrTitle.orEmpty())
-        val index = load() ?: return
+        val index = loadForPlatform(platform) ?: return
         val path = index.optJSONObject("titles")?.optString(normTitle)?.takeIf { it.isNotBlank() } ?: return
-        learned.edit().putString(norm, path).apply()
+        learned.edit().putString(learnedKey(norm, platform), path).apply()
+    }
+
+    private fun learnedKey(serial: String, platform: String): String =
+        if (catalogPlatformName(platform) == "Dreamcast") serial else "${catalogPlatformName(platform)}:$serial"
+
+    private fun loadForPlatform(platform: String): JSONObject? {
+        val canonical = catalogPlatformName(platform)
+        if (canonical == "Dreamcast" || canonical in setOf("Sega Naomi", "Sega Naomi 2", "Sammy Atomiswave", "Arcade")) return load()
+        val scoped = cachedSega ?: synchronized(lock) {
+            cachedSega ?: runCatching {
+                context.assets.open("catalog/sega_covers.json").bufferedReader().use { JSONObject(it.readText()) }
+            }.getOrNull()?.also { cachedSega = it }
+        }
+        return scoped?.optJSONObject("platforms")?.optJSONObject(canonical)
     }
 
 
@@ -132,6 +165,7 @@ class CoverIndexRepository(private val context: Context) {
         const val BASE_URL = "https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Covers/main"
         private val lock = Any()
         @Volatile private var cached: JSONObject? = null
+        @Volatile private var cachedSega: JSONObject? = null
 
         internal fun resolveTitlePath(titles: JSONObject, title: String?, allowFuzzy: Boolean = true): String? =
             CoverTitleMatcher.resolve(titles, title, allowFuzzy)
@@ -167,12 +201,9 @@ class CoverIndexRepository(private val context: Context) {
                 val ext = ".webp"
                 val stem = clean.substringAfterLast('/').substringBeforeLast('.')
                 val variant = if (isLight) "3d/light" else "3d"
-                if (clean.startsWith("arcade/")) {
-                    return "$BASE_URL/arcade/$variant/$stem$ext"
-                }
-                if (clean.startsWith("covers/")) {
-                    return "$BASE_URL/covers/$variant/$stem$ext"
-                }
+                val folder = clean.substringBefore('/')
+                if (folder in setOf("arcade", "covers", "genesis", "sega_cd", "32x", "master_system", "game_gear", "sg_1000"))
+                    return "$BASE_URL/$folder/$variant/$stem$ext"
             }
             return "$BASE_URL/$clean"
         }

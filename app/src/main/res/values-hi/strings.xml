@@ -4,7 +4,7 @@
     <string name="app_name">EmuCoreH</string>
 
     <string name="shell_library">लाइब्रेरी</string>
-    <string name="shell_catalog_search">Dreamcast खोज</string>
+    <string name="shell_catalog_search">गेम खोजें</string>
     <string name="shell_supported_formats">समर्थित फॉर्मेट</string>
 
     <string name="home_empty_title">कोई गेम नहीं मिला</string>
@@ -49,8 +49,8 @@
     <string name="detail_show_more">और दिखाएं</string>
     <string name="detail_show_less">कम दिखाएं</string>
     <string name="detail_no_data_title">कोई विवरण उपलब्ध नहीं</string>
-    <string name="detail_no_data_body">हम अभी इस गेम को स्थानीय Dreamcast कैटलॉग से मिला नहीं पाए।</string>
-    <string name="detail_catalog_missing_body">Dreamcast कैटलॉग विवरण अस्थायी रूप से उपलब्ध नहीं हैं।</string>
+    <string name="detail_no_data_body">अभी इस गेम का स्थानीय कैटलॉग से मिलान नहीं हो सका।</string>
+    <string name="detail_catalog_missing_body">गेम कैटलॉग के विवरण अस्थायी रूप से उपलब्ध नहीं हैं।</string>
     <string name="detail_save_screenshot">स्क्रीनशॉट सेव करें</string>
     <string name="detail_screenshot_saved">स्क्रीनशॉट सेव हो गया</string>
     <string name="detail_screenshot_save_failed">स्क्रीनशॉट सेव करने में असमर्थ</string>
@@ -168,7 +168,7 @@
     <string name="settings_version">संस्करण</string>
     <string name="settings_emulator_core">एमुलेशन कोर</string>
     <string name="settings_about_app">EmuCoreH के बारे में</string>
-    <string name="settings_about_app_desc">EmuCoreH, Flycast कोर द्वारा संचालित Dreamcast, Naomi, Naomi 2 और Atomiswave का एमुलेटर और गेम लाइब्रेरी है, जिसमें तेज़ सेटअप, स्पष्ट नेविगेशन और हैंडहेल्ड-अनुकूल इंटरफ़ेस है।</string>
+    <string name="settings_about_app_desc">EmuCoreH गेम लाइब्रेरी के साथ Dreamcast और आर्केड सिस्टम के लिए Flycast तथा Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear और SG-1000 के लिए jgenesis प्रदान करता है।</string>
     <string name="settings_about_studio">डेवलपर</string>
     <string name="settings_about_studio_desc">Sashkin Apps द्वारा निर्मित।</string>
     <string name="settings_about_support_project">प्रोजेक्ट का समर्थन करें</string>
@@ -205,7 +205,7 @@
     <string name="settings_help_prefer_english_game_titles">उन गेम्स के लिए EmuCoreH के गेमइंडेक्स (GameIndex) डेटाबेस से अंग्रेजी शीर्षकों का उपयोग करता है जो जापानी या अन्य क्षेत्रीय नामों के साथ आते हैं। यह मुख्य रूप से लाइब्रेरी में स्पष्ट रूप से पढ़ने में आयातित रिलीज की मदद करता है, जबकि अंग्रेजी डेटाबेस शीर्षक के बिना गेम अपना सामान्य नाम रखते हैं।</string>
     <string name="settings_help_game_path">गेम लाइब्रेरी में फ़ोल्डर जोड़ता है। EmuCoreH हर चुने गए फ़ोल्डर को पुनरावर्ती रूप से स्कैन करता है और बिना डुप्लिकेट फ़ाइल पथ के नतीजे जोड़ता है। हटाने के लिए सूची के फ़ोल्डर पर टैप करें। मौजूदा कोर GDI, CHD, CDI और CUE/BIN डिस्क इमेज का समर्थन करता है।</string>
     <string name="settings_help_renderer">हार्डवेयर रेंडरिंग के लिए उपयोग किए जाने वाले ग्राफिक्स बैकएंड का चयन करता है। आधुनिक उपकरणों पर Vulkan आमतौर पर सबसे तेज़ होता है, OpenGL कुछ GPU पर संगतता के लिए सुरक्षित हो सकता है, और सॉफ़्टवेयर मुख्य रूप से परीक्षण या उन गेम्स के लिए फ़ॉलबैक है जो हार्डवेयर मोड में बुरी तरह टूट जाते हैं।</string>
-    <string name="settings_help_aspect_ratio">यह तय करता है कि अंतिम छवि स्क्रीन पर कैसे फ़्रेम होगी। Auto गेम का अनुसरण करता है, 4:3 अधिकांश Dreamcast गेमों का मूल रूप बनाए रखता है, 16:9 वाइडस्क्रीन पैच वाले गेमों के लिए उपयुक्त है, और स्ट्रेच का उपयोग तभी करें जब आपको ज्यामितीय विकृति से फ़र्क न पड़े।</string>
+    <string name="settings_help_aspect_ratio">ऑटो, 4:3, 16:9, 10:7 या स्ट्रेच चुनें। ऑटो सिस्टम का अनुसरण करता है; स्ट्रेच से चित्र विकृत हो सकता है।</string>
     <string name="settings_help_overlay_scale">ऑन-स्क्रीन बटन और स्टिक का आकार बदलता है। यदि स्क्रीन स्पेस से अधिक टच सटीकता मायने रखती है तो इसे बढ़ाएं; यदि ओवरले छवि को बहुत अधिक कवर करता है तो इसे कम करें।</string>
     <string name="settings_help_overlay_opacity">नियंत्रित करता है कि टच कंट्रोल्स कितने ठोस या पारदर्शी दिखते हैं। कम अपारदर्शिता (opacity) गेम व्यू को क्लीनर रखती है, जबकि उच्च अपारदर्शिता अंधेरे या व्यस्त दृश्यों में बटनों को देखना आसान बनाती है।</string>
     <string name="settings_help_left_stick_sensitivity">समायोजित करता है कि लेफ्ट टच स्टिक कितनी तेज़ी से मजबूत गति इनपुट तक पहुँचता है। उच्च मान तेज़ी से प्रतिक्रिया करते हैं, जबकि कम मान छोटे गति सुधारों को आसान बनाते हैं।</string>
@@ -338,15 +338,15 @@
     <string name="settings_fps_overlay_mode_detailed">आंकड़े (Statistics)</string>
 
     <string name="onboarding_page_1_title">EmuCoreH में आपका स्वागत है</string>
-    <string name="onboarding_page_1_subtitle">आपकी Dreamcast लाइब्रेरी और लॉन्चर, जो तेज़ सेटअप, स्पष्ट नेविगेशन और किसी भी स्क्रीन पर सहज अनुभव के लिए बनाया गया है।</string>
+    <string name="onboarding_page_1_subtitle">आपकी Sega गेम लाइब्रेरी, हर स्क्रीन के लिए तैयार।</string>
     <string name="onboarding_page_2_title">शक्तिशाली एमुलेशन</string>
-    <string name="onboarding_page_2_subtitle">अपने पसंदीदा Dreamcast गेम उन्नत ग्राफ़िक्स विकल्पों, अनुकूलन योग्य नियंत्रणों और प्रदर्शन अनुकूलन के साथ खेलें।</string>
+    <string name="onboarding_page_2_subtitle">Flycast और jgenesis समर्थित Sega कंसोल और आर्केड सिस्टम को एक साथ लाते हैं।</string>
     <string name="onboarding_page_3_title">आपकी गेम्स लाइब्रेरी</string>
     <string name="onboarding_page_3_subtitle">सुंदर कवर, विस्तृत जानकारी और अपने पसंदीदा गेम्स तक त्वरित पहुंच के साथ अपनी व्यक्तिगत गेम लाइब्रेरी बनाएं।</string>
     <string name="onboarding_page_4_title">खेलने के लिए तैयार</string>
     <string name="onboarding_page_4_subtitle">शुरू करने के लिए गेम फ़ोल्डर और एमुलेटर डेटा का स्थान चुनें।</string>
     <string name="onboarding_title">खेलने के लिए तैयार हो जाएं</string>
-    <string name="onboarding_subtitle">अपने Dreamcast गेम फ़ोल्डर चुनें और फ़ाइल एक्सेस दें।</string>
+    <string name="onboarding_subtitle">अपने गेम फ़ोल्डर चुनें और फ़ाइलों तक पहुँच की अनुमति दें।</string>
     <string name="onboarding_bios_desc">Dreamcast BIOS (dc_boot.bin, dc_flash.bin) या आर्केड BIOS सेट (naomi.zip, naomi2.zip, awbios.zip) वाला फ़ोल्डर चुनें।</string>
     <string name="onboarding_bios_optional">वैकल्पिक, लेकिन अनुशंसित</string>
     <string name="onboarding_games_title">गेम्स फ़ोल्डर चुनें</string>
@@ -368,7 +368,7 @@
     <string name="no">नहीं</string>
     <string name="back">पीछे</string>
 
-    <string name="catalog_search_title">Dreamcast कैटलॉग</string>
+    <string name="catalog_search_title">गेम कैटलॉग</string>
     <string name="catalog_filters_title">फ़िल्टर्स</string>
     <string name="catalog_filter_genre">शैली (Genre)</string>
     <string name="catalog_filter_year">वर्ष</string>
@@ -378,7 +378,7 @@
     <string name="catalog_filter_any_rating">कोई भी रेटिंग</string>
     <string name="catalog_filters_clear">फ़िल्टर साफ़ करें</string>
     <string name="catalog_missing_title">कैटलॉग डेटाबेस नहीं मिला</string>
-    <string name="catalog_missing_body">Dreamcast कैटलॉग फ़िलहाल अस्थायी रूप से उपलब्ध नहीं है।</string>
+    <string name="catalog_missing_body">गेम कैटलॉग अस्थायी रूप से उपलब्ध नहीं है।</string>
     <string name="catalog_empty_title">कोई मिलान नहीं मिला</string>
     <string name="catalog_empty_body">कोई भिन्न गेम नाम या छोटा खोज वाक्यांश आज़माएं।</string>
     <string name="formats_title">समर्थित फॉर्मेट</string>
@@ -517,7 +517,7 @@
     <string name="onboarding_status_custom_folder">कस्टम फ़ोल्डर चुना गया</string>
     <string name="settings_emulator_data_path">एमुलेटर फ़ोल्डर</string>
     <string name="settings_fetch_boxart">बॉक्स आर्ट प्राप्त करें</string>
-    <string name="settings_fetch_boxart_desc">Flycast स्रोतों से बॉक्स आर्ट डाउनलोड करें: डिस्क से GD-ROM आर्टवर्क, flycast-content आर्केड कवर और TheGamesDB।</string>
+    <string name="settings_fetch_boxart_desc">EmuCoreH कैटलॉग, IGDB, डिस्क और आर्केड आर्ट तथा TheGamesDB से प्लेटफ़ॉर्म के अनुसार कवर डाउनलोड करें।</string>
     <string name="shell_texture_manager">टेक्सचर मैनेजर</string>
     <string name="texture_manager_title">टेक्सचर मैनेजर</string>
     <string name="texture_manager_import_zip">ZIP आयात करें</string>
@@ -601,9 +601,9 @@
     <string name="settings_about_app_source_desc">ऐप और प्रोजेक्ट स्रोत के लिए EmuCoreH GitHub रिपॉजिटरी खोलें।</string>
     <string name="settings_about_app_source_link">GitHub पर EmuCoreH खोलें</string>
     <string name="settings_about_app_source_url">https://github.com/sashkinbro/EmuCoreH</string>
-    <string name="settings_about_core_source">एमुलेशन कोर</string>
-    <string name="settings_about_core_source_desc">Flycast, Dreamcast एमुलेशन कोर पर आधारित।</string>
-    <string name="settings_about_core_source_link">GitHub पर कोर स्रोत देखें</string>
+    <string name="settings_about_core_source">Flycast (GNU GPLv2)</string>
+    <string name="settings_about_core_source_desc">Flycast, GNU GPLv2 के तहत Dreamcast और आर्केड सिस्टम का एमुलेशन करता है।</string>
+    <string name="settings_about_core_source_link">GitHub पर Flycast का स्रोत देखें</string>
     <string name="settings_about_core_source_url">https://github.com/flyinghead/flycast</string>
     <string name="settings_touch_haptics_strength">टच हैप्टिक की शक्ति</string>
     <string name="settings_touch_haptics_test">टच हैप्टिक्स का परीक्षण करें</string>
@@ -1109,7 +1109,7 @@
     <string name="hub_title">EmuCoreH - हब</string>
     <string name="hub_tab_news">समाचार</string>
     <string name="hub_tab_videos">वीडियो</string>
-    <string name="hub_tab_history">Dreamcast इतिहास</string>
+    <string name="hub_tab_history">Sega का इतिहास</string>
     <string name="hub_tab_manuals">मैनुअल</string>
     <string name="hub_related_materials">संबंधित सामग्री</string>
     <string name="hub_tab_favorites">सहेजा गया</string>
@@ -1126,7 +1126,7 @@
     <string name="hub_empty_news">अभी तक कोई समाचार उपलब्ध नहीं है।</string>
     <string name="hub_empty_videos">अभी तक कोई वीडियो उपलब्ध नहीं है।</string>
     <string name="hub_empty_history">अभी तक कोई इतिहास लेख उपलब्ध नहीं है।</string>
-    <string name="hub_empty_manuals">अभी Dreamcast एमुलेशन मैनुअल उपलब्ध नहीं हैं।</string>
+    <string name="hub_empty_manuals">अभी कोई एमुलेशन मैनुअल उपलब्ध नहीं है।</string>
     <string name="hub_empty_favorites">सहेजे गए लेख, मैनुअल और वीडियो यहां दिखाई देंगे।</string>
     <string name="hub_no_search_results">कोई मेल खाने वाली सामग्री नहीं मिली।</string>
     <string name="hub_load_failed">हब सामग्री लोड नहीं की जा सकी।</string>
@@ -1191,7 +1191,7 @@
     <string name="emulation_swap_disc">डिस्क बदलें</string>
     <string name="emulation_swap_disc_success">डिस्क सफलतापूर्वक बदल दी गई।</string>
     <string name="emulation_swap_disc_failed">डिस्क नहीं बदली जा सकी। पिछली डिस्क पुनर्स्थापित कर दी गई है।</string>
-    <string name="emulation_swap_disc_invalid">समर्थित Dreamcast डिस्क इमेज चुनें।</string>
+    <string name="emulation_swap_disc_invalid">समर्थित डिस्क इमेज चुनें।</string>
     <string name="settings_customization_background_presets">पहले से शामिल बैकग्राउंड</string>
     <string name="settings_customization_background_preset_olympus">ओलिंपस की ज्वाला</string>
     <string name="settings_customization_background_preset_neon_racing">नियॉन रश</string>
@@ -1222,7 +1222,7 @@
     <string name="discord_share_serial">गेम सीरियल दिखाएँ</string>
     <string name="discord_preview_game_title">गेम का नाम</string>
     <string name="discord_preview_serial">सीरियल नंबर</string>
-    <string name="discord_share_serial_desc">Dreamcast डिस्क सीरियल शामिल करें, जैसे MK-51000</string>
+    <string name="discord_share_serial_desc">गेम का सीरियल नंबर शामिल करें, जैसे MK-51000</string>
     <string name="discord_preview_title">स्थिति पूर्वावलोकन</string>
     <string name="discord_privacy_note">साइन-इन PKCE के साथ Discord OAuth का उपयोग करता है। एक्सेस टोकन Android Keystore से एन्क्रिप्ट होता है और EmuCoreH सर्वर पर कभी नहीं भेजा जाता।</string>
     <string name="discord_status_disabled">बंद</string>
@@ -1236,7 +1236,7 @@
     <string name="settings_discord_service_error">Discord सहायक सेवा शुरू नहीं हो सकी।</string>
     <string name="settings_discord_token_error">Discord साइन-इन टोकन सुरक्षित नहीं किया जा सका।</string>
     <string name="discord_presence_library">गेम लाइब्रेरी देख रहा है</string>
-    <string name="discord_presence_private_game">Dreamcast गेम खेल रहे हैं</string>
+    <string name="discord_presence_private_game">गेम खेल रहे हैं</string>
     <string name="discord_presence_paused">रुका हुआ</string>
     <string name="discord_presence_playing">%1$s खेल रहा है</string>
     <string name="discord_friends_title">EmuCoreH में मित्र</string>
@@ -1261,7 +1261,7 @@
     <string name="settings_frame_limit">फ़्रेम सीमा</string>
     <string name="settings_frame_limit_desc">एमुलेशन को कंसोल की रिफ्रेश दर तक सीमित करता है। डिवाइस की अधिकतम गति से चलाने के लिए इसे बंद करें।</string>
     <string name="settings_target_fps">लक्ष्य फ़्रेम दर</string>
-    <string name="settings_target_fps_desc">Auto, Flycast की बताई फ़्रेम दर का उपयोग करता है। मैन्युअल मान एमुलेशन दर तय करते हैं; हो सकता है गेम कम फ़्रेम रेंडर करे।</string>
+    <string name="settings_target_fps_desc">ऑटो सक्रिय कोर द्वारा बताई गई फ़्रेम दर का उपयोग करता है। मैन्युअल मान एमुलेशन की गति तय करते हैं; गेम कम फ़्रेम बना सकते हैं।</string>
     <string name="settings_display_crop">डिस्प्ले क्रॉप</string>
     <string name="settings_display_crop_desc">आकार बदलने से पहले चारों किनारों से समान संख्या में पिक्सेल काटता है। क्रॉप बंद करने के लिए 0 चुनें।</string>
     <string name="settings_display_crop_pixels">%1$d पिक्सेल</string>
@@ -1299,7 +1299,7 @@
     <string name="achievements_unavailable">यह बिल्ड RetroAchievements का समर्थन नहीं करता।</string>
     <string name="shell_achievements">उपलब्धियाँ</string>
     <string name="formats_psp_supported_title">समर्थित Dreamcast फ़ॉर्मैट</string>
-    <string name="formats_psp_supported_body">बंडल किया गया Flycast कोर इन गेम फ़ाइलों को सीधे स्वीकार करता है।</string>
+    <string name="formats_psp_supported_body">Dreamcast डिस्क इमेज Flycast का उपयोग करती हैं। कार्ट्रिज सिस्टम और Sega CD, jgenesis का उपयोग करते हैं; उनके फ़ॉर्मैट नीचे दिए हैं।</string>
     <string name="formats_psp_recommended_title">GD-ROM डिस्क इमेज</string>
     <string name="formats_psp_recommended_body">GDI मानक GD-ROM डंप है। CHD, CDI और CUE/BIN डिस्क इमेज भी समर्थित हैं।</string>
     <string name="formats_psp_homebrew_title">आर्केड ROM सेट</string>
@@ -2074,7 +2074,7 @@
     <string name="profile_player">खिलाड़ी</string>
     <string name="profile_player_blocked">Player blocked.</string>
     <string name="profile_player_card_brand">EMUCOREH प्लेयर कार्ड</string>
-    <string name="profile_player_card_footer">Dreamcast की यादें, EmuCoreH द्वारा ट्रैक की गईं</string>
+    <string name="profile_player_card_footer">गेमिंग की यादें, EmuCoreH में दर्ज</string>
     <string name="profile_player_card_share">प्लेयर कार्ड शेयर करें</string>
     <string name="profile_player_card_share_text">मुझे EmuCoreH पर खोजें: %1$s</string>
     <string name="profile_player_id_format">प्लेयर ID: %1$s</string>
@@ -2251,4 +2251,40 @@
     <string name="settings_mouse_vertical_sensitivity">वर्टिकल संवेदनशीलता</string>
     <string name="settings_mouse_wheel_shoulders">L1 / R1</string>
     <string name="settings_gamepad_mapping_use_global_desc">इस गेम के गेमपैड बटन ओवरराइड हटाएँ।</string>
+
+    <!-- Sega systems: labels, firmware and supported core options. -->
+    <string name="sega_flycast_systems">Dreamcast / आर्केड</string>
+    <string name="sega_six_button_controls">छह बटन वाला पैड: A, B, C, X, Y, Z, Start और Mode।</string>
+    <string name="sega_two_button_controls">दो बटन वाला पैड: 1 और 2, सिस्टम के अनुसार Start या Pause के साथ।</string>
+    <string name="sega_bios_title">Sega CD BIOS</string>
+    <string name="sega_bios_description">क्षेत्र चुनें और अपनी 128 KiB की BIOS फ़ाइल आयात करें।</string>
+    <string name="sega_bios_import">BIOS आयात करें</string>
+    <string name="sega_bios_installed">BIOS स्थापित है</string>
+    <string name="sega_bios_invalid">ठीक 128 KiB की BIOS फ़ाइल चुनें।</string>
+    <string name="sega_bios_missing">Sega CD BIOS नहीं है। सेटिंग खोलें, Sega CD चुनें और डिस्क के क्षेत्र की BIOS आयात करें।</string>
+    <string name="formats_sega_body">Mega Drive, 32X, Master System, Game Gear और SG-1000 ROM; Sega CD की CUE/BIN और CHD डिस्क। ZIP में एक कार्ट्रिज ROM समर्थित है। Sega CD के लिए अपनी BIOS चाहिए।</string>
+    <string name="sega_region">क्षेत्र</string>
+    <string name="sega_timing">वीडियो टाइमिंग</string>
+    <string name="sega_restart_required">गेम दोबारा शुरू करने पर लागू होता है।</string>
+    <string name="sega_remove_sprite_limit">स्प्राइट सीमा हटाएँ</string>
+    <string name="sega_low_pass_filter">लो-पास ऑडियो फ़िल्टर</string>
+    <string name="sega_fm_audio">Master System FM ऑडियो</string>
+    <string name="sega_crop_border">ऊर्ध्वाधर किनारा काटें</string>
+    <string name="sega_gg_resolution">Game Gear पर पूरा SMS रिज़ॉल्यूशन</string>
+    <string name="sega_pause">विराम</string>
+    <string name="sega_mode">मोड</string>
+    <string name="home_platform_genesis">Mega Drive / Genesis</string>
+    <string name="home_platform_sega_cd">Sega CD / Mega-CD</string>
+    <string name="home_platform_sega_32x">Sega 32X</string>
+    <string name="home_platform_master_system">Master System</string>
+    <string name="home_platform_game_gear">Game Gear</string>
+    <string name="home_platform_sg_1000">SG-1000</string>
+    <string name="formats_sega_title">Sega</string>
+    <string name="sega_ntsc">NTSC</string>
+    <string name="sega_pal">PAL</string>
+    <string name="settings_about_jgenesis_source_desc">GNU GPLv3 के तहत Sega एमुलेशन। लिंक मूल स्रोत खोलता है; EmuCoreH स्रोत ट्री में libretro एकीकरण है। लाइसेंस और संस्करण की जानकारी शामिल हैं। Sega CD BIOS उपयोगकर्ता देता है; मूल 32X फ़र्मवेयर एम्बेडेड रहता है।</string>
+    <string name="settings_about_jgenesis_source_link">GitHub पर jgenesis का स्रोत देखें</string>
+    <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
+    <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
+    <string name="sega_ds_collection_unsupported">Sonic Classic Collection की इस ROM के लिए Nintendo DS एमुलेटर चाहिए। मूल Mega Drive / Genesis ROM इस्तेमाल करें।</string>
 </resources>

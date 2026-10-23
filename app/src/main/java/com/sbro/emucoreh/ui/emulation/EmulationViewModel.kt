@@ -26,6 +26,10 @@ import com.sbro.emucoreh.core.MobileSocNameMapper
 import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.core.RuntimeFailure
 import com.sbro.emucoreh.core.FlycastCoreOptions
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.data.SegaTouchLayoutPreferences
+import com.sbro.emucoreh.data.SegaTouchLayoutProfile
+import com.sbro.emucoreh.data.SegaTouchLayouts
 import com.sbro.emucoreh.core.GameFormats
 import com.sbro.emucoreh.core.resolveAndroidGamePhase
 import com.sbro.emucoreh.core.normalizeUpscale
@@ -375,6 +379,10 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     /** Per-game core option overrides resolved at launch, applied after boot. */
     private var pendingPerGameCoreOptions: Map<String, String> = emptyMap()
     private var currentTouchControlsLayoutProfile: TouchControlsLayoutProfile? = null
+    private val segaTouchPreferences = SegaTouchLayoutPreferences(application)
+    private var currentTouchPlatform = EmulationPlatform.DREAMCAST
+    private var currentGlobalSegaTouchProfile: SegaTouchLayoutProfile? = null
+    private var segaTouchProfileJob: Job? = null
     private var currentCustomTouchControlsProfile: CustomTouchControlLibrary? = null
     private var lastAutoSavePlayTimeMs: Long = 0L
     @Volatile
@@ -538,9 +546,9 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         }
         viewModelScope.launch {
             preferences.customTouchControls.collect { library ->
-                _uiState.value = _uiState.value.copy(
+                _uiState.value = resolvedTouchState(_uiState.value.copy(
                     customTouchControls = currentCustomTouchControlsProfile ?: library
-                )
+                ))
             }
         }
         viewModelScope.launch {
@@ -875,7 +883,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                         coverArtPath = coverArtPath,
                         durationMs = durationMs,
                         sessionCount = if (shouldCountCurrentProfileSession) 1L else 0L,
-                        arcade = currentGameIsArcade
+                        arcade = currentGameIsArcade,
+                        platform = com.sbro.emucoreh.core.CoreRuntime.platform.takeIf { it.isSega }?.name
                     )
                 )
             }.isSuccess
@@ -1065,10 +1074,17 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 statusMessage = "status_preparing"
             )
 
-            if (_uiState.value.isRunning || EmulatorBridge.hasValidVm()) {
+            if (_uiState.value.isRunning || EmulatorBridge.hasValidVm() || com.sbro.emucoreh.core.CoreRuntime.hasSession()) {
                 performShutdown()
                 delay(300.milliseconds)
+                if (com.sbro.emucoreh.core.CoreRuntime.hasSession()) {
+                    _uiState.value = _uiState.value.copy(isStarting = false, toastMessage = "launch_failed")
+                    return@launch
+                }
             }
+            // Shutdown clears the previous crash/profile identity; restore the new request
+            // before reading its overrides or persisting editor changes.
+            currentGamePath = if (bootToBios) null else path?.takeIf { it.isNotBlank() }
 
             var finalLaunchPath: String? = null
             lifecycleMutex.withLock {
@@ -1079,6 +1095,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     statusMessage = "status_checking_bios"
                 )
 
+                configureTouchPlatform(if (bootToBios || path.isNullOrBlank()) EmulationPlatform.DREAMCAST
+                    else com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path))
                 val config = loadLaunchConfig()
                 val renderer = rendererOverride ?: config.renderer
 
@@ -1122,7 +1140,13 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 val launchPath = when {
                     bootToBios -> ""
                     path.isNullOrBlank() -> null
-                    else -> DocumentPathResolver.prepareGameLaunchPath(getApplication(), path)
+                    else -> if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isSega) {
+                        // The previous session (including a failed one) has been unloaded above.
+                        // Copy SAF content before taking CoreRuntime's lifecycle lock, so a
+                        // background/surface-destroy callback cannot block on a large disc copy.
+                        runCatching { com.sbro.emucoreh.core.JGenesisContentPreparer.prepare(getApplication(), path) }
+                            .onFailure { Log.e(TAG, "Unable to prepare Sega launch content", it) }.getOrNull()
+                    } else DocumentPathResolver.prepareGameLaunchPath(getApplication(), path)
                 }
 
                 if (!bootToBios && launchPath.isNullOrBlank()) {
@@ -1190,7 +1214,9 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                             ?: safePath.takeIf { it.isNotBlank() }?.let(perGameSettingsRepository::get)
                         )?.coreOptions.orEmpty()
                         .filterKeys { !FlycastCoreOptions.isManagedKey(it) }
-                    refreshCurrentGameCheats(metadata)
+                    if (!com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), safePath).isSega) {
+                        refreshCurrentGameCheats(metadata)
+                    }
                     _uiState.value = _uiState.value.copy(
                         currentGameTitle = currentGameTitle,
                         currentGameSubtitle = currentGameSubtitle(),
@@ -1206,6 +1232,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 }
                 _uiState.value = _uiState.value.copy(
                     customTouchControls = currentCustomTouchControlsProfile
+                        ?: currentGlobalSegaTouchProfile?.customControls
                         ?: preferences.customTouchControls.first()
                 )
                 updateCrashContext(
@@ -1280,8 +1307,9 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     palFramerate = liveRuntime.palFramerate,
                 )
                 val overlayState = runtimeState.withOverlayLayoutSnapshot(overlaySnapshot)
-                _uiState.value = currentTouchControlsLayoutProfile?.let { overlayState.withTouchControlsLayout(it) } ?: overlayState
+                _uiState.value = resolvedTouchState(overlayState)
                 syncNativePerformanceOverlayState(_uiState.value)
+                GamepadManager.setPlatform(currentTouchPlatform)
                 syncGamepadRuntimeSettings(_uiState.value)
                 if (_uiState.value.gameSettingsProfileActive) {
                     val state = _uiState.value
@@ -1347,6 +1375,9 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             val pathToLaunch = finalLaunchPath ?: return@launch
 
             if (cancelPendingStart) {
+                if (!com.sbro.emucoreh.core.CoreRuntime.hasSession()) {
+                    com.sbro.emucoreh.core.JGenesisContentPreparer.releasePreparedContent(getApplication())
+                }
                 _uiState.value = _uiState.value.copy(
                     isRunning = false,
                     isStarting = false,
@@ -1376,6 +1407,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             }
 
+            com.sbro.emucoreh.core.CoreRuntime.launchCoreOptions = pendingPerGameCoreOptions
             val started = try {
                 EmulatorBridge.startEmulation(
                     pathToLaunch,
@@ -1388,7 +1420,12 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             }
             Log.i(TAG, "EmulatorBridge.startEmulation returned $started path=$pathToLaunch")
             if (started) {
-                RetroAchievementsRepository.get(getApplication()).onGameStarted(pathToLaunch)
+                _uiState.value = _uiState.value.copy(
+                    performanceOverlayHeader = buildPerformanceOverlayHeader(getApplication())
+                )
+                if (!com.sbro.emucoreh.core.CoreRuntime.platform.isSega) {
+                    RetroAchievementsRepository.get(getApplication()).onGameStarted(pathToLaunch)
+                }
                 syncCheatsForCurrentGame()
                 // Per-game core options win over the global store.
                 pendingPerGameCoreOptions.forEach { (coreKey, coreValue) ->
@@ -1417,9 +1454,19 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 _uiState.value = _uiState.value.copy(
                     isRunning = false,
                     statusMessage = null,
-                    toastMessage = if (arcadeWithoutBios) "bios_missing" else "launch_failed"
+                    toastMessage = when {
+                        com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
+                            ?.startsWith("UNSUPPORTED_DS_COLLECTION_ROM:") == true -> "sega_ds_collection_unsupported"
+                        com.sbro.emucoreh.core.CoreRuntime.platform == com.sbro.emucoreh.core.EmulationPlatform.SEGA_CD &&
+                            (com.sbro.emucoreh.core.SegaCdBios.Region.entries.none {
+                                com.sbro.emucoreh.core.SegaCdBios.isInstalled(getApplication(), it)
+                            } || com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
+                                ?.contains("BIOS", ignoreCase = true) == true) -> "sega_bios_missing"
+                        arcadeWithoutBios -> "bios_missing"
+                        else -> "launch_failed"
+                    }
                 )
-                delay(2500.milliseconds)
+                delay(if (_uiState.value.toastMessage == "sega_ds_collection_unsupported") 8000.milliseconds else 2500.milliseconds)
                 _uiState.value = _uiState.value.copy(toastMessage = null)
             }
         }
@@ -2080,7 +2127,9 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 )
             } else {
                 currentCustomTouchControlsProfile = null
-                preferences.setCustomTouchControls(sanitized)
+                if (currentTouchPlatform.isSega) {
+                    segaTouchPreferences.save(currentTouchPlatform, _uiState.value.toTouchControlsLayoutProfile(), sanitized)
+                } else preferences.setCustomTouchControls(sanitized)
                 _uiState.value = _uiState.value.copy(customTouchControls = sanitized)
             }
         }
@@ -2374,9 +2423,32 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    private suspend fun configureTouchPlatform(platform: EmulationPlatform) {
+        if (currentTouchPlatform == platform && (!platform.isSega || currentGlobalSegaTouchProfile != null)) return
+        segaTouchProfileJob?.cancel()
+        currentTouchPlatform = platform
+        currentGlobalSegaTouchProfile = if (platform.isSega) segaTouchPreferences.load(platform) else null
+        val baseState = if (platform.isSega) _uiState.value else
+            _uiState.value.withOverlayLayoutSnapshot(preferences.overlayLayoutSnapshot.first())
+                .copy(customTouchControls = preferences.customTouchControls.first())
+        _uiState.value = resolvedTouchState(baseState)
+        if (platform.isSega) segaTouchProfileJob = viewModelScope.launch {
+            segaTouchPreferences.observe(platform).collect { profile ->
+                if (currentTouchPlatform != platform) return@collect
+                currentGlobalSegaTouchProfile = profile
+                _uiState.value = resolvedTouchState(_uiState.value)
+            }
+        }
+    }
+
+    private fun resolvedTouchState(state: EmulationUiState): EmulationUiState = state.withTouchControlsProfile(
+        layout = currentTouchControlsLayoutProfile ?: currentGlobalSegaTouchProfile?.layout,
+        customControls = currentCustomTouchControlsProfile ?: currentGlobalSegaTouchProfile?.customControls
+    )
+
     private fun applyOverlayLayoutSnapshot(snapshot: OverlayLayoutSnapshot) {
         val overlayState = _uiState.value.withOverlayLayoutSnapshot(snapshot)
-        _uiState.value = currentTouchControlsLayoutProfile?.let { overlayState.withTouchControlsLayout(it) } ?: overlayState
+        _uiState.value = resolvedTouchState(overlayState)
     }
 
     private fun EmulationUiState.withOverlayLayoutSnapshot(snapshot: OverlayLayoutSnapshot): EmulationUiState {
@@ -2473,7 +2545,9 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private suspend fun persistGlobalTouchControlsLayout(state: EmulationUiState) {
-        preferences.saveTouchControlsLayout(state.toTouchControlsLayoutProfile())
+        if (currentTouchPlatform.isSega) {
+            segaTouchPreferences.save(currentTouchPlatform, state.toTouchControlsLayoutProfile(), state.customTouchControls)
+        } else preferences.saveTouchControlsLayout(state.toTouchControlsLayoutProfile())
     }
 
     private suspend fun persistTouchControlsLayout(updatedState: EmulationUiState): EmulationUiState {
@@ -2506,6 +2580,12 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         if (gameKey == null) {
             currentTouchControlsLayoutProfile = null
             currentCustomTouchControlsProfile = null
+            if (currentTouchPlatform.isSega) {
+                segaTouchPreferences.reset(currentTouchPlatform)
+                currentGlobalSegaTouchProfile = segaTouchPreferences.load(currentTouchPlatform)
+                _uiState.value = resolvedTouchState(_uiState.value)
+                return
+            }
             preferences.resetControlsLayout()
             _uiState.value = _uiState.value
                 .withOverlayLayoutSnapshot(preferences.overlayLayoutSnapshot.first())
@@ -2516,23 +2596,28 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         val existing = perGameSettingsRepository.get(gameKey)
         // Reset to the built-in defaults for this game; dropping the override would
         // silently inherit the customized global layout.
-        val resetLayout = TouchControlsLayoutProfile()
-        perGameSettingsRepository.save(
-            existing.withTouchControlsLayout(
-                gameKey = gameKey,
-                gameTitle = resolvePerGameTitle(_uiState.value),
-                gameSerial = currentGameSerial.takeIf { it.isNotBlank() },
-                layout = resetLayout
-            )
+        val resetLayout = if (currentTouchPlatform.isSega) SegaTouchLayouts.defaultProfile(currentTouchPlatform)
+            else TouchControlsLayoutProfile()
+        val resetProfile = existing.withTouchControlsLayout(
+            gameKey = gameKey,
+            gameTitle = resolvePerGameTitle(_uiState.value),
+            gameSerial = currentGameSerial.takeIf { it.isNotBlank() },
+            layout = resetLayout
         )
+        perGameSettingsRepository.save(if (currentTouchPlatform.isSega) resetProfile.withCustomTouchControls(
+            gameKey = gameKey, gameTitle = resolvePerGameTitle(_uiState.value),
+            gameSerial = currentGameSerial.takeIf { it.isNotBlank() }, library = CustomTouchControlLibrary.Empty
+        ) else resetProfile)
 
         currentTouchControlsLayoutProfile = resetLayout
-        currentCustomTouchControlsProfile = existing?.customTouchControls
+        currentCustomTouchControlsProfile = if (currentTouchPlatform.isSega) CustomTouchControlLibrary.Empty
+            else existing?.customTouchControls
         _uiState.value = _uiState.value
             .withOverlayLayoutSnapshot(preferences.overlayLayoutSnapshot.first())
             .withTouchControlsLayout(resetLayout)
             .copy(
                 customTouchControls = currentCustomTouchControlsProfile
+                    ?: currentGlobalSegaTouchProfile?.customControls
                     ?: preferences.customTouchControls.first(),
                 gameSettingsProfileActive = true
             )
@@ -2665,13 +2750,13 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 .copy(
                     touchControlVisualStyle = settings.touchControlVisualStyle,
                     touchControlPressEffect = settings.touchControlPressEffect,
-                    customTouchControls = settings.customTouchControls,
+                    customTouchControls = currentGlobalSegaTouchProfile?.customControls ?: settings.customTouchControls,
                     gameSettingsProfileActive = false,
                     perGameCoreOptions = emptyMap(),
                     gamepadStickDeadzone = settings.gamepadStickDeadzone,
                     gamepadLeftStickSensitivity = settings.gamepadLeftStickSensitivity,
                     gamepadRightStickSensitivity = settings.gamepadRightStickSensitivity
-                )
+                ).let(::resolvedTouchState)
         }
     }
 
@@ -3021,6 +3106,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun syncCheatsForCurrentGame(gameKeyOverride: String? = null) {
+        if (com.sbro.emucoreh.core.CoreRuntime.platform.isSega) return
         val state = _uiState.value
         val serial = currentGameSerial.takeIf { it.isNotBlank() }
             ?: learnedSerialForCurrentGame()
@@ -3394,6 +3480,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 } catch (_: Exception) { }
                 try {
                     GamepadManager.clearPerGameOverrides()
+                    GamepadManager.setPlatform(com.sbro.emucoreh.core.EmulationPlatform.DREAMCAST)
                 } catch (_: Exception) { }
                 try {
                     _keyboardMouseOverride.value = null

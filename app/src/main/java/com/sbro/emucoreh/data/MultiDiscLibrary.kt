@@ -1,6 +1,7 @@
 package com.sbro.emucoreh.data
 
 import com.sbro.emucoreh.core.GameFormats
+import com.sbro.emucoreh.core.EmulationPlatform
 import java.io.File
 import java.util.Locale
 
@@ -36,7 +37,12 @@ object MultiDiscLibrary {
             }
             if (members.any { it == null }) return@forEach
             val physical = members.filterNotNull()
+            val platforms = physical.map { EmulationPlatform.fromName(it.platform) }.filterNotNull().distinct()
+            if (platforms.size > 1) return@forEach
+            val platform = platforms.singleOrNull()?.name
+            if (playlist.platform != null && platform != null && playlist.platform != platform) return@forEach
             replacements[identity(playlist.path)] = playlist.copy(
+                platform = playlist.platform ?: platform,
                 serial = playlist.serial ?: physical.first().serial,
                 coverArtPath = playlist.coverArtPath ?: physical.firstNotNullOfOrNull { it.coverArtPath },
                 discSize = physical.sumOf { (it.discSize ?: it.fileSize).coerceAtLeast(0L) },
@@ -56,7 +62,8 @@ object MultiDiscLibrary {
             val parent = parentIdentities[game.path] ?: localParent(game.path) ?: return@mapNotNull null
             val name = withoutDiscMarker(stem).lowercase(Locale.ROOT)
             if (name.isEmpty()) return@mapNotNull null
-            Candidate(game, number, "$parent\u0000${extension(game.fileName)}\u0000$name")
+            val platform = EmulationPlatform.fromName(game.platform) ?: EmulationPlatform.DREAMCAST
+            Candidate(game, number, "$parent\u0000${platform.name}\u0000${extension(game.fileName)}\u0000$name")
         }
         candidates.groupBy { it.key }.values.forEach { group ->
             if (group.size < 2 || group.map { it.number }.distinct().size != group.size) return@forEach

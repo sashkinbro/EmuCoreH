@@ -89,21 +89,22 @@ fun GameCoverArt(
     shimmerWhileLoading: Boolean = true,
     decodeWidth: Int = DEFAULT_COVER_DECODE_WIDTH,
     decodeHeight: Int = DEFAULT_COVER_DECODE_HEIGHT,
+    trimTransparentPadding: Boolean = false,
     onAspectRatioResolved: ((Float) -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val cacheKey: (String) -> String = remember(decodeWidth, decodeHeight) {
-        { path -> "$path@${decodeWidth}x$decodeHeight" }
+    val cacheKey: (String) -> String = remember(decodeWidth, decodeHeight, trimTransparentPadding) {
+        { path -> "$path@${decodeWidth}x${decodeHeight}:trim=$trimTransparentPadding" }
     }
-    var bitmap by remember(coverPath, decodeWidth, decodeHeight) {
+    var bitmap by remember(coverPath, decodeWidth, decodeHeight, trimTransparentPadding) {
         mutableStateOf(coverPath?.let { getCachedBitmap(cacheKey(it)) })
     }
-    var loadedPath by remember(coverPath, decodeWidth, decodeHeight) {
+    var loadedPath by remember(coverPath, decodeWidth, decodeHeight, trimTransparentPadding) {
         mutableStateOf(coverPath?.takeIf { getCachedBitmap(cacheKey(it)) != null })
     }
     var isLoading by remember { mutableStateOf(false) }
 
-    LaunchedEffect(coverPath, loadEnabled, decodeWidth, decodeHeight) {
+    LaunchedEffect(coverPath, loadEnabled, decodeWidth, decodeHeight, trimTransparentPadding) {
         if (coverPath.isNullOrBlank()) {
             bitmap = null
             loadedPath = null
@@ -136,7 +137,9 @@ fun GameCoverArt(
         while (true) {
             val loadedBitmap = withContext(Dispatchers.IO) {
                 imageLoadingSemaphore.withPermit {
-                    loadBitmap(context, coverPath, decodeWidth, decodeHeight)
+                    loadBitmap(context, coverPath, decodeWidth, decodeHeight)?.let {
+                        if (trimTransparentPadding) trimCoverTransparency(it) else it
+                    }
                 }
             }
             if (loadedBitmap != null) {
@@ -406,4 +409,27 @@ private fun String.replaceSuffixPreservingQuery(oldSuffix: String, newSuffix: St
 private fun String.sha1(): String {
     val digest = MessageDigest.getInstance("SHA-1")
     return digest.digest(toByteArray()).joinToString("") { "%02x".format(it) }
+}
+
+/** Removes the transparent export canvas from Sega cases without cropping the artwork. */
+private fun trimCoverTransparency(bitmap: Bitmap): Bitmap {
+    if (!bitmap.hasAlpha()) return bitmap
+    val row = IntArray(bitmap.width)
+    var left = bitmap.width
+    var right = -1
+    var top = bitmap.height
+    var bottom = -1
+    for (y in 0 until bitmap.height) {
+        bitmap.getPixels(row, 0, bitmap.width, 0, y, bitmap.width, 1)
+        for (x in row.indices) {
+            if ((row[x] ushr 24) > 8) {
+                left = minOf(left, x)
+                right = maxOf(right, x)
+                top = minOf(top, y)
+                bottom = maxOf(bottom, y)
+            }
+        }
+    }
+    if (right < left || bottom < top) return bitmap
+    return Bitmap.createBitmap(bitmap, left, top, right - left + 1, bottom - top + 1)
 }

@@ -51,6 +51,7 @@ class DriveBackupArchive(private val context: Context) {
         return linkedMapOf(
             "memory-cards" to File(EmulatorStorage.flycastSystemDir(context), "dc").apply { mkdirs() },
             "save-states" to EmulatorStorage.saveStatesDir(context, path),
+            "battery-saves" to com.sbro.emucoreh.core.SegaSaveFiles.directory(context, path),
             "cheat-files" to EmulatorStorage.importedCheatsDir(context),
             "patches" to EmulatorStorage.patchesDir(context, path),
             "customization" to File(context.filesDir, "customization"),
@@ -66,6 +67,7 @@ class DriveBackupArchive(private val context: Context) {
         if (parts.size < 2 || parts.any { it.isBlank() || it == "." || it == ".." || '\\' in it || ':' in it }) return false
         return when (parts[0]) {
             "memory-cards" -> parts.size == 2 && parts[1].endsWith(".bin", true)
+            "battery-saves" -> com.sbro.emucoreh.core.SegaSaveFiles.isBackupPath(name.substringAfter('/'))
             "save-states" -> parts.size == 2 &&
                 (name.endsWith(".rstate", true) || name.endsWith(".png", true))
             "cheat-files", "patches" -> parts.size == 2 && name.endsWith(".pnach", true)
@@ -83,10 +85,12 @@ class DriveBackupArchive(private val context: Context) {
     }
 
     private suspend fun exportSettings(): JSONObject = preferences.exportJson()
+        .put("segaSettings", com.sbro.emucoreh.core.SegaSettingsBackup.export(context))
         .put("emulationSideArtwork", preferences.emulationSideArtwork.first().preferenceValue)
 
     private suspend fun importSettings(json: JSONObject) {
         preferences.importJson(json)
+        com.sbro.emucoreh.core.SegaSettingsBackup.restore(context, json.optJSONObject("segaSettings"))
         if (json.has("emulationSideArtwork")) preferences.setEmulationSideArtwork(
             EmulationSideArtwork.fromPreference(json.getInt("emulationSideArtwork")))
     }
@@ -208,7 +212,11 @@ class DriveBackupArchive(private val context: Context) {
         for (i in 0 until files.length()) {
             val name = files.getJSONObject(i).getString("name")
             val prefix = name.substringBefore('/')
-            val category = if (prefix in setOf("side-artwork", "covers")) "customization" else prefix
+            val category = when (prefix) {
+                "side-artwork", "covers" -> "customization"
+                "battery-saves" -> "memory-cards"
+                else -> prefix
+            }
             if (category !in categories || prefix !in currentRoots) continue
             val root = currentRoots.getValue(prefix).canonicalFile
             val target = File(root, name.substringAfter('/')).canonicalFile

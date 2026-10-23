@@ -7,6 +7,8 @@ import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.EmulatorStorage
 import com.sbro.emucoreh.core.NativeApp
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.core.SegaPlatformDetector
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
@@ -25,6 +27,7 @@ private val SAVE_STATE_SLOTS = 0..10
 private val SAVE_STATE_FILE_REGEX = Regex("""^(.+?)\.(\d{2})\.rstate$""", RegexOption.IGNORE_CASE)
 private const val SAVE_STATE_MAGIC = 0x54534345
 private const val CURRENT_SAVE_STATE_VERSION = 1
+private val SEGA_SAVE_STATE_IDENTITY_REGEX = Regex("^JG-(GENESIS|SEGA_CD|SEGA_32X|MASTER_SYSTEM|GAME_GEAR|SG_1000)-[A-F0-9]{16}$")
 private const val MAX_IMPORT_FILE_BYTES = 1_073_741_824L
 private const val MAX_IMPORT_ARCHIVE_BYTES = 4_294_967_296L
 private const val MAX_IMPORT_CANDIDATES = 500
@@ -41,7 +44,10 @@ data class SaveStateImportCandidate(
     val targetSlot: Int,
     val serial: String?,
     val format: SaveStateImportFormat,
-    val sizeBytes: Long
+    val sizeBytes: Long,
+    val version: Int = CURRENT_SAVE_STATE_VERSION,
+    val coreId: Int = 0,
+    val consoleTag: Int? = null
 )
 
 data class SaveStateImportPreview(
@@ -78,8 +84,53 @@ internal fun parseExternalSaveStateName(fileName: String): ParsedExternalSaveSta
 }
 
 internal fun saveStateFormatForVersion(version: Int?): SaveStateImportFormat {
-    return if (version == CURRENT_SAVE_STATE_VERSION) SaveStateImportFormat.CURRENT
+    return if (version == CURRENT_SAVE_STATE_VERSION || version == 2) SaveStateImportFormat.CURRENT
     else SaveStateImportFormat.UNKNOWN
+}
+
+internal data class SaveStateImportHeader(val version: Int, val coreId: Int, val consoleTag: Int? = null) {
+    val platform: EmulationPlatform? get() = if (coreId == 0) EmulationPlatform.DREAMCAST else when (consoleTag) {
+        0 -> EmulationPlatform.GENESIS
+        1, 3 -> EmulationPlatform.SEGA_CD
+        2 -> EmulationPlatform.SEGA_32X
+        4 -> EmulationPlatform.MASTER_SYSTEM
+        5 -> EmulationPlatform.GAME_GEAR
+        6 -> EmulationPlatform.SG_1000
+        else -> null
+    }
+}
+
+/** Read only the container/console prefix; serialized game memory can be very large. */
+internal fun readSaveStateImportHeader(input: InputStream): SaveStateImportHeader? {
+    val version = readEmuCoreHSaveStateVersion(input) ?: return null
+    if (version == 1) return SaveStateImportHeader(1, 0)
+    if (version != 2) return null
+    val suffix = ByteArray(14) // core ID, JGLRSTA1, console ID, at least one payload byte
+    var offset = 0
+    while (offset < suffix.size) {
+        val count = input.read(suffix, offset, suffix.size - offset)
+        if (count <= 0) return null
+        offset += count
+    }
+    if (!suffix.copyOfRange(0, 4).contentEquals(byteArrayOf(1, 0, 0, 0)) ||
+        !suffix.copyOfRange(4, 12).contentEquals("JGLRSTA1".toByteArray(Charsets.US_ASCII))) return null
+    return SaveStateImportHeader(2, 1, suffix[12].toInt() and 0xff).takeIf { it.platform != null }
+}
+
+internal fun isSaveStateImportCompatible(
+    header: SaveStateImportHeader,
+    fileName: String,
+    selectedPlatform: EmulationPlatform?
+): Boolean {
+    val platform = header.platform ?: return false
+    if (selectedPlatform != null && selectedPlatform != platform) return false
+    val cleanName = fileName.substringAfterLast('/').substringAfterLast('\\')
+    val identity = SAVE_STATE_FILE_REGEX.matchEntire(cleanName)?.groupValues?.get(1)?.uppercase(Locale.ROOT)
+    val namespaced = cleanName.startsWith("JG-", ignoreCase = true)
+    if (header.coreId == 0) return !namespaced
+    if (!namespaced) return selectedPlatform != null
+    val match = identity?.let(SEGA_SAVE_STATE_IDENTITY_REGEX::matchEntire) ?: return false
+    return match.groupValues[1] == platform.name
 }
 
 internal fun allocateSaveStateSlot(preferred: Int?, occupied: Set<Int>): Int? {
@@ -107,6 +158,9 @@ internal fun findFallbackSaveStateFile(
 private fun String?.normalizeSaveStateSerialKey(): String? {
     if (this.isNullOrBlank()) return null
     val cleanSerial = trim().uppercase(Locale.ROOT)
+    // Hashes can themselves contain four letters followed by five digits; never
+    // let the legacy product-code normalizer truncate a Sega identity.
+    if (SEGA_SAVE_STATE_IDENTITY_REGEX.matches(cleanSerial)) return cleanSerial
     val regex = Regex("([A-Z]{4})[^A-Z0-9]*([0-9]{3})[^A-Z0-9]*([0-9]{2})")
     val altRegex = Regex("([A-Z]{4})[^A-Z0-9]*([0-9]{5})")
     regex.find(cleanSerial)?.let { match ->
@@ -145,6 +199,13 @@ data class SaveStateEntryInfo(
 }
 
 class SaveStateRepository(private val context: Context) {
+
+    private var saveDirectoryOverride: File? = null
+
+    /** Keep repository integration tests independent of the app's process-wide DataStore. */
+    internal constructor(context: Context, saveDirectory: File) : this(context) {
+        saveDirectoryOverride = saveDirectory
+    }
 
     private val gameRepository = GameRepository()
     private val gameLibraryCacheRepository = GameLibraryCacheRepository(context)
@@ -296,14 +357,14 @@ class SaveStateRepository(private val context: Context) {
                 }
             } ?: error("Unable to open the selected file")
 
-            val directVersion = readEmuCoreHSaveStateVersion(stagedFile.inputStream())
+            val directVersion = stagedFile.inputStream().use(::readEmuCoreHSaveStateVersion)
             val rawCandidates = if (directVersion != null) {
                 listOf(
                     RawImportCandidate(
                         entryName = null,
                         fileName = displayName,
                         sizeBytes = stagedFile.length(),
-                        version = directVersion
+                        header = stagedFile.inputStream().use(::readSaveStateImportHeader)
                     )
                 )
             } else {
@@ -351,7 +412,9 @@ class SaveStateRepository(private val context: Context) {
                                     source.copyBoundedTo(output, MAX_IMPORT_FILE_BYTES)
                                 }
                             }
-                            check(readEmuCoreHSaveStateVersion(temporary.inputStream()) == CURRENT_SAVE_STATE_VERSION) {
+                            val header = temporary.inputStream().use(::readSaveStateImportHeader)
+                            check(header != null && header == SaveStateImportHeader(candidate.version, candidate.coreId, candidate.consoleTag) &&
+                                isSaveStateImportCompatible(header, candidate.targetFileName, null)) {
                                 "Invalid EmuCoreH save state"
                             }
                             check(!target.exists()) { "Target slot is no longer empty" }
@@ -396,18 +459,21 @@ class SaveStateRepository(private val context: Context) {
             mutableMapOf("selected" to listSlots(gamePath, gameSerial).filter { it.exists }.mapTo(mutableSetOf()) { it.slot })
         }
         val normalizedGameSerial = gameSerial.normalizeSaveStateSerialKey()
+        val selectedPlatform = gamePath?.takeIf { it.isNotBlank() }?.let { SegaPlatformDetector.detect(context, it) }
         var skipped = 0
         var incompatible = 0
         val candidates = mutableListOf<SaveStateImportCandidate>()
 
         rawCandidates.take(MAX_IMPORT_CANDIDATES).forEach { raw ->
-            val format = saveStateFormatForVersion(raw.version)
-            if (format == SaveStateImportFormat.UNKNOWN || raw.sizeBytes !in 1..MAX_IMPORT_FILE_BYTES) {
+            val header = raw.header
+            val format = saveStateFormatForVersion(header?.version)
+            if (header == null || format == SaveStateImportFormat.UNKNOWN || raw.sizeBytes !in 1..MAX_IMPORT_FILE_BYTES ||
+                !isSaveStateImportCompatible(header, raw.fileName, selectedPlatform)) {
                 incompatible++
                 return@forEach
             }
             val parsed = parseExternalSaveStateName(raw.fileName)
-            if (normalizedGameSerial != null && parsed?.serial != null && parsed.serial != normalizedGameSerial) {
+            if (header.coreId == 0 && normalizedGameSerial != null && parsed?.serial != null && parsed.serial != normalizedGameSerial) {
                 skipped++
                 return@forEach
             }
@@ -441,7 +507,8 @@ class SaveStateRepository(private val context: Context) {
             } else {
                 parsed?.let { "${it.serial}.${targetSlot.toString().padStart(2, '0')}.rstate" }
             }
-            if (targetName.isNullOrBlank() || targetName in occupiedNames) {
+            if (targetName.isNullOrBlank() || targetName in occupiedNames ||
+                !isSaveStateImportCompatible(header, targetName, null)) {
                 skipped++
                 return@forEach
             }
@@ -454,7 +521,10 @@ class SaveStateRepository(private val context: Context) {
                 targetSlot = targetSlot,
                 serial = parsed?.serial ?: normalizedGameSerial,
                 format = format,
-                sizeBytes = raw.sizeBytes
+                sizeBytes = raw.sizeBytes,
+                version = header.version,
+                coreId = header.coreId,
+                consoleTag = header.consoleTag
             )
         }
         skipped += (rawCandidates.size - MAX_IMPORT_CANDIDATES).coerceAtLeast(0)
@@ -478,12 +548,12 @@ class SaveStateRepository(private val context: Context) {
             }
             .take(MAX_IMPORT_CANDIDATES + 1)
             .map { entry ->
-                val version = zip.getInputStream(entry).use(::readEmuCoreHSaveStateVersion)
+                val header = zip.getInputStream(entry).use(::readSaveStateImportHeader)
                 RawImportCandidate(
                     entryName = entry.name,
                     fileName = entry.name.substringAfterLast('/').substringAfterLast('\\'),
                     sizeBytes = entry.size,
-                    version = version
+                    header = header
                 )
             }
             .toList()
@@ -503,7 +573,7 @@ class SaveStateRepository(private val context: Context) {
         val entryName: String?,
         val fileName: String,
         val sizeBytes: Long,
-        val version: Int?
+        val header: SaveStateImportHeader?
     )
 
     fun getPreviewImagePath(entry: SaveStateEntryInfo): String? =
@@ -565,6 +635,7 @@ class SaveStateRepository(private val context: Context) {
     }
 
     private fun saveStatesDir(): File {
+        saveDirectoryOverride?.let { return it.apply { mkdirs() } }
         return EmulatorStorage.saveStatesDir(context, preferences.getEmulatorDataPathSync())
     }
 

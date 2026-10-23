@@ -7,6 +7,16 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class LibraryPlatformTest {
+    @Test fun segaExplicitPlatformsAndExtensionsDoNotConsultArcadeCatalog() {
+        val explicit = game("ikaruga.zip").copy(platform = "GENESIS")
+        assertEquals(LibraryPlatform.GENESIS, LibraryPlatformResolver.resolve(explicit) { error("arcade") })
+        listOf("md" to LibraryPlatform.GENESIS, "32x" to LibraryPlatform.SEGA_32X,
+            "sms" to LibraryPlatform.MASTER_SYSTEM, "gg" to LibraryPlatform.GAME_GEAR,
+            "sg" to LibraryPlatform.SG_1000).forEach { (ext, expected) ->
+            assertEquals(expected, LibraryPlatformResolver.resolve(game("game.$ext")) { error("arcade") })
+        }
+    }
+
     @Test
     fun knownRomsetsUseTheirBundledCatalogPlatform() {
         listOf(

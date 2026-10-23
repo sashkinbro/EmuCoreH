@@ -400,6 +400,7 @@ object NativeApp {
     @JvmStatic fun onNativeSurfaceDestroyed() = CoreRuntime.detachSurface()
     @JvmStatic fun runVMThread(path: String): Boolean {
         currentGamePath = path
+        CoreRuntime.launchIdentityPath = saveStateIdentityPath ?: path
         return CoreRuntime.start(path, biosOnly = path.isBlank())
     }
     /** Disc product code reported by the core after the current game booted. */
@@ -442,7 +443,10 @@ object NativeApp {
         if (path.isBlank()) return null
         val context = getContext() ?: return null
         val directory = EmulatorStorage.saveStatesDir(context, dataRootOverride)
-        val identity = extractDiscSerial(path) ?: path.sha256().take(16).uppercase()
+        val platform = SegaPlatformDetector.detect(context, path)
+        val identity = if (platform.isSega) {
+            "JG-${platform.name}-${path.sha256().take(16).uppercase()}"
+        } else extractDiscSerial(path) ?: path.sha256().take(16).uppercase()
         return File(directory, "$identity.${slot.coerceIn(0, 99).toString().padStart(2, '0')}.rstate").absolutePath
     }
     @JvmStatic fun getCurrentSaveStatePath(slot: Int): String? =

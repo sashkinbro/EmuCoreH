@@ -11,7 +11,8 @@ data class IgdbCatalogSummary(
     val coverUrl: String?,
     val heroUrl: String?,
     val genres: List<String> = emptyList(),
-    val primarySerial: String? = null
+    val primarySerial: String? = null,
+    val platforms: List<String> = emptyList()
 )
 
 data class IgdbCatalogDetails(
@@ -27,5 +28,6 @@ data class IgdbCatalogDetails(
     val videos: List<String>,
     val coverUrl: String?,
     val heroUrl: String?,
-    val primarySerial: String? = null
+    val primarySerial: String? = null,
+    val platforms: List<String> = emptyList()
 )

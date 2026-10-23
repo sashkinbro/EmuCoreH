@@ -44,6 +44,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.GamepadManager
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.core.SegaControlProfiles
 import com.sbro.emucoreh.core.KeyboardMouseBindings
 import com.sbro.emucoreh.core.KeyboardMouseManager
 import com.sbro.emucoreh.data.AppPreferences
@@ -62,7 +64,7 @@ private enum class KeyboardMouseMappingSource {
 }
 
 @Composable
-fun GlobalKeyboardMouseSettingsSection(showTitle: Boolean = true) {
+fun GlobalKeyboardMouseSettingsSection(showTitle: Boolean = true, platform: EmulationPlatform = EmulationPlatform.DREAMCAST) {
     val context = LocalContext.current
     val preferences = remember(context) { AppPreferences(context.applicationContext) }
     val scope = rememberCoroutineScope()
@@ -70,6 +72,7 @@ fun GlobalKeyboardMouseSettingsSection(showTitle: Boolean = true) {
     val connection by KeyboardMouseManager.connection.collectAsState()
 
     KeyboardMouseSettingsContent(
+        platform = platform,
         settings = settings,
         onSettingsChange = { updated ->
             scope.launch { preferences.setKeyboardMouseSettings(updated) }
@@ -85,10 +88,12 @@ fun PerGameKeyboardMouseSettingsSection(
     override: KeyboardMouseSettings?,
     globalSettings: KeyboardMouseSettings,
     onOverrideChange: (KeyboardMouseSettings?) -> Unit,
-    showTitle: Boolean = true
+    showTitle: Boolean = true,
+    platform: EmulationPlatform = EmulationPlatform.DREAMCAST
 ) {
     val connection by KeyboardMouseManager.connection.collectAsState()
     KeyboardMouseSettingsContent(
+        platform = platform,
         settings = override ?: globalSettings,
         onSettingsChange = onOverrideChange,
         connection = connection,
@@ -113,7 +118,8 @@ fun KeyboardMouseSettingsDialog(
     settings: KeyboardMouseSettings,
     onSettingsChange: (KeyboardMouseSettings) -> Unit,
     onDismiss: () -> Unit,
-    onUseGlobal: (() -> Unit)? = null
+    onUseGlobal: (() -> Unit)? = null,
+    platform: EmulationPlatform = EmulationPlatform.DREAMCAST
 ) {
     val connection by KeyboardMouseManager.connection.collectAsState()
     SettingsStyledDialog(
@@ -124,6 +130,7 @@ fun KeyboardMouseSettingsDialog(
         edgeToEdgeContent = true
     ) {
         KeyboardMouseSettingsContent(
+            platform = platform,
             settings = settings,
             onSettingsChange = onSettingsChange,
             connection = connection,
@@ -139,6 +146,7 @@ fun KeyboardMouseSettingsDialog(
 
 @Composable
 private fun KeyboardMouseSettingsContent(
+    platform: EmulationPlatform,
     settings: KeyboardMouseSettings,
     onSettingsChange: (KeyboardMouseSettings) -> Unit,
     connection: KeyboardMouseManager.ConnectionState,
@@ -231,7 +239,8 @@ private fun KeyboardMouseSettingsContent(
                     AppPreferences.MOUSE_WHEEL_LEFT_STICK to stringResource(R.string.settings_mouse_wheel_left_stick),
                     AppPreferences.MOUSE_WHEEL_RIGHT_STICK to stringResource(R.string.settings_mouse_wheel_right_stick),
                     AppPreferences.MOUSE_WHEEL_SHOULDERS to stringResource(R.string.settings_mouse_wheel_shoulders)
-                ),
+                ).filter { !platform.isSega || it.first in setOf(AppPreferences.MOUSE_WHEEL_OFF, AppPreferences.MOUSE_WHEEL_DPAD) ||
+                    (platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X) && it.first == AppPreferences.MOUSE_WHEEL_SHOULDERS) },
                 selectedValue = settings.mouseWheelMode,
                 onSelect = { mode ->
                     onSettingsChange(settings.copy(mouseWheelMode = mode))
@@ -249,7 +258,7 @@ private fun KeyboardMouseSettingsContent(
                     }
                 )
             }
-            ChoiceSection(
+            if (!platform.isSega) ChoiceSection(
                 title = stringResource(R.string.settings_mouse_aim_mode),
                 options = listOf(
                     AppPreferences.MOUSE_AIM_OFF to stringResource(R.string.settings_mouse_aim_off),
@@ -262,7 +271,7 @@ private fun KeyboardMouseSettingsContent(
                 },
                 helpText = stringResource(R.string.settings_mouse_aim_mode_desc)
             )
-            if (settings.mouseAimMode != KeyboardMouseBindings.MOUSE_AIM_OFF) {
+            if (!platform.isSega && settings.mouseAimMode != KeyboardMouseBindings.MOUSE_AIM_OFF) {
                 KeyboardMouseSliderItem(
                     title = stringResource(R.string.settings_mouse_sensitivity),
                     value = settings.mouseSensitivity,
@@ -363,6 +372,7 @@ private fun KeyboardMouseSettingsContent(
 
     mappingSource?.let { source ->
         KeyboardMouseMappingDialog(
+            platform = platform,
             settings = settings,
             onSettingsChange = onSettingsChange,
             initialSource = source,
@@ -373,14 +383,15 @@ private fun KeyboardMouseSettingsContent(
 
 @Composable
 private fun KeyboardMouseMappingDialog(
+    platform: EmulationPlatform,
     settings: KeyboardMouseSettings,
     onSettingsChange: (KeyboardMouseSettings) -> Unit,
     initialSource: KeyboardMouseMappingSource,
     onDismiss: () -> Unit
 ) {
     val capture by KeyboardMouseManager.bindingCapture.collectAsState()
-    val actions = remember {
-        GamepadManager.mappableButtonActions(includeTriggerActions = true)
+    val actions = remember(platform) {
+        GamepadManager.mappableButtonActions(includeTriggerActions = true).filter { SegaControlProfiles.supports(platform, it.id) }
     }
     var selectedPad by rememberSaveable { mutableIntStateOf(settings.keyboardTargetPad) }
     var source by rememberSaveable { mutableIntStateOf(initialSource.ordinal) }
@@ -501,7 +512,7 @@ private fun KeyboardMouseMappingDialog(
                     else -> KeyboardMouseBindings.keyboardKeyLabel(resolved)
                 }
                 KeyboardMouseBindingRow(
-                    title = gamepadActionLabel(action.id),
+                    title = gamepadActionLabel(action.id, platform = platform),
                     value = value,
                     autoLabel = if (!hasCustom && resolved != null) {
                         stringResource(R.string.settings_gamepad_mapping_auto_format)

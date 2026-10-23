@@ -5,6 +5,25 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MultiDiscLibraryTest {
+    @Test fun playlistInheritsSegaCdPlatform() {
+        val first = game("First.cue").copy(platform = "SEGA_CD")
+        val second = game("Second.cue").copy(platform = "SEGA_CD")
+        val playlist = game("Game.m3u")
+        val grouped = MultiDiscLibrary.group(listOf(first, second, playlist),
+            mapOf(playlist.path to listOf(first.path, second.path))).single()
+        assertEquals("SEGA_CD", grouped.platform)
+        assertEquals("SEGA_CD", grouped.discs.first().asGameItem(grouped).platform)
+    }
+
+    @Test fun mixedConsoleDiscsCannotFormAPlaylistOrAutomaticGroup() {
+        val first = game("Adventure (Disc 1).chd").copy(platform = "SEGA_CD")
+        val second = game("Adventure (Disc 2).chd").copy(platform = "DREAMCAST")
+        val playlist = game("Adventure.m3u")
+        assertEquals(listOf(first, second), MultiDiscLibrary.group(listOf(first, second)))
+        val games = listOf(first, second, playlist)
+        assertEquals(games, MultiDiscLibrary.group(games, mapOf(playlist.path to listOf(first.path, second.path))))
+    }
+
     private fun game(name: String, parent: String = "/games", serial: String? = null) = GameItem(
         title = name.substringBeforeLast('.'), path = "$parent/$name", fileName = name,
         fileSize = 100L, lastModified = 10L, serial = serial, discSize = 200L

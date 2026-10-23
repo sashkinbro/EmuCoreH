@@ -41,6 +41,13 @@ ZIP accepts exactly one supported cartridge (64 MiB maximum); disc ZIPs and
 multiple-cartridge ZIPs must be extracted. No 7z or M3U parser is included.
 The frontend can materialize playlists and select individual disc paths.
 
+The identified Sonic Classic Collection Nintendo DS-derived image (CRC32
+`27E22795`, 512 KiB, verified emulator-hook signatures) is rejected with
+`UNSUPPORTED_DS_COLLECTION_ROM` rather than hanging on a black screen. It contains
+CPU trap hooks for that collection's emulator and needs the original Mega Drive
+release instead. This check applies to plain/ZIP ROMs, uses full-image identity
+and instruction signatures, and never rewrites ROM bytes or guesses from names.
+
 Sega CD BIOS is user supplied: exactly 131072 bytes, named `bios_CD_U.bin`,
 `bios_CD_E.bin`, or `bios_CD_J.bin` in the system directory. Names are case
 insensitive; additional regional aliases are accepted. A mismatched regional

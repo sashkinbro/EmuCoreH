@@ -13,10 +13,5 @@
             android:name="androidx.test.core.app.InstrumentationActivityInvoker$EmptyFloatingActivity"
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
-        <provider
-            android:name="com.sbro.emucoreh.core.TestGameDocumentsProvider"
-            android:authorities="com.sbro.emucoreh.test.documents"
-            android:exported="true"
-            android:grantUriPermissions="true" />
     </application>
 </manifest>

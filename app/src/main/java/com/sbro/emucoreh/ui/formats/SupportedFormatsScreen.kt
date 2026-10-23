@@ -180,6 +180,12 @@ fun SupportedFormatsScreen(
                 )
 
                 FormatGroupCard(
+                    icon = Icons.Rounded.Memory,
+                    title = stringResource(R.string.formats_sega_title),
+                    body = stringResource(R.string.formats_sega_body),
+                    formats = listOf("MD", "GEN", "SMD", "BIN", "32X", "SMS", "GG", "SG", "ZIP", "CUE/BIN", "CHD", "M3U")
+                )
+                FormatGroupCard(
                     icon = Icons.Rounded.FolderZip,
                     title = stringResource(R.string.formats_psp_homebrew_title),
                     body = stringResource(R.string.formats_psp_homebrew_body),

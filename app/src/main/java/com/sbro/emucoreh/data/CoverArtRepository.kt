@@ -8,6 +8,9 @@ import android.net.NetworkCapabilities
 import android.util.Log
 import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.GameFormats
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.core.SegaPlatformDetector
+import com.sbro.emucoreh.data.igdb.catalogPlatformName
 import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.data.boxart.DiscGdtexExtractor
 import com.sbro.emucoreh.data.boxart.DiscScrapeAccess
@@ -128,7 +131,7 @@ class CoverArtRepository(context: Context) {
         }
         prefetchedInfo.begin()
         val ids = games.filter { game ->
-            !isArcadeGame(game.fileName) &&
+            !isSegaGame(game) && !isArcadeGame(game.fileName) &&
                 findCachedCoverPath(game.serial, game.title, ignoreDisabled = true)
                     .let { it == null || isPendingOnlineCover(it) } &&
                 !hasRecentMiss(game)
@@ -173,10 +176,13 @@ class CoverArtRepository(context: Context) {
     }.getOrDefault(false)
 
     private fun hasRecentMiss(game: GameItem): Boolean {
-        val key = normalizeSerial(game.serial) ?: titleCoverKey(game.title) ?: return false
-        val miss = cache.missFile(key)
+        val key = coverKeys(game.serial, game.title, gamePlatform(game)).firstOrNull() ?: return false
+        val miss = coverMissFile(key)
         return miss.isFile && System.currentTimeMillis() - miss.lastModified() < MISS_TTL_MS
     }
+
+    private fun coverMissFile(key: String): File = if (key.startsWith("sega_"))
+        File(fetchDirectory, "$key.miss-sega-v2") else cache.missFile(key)
 
     fun isMissingManagedCover(path: String?): Boolean =
         isManagedCoverCachePath(path) && !path.isNullOrBlank() && !isUsableCoverFile(File(path))
@@ -187,20 +193,21 @@ class CoverArtRepository(context: Context) {
      * that was already resolved: the caller keeps showing the previous cover
      * while the background sync re-downloads it.
      */
-    fun displayCoverPath(serial: String?, title: String?, candidate: String?): String? {
+    fun displayCoverPath(serial: String?, title: String?, candidate: String?, platform: String? = null): String? {
         if (candidate != null && !isManagedCoverCachePath(candidate)) return candidate
-        return findCachedCoverPath(serial, title = title) ?: candidate
+        return findCachedCoverPath(serial, title = title, platform = platform) ?: candidate
     }
 
     fun findCachedCoverPath(
         serial: String?,
         title: String? = null,
-        ignoreDisabled: Boolean = false
+        ignoreDisabled: Boolean = false,
+        platform: String? = null
     ): String? {
         if (!ignoreDisabled && !isFetchBoxartEnabled()) {
             return null
         }
-        val coverKeys = coverKeys(serial, title)
+        val coverKeys = coverKeys(serial, title, platform)
         if (coverKeys.isEmpty()) {
             Log.d(TAG, "No serial or title provided")
             return null
@@ -217,8 +224,9 @@ class CoverArtRepository(context: Context) {
 
     fun findCachedCoverUri(
         serial: String?,
-        title: String? = null
-    ): String? = findCachedCoverPath(serial, title = title)
+        title: String? = null,
+        platform: String? = null
+    ): String? = findCachedCoverPath(serial, title = title, platform = platform)
 
     /** Cache key used when a game has no product code (CHD, arcade archives). */
     private fun titleCoverKey(title: String?): String? = title
@@ -228,15 +236,19 @@ class CoverArtRepository(context: Context) {
         ?.take(80)
         ?.takeIf { it.isNotBlank() }
 
-    private fun coverKeys(serial: String?, title: String?): List<String> =
-        listOfNotNull(normalizeSerial(serial), titleCoverKey(title)).distinct()
+    private fun coverKeys(serial: String?, title: String?, platform: String? = null): List<String> =
+        listOfNotNull(normalizeSerial(serial), titleCoverKey(title)).distinct().map { scopedCoverCacheKey(it, platform) }
+
+    private fun gamePlatform(game: GameItem): String = game.platform ?: SegaPlatformDetector.detectName(game.fileName).name
+    private fun isSegaGame(game: GameItem): Boolean =
+        catalogPlatformName(gamePlatform(game)) in setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000")
 
     fun downloadCover(game: GameItem, mode: CoverFetchMode = CoverFetchMode.FULL): String? {
         if (!isFetchBoxartEnabled()) {
             Log.d(TAG, "Cover download skipped: box art fetching is disabled")
             return null
         }
-        val primaryKey = normalizeSerial(game.serial) ?: titleCoverKey(game.title)
+        val primaryKey = coverKeys(game.serial, game.title, gamePlatform(game)).firstOrNull()
         if (primaryKey == null) {
             Log.w(TAG, "Cannot download cover: no serial or title")
             return null
@@ -250,13 +262,13 @@ class CoverArtRepository(context: Context) {
         // Reuse artwork cached under the other key (title before the serial was
         // learned, or serial after a rename) instead of downloading a duplicate.
         // Offline label art is not final: it still needs the online upgrade.
-        findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
+        findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true, platform = gamePlatform(game))
             ?.takeIf { !isPendingOnlineCover(it) }
             ?.let { return it }
         val effectiveMode = if (mode != CoverFetchMode.OFFLINE_ONLY && !networkAvailable) {
             postponeOnlineCovers()
             if (mode == CoverFetchMode.REPOSITORY_ONLY) {
-                return findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
+                return findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true, platform = gamePlatform(game))
             }
             CoverFetchMode.OFFLINE_ONLY
         } else mode
@@ -293,17 +305,26 @@ class CoverArtRepository(context: Context) {
 
     private fun downloadCoverResolved(game: GameItem, key: String, mode: CoverFetchMode): String? {
         Log.d(TAG, "========== BOX ART DOWNLOAD START ($key) ==========")
-        val existingCover = findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true)
+        val existingCover = findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true, platform = gamePlatform(game))
             ?.let(::File)
             ?: findCoverFile(key)
         val prefs = AppPreferences(context)
         val style = prefs.getCoverArtStyleSync()
         val isLight = prefs.isThemeLightSync()
+        if (isSegaGame(game)) {
+            if (existingCover != null && cache.isOnline(existingCover)) return existingCover.absolutePath
+            if (mode == CoverFetchMode.OFFLINE_ONLY) return existingCover?.absolutePath
+            val miss = coverMissFile(key)
+            if (miss.isFile && System.currentTimeMillis() - miss.lastModified() < MISS_TTL_MS) return existingCover?.absolutePath
+            val downloaded = downloadRepositoryCover(game, key, style, isLight)
+            if (downloaded != null) miss.delete() else miss.writeText("not-found at ${System.currentTimeMillis()}")
+            return downloaded ?: existingCover?.absolutePath
+        }
         if (existingCover != null && cache.isOnline(existingCover)) {
             Log.d(TAG, "Cover already exists and matches style and theme: ${existingCover.absolutePath}")
             return existingCover.absolutePath
         }
-        val missFile = cache.missFile(key)
+        val missFile = coverMissFile(key)
         val missFresh = missFile.exists() &&
             System.currentTimeMillis() - missFile.lastModified() < MISS_TTL_MS
 
@@ -402,6 +423,15 @@ class CoverArtRepository(context: Context) {
 
     /** Uses only library metadata and the bundled index; never opens a game image. */
     private fun downloadRepositoryCover(game: GameItem, key: String, style: Int, isLight: Boolean): String? {
+        if (isSegaGame(game)) {
+            val platform = catalogPlatformName(gamePlatform(game))
+            val urls = listOfNotNull(
+                coverIndex.findCoverBySerial(game.serial, style, isLight, platform),
+                coverIndex.findSegaCover(game.title, game.fileName, platform, style, isLight)
+            ).distinct()
+            for (url in urls) downloadImage(url, key, "EmuCoreH Sega covers")?.let { return it }
+            return null
+        }
         val arcade = isArcadeGame(game.fileName)
         val title = FlycastBoxartSource.searchName(game.title, arcade)
         val urls = listOfNotNull(
@@ -479,16 +509,17 @@ class CoverArtRepository(context: Context) {
     }
 
     /** Public artwork URL of a cached cover, used for shareable metadata. */
-    fun buildPublicCoverUrl(serial: String?, title: String? = null): String? {
+    fun buildPublicCoverUrl(serial: String?, title: String? = null, platform: String? = null): String? {
         val prefs = AppPreferences(context)
         val style = prefs.getCoverArtStyleSync()
         val isLight = prefs.isThemeLightSync()
-        val indexUrl = coverIndex.findCoverBySerial(serial, style, isLight)
-            ?: coverIndex.findCoverByTitle(title, style, isLight)
-            ?: coverIndex.findArcadeCover(title, serial, style, isLight)
+        val canonical = catalogPlatformName(platform)
+        val indexUrl = coverIndex.findCoverBySerial(serial, style, isLight, canonical)
+            ?: coverIndex.findCoverByTitle(title, style, isLight, platform = canonical)
+            ?: (if (canonical == "Dreamcast") coverIndex.findArcadeCover(title, serial, style, isLight) else null)
         if (indexUrl != null) return indexUrl
 
-        for (key in coverKeys(serial, title)) {
+        for (key in coverKeys(serial, title, platform)) {
             val urlFile = File(fetchDirectory, "$key.url")
             if (!urlFile.isFile) continue
             val url = runCatching { urlFile.readText().trim() }.getOrNull().orEmpty()

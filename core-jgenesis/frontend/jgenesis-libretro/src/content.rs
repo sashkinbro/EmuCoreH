@@ -33,10 +33,10 @@ impl Console {
     pub fn default_geometry(self) -> (u32, u32, u32, u32, f32) {
         match self {
             Self::Genesis | Self::SegaCd | Self::Sega32X | Self::SegaCd32X => {
-                (320, 224, 320, 240, 4.0 / 3.0)
+                (320, 224, 320, 480, 4.0 / 3.0)
             }
             Self::MasterSystem | Self::Sg1000 => (256, 192, 256, 240, 4.0 / 3.0),
-            Self::GameGear => (160, 144, 160, 144, 10.0 / 9.0),
+            Self::GameGear => (160, 144, 256, 240, 10.0 / 9.0),
         }
     }
 }
@@ -57,6 +57,30 @@ fn has_s32x_security_program(bytes: &[u8]) -> bool {
     let program = s32x_core::security_program();
     let end = start.saturating_add(program.len());
     bytes.len() >= end && &bytes[start..end] == program
+}
+
+fn validate_cartridge(bytes: &[u8]) -> Result<(), String> {
+    // This exact Nintendo DS Collection image replaces normal 68000 branch
+    // instructions with emulator hooks. On Genesis hardware they enter the
+    // game's LINE1010 exception handler, leaving its display disabled.
+    // Never rewrite the image or infer incompatibility from its file name.
+    const HOOKS: &[(usize, u16)] = &[
+        (0x107e, 0xa6f6),
+        (0x12ec, 0xa6f8),
+        (0x131a, 0xa6f8),
+        (0x29a8, 0xa6fa),
+        (0x71b62, 0xa6f6),
+        (0x72738, 0xa6f4),
+        (0x72750, 0xa6f4),
+    ];
+    if bytes.len() == 524288
+        && &bytes[0x180..0x18e] == b"GM 00004049-01"
+        && HOOKS.iter().all(|(offset, opcode)| bytes[*offset..*offset + 2] == opcode.to_be_bytes())
+        && crc::Crc::<u32>::new(&crc::CRC_32_ISO_HDLC).checksum(bytes) == 0x27e22795
+    {
+        return Err("UNSUPPORTED_DS_COLLECTION_ROM: This Sonic Classic Collection ROM contains Nintendo DS emulator hooks. Use an original Genesis/Mega Drive ROM release.".into());
+    }
+    Ok(())
 }
 
 pub fn is_disc_path(path: &Path) -> bool {
@@ -137,6 +161,7 @@ pub fn read_cartridge(path: &Path) -> Result<(Vec<u8>, String), String> {
         }
 
         if let Some(candidate) = candidate {
+            validate_cartridge(&candidate.0)?;
             return Ok(candidate);
         }
 
@@ -149,6 +174,7 @@ pub fn read_cartridge(path: &Path) -> Result<(Vec<u8>, String), String> {
     }
     let bytes = fs::read(path)
         .map_err(|error| format!("Unable to read ROM {}: {error}", path.display()))?;
+    validate_cartridge(&bytes)?;
     Ok((bytes, extension))
 }
 
@@ -223,6 +249,83 @@ fn strip_disc_marker(name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn collection_emulator_hooks_fail_with_actionable_error() {
+        // Original synthetic bytes, not a bundled retail ROM. The final four bytes make
+        // its CRC match the known image so this exercises the entire identification guard.
+        let mut bytes = vec![0; 524288];
+        bytes[0x100..0x104].copy_from_slice(b"SEGA");
+        bytes[0x180..0x18e].copy_from_slice(b"GM 00004049-01");
+        bytes[0x18e..0x190].copy_from_slice(&[0x39, 0x4d]);
+        for (offset, opcode) in [
+            (0x107e, 0xa6f6u16),
+            (0x12ec, 0xa6f8),
+            (0x131a, 0xa6f8),
+            (0x29a8, 0xa6fa),
+            (0x71b62, 0xa6f6),
+            (0x72738, 0xa6f4),
+            (0x72750, 0xa6f4),
+        ] {
+            bytes[offset..offset + 2].copy_from_slice(&opcode.to_be_bytes());
+        }
+        bytes[524284..].copy_from_slice(&[0x89, 0x6b, 0x28, 0x62]);
+        let path =
+            std::env::temp_dir().join(format!("jgenesis-unsupported-{}.md", std::process::id()));
+        fs::write(&path, &bytes).unwrap();
+        let error = read_cartridge(&path).err().expect("Collection CPU hooks must be rejected");
+        assert!(error.starts_with("UNSUPPORTED_DS_COLLECTION_ROM:"));
+        assert!(error.contains("original Genesis/Mega Drive"));
+        let archive_path = path.with_extension("zip");
+        let mut archive = zip::ZipWriter::new(File::create(&archive_path).unwrap());
+        archive.start_file("game.md", zip::write::SimpleFileOptions::default()).unwrap();
+        std::io::Write::write_all(&mut archive, &bytes).unwrap();
+        archive.finish().unwrap();
+        assert!(
+            read_cartridge(&archive_path)
+                .err()
+                .unwrap()
+                .starts_with("UNSUPPORTED_DS_COLLECTION_ROM:")
+        );
+        fs::remove_file(archive_path).unwrap();
+        // A different full-ROM checksum or restored normal branch must never be rejected.
+        bytes[524287] ^= 1;
+        fs::write(&path, &bytes).unwrap();
+        assert_eq!(read_cartridge(&path).unwrap().0, bytes);
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn genesis_family_geometry_covers_interlaced_output() {
+        for console in [Console::Genesis, Console::SegaCd, Console::Sega32X, Console::SegaCd32X] {
+            let (base_width, base_height, max_width, max_height, _) = console.default_geometry();
+            assert_eq!((base_width, base_height), (320, 224));
+            // Horizontal borders stay disabled; NTSC/PAL VDP interlace doubles 224/240 lines.
+            for (width, height) in [(256, 224), (320, 240), (256, 448), (320, 480)] {
+                assert!(
+                    width <= max_width && height <= max_height,
+                    "{console:?} cannot present {width}x{height} within {max_width}x{max_height}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn eight_bit_geometry_covers_exposed_resolution_and_border_options() {
+        for console in [Console::MasterSystem, Console::GameGear, Console::Sg1000] {
+            let (base_width, base_height, max_width, max_height, _) = console.default_geometry();
+            if console == Console::GameGear {
+                assert_eq!((base_width, base_height), (160, 144));
+            }
+            // Upstream viewport/buffer width is 256, including its left border. PAL is at most 240 lines.
+            for (width, height) in [(160, 144), (256, 192), (256, 224), (256, 240)] {
+                assert!(
+                    width <= max_width && height <= max_height,
+                    "{console:?} cannot present {width}x{height} within {max_width}x{max_height}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn strips_disc_markers() {

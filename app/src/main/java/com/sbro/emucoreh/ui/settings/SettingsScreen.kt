@@ -172,6 +172,7 @@ import com.sbro.emucoreh.core.buildUpscaleOptions
 import com.sbro.emucoreh.core.upscaleKeyToMultiplier
 import com.sbro.emucoreh.core.upscaleMultiplierKey
 import com.sbro.emucoreh.core.FlycastCoreOptions
+import com.sbro.emucoreh.core.EmulationPlatform
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
 import com.sbro.emucoreh.core.RendererDefaults
 import com.sbro.emucoreh.core.TvInterfaceMode
@@ -268,7 +269,7 @@ fun SettingsScreen(
     onBackClick: (() -> Unit)? = null,
     onOpenLanguageScreen: (() -> Unit)? = null,
     onOpenMemoryCardManager: (() -> Unit)? = null,
-    onOpenControlsLayoutEditor: (() -> Unit)? = null,
+    onOpenControlsLayoutEditor: ((EmulationPlatform) -> Unit)? = null,
     onOpenThemeManager: (() -> Unit)? = null,
     onOpenTouchControlCreator: (() -> Unit)? = null,
     viewModel: SettingsViewModel = viewModel()
@@ -406,7 +407,14 @@ fun SettingsScreen(
         }
     )
     val openLanguageSheet = rememberDebouncedClick(onClick = { onOpenLanguageScreen?.invoke() })
-    val settingsTabs = remember { SettingsTab.entries.toList() }
+    var selectedPlatformName by rememberSaveable { mutableStateOf(com.sbro.emucoreh.core.CoreRuntime.platform.name) }
+    val selectedPlatform = EmulationPlatform.valueOf(selectedPlatformName)
+    val settingsTabs = remember(selectedPlatform) {
+        SettingsTab.entries.filter { !selectedPlatform.isSega || segaSettingsTabAvailable(it.name) }
+    }
+    LaunchedEffect(settingsTabs) {
+        if (selectedTab !in settingsTabs) selectedTab = SettingsTab.Emulation
+    }
     fun selectRelativeTab(offset: Int) {
         val currentIndex = settingsTabs.indexOf(selectedTab).coerceAtLeast(0)
         selectedTab = settingsTabs[(currentIndex + offset + settingsTabs.size) % settingsTabs.size]
@@ -535,7 +543,10 @@ fun SettingsScreen(
                 StickyTabHeader(
                     showDivider = settingsTabsPinned
                 ) {
+                    Column {
+                    PlatformSelector(selectedPlatform) { selectedPlatformName = it.name; searchQuery = "" }
                     SettingsTabRow(
+                        tabs = settingsTabs,
                         selectedTab = selectedTab,
                         onSelected = { tab ->
                             if (selectedTab == tab) return@SettingsTabRow
@@ -543,6 +554,7 @@ fun SettingsScreen(
                         },
                         selectedTabFocusRequester = selectedTabFocusRequester
                     )
+                    }
                 }
             }
 
@@ -551,6 +563,7 @@ fun SettingsScreen(
             SettingsContent(
     uiState = uiState,
     selectedTab = selectedTab,
+    platform = selectedPlatform,
     context = context,
     launchGamePicker = launchGamePicker,
     launchBiosPicker = launchBiosPicker,
@@ -1014,11 +1027,11 @@ private fun SettingsCompactTopBar(
 
 @Composable
 private fun SettingsTabRow(
+    tabs: List<SettingsTab>,
     selectedTab: SettingsTab,
     onSelected: (SettingsTab) -> Unit,
     selectedTabFocusRequester: FocusRequester
 ) {
-    val tabs = remember { SettingsTab.entries.toList() }
     ScrollableFilterTabRow(
         tabs = tabs,
         selectedTab = selectedTab,
@@ -1035,6 +1048,7 @@ private fun SettingsTabRow(
 private fun SettingsContent(
     uiState: SettingsUiState,
     selectedTab: SettingsTab,
+    platform: EmulationPlatform,
     searchQuery: String,
     context: android.content.Context,
     launchGamePicker: () -> Unit,
@@ -1060,7 +1074,7 @@ private fun SettingsContent(
     topInset: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
     onOpenMemoryCardManager: (() -> Unit)? = null,
-    onOpenControlsLayoutEditor: (() -> Unit)? = null,
+    onOpenControlsLayoutEditor: ((EmulationPlatform) -> Unit)? = null,
     onOpenThemeManager: (() -> Unit)? = null,
     onOpenTouchControlCreator: (() -> Unit)? = null
 ) {
@@ -1095,7 +1109,21 @@ private fun SettingsContent(
             if (searchQuery.isNotBlank()) {
                 SettingsSearchResults(
                     query = searchQuery,
-                    entries = searchEntries,
+                    entries = searchEntries.filter { entry ->
+                        !platform.isSega || (segaSettingsTabAvailable(entry.tab.name) &&
+                            entry.titleRes !in setOf(
+                                R.string.settings_bios_path, R.string.settings_renderer, R.string.settings_upscale,
+                                R.string.settings_touchscreen_right_stick, R.string.settings_touchscreen_right_stick_sensitivity,
+                                R.string.settings_racing_mode, R.string.settings_left_stick_sensitivity, R.string.settings_right_stick_sensitivity,
+                                R.string.settings_invert_right_stick, R.string.settings_invert_right_stick_horizontal,
+                                R.string.settings_gyro_mode, R.string.settings_gyro_mode_light_gun, R.string.settings_gyro_stick,
+                                R.string.settings_arcade_device_player_1, R.string.settings_arcade_device_player_2,
+                                R.string.settings_light_gun_aim, R.string.settings_light_gun_cursor,
+                                R.string.settings_gyro_sensitivity, R.string.settings_gyro_smoothing,
+                                R.string.settings_gamepad_right_stick_sensitivity, R.string.settings_pad_vibration,
+                                R.string.settings_pad_vibration_strength, R.string.settings_pad_vibration_test,
+                                R.string.settings_pad_vibration_fallback, R.string.settings_mouse_aim_mode, R.string.settings_mouse_sensitivity))
+                    },
                     onOpen = onSearchResultSelected
                 )
             } else when (selectedTab) {
@@ -1262,6 +1290,7 @@ private fun SettingsContent(
                 SettingsTab.Customization -> {
                     CustomizationSettingsTab(
                         uiState = uiState,
+                        platform = platform,
                         onPickBackground = launchHomeBackgroundPicker,
                         onPickSideArtwork = launchSideArtworkPicker,
                         onPickCustomFont = launchCustomFontPicker,
@@ -1271,10 +1300,11 @@ private fun SettingsContent(
                 }
 
                 SettingsTab.GameMenu -> {
-                    GameMenuSettingsTab(uiState = uiState, viewModel = viewModel)
+                    GameMenuSettingsTab(uiState = uiState, platform = platform, viewModel = viewModel)
                 }
 
                 SettingsTab.Audio -> {
+                    if (platform.isSega) SegaCoreOptionRows(platform, category = "audio")
                     SettingsSection(title = stringResource(R.string.settings_audio_control)) {
                         ToggleItem(
                             icon = Icons.AutoMirrored.Rounded.VolumeOff,
@@ -1338,7 +1368,7 @@ private fun SettingsContent(
                             subtitle = stringResource(R.string.settings_edit_global_controls_desc),
                             actionIcon = Icons.Rounded.Gamepad,
                             actionLabel = stringResource(R.string.settings_edit_controls_action),
-                            onClick = { onOpenControlsLayoutEditor?.invoke() },
+                            onClick = { onOpenControlsLayoutEditor?.invoke(platform) },
                             enabled = onOpenControlsLayoutEditor != null
                         )
                         SliderItem(
@@ -1365,6 +1395,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_overlay_opacity),
                             onResetToDefault = { viewModel.setOverlayOpacity(overlayDefaults.overlayOpacity) }
                         )
+                        if (!platform.isSega) {
                         ToggleItem(
                             icon = Icons.Rounded.TouchApp,
                             title = stringResource(R.string.settings_touchscreen_left_stick),
@@ -1378,7 +1409,8 @@ private fun SettingsContent(
                                 )
                             }
                         )
-                        if (touchscreenLeftStick) {
+                        }
+                        if (!platform.isSega && touchscreenLeftStick) {
                             SliderItem(
                                 icon = Icons.Rounded.TouchApp,
                                 title = stringResource(R.string.settings_touchscreen_left_stick_sensitivity),
@@ -1401,6 +1433,7 @@ private fun SettingsContent(
                                 }
                             )
                         }
+                        if (!platform.isSega) {
                         ToggleItem(
                             icon = Icons.Rounded.TouchApp,
                             title = stringResource(R.string.settings_touchscreen_right_stick),
@@ -1414,7 +1447,8 @@ private fun SettingsContent(
                                 )
                             }
                         )
-                        if (uiState.touchscreenRightStick) {
+                        }
+                        if (!platform.isSega && uiState.touchscreenRightStick) {
                             SliderItem(
                                 icon = Icons.Rounded.TouchApp,
                                 title = stringResource(R.string.settings_touchscreen_right_stick_sensitivity),
@@ -1437,6 +1471,7 @@ private fun SettingsContent(
                                 }
                             )
                         }
+                        if (!platform.isSega) {
                         ToggleItem(
                             icon = Icons.Rounded.TouchApp,
                             title = stringResource(R.string.settings_racing_mode),
@@ -1446,7 +1481,9 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_racing_mode),
                             onResetToDefault = { viewModel.setRacingMode(defaults.racingMode) }
                         )
+                        }
                         StickyButtonsSelector(
+                            platform = platform,
                             selected = uiState.stickyButtons,
                             onSelectionChange = viewModel::setStickyButtons,
                             helpText = stringResource(R.string.settings_help_sticky_buttons),
@@ -1496,6 +1533,7 @@ private fun SettingsContent(
                             },
                             helpText = stringResource(R.string.settings_help_touch_haptics_test)
                         )
+                        if (!platform.isSega) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_gyro_mode),
                             options = gyroModeOptions(uiState.gyroStickTarget),
@@ -1504,7 +1542,8 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_gyro_mode),
                             onResetToDefault = { viewModel.setGyroMode(defaults.gyroMode) }
                         )
-                        if (uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
+                        }
+                        if (!platform.isSega && uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
                             ChoiceSection(
                                 title = stringResource(R.string.settings_gyro_stick),
                                 options = gyroStickTargetOptions(),
@@ -1513,6 +1552,7 @@ private fun SettingsContent(
                                 onResetToDefault = { viewModel.setGyroStickTarget(defaults.gyroStickTarget) }
                             )
                         }
+                        if (!platform.isSega) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_arcade_device_player_1),
                             options = arcadeDeviceOptions(),
@@ -1520,6 +1560,8 @@ private fun SettingsContent(
                             onSelect = viewModel::setArcadeDevice1,
                             onResetToDefault = { viewModel.setArcadeDevice1(defaults.arcadeDevice1) }
                         )
+                        }
+                        if (!platform.isSega) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_arcade_device_player_2),
                             options = arcadeDeviceOptions(),
@@ -1527,6 +1569,8 @@ private fun SettingsContent(
                             onSelect = viewModel::setArcadeDevice2,
                             onResetToDefault = { viewModel.setArcadeDevice2(defaults.arcadeDevice2) }
                         )
+                        }
+                        if (!platform.isSega) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_light_gun_aim),
                             options = lightGunAimSourceOptions(),
@@ -1534,6 +1578,8 @@ private fun SettingsContent(
                             onSelect = viewModel::setLightGunAimSource,
                             onResetToDefault = { viewModel.setLightGunAimSource(defaults.lightGunAimSource) }
                         )
+                        }
+                        if (!platform.isSega) {
                         ToggleItem(
                             icon = Icons.Rounded.Gamepad,
                             title = stringResource(R.string.settings_light_gun_cursor),
@@ -1543,6 +1589,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_light_gun_cursor),
                             onResetToDefault = { viewModel.setLightGunCursorEnabled(defaults.lightGunCursorEnabled) }
                         )
+                        }
                         val gunUsesGyro = uiState.lightGunAimSource == AppPreferences.LIGHT_GUN_AIM_GYRO
                         val sensorControlsVisible = gunUsesGyro ||
                             uiState.gyroMode == AppPreferences.GYRO_MODE_AIM ||
@@ -1550,12 +1597,12 @@ private fun SettingsContent(
                         val sensorMode = if (uiState.gyroMode == AppPreferences.GYRO_MODE_OFF && gunUsesGyro) {
                             AppPreferences.GYRO_MODE_LIGHT_GUN
                         } else uiState.gyroMode
-                        if (sensorControlsVisible &&
+                        if (!platform.isSega && sensorControlsVisible &&
                             !AndroidGyroscopeInput.isModeAvailable(context, sensorMode)
                         ) {
                             SettingsInlineNote(text = stringResource(R.string.settings_gyro_unavailable))
                         }
-                        if (sensorControlsVisible) {
+                        if (!platform.isSega && sensorControlsVisible) {
                             SliderItem(
                                 icon = Icons.Rounded.ScreenRotation,
                                 title = stringResource(R.string.settings_gyro_sensitivity),
@@ -1601,6 +1648,7 @@ private fun SettingsContent(
                                 )
                             }
                         }
+                        if (!platform.isSega) {
                         SliderItem(
                             icon = Icons.Rounded.Gamepad,
                             title = stringResource(R.string.settings_left_stick_sensitivity),
@@ -1612,6 +1660,8 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_left_stick_sensitivity),
                             onResetToDefault = { viewModel.setLeftStickSensitivity(overlayDefaults.leftStickSensitivity) }
                         )
+                        }
+                        if (!platform.isSega) {
                         SliderItem(
                             icon = Icons.Rounded.Gamepad,
                             title = stringResource(R.string.settings_right_stick_sensitivity),
@@ -1623,6 +1673,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_right_stick_sensitivity),
                             onResetToDefault = { viewModel.setRightStickSensitivity(overlayDefaults.rightStickSensitivity) }
                         )
+                        }
                         ToggleItem(
                             icon = Icons.Rounded.Gamepad,
                             title = stringResource(R.string.settings_invert_left_stick),
@@ -1641,6 +1692,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_invert_left_stick_horizontal),
                             onResetToDefault = { viewModel.setInvertLeftStickHorizontal(false) }
                         )
+                        if (!platform.isSega) {
                         ToggleItem(
                             icon = Icons.Rounded.Gamepad,
                             title = stringResource(R.string.settings_invert_right_stick),
@@ -1650,6 +1702,8 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_invert_right_stick),
                             onResetToDefault = { viewModel.setInvertRightStick(false) }
                         )
+                        }
+                        if (!platform.isSega) {
                         ToggleItem(
                             icon = Icons.Rounded.Gamepad,
                             title = stringResource(R.string.settings_invert_right_stick_horizontal),
@@ -1659,6 +1713,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_invert_right_stick_horizontal),
                             onResetToDefault = { viewModel.setInvertRightStickHorizontal(false) }
                         )
+                        }
                     }
                     SettingsSection(title = stringResource(R.string.settings_gamepad_section)) {
                         ChoiceSection(
@@ -1696,6 +1751,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_hide_overlay_on_gamepad),
                             onResetToDefault = { viewModel.setHideOverlayOnGamepad(overlayDefaults.hideOverlayOnGamepad) }
                         )
+                        if (!platform.isSega) {
                         ToggleItem(
                             icon = Icons.Rounded.Vibration,
                             title = stringResource(R.string.settings_pad_vibration),
@@ -1705,6 +1761,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_pad_vibration),
                             onResetToDefault = { viewModel.setPadVibration(defaults.padVibration) }
                         )
+                        }
                         ToggleItem(
                             icon = Icons.Rounded.Vibration,
                             title = stringResource(R.string.settings_gamepad_button_haptics),
@@ -1714,6 +1771,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_gamepad_button_haptics),
                             onResetToDefault = { viewModel.setGamepadButtonHaptics(defaults.gamepadButtonHaptics) }
                         )
+                        if (!platform.isSega) {
                         SliderItem(
                             icon = Icons.Rounded.Vibration,
                             title = stringResource(R.string.settings_pad_vibration_strength),
@@ -1726,6 +1784,8 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_pad_vibration_strength),
                             onResetToDefault = { viewModel.setPadVibrationStrength(defaults.padVibrationStrength) }
                         )
+                        }
+                        if (!platform.isSega) {
                         ActionItem(
                             icon = Icons.Rounded.Vibration,
                             title = stringResource(R.string.settings_pad_vibration_test),
@@ -1735,6 +1795,8 @@ private fun SettingsContent(
                             onClick = { viewModel.testPadVibration(uiState.padVibrationStrength, 320L) },
                             helpText = stringResource(R.string.settings_help_pad_vibration_test)
                         )
+                        }
+                        if (!platform.isSega) {
                         ToggleItem(
                             icon = Icons.Rounded.Vibration,
                             title = stringResource(R.string.settings_pad_vibration_fallback),
@@ -1744,6 +1806,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_pad_vibration_fallback),
                             onResetToDefault = { viewModel.setPadVibrationFallback(defaults.padVibrationFallback) }
                         )
+                        }
                         SliderItem(
                             icon = Icons.Rounded.Tune,
                             title = stringResource(R.string.settings_gamepad_stick_deadzone),
@@ -1766,6 +1829,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_gamepad_left_stick_sensitivity),
                             onResetToDefault = { viewModel.setGamepadLeftStickSensitivity(defaults.gamepadLeftStickSensitivity) }
                         )
+                        if (!platform.isSega) {
                         SliderItem(
                             icon = Icons.Rounded.Gamepad,
                             title = stringResource(R.string.settings_gamepad_right_stick_sensitivity),
@@ -1777,8 +1841,10 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_gamepad_right_stick_sensitivity),
                             onResetToDefault = { viewModel.setGamepadRightStickSensitivity(defaults.gamepadRightStickSensitivity) }
                         )
+                        }
                     }
-                    SettingsSection(title = stringResource(R.string.settings_gamepad_mapping_title)) {
+                    if (platform.isSega) SegaGlobalGamepadSettings(platform)
+                    else SettingsSection(title = stringResource(R.string.settings_gamepad_mapping_title)) {
                         val arcadeProfileSelected = selectedGamepadProfile == 1
                         val selectedBindings = (
                             if (arcadeProfileSelected) uiState.gamepadArcadeBindingsByPad
@@ -1894,9 +1960,9 @@ private fun SettingsContent(
                             }
                         )
                     }
-                    GlobalKeyboardMouseSettingsSection()
+                    GlobalKeyboardMouseSettingsSection(platform = platform)
 
-                    SettingsSection(title = stringResource(R.string.settings_core_input)) {
+                    if (!platform.isSega) SettingsSection(title = stringResource(R.string.settings_core_input)) {
                         var coreControlsVersion by remember { mutableIntStateOf(0) }
                         CoreOptionSettingsRows(
                             options = remember { FlycastCoreOptions.inputOptions() },
@@ -1955,6 +2021,7 @@ private fun SettingsContent(
                             onClick = openEmulatorDataLocationDialog,
                             helpText = stringResource(R.string.emulator_data_location_description)
                         )
+                        if (!platform.isSega) {
                         SettingsItem(
                             icon = Icons.Rounded.Memory,
                             label = stringResource(R.string.settings_bios_path),
@@ -1966,6 +2033,9 @@ private fun SettingsContent(
                             onClick = launchBiosPicker,
                             helpText = stringResource(R.string.onboarding_bios_desc)
                         )
+                        } else if (platform == EmulationPlatform.SEGA_CD) {
+                            SegaCdBiosSettings()
+                        }
                     }
 
                     SettingsSection(title = stringResource(R.string.settings_covers_tab)) {
@@ -2018,7 +2088,9 @@ private fun SettingsContent(
                 }
 
                 SettingsTab.Graphics -> {
+                    if (platform.isSega) SegaCoreOptionRows(platform, category = "video")
                     SettingsSection(title = stringResource(R.string.settings_graphics_tab)) {
+                        if (!platform.isSega) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_renderer),
                             options = listOf(
@@ -2031,6 +2103,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_renderer),
                             onResetToDefault = { viewModel.setRenderer(defaults.renderer) }
                         )
+                        }
                         ChoiceSection(
                             title = stringResource(R.string.settings_aspect_ratio),
                             options = listOf(
@@ -2050,6 +2123,7 @@ private fun SettingsContent(
                         // duplicated the setting under a different name than the
                         // in-game menu / game manager, and persisted a global
                         // core-option override that shadowed per-game values.
+                        if (!platform.isSega) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_upscale),
                             options = buildUpscaleOptions(
@@ -2065,6 +2139,7 @@ private fun SettingsContent(
                                 viewModel.setUpscaleMultiplier(defaults.upscaleMultiplier)
                             }
                         )
+                        }
                         ChoiceSection(
                             title = stringResource(R.string.settings_display_crop),
                             options = DisplayCrop.PRESET_PIXELS.map { it to stringResource(R.string.settings_display_crop_pixels, it) },
@@ -2117,7 +2192,7 @@ private fun SettingsContent(
                             onClick = launchShaderPackPicker
                         )
                         CoreOptionSettingsRows(
-                            options = remember { FlycastCoreOptions.videoOptions() },
+                            options = remember(platform) { if (platform.isSega) emptyList() else FlycastCoreOptions.videoOptions() },
                             version = coreGraphicsVersion,
                             onValueChange = { key, value ->
                                 NativeApp.setCoreOption(key, value)
@@ -2125,7 +2200,7 @@ private fun SettingsContent(
                             }
                         )
                         CoreOptionSettingsRows(
-                            options = remember { FlycastCoreOptions.performanceOptions() },
+                            options = remember(platform) { if (platform.isSega) emptyList() else FlycastCoreOptions.performanceOptions() },
                             version = coreGraphicsVersion,
                             onValueChange = { key, value ->
                                 NativeApp.setCoreOption(key, value)
@@ -2213,6 +2288,11 @@ private fun SettingsContent(
                         }
                     }
 
+                    if (platform.isSega) {
+                        SettingsSection(title = platformLabel(platform)) {
+                            SegaCoreOptionRows(platform, category = "system")
+                        }
+                    } else
                     SettingsSection(title = stringResource(R.string.settings_core_cpu)) {
                         var coreEmulationVersion by remember { mutableIntStateOf(0) }
                         CoreOptionSettingsRows(
@@ -2351,6 +2431,12 @@ private fun SettingsContent(
                             linkUrl = stringResource(R.string.settings_about_core_source_url)
                         )
                         AboutNote(
+                            title = stringResource(R.string.settings_about_jgenesis_source),
+                            body = stringResource(R.string.settings_about_jgenesis_source_desc),
+                            linkLabel = stringResource(R.string.settings_about_jgenesis_source_link),
+                            linkUrl = stringResource(R.string.settings_about_jgenesis_source_url)
+                        )
+                        AboutNote(
                             title = stringResource(R.string.settings_about_support_project),
                             body = stringResource(R.string.settings_about_support_project_desc),
                             linkLabel = stringResource(R.string.settings_about_support_project_link),
@@ -2387,6 +2473,7 @@ private fun homeBackgroundPresetLabel(preset: HomeBackgroundPreset): String = st
 @Composable
 private fun CustomizationSettingsTab(
     uiState: SettingsUiState,
+    platform: EmulationPlatform,
     onPickBackground: () -> Unit,
     onPickSideArtwork: () -> Unit,
     onPickCustomFont: () -> Unit,
@@ -3009,35 +3096,45 @@ private fun CustomizationSettingsTab(
 @Composable
 private fun GameMenuSettingsTab(
     uiState: SettingsUiState,
+    platform: EmulationPlatform,
     viewModel: SettingsViewModel
 ) {
+    val supportedTabs = uiState.gameMenuTabOrder.filter { !platform.isSega || it !in setOf(GameMenuTabId.CHEATS, GameMenuTabId.ACHIEVEMENTS) }
     SettingsSection(title = stringResource(R.string.settings_game_menu_preview_section)) {
-        SettingsInlineNote(stringResource(R.string.settings_game_menu_content_summary))
+        if (!platform.isSega) SettingsInlineNote(stringResource(R.string.settings_game_menu_content_summary))
         GameMenuLayoutStylePicker(
             selected = uiState.gameMenuLayoutStyle,
-            visibleTabs = uiState.gameMenuTabOrder.filterNot(uiState.hiddenGameMenuTabs::contains),
+            visibleTabs = supportedTabs.filterNot(uiState.hiddenGameMenuTabs::contains),
             onSelect = viewModel::setGameMenuLayoutStyle
         )
     }
 
     SettingsSection(title = stringResource(R.string.settings_game_menu_tabs_section)) {
-        uiState.gameMenuTabOrder.forEachIndexed { index, tab ->
+        supportedTabs.forEachIndexed { index, tab ->
             GameMenuEditorRow(
                 icon = gameMenuTabIcon(tab),
                 title = gameMenuTabLabel(tab),
                 visible = tab !in uiState.hiddenGameMenuTabs,
                 required = tab == GameMenuTabId.SESSION,
                 canMoveUp = index > 0,
-                canMoveDown = index < uiState.gameMenuTabOrder.lastIndex,
+                canMoveDown = index < supportedTabs.lastIndex,
                 onVisibleChange = { viewModel.setGameMenuTabVisible(tab, it) },
-                onMoveUp = { viewModel.moveGameMenuTab(tab, -1) },
-                onMoveDown = { viewModel.moveGameMenuTab(tab, 1) }
+                onMoveUp = {
+                    supportedTabs.getOrNull(index - 1)?.let { previous ->
+                        viewModel.moveGameMenuTab(tab, uiState.gameMenuTabOrder.indexOf(previous) - uiState.gameMenuTabOrder.indexOf(tab))
+                    }
+                },
+                onMoveDown = {
+                    supportedTabs.getOrNull(index + 1)?.let { next ->
+                        viewModel.moveGameMenuTab(tab, uiState.gameMenuTabOrder.indexOf(next) - uiState.gameMenuTabOrder.indexOf(tab))
+                    }
+                }
             )
         }
     }
 
-    uiState.gameMenuTabOrder.forEach { tab ->
-        val sections = uiState.gameMenuSectionOrder.filter { it.tab == tab }
+    supportedTabs.forEach { tab ->
+        val sections = uiState.gameMenuSectionOrder.filter { it.tab == tab && (!platform.isSega || it != GameMenuSectionId.EMULATION_CPU) }
         SettingsSection(
             title = stringResource(
                 R.string.settings_game_menu_tab_content_format,
@@ -4298,14 +4395,15 @@ internal fun SettingsItem(
 private data class SettingsSearchEntry(
     val tab: SettingsTab,
     val title: String,
-    val summary: String
+    val summary: String,
+    @StringRes val titleRes: Int
 )
 
 @Composable
 private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
     @Composable
     fun entry(tab: SettingsTab, @StringRes titleRes: Int): SettingsSearchEntry {
-        return SettingsSearchEntry(tab = tab, title = stringResource(titleRes), summary = tab.label())
+        return SettingsSearchEntry(tab = tab, title = stringResource(titleRes), summary = tab.label(), titleRes = titleRes)
     }
     return listOfNotNull(
         entry(SettingsTab.General, R.string.settings_language),

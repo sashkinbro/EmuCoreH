@@ -5,7 +5,7 @@
 
     <!-- Navigation -->
     <string name="shell_library">کتابخانه</string>
-    <string name="shell_catalog_search">جست‌وجوی دریم‌کست</string>
+    <string name="shell_catalog_search">جستجوی بازی</string>
     <string name="shell_supported_formats">فرمت‌های پشتیبانی شده</string>
 
     <!-- Home Screen -->
@@ -52,8 +52,8 @@
     <string name="detail_show_more">نمایش بیشتر</string>
     <string name="detail_show_less">نمایش کمتر</string>
     <string name="detail_no_data_title">جزئیاتی در دسترس نیست</string>
-    <string name="detail_no_data_body">هنوز نتوانسته‌ایم این بازی را با کاتالوگ محلی دریم‌کست تطبیق دهیم.</string>
-    <string name="detail_catalog_missing_body">جزئیات کاتالوگ دریم‌کست موقتاً در دسترس نیست.</string>
+    <string name="detail_no_data_body">هنوز نتوانستیم این بازی را در فهرست محلی پیدا کنیم.</string>
+    <string name="detail_catalog_missing_body">جزئیات فهرست بازی‌ها موقتاً در دسترس نیست.</string>
     <string name="detail_save_screenshot">ذخیره اسکرین‌شات</string>
     <string name="detail_screenshot_saved">اسکرین‌شات ذخیره شد</string>
     <string name="detail_screenshot_save_failed">ذخیره اسکرین‌شات انجام نشد</string>
@@ -214,22 +214,22 @@
     <string name="settings_game_path">پوشه بازی‌ها</string>
     <string name="settings_emulator_data_path">پوشه شبیه‌ساز</string>
     <string name="settings_fetch_boxart">دریافت جلد بازی‌ها</string>
-    <string name="settings_fetch_boxart_desc">دانلود جلد بازی‌ها از منابع Flycast: تصویر GD-ROM از دیسک، جلدهای آرکید flycast-content و TheGamesDB.</string>
+    <string name="settings_fetch_boxart_desc">دریافت جلدهای ویژهٔ هر پلتفرم از فهرست‌های EmuCoreH، IGDB، تصاویر دیسک و آرکید و TheGamesDB.</string>
     <string name="settings_not_set">تنظیم نشده</string>
     <string name="settings_about">درباره</string>
     <string name="settings_version">نسخه</string>
     <string name="settings_emulator_core">هسته شبیه‌سازی</string>
     <string name="settings_about_app">درباره EmuCoreH</string>
-    <string name="settings_about_app_desc">EmuCoreH شبیه‌ساز و کتابخانه بازی برای دریم‌کست، Naomi، Naomi 2 و Atomiswave است که با هسته Flycast کار می‌کند و راه‌اندازی سریع، پیمایش روشن و رابط مناسب دستگاه‌های همراه دارد.</string>
+    <string name="settings_about_app_desc">EmuCoreH کتابخانهٔ بازی را با Flycast برای Dreamcast و دستگاه‌های آرکید و با jgenesis برای Mega Drive/Genesis، Sega CD، 32X، Master System، Game Gear و SG-1000 ترکیب می‌کند.</string>
     <string name="settings_about_studio">توسعه‌دهنده</string>
     <string name="settings_about_studio_desc">ایجاد شده توسط Sashkin Apps.</string>
     <string name="settings_about_app_source">مخزن EmuCoreH</string>
     <string name="settings_about_app_source_desc">مخزن GitHub برنامه‌ی EmuCoreH و کد منبع پروژه را باز کنید.</string>
     <string name="settings_about_app_source_link">باز کردن EmuCoreH در GitHub</string>
     <string name="settings_about_app_source_url">https://github.com/sashkinbro/EmuCoreH</string>
-    <string name="settings_about_core_source">هسته شبیه‌سازی</string>
-    <string name="settings_about_core_source_desc">بر پایه Flycast، هسته شبیه‌سازی دریم‌کست.</string>
-    <string name="settings_about_core_source_link">مشاهده کد منبع هسته در GitHub</string>
+    <string name="settings_about_core_source">Flycast (GNU GPLv2)</string>
+    <string name="settings_about_core_source_desc">Flycast دستگاه‌های Dreamcast و آرکید را با مجوز GNU GPLv2 شبیه‌سازی می‌کند.</string>
+    <string name="settings_about_core_source_link">مشاهدهٔ کد Flycast در GitHub</string>
     <string name="settings_about_core_source_url">https://github.com/flyinghead/flycast</string>
     <string name="settings_about_support_project">حمایت از پروژه</string>
     <string name="settings_about_support_project_desc">حمایت از توسعه مداوم و به‌روزرسانی‌های آینده برای EmuCoreH.</string>
@@ -297,7 +297,7 @@
     <string name="settings_help_prefer_english_game_titles">از عناوین انگلیسی از پایگاه داده GameIndex مربوط به EmuCoreH استفاده می‌کند.</string>
     <string name="settings_help_game_path">پوشه‌هایی به کتابخانه بازی اضافه می‌کند. EmuCoreH هر پوشه انتخاب‌شده را به‌صورت بازگشتی بررسی می‌کند و نتایج را بدون مسیرهای تکراری ادغام می‌کند. برای حذف، روی پوشه فهرست‌شده ضربه بزنید. هسته فعلی از تصاویر دیسک GDI، CHD، CDI و CUE/BIN پشتیبانی می‌کند.</string>
     <string name="settings_help_renderer">موتور گرافیکی مورد استفاده برای رندر سخت‌افزاری را انتخاب می‌کند.</string>
-    <string name="settings_help_aspect_ratio">نحوه قرارگیری تصویر نهایی روی نمایشگر را کنترل می‌کند. Auto از بازی پیروی می‌کند، 4:3 ظاهر اصلی بیشتر بازی‌های دریم‌کست را حفظ می‌کند، 16:9 برای بازی‌های وصله‌شده با صفحه عریض مناسب است و کشیدن را فقط زمانی استفاده کنید که با اعوجاج هندسی مشکلی ندارید.</string>
+    <string name="settings_help_aspect_ratio">خودکار، 4:3، 16:9، 10:7 یا کشیده را انتخاب کنید. خودکار از سیستم پیروی می‌کند؛ کشیدن ممکن است تصویر را تغییر شکل دهد.</string>
     <string name="settings_help_overlay_scale">اندازه دکمه‌های روی صفحه و استیک‌ها را تغییر می‌دهد.</string>
     <string name="settings_help_overlay_opacity">کنترل می‌کند که کنترل‌های لمسی چقدر مات یا شفاف باشند.</string>
     <string name="settings_help_racing_mode">باعث می‌شود دکمه‌های اکشن لمسی و دکمه‌های شانه با یک ضربه، حالت فشرده خود را تغییر دهند.</string>
@@ -482,9 +482,9 @@
 
     <!-- Onboarding -->
     <string name="onboarding_page_1_title">به EmuCoreH خوش آمدید</string>
-    <string name="onboarding_page_1_subtitle">کتابخانه و لانچر دریم‌کست شما، طراحی‌شده برای راه‌اندازی سریع، پیمایش روشن و تجربه‌ای روان روی هر صفحه.</string>
+    <string name="onboarding_page_1_subtitle">کتابخانهٔ بازی‌های Sega شما، آماده برای هر نمایشگر.</string>
     <string name="onboarding_page_2_title">شبیه‌سازی قدرتمند</string>
-    <string name="onboarding_page_2_subtitle">بازی‌های محبوب دریم‌کست خود را با گزینه‌های گرافیکی پیشرفته، کنترل‌های قابل تنظیم و بهینه‌سازی عملکرد تجربه کنید.</string>
+    <string name="onboarding_page_2_subtitle">Flycast و jgenesis کنسول‌های Sega و دستگاه‌های آرکید پشتیبانی‌شده را کنار هم می‌آورند.</string>
     <string name="onboarding_page_3_title">کتابخانه بازی‌های شما</string>
     <string name="onboarding_page_3_subtitle">کتابخانه بازی شخصی خود را با کاورهای زیبا، اطلاعات دقیق و دسترسی سریع به موارد دلخواه خود بسازید.</string>
     <string name="onboarding_page_4_title">آماده بازی</string>
@@ -492,7 +492,7 @@
     <string name="settings_mediatek_notice_title">سازگاری MediaTek</string>
     <string name="settings_mediatek_notice_message">پشتیبانی از MediaTek هنوز آزمایشی است. تا زمانی که به بهبود سازگاری و عملکرد ادامه می‌دهیم، ممکن است خرابی، اشکالات گرافیکی و عملکرد ناپایدار رخ دهد.\n\nاگر با مشکل گرافیکی روبه‌رو شدید، OpenGL را با ANGLE فعال امتحان کنید. اگر مشکل ادامه داشت، از رندرکننده نرم‌افزاری استفاده کنید.</string>
     <string name="onboarding_title">برای بازی آماده شوید</string>
-    <string name="onboarding_subtitle">پوشه‌های بازی دریم‌کست خود را انتخاب کنید و دسترسی به فایل‌ها را بدهید.</string>
+    <string name="onboarding_subtitle">پوشه‌های بازی را انتخاب کنید و اجازهٔ دسترسی به فایل‌ها را بدهید.</string>
     <string name="onboarding_bios_desc">پوشه‌ای با فایل‌های BIOS دریم‌کست (dc_boot.bin، dc_flash.bin) یا مجموعه‌های BIOS آرکید (naomi.zip، naomi2.zip، awbios.zip) انتخاب کنید.</string>
     <string name="onboarding_bios_optional">اختیاری است، اما توصیه می‌شود</string>
     <string name="onboarding_games_title">انتخاب پوشه بازی‌ها</string>
@@ -518,7 +518,7 @@
     <string name="back">بازگشت</string>
 
     <!-- Catalog Search -->
-    <string name="catalog_search_title">کاتالوگ دریم‌کست</string>
+    <string name="catalog_search_title">فهرست بازی‌ها</string>
     <string name="catalog_filters_title">فیلترها</string>
     <string name="catalog_filter_genre">ژانر</string>
     <string name="catalog_filter_year">سال</string>
@@ -528,7 +528,7 @@
     <string name="catalog_filter_any_rating">هر رده‌بندی</string>
     <string name="catalog_filters_clear">پاک کردن فیلترها</string>
     <string name="catalog_missing_title">پایگاه داده کاتالوگ پیدا نشد</string>
-    <string name="catalog_missing_body">کاتالوگ دریم‌کست هم‌اکنون موقتاً در دسترس نیست.</string>
+    <string name="catalog_missing_body">فهرست بازی‌ها موقتاً در دسترس نیست.</string>
     <string name="catalog_empty_title">هیچ مطابقتی یافت نشد</string>
     <string name="catalog_empty_body">یک نام بازی متفاوت یا یک عبارت جستجوی کوتاه‌تر را امتحان کنید.</string>
     <string name="formats_title">فرمت‌های پشتیبانی شده</string>
@@ -1124,7 +1124,7 @@
     <string name="hub_title">EmuCoreH - هاب</string>
     <string name="hub_tab_news">اخبار</string>
     <string name="hub_tab_videos">ویدیوها</string>
-    <string name="hub_tab_history">تاریخ دریم‌کست</string>
+    <string name="hub_tab_history">تاریخ Sega</string>
     <string name="hub_tab_manuals">راهنماها</string>
     <string name="hub_related_materials">مطالب مرتبط</string>
     <string name="hub_tab_favorites">ذخیره شده</string>
@@ -1141,7 +1141,7 @@
     <string name="hub_empty_news">هنوز خبری در دسترس نیست.</string>
     <string name="hub_empty_videos">هنوز ویدیویی در دسترس نیست.</string>
     <string name="hub_empty_history">هنوز مقاله تاریخی در دسترس نیست.</string>
-    <string name="hub_empty_manuals">هنوز راهنمای شبیه‌سازی دریم‌کست در دسترس نیست.</string>
+    <string name="hub_empty_manuals">هنوز راهنمایی برای شبیه‌سازی در دسترس نیست.</string>
     <string name="hub_empty_favorites">مقالات، راهنماها و ویدیوهای ذخیره‌شده اینجا ظاهر می‌شوند.</string>
     <string name="hub_no_search_results">محتوای مطابق یافت نشد.</string>
     <string name="hub_load_failed">محتوای هاب بارگیری نشد.</string>
@@ -1206,7 +1206,7 @@
     <string name="emulation_swap_disc">تعویض دیسک</string>
     <string name="emulation_swap_disc_success">دیسک با موفقیت تعویض شد.</string>
     <string name="emulation_swap_disc_failed">تعویض دیسک انجام نشد. دیسک قبلی بازیابی شد.</string>
-    <string name="emulation_swap_disc_invalid">یک تصویر دیسک دریم‌کست پشتیبانی‌شده انتخاب کنید.</string>
+    <string name="emulation_swap_disc_invalid">یک تصویر دیسک پشتیبانی‌شده انتخاب کنید.</string>
     <string name="settings_customization_background_presets">پس‌زمینه‌های داخلی</string>
     <string name="settings_customization_background_preset_olympus">دوزخ المپ</string>
     <string name="settings_customization_background_preset_neon_racing">شتاب نئونی</string>
@@ -1237,7 +1237,7 @@
     <string name="discord_share_serial">نمایش شماره سریال بازی</string>
     <string name="discord_preview_game_title">عنوان بازی</string>
     <string name="discord_preview_serial">شماره سریال</string>
-    <string name="discord_share_serial_desc">شماره سریال دیسک دریم‌کست را شامل شود، مانند MK-51000</string>
+    <string name="discord_share_serial_desc">شمارهٔ سریال بازی، مانند MK-51000، درج شود</string>
     <string name="discord_preview_title">پیش‌نمایش وضعیت</string>
     <string name="discord_privacy_note">ورود از Discord OAuth همراه با PKCE استفاده می‌کند. توکن دسترسی با Android Keystore رمزگذاری می‌شود و هرگز به سرورهای EmuCoreH ارسال نمی‌شود.</string>
     <string name="discord_status_disabled">غیرفعال</string>
@@ -1251,7 +1251,7 @@
     <string name="settings_discord_service_error">سرویس کمکی Discord راه‌اندازی نشد.</string>
     <string name="settings_discord_token_error">محافظت از توکن ورود Discord ممکن نشد.</string>
     <string name="discord_presence_library">در حال مرور کتابخانه بازی‌ها</string>
-    <string name="discord_presence_private_game">در حال بازی دریم‌کست</string>
+    <string name="discord_presence_private_game">در حال بازی</string>
     <string name="discord_presence_paused">مکث</string>
     <string name="discord_presence_playing">در حال اجرای %1$s</string>
     <string name="discord_friends_title">دوستان در EmuCoreH</string>
@@ -1276,7 +1276,7 @@
     <string name="settings_frame_limit">محدودیت فریم</string>
     <string name="settings_frame_limit_desc">شبیه‌سازی را به نرخ نوسازی کنسول محدود می‌کند. برای اجرا با بیشترین سرعت دستگاه، آن را خاموش کنید.</string>
     <string name="settings_target_fps">نرخ فریم هدف</string>
-    <string name="settings_target_fps_desc">Auto از نرخ فریمی که Flycast گزارش می‌دهد استفاده می‌کند. مقادیر دستی سرعت شبیه‌سازی را تعیین می‌کنند؛ ممکن است بازی فریم‌های کمتری رندر کند.</string>
+    <string name="settings_target_fps_desc">حالت خودکار نرخ فریم گزارش‌شده توسط هستهٔ فعال را به‌کار می‌گیرد. مقادیر دستی سرعت شبیه‌سازی را تعیین می‌کنند؛ بازی‌ها ممکن است فریم کمتری ترسیم کنند.</string>
     <string name="settings_display_crop">برش تصویر</string>
     <string name="settings_display_crop_desc">پیش از تغییر اندازه، تعداد یکسانی پیکسل از هر چهار لبه برش می‌دهد. برای غیرفعال کردن برش، 0 را انتخاب کنید.</string>
     <string name="settings_display_crop_pixels">%1$d پیکسل</string>
@@ -1314,7 +1314,7 @@
     <string name="achievements_unavailable">این نسخه از RetroAchievements پشتیبانی نمی‌کند.</string>
     <string name="shell_achievements">دستاوردها</string>
     <string name="formats_psp_supported_title">قالب‌های پشتیبانی‌شده دریم‌کست</string>
-    <string name="formats_psp_supported_body">هسته Flycast همراه این فایل‌های بازی را مستقیم می‌پذیرد.</string>
+    <string name="formats_psp_supported_body">تصویر دیسک‌های Dreamcast از Flycast استفاده می‌کند. سیستم‌های کارتریجی و Sega CD از jgenesis استفاده می‌کنند؛ قالب‌های آن‌ها در پایین آمده است.</string>
     <string name="formats_psp_recommended_title">تصاویر دیسک GD-ROM</string>
     <string name="formats_psp_recommended_body">GDI نسخه استاندارد GD-ROM است. تصاویر CHD، CDI و CUE/BIN نیز پشتیبانی می‌شوند.</string>
     <string name="formats_psp_homebrew_title">ستهای ROM آرکید</string>
@@ -2089,7 +2089,7 @@
     <string name="profile_player">بازیکن</string>
     <string name="profile_player_blocked">Player blocked.</string>
     <string name="profile_player_card_brand">کارت بازیکن EMUCOREH</string>
-    <string name="profile_player_card_footer">خاطرات Dreamcast، ثبت شده توسط EmuCoreH</string>
+    <string name="profile_player_card_footer">خاطرات بازی، ثبت‌شده با EmuCoreH</string>
     <string name="profile_player_card_share">اشتراک‌گذاری کارت بازیکن</string>
     <string name="profile_player_card_share_text">مرا در EmuCoreH پیدا کنید: %1$s</string>
     <string name="profile_player_id_format">شناسه بازیکن: %1$s</string>
@@ -2266,4 +2266,40 @@
     <string name="settings_mouse_vertical_sensitivity">حساسیت عمودی</string>
     <string name="settings_mouse_wheel_shoulders">L1 / R1</string>
     <string name="settings_gamepad_mapping_use_global_desc">بازنویسی‌های دکمه‌های دسته بازی برای این بازی حذف می‌شود.</string>
+
+    <!-- Sega systems: labels, firmware and supported core options. -->
+    <string name="sega_flycast_systems">Dreamcast / آرکید</string>
+    <string name="sega_six_button_controls">دستهٔ شش‌دکمه‌ای: A، B، C، X، Y، Z، Start و Mode.</string>
+    <string name="sega_two_button_controls">دستهٔ دودکمه‌ای: ۱ و ۲، با شروع یا مکث متناسب با سیستم.</string>
+    <string name="sega_bios_title">BIOS سگا سی‌دی</string>
+    <string name="sega_bios_description">منطقه را انتخاب و فایل BIOS شخصی خود با اندازهٔ 128 KiB را وارد کنید.</string>
+    <string name="sega_bios_import">وارد کردن BIOS</string>
+    <string name="sega_bios_installed">BIOS نصب شد</string>
+    <string name="sega_bios_invalid">فایل BIOS با اندازهٔ دقیقاً 128 KiB انتخاب کنید.</string>
+    <string name="sega_bios_missing">BIOS سگا سی‌دی موجود نیست. تنظیمات را باز کنید، Sega CD را انتخاب و BIOS منطقهٔ دیسک را وارد کنید.</string>
+    <string name="formats_sega_body">رام‌های Mega Drive، 32X، Master System، Game Gear و SG-1000؛ دیسک‌های Sega CD با قالب CUE/BIN و CHD. ZIP از یک رام کارتریج پشتیبانی می‌کند. Sega CD به BIOS شخصی شما نیاز دارد.</string>
+    <string name="sega_region">منطقه</string>
+    <string name="sega_timing">زمان‌بندی تصویر</string>
+    <string name="sega_restart_required">پس از راه‌اندازی دوبارهٔ بازی اعمال می‌شود.</string>
+    <string name="sega_remove_sprite_limit">حذف محدودیت اسپرایت</string>
+    <string name="sega_low_pass_filter">فیلتر صوتی پایین‌گذر</string>
+    <string name="sega_fm_audio">صدای FM مستر سیستم</string>
+    <string name="sega_crop_border">برش حاشیهٔ عمودی</string>
+    <string name="sega_gg_resolution">وضوح کامل SMS در گیم گیر</string>
+    <string name="sega_pause">مکث</string>
+    <string name="sega_mode">حالت</string>
+    <string name="home_platform_genesis">Mega Drive / Genesis</string>
+    <string name="home_platform_sega_cd">Sega CD / Mega-CD</string>
+    <string name="home_platform_sega_32x">Sega 32X</string>
+    <string name="home_platform_master_system">Master System</string>
+    <string name="home_platform_game_gear">Game Gear</string>
+    <string name="home_platform_sg_1000">SG-1000</string>
+    <string name="formats_sega_title">Sega</string>
+    <string name="sega_ntsc">NTSC</string>
+    <string name="sega_pal">PAL</string>
+    <string name="settings_about_jgenesis_source_desc">شبیه‌سازی Sega با مجوز GNU GPLv3. پیوند، کد اصلی را باز می‌کند؛ درخت کد EmuCoreH شامل یکپارچه‌سازی libretro است. مجوز و اطلاعات نسخه همراه برنامه است. BIOS سگا سی‌دی را کاربر فراهم می‌کند؛ میان‌افزار اصلی 32X همچنان تعبیه شده است.</string>
+    <string name="settings_about_jgenesis_source_link">مشاهدهٔ کد jgenesis در GitHub</string>
+    <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
+    <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
+    <string name="sega_ds_collection_unsupported">این ROM از Sonic Classic Collection به شبیه‌ساز Nintendo DS نیاز دارد. از ROM اصلی Mega Drive / Genesis استفاده کنید.</string>
 </resources>

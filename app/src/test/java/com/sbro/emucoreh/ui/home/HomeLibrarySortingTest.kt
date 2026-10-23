@@ -53,7 +53,7 @@ class HomeLibrarySortingTest {
 
     @Test fun `saved sorts round trip and unavailable preferences use the default`() {
         HomeSortOption.entries.forEach { assertEquals(it, HomeSortOption.fromPreference(it.name)) }
-        assertEquals(HomeSortOption.TITLE_ASC, HomeSortOption.fromPreference(null))
-        assertEquals(HomeSortOption.TITLE_ASC, HomeSortOption.fromPreference("FUTURE_OPTION"))
+        assertEquals(HomeSortOption.PLATFORM, HomeSortOption.fromPreference(null))
+        assertEquals(HomeSortOption.PLATFORM, HomeSortOption.fromPreference("FUTURE_OPTION"))
     }
 }

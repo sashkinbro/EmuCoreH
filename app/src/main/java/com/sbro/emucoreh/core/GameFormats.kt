@@ -2,7 +2,7 @@ package com.sbro.emucoreh.core
 
 import java.util.Locale
 
-/** Content candidates accepted by the Flycast core (disc images and arcade ROMs). */
+/** Content candidates accepted by the bundled emulator cores. */
 object GameFormats {
     /** Disc images for Dreamcast, Naomi, Naomi 2 and Atomiswave. */
     val discExtensions = setOf("gdi", "chd", "cdi", "cue", "iso")
@@ -14,10 +14,12 @@ object GameFormats {
      */
     val romExtensions = setOf("dat", "lst", "zip", "7z")
 
+    val segaCartridgeExtensions = setOf("md", "gen", "smd", "32x", "sms", "gg", "sg")
+
     /** Multi-disc playlists: the core reads the entries and exposes the discs. */
     val playlistExtensions = setOf("m3u")
 
-    val extensions = discExtensions + romExtensions + playlistExtensions
+    val extensions = discExtensions + romExtensions + segaCartridgeExtensions + playlistExtensions
 
     val archives = setOf("zip", "7z")
 
@@ -30,6 +32,7 @@ object GameFormats {
     val playlistFormatLabels = listOf("M3U")
     /** Zip/7z sets plus the legacy `.bin`/`.dat`/`.lst` Naomi dumps. */
     val arcadeFormatLabels = listOf("ZIP", "7Z", "BIN", "DAT", "LST")
+    val segaFormatLabels = listOf("MD", "GEN", "SMD", "32X", "SMS", "GG", "SG", "BIN", "ZIP")
 
     /**
      * MIME filter for the system file picker. Providers report unknown
@@ -44,6 +47,9 @@ object GameFormats {
         "application/x-cdi",
         "application/x-gdi",
         "application/x-cue",
+        "application/x-genesis-rom",
+        "application/x-sms-rom",
+        "application/x-gamegear-rom",
         "application/x-7z-compressed",
         "application/zip",
         "audio/x-mpegurl",

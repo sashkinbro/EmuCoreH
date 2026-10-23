@@ -621,7 +621,7 @@ fn current_av_info() -> retro_system_av_info {
                 base_width: 320,
                 base_height: 224,
                 max_width: 320,
-                max_height: 240,
+                max_height: 480,
                 aspect_ratio: 4.0 / 3.0,
             },
             timing: retro_system_timing { fps: 60.0, sample_rate: AUDIO_SAMPLE_RATE as f64 },

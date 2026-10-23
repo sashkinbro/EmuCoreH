@@ -5,7 +5,7 @@
 
     <!-- Navigation -->
     <string name="shell_library">Pustaka</string>
-    <string name="shell_catalog_search">Pencarian Dreamcast</string>
+    <string name="shell_catalog_search">Cari Game</string>
     <string name="shell_supported_formats">Format yang Didukung</string>
 
     <!-- Home Screen -->
@@ -52,8 +52,8 @@
     <string name="detail_show_more">Tampilkan lebih banyak</string>
     <string name="detail_show_less">Tampilkan lebih sedikit</string>
     <string name="detail_no_data_title">Tidak ada detail tersedia</string>
-    <string name="detail_no_data_body">Kami belum dapat mencocokkan game ini dengan katalog Dreamcast lokal.</string>
-    <string name="detail_catalog_missing_body">Detail katalog Dreamcast untuk sementara tidak tersedia.</string>
+    <string name="detail_no_data_body">Game ini belum dapat dicocokkan dengan katalog lokal.</string>
+    <string name="detail_catalog_missing_body">Detail katalog game sementara tidak tersedia.</string>
     <string name="detail_save_screenshot">Simpan tangkapan layar</string>
     <string name="detail_screenshot_saved">Tangkapan layar disimpan</string>
     <string name="detail_screenshot_save_failed">Tidak dapat menyimpan tangkapan layar</string>
@@ -214,22 +214,22 @@
     <string name="settings_game_path">Folder Game</string>
     <string name="settings_emulator_data_path">Folder Emulator</string>
     <string name="settings_fetch_boxart">Ambil Sampul Game</string>
-    <string name="settings_fetch_boxart_desc">Unduh sampul dari sumber Flycast: artwork GD-ROM dari disk, sampul arcade flycast-content, dan TheGamesDB.</string>
+    <string name="settings_fetch_boxart_desc">Unduh sampul per platform dari katalog EmuCoreH, IGDB, gambar cakram dan arkade, serta TheGamesDB.</string>
     <string name="settings_not_set">Belum diatur</string>
     <string name="settings_about">Tentang</string>
     <string name="settings_version">Versi</string>
     <string name="settings_emulator_core">Inti Emulasi</string>
     <string name="settings_about_app">Tentang EmuCoreH</string>
-    <string name="settings_about_app_desc">EmuCoreH adalah emulator dan pustaka game untuk Dreamcast, Naomi, Naomi 2, dan Atomiswave yang ditenagai core Flycast, dengan pengaturan cepat, navigasi yang jelas, dan antarmuka yang nyaman untuk perangkat genggam.</string>
+    <string name="settings_about_app_desc">EmuCoreH menggabungkan pustaka gim dengan Flycast untuk Dreamcast dan sistem arkade, serta jgenesis untuk Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear dan SG-1000.</string>
     <string name="settings_about_studio">Pengembang</string>
     <string name="settings_about_studio_desc">Dibuat oleh Sashkin Apps.</string>
     <string name="settings_about_app_source">Repositori EmuCoreH</string>
     <string name="settings_about_app_source_desc">Buka repositori GitHub EmuCoreH untuk sumber aplikasi dan proyek.</string>
     <string name="settings_about_app_source_link">Buka EmuCoreH di GitHub</string>
     <string name="settings_about_app_source_url">https://github.com/sashkinbro/EmuCoreH</string>
-    <string name="settings_about_core_source">Inti Emulasi</string>
-    <string name="settings_about_core_source_desc">Berdasarkan Flycast, core emulasi Dreamcast.</string>
-    <string name="settings_about_core_source_link">Lihat sumber inti di GitHub</string>
+    <string name="settings_about_core_source">Flycast (GNU GPLv2)</string>
+    <string name="settings_about_core_source_desc">Flycast mengemulasikan Dreamcast dan sistem arkade dengan lisensi GNU GPLv2.</string>
+    <string name="settings_about_core_source_link">Lihat sumber Flycast di GitHub</string>
     <string name="settings_about_core_source_url">https://github.com/flyinghead/flycast</string>
     <string name="settings_about_support_project">Dukung Proyek</string>
     <string name="settings_about_support_project_desc">Dukung pengembangan berkelanjutan dan pembaruan masa depan untuk EmuCoreH.</string>
@@ -297,7 +297,7 @@
     <string name="settings_help_prefer_english_game_titles">Menggunakan judul berbahasa Inggris dari basis data GameIndex EmuCoreH untuk game yang dikirimkan dengan bahasa Jepang atau nama regional lainnya. Ini utamanya membantu rilis impor dibaca lebih jelas di perpustakaan, sementara game tanpa judul bahasa Inggris pada basis data mempertahankan nama normalnya.</string>
     <string name="settings_help_game_path">Menambahkan folder ke pustaka game. EmuCoreH memindai setiap folder yang dipilih secara rekursif dan menggabungkan hasilnya tanpa jalur file duplikat. Ketuk folder dalam daftar untuk menghapusnya. Core saat ini mendukung image disk GDI, CHD, CDI, dan CUE/BIN.</string>
     <string name="settings_help_renderer">Memilih backend grafis yang digunakan untuk perenderan perangkat keras. Vulkan biasanya yang tercepat di perangkat modern, OpenGL bisa lebih aman untuk kompatibilitas pada beberapa GPU, dan Perangkat Lunak (Software) sebagian besar merupakan fallback untuk pengujian atau game yang rusak parah dalam mode perangkat keras.</string>
-    <string name="settings_help_aspect_ratio">Mengontrol cara gambar akhir dibingkai di layar Anda. Auto mengikuti game, 4:3 mempertahankan tampilan asli sebagian besar judul Dreamcast, 16:9 cocok untuk game dengan patch layar lebar, dan Regangkan hanya boleh digunakan jika Anda tidak keberatan dengan distorsi geometris.</string>
+    <string name="settings_help_aspect_ratio">Pilih Otomatis, 4:3, 16:9, 10:7 atau Regangkan. Otomatis mengikuti sistem; peregangan dapat mengubah bentuk gambar.</string>
     <string name="settings_help_overlay_scale">Mengubah ukuran tombol di layar dan stik analog. Tingkatkan ukurannya jika akurasi sentuhan lebih penting daripada ruang layar; turunkan jika hamparan (overlay) menutupi terlalu banyak gambar.</string>
     <string name="settings_help_overlay_opacity">Mengatur seberapa solid atau transparan tampilan kontrol sentuh. Opasitas yang lebih rendah membuat tampilan permainan lebih bersih, sementara opasitas yang lebih tinggi membuat tombol lebih mudah dilihat pada suasana gelap atau ramai.</string>
     <string name="settings_help_racing_mode">Membuat tombol aksi sentuh dan tombol bahu beralih status ditekan atau ditahan hanya dengan satu ketukan. Ini berguna untuk game balap di mana akselerasi harus tetap ditahan, sementara Start, Select, stik, dan D-pad mempertahankan perilaku normal.</string>
@@ -482,9 +482,9 @@
 
     <!-- Onboarding -->
     <string name="onboarding_page_1_title">Selamat datang di EmuCoreH</string>
-    <string name="onboarding_page_1_subtitle">Pustaka dan peluncur Dreamcast Anda, dirancang untuk pengaturan cepat, navigasi yang jelas, dan pengalaman yang lancar di layar apa pun.</string>
+    <string name="onboarding_page_1_subtitle">Koleksi game Sega Anda, siap untuk setiap layar.</string>
     <string name="onboarding_page_2_title">Emulasi Kuat</string>
-    <string name="onboarding_page_2_subtitle">Nikmati game Dreamcast favorit Anda dengan opsi grafis canggih, kontrol yang dapat disesuaikan, dan pengoptimalan performa.</string>
+    <string name="onboarding_page_2_subtitle">Flycast dan jgenesis menyatukan konsol Sega dan sistem arkade yang didukung.</string>
     <string name="onboarding_page_3_title">Pustaka Game Anda</string>
     <string name="onboarding_page_3_subtitle">Bangun pustaka game pribadi Anda dengan sampul indah, informasi mendetail, dan akses cepat ke game favorit Anda.</string>
     <string name="onboarding_page_4_title">Siap Bermain</string>
@@ -492,7 +492,7 @@
     <string name="settings_mediatek_notice_title">Kompatibilitas MediaTek</string>
     <string name="settings_mediatek_notice_message">Dukungan MediaTek masih bersifat eksperimental. Crash, artefak grafis, dan perilaku tidak stabil dapat terjadi sementara kami terus meningkatkan kompatibilitas dan performa.\n\nJika mengalami masalah grafis, coba OpenGL dengan ANGLE diaktifkan. Jika masalah berlanjut, gunakan perender Perangkat Lunak.</string>
     <string name="onboarding_title">Bersiaplah untuk bermain</string>
-    <string name="onboarding_subtitle">Pilih folder game Dreamcast Anda dan berikan akses file.</string>
+    <string name="onboarding_subtitle">Pilih folder game dan izinkan akses file.</string>
     <string name="onboarding_bios_desc">Pilih folder berisi file BIOS Dreamcast (dc_boot.bin, dc_flash.bin) atau set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
     <string name="onboarding_bios_optional">Opsional, tetapi disarankan</string>
     <string name="onboarding_games_title">Pilih folder game</string>
@@ -518,7 +518,7 @@
     <string name="back">Kembali</string>
 
     <!-- Catalog Search -->
-    <string name="catalog_search_title">Katalog Dreamcast</string>
+    <string name="catalog_search_title">Katalog Game</string>
     <string name="catalog_filters_title">Filter</string>
     <string name="catalog_filter_genre">Genre</string>
     <string name="catalog_filter_year">Tahun</string>
@@ -528,7 +528,7 @@
     <string name="catalog_filter_any_rating">Peringkat apa pun</string>
     <string name="catalog_filters_clear">Bersihkan filter</string>
     <string name="catalog_missing_title">Basis data katalog tidak ditemukan</string>
-    <string name="catalog_missing_body">Katalog Dreamcast untuk sementara tidak tersedia saat ini.</string>
+    <string name="catalog_missing_body">Katalog game sementara tidak tersedia.</string>
     <string name="catalog_empty_title">Tidak ada kecocokan ditemukan</string>
     <string name="catalog_empty_body">Coba nama game lain atau frasa penelusuran yang lebih pendek.</string>
     <string name="formats_title">Format yang Didukung</string>
@@ -1123,7 +1123,7 @@
     <string name="hub_title">EmuCoreH - Hub</string>
     <string name="hub_tab_news">Berita</string>
     <string name="hub_tab_videos">Video</string>
-    <string name="hub_tab_history">Riwayat Dreamcast</string>
+    <string name="hub_tab_history">Sejarah Sega</string>
     <string name="hub_tab_manuals">Manual</string>
     <string name="hub_related_materials">Materi terkait</string>
     <string name="hub_tab_favorites">Tersimpan</string>
@@ -1140,7 +1140,7 @@
     <string name="hub_empty_news">Belum ada berita yang tersedia.</string>
     <string name="hub_empty_videos">Belum ada video yang tersedia.</string>
     <string name="hub_empty_history">Belum ada artikel sejarah yang tersedia.</string>
-    <string name="hub_empty_manuals">Belum ada panduan emulasi Dreamcast yang tersedia.</string>
+    <string name="hub_empty_manuals">Belum ada panduan emulasi yang tersedia.</string>
     <string name="hub_empty_favorites">Artikel, manual, dan video yang tersimpan akan muncul di sini.</string>
     <string name="hub_no_search_results">Tidak ada konten yang cocok ditemukan.</string>
     <string name="hub_load_failed">Konten Hub tidak dapat dimuat.</string>
@@ -1205,7 +1205,7 @@
     <string name="emulation_swap_disc">Ganti disk</string>
     <string name="emulation_swap_disc_success">Disk berhasil diganti.</string>
     <string name="emulation_swap_disc_failed">Disk tidak dapat diganti. Disk sebelumnya telah dipulihkan.</string>
-    <string name="emulation_swap_disc_invalid">Pilih image disk Dreamcast yang didukung.</string>
+    <string name="emulation_swap_disc_invalid">Pilih citra disk yang didukung.</string>
     <string name="settings_customization_background_presets">Latar belakang bawaan</string>
     <string name="settings_customization_background_preset_olympus">Neraka Olympus</string>
     <string name="settings_customization_background_preset_neon_racing">Laju Neon</string>
@@ -1236,7 +1236,7 @@
     <string name="discord_share_serial">Tampilkan nomor seri game</string>
     <string name="discord_preview_game_title">Judul game</string>
     <string name="discord_preview_serial">Nomor seri</string>
-    <string name="discord_share_serial_desc">Sertakan nomor seri disk Dreamcast, misalnya MK-51000</string>
+    <string name="discord_share_serial_desc">Sertakan nomor seri game, misalnya MK-51000</string>
     <string name="discord_preview_title">Pratinjau status</string>
     <string name="discord_privacy_note">Masuk menggunakan Discord OAuth dengan PKCE. Token akses dienkripsi oleh Android Keystore dan tidak pernah dikirim ke server EmuCoreH.</string>
     <string name="discord_status_disabled">Dinonaktifkan</string>
@@ -1250,7 +1250,7 @@
     <string name="settings_discord_service_error">Tidak dapat memulai layanan bantuan Discord.</string>
     <string name="settings_discord_token_error">Tidak dapat melindungi token masuk Discord.</string>
     <string name="discord_presence_library">Menjelajahi pustaka game</string>
-    <string name="discord_presence_private_game">Sedang memainkan game Dreamcast</string>
+    <string name="discord_presence_private_game">Sedang bermain game</string>
     <string name="discord_presence_paused">Dijeda</string>
     <string name="discord_presence_playing">Memainkan %1$s</string>
     <string name="discord_friends_title">Teman di EmuCoreH</string>
@@ -1275,7 +1275,7 @@
     <string name="settings_frame_limit">Batas bingkai</string>
     <string name="settings_frame_limit_desc">Membatasi emulasi ke laju penyegaran konsol. Matikan agar berjalan secepat perangkat.</string>
     <string name="settings_target_fps">Laju bingkai target</string>
-    <string name="settings_target_fps_desc">Auto memakai laju bingkai yang dilaporkan Flycast. Nilai manual mengatur laju emulasi; game mungkin merender lebih sedikit bingkai.</string>
+    <string name="settings_target_fps_desc">Otomatis memakai laju bingkai yang dilaporkan inti aktif. Nilai manual menentukan kecepatan emulasi; gim dapat merender lebih sedikit bingkai.</string>
     <string name="settings_display_crop">Pangkas tampilan</string>
     <string name="settings_display_crop_desc">Memangkas jumlah piksel yang sama dari keempat tepi sebelum penskalaan. Pilih 0 untuk menonaktifkan pemangkasan.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1313,7 +1313,7 @@
     <string name="achievements_unavailable">Build ini tidak mendukung RetroAchievements.</string>
     <string name="shell_achievements">Pencapaian</string>
     <string name="formats_psp_supported_title">Format Dreamcast yang didukung</string>
-    <string name="formats_psp_supported_body">Core Flycast bawaan menerima file game ini secara langsung.</string>
+    <string name="formats_psp_supported_body">Citra cakram Dreamcast menggunakan Flycast. Sistem kartrid dan Sega CD menggunakan jgenesis; formatnya tercantum di bawah.</string>
     <string name="formats_psp_recommended_title">Image disk GD-ROM</string>
     <string name="formats_psp_recommended_body">GDI adalah dump GD-ROM standar. Image CHD, CDI, dan CUE/BIN juga didukung.</string>
     <string name="formats_psp_homebrew_title">Set ROM arcade</string>
@@ -2088,7 +2088,7 @@
     <string name="profile_player">Pemain</string>
     <string name="profile_player_blocked">Player blocked.</string>
     <string name="profile_player_card_brand">KARTU PEMAIN EMUCOREH</string>
-    <string name="profile_player_card_footer">Kenangan Dreamcast, dilacak oleh EmuCoreH</string>
+    <string name="profile_player_card_footer">Kenangan bermain, dicatat oleh EmuCoreH</string>
     <string name="profile_player_card_share">Bagikan Kartu Pemain</string>
     <string name="profile_player_card_share_text">Temukan saya di EmuCoreH: %1$s</string>
     <string name="profile_player_id_format">ID Pemain: %1$s</string>
@@ -2265,4 +2265,40 @@
     <string name="settings_mouse_vertical_sensitivity">Sensitivitas vertikal</string>
     <string name="settings_mouse_wheel_shoulders">L1 / R1</string>
     <string name="settings_gamepad_mapping_use_global_desc">Hapus penggantian tombol gamepad untuk game ini.</string>
+
+    <!-- Sega systems: labels, firmware and supported core options. -->
+    <string name="sega_flycast_systems">Dreamcast / arkade</string>
+    <string name="sega_six_button_controls">Pad enam tombol: A, B, C, X, Y, Z, Start dan Mode.</string>
+    <string name="sega_two_button_controls">Pad dua tombol: 1 dan 2, dengan Start atau Jeda sesuai sistem.</string>
+    <string name="sega_bios_title">BIOS Sega CD</string>
+    <string name="sega_bios_description">Pilih wilayah dan impor berkas BIOS milik Anda berukuran 128 KiB.</string>
+    <string name="sega_bios_import">Impor BIOS</string>
+    <string name="sega_bios_installed">BIOS terpasang</string>
+    <string name="sega_bios_invalid">Pilih berkas BIOS berukuran tepat 128 KiB.</string>
+    <string name="sega_bios_missing">BIOS Sega CD tidak tersedia. Buka Pengaturan, pilih Sega CD, lalu impor BIOS untuk wilayah cakram.</string>
+    <string name="formats_sega_body">ROM Mega Drive, 32X, Master System, Game Gear dan SG-1000; cakram Sega CD CUE/BIN dan CHD. ZIP mendukung satu ROM kartrid. Sega CD memerlukan BIOS milik Anda.</string>
+    <string name="sega_region">Wilayah</string>
+    <string name="sega_timing">Pewaktuan video</string>
+    <string name="sega_restart_required">Berlaku setelah memulai ulang gim.</string>
+    <string name="sega_remove_sprite_limit">Hapus batas sprite</string>
+    <string name="sega_low_pass_filter">Filter audio lolos rendah</string>
+    <string name="sega_fm_audio">Audio FM Master System</string>
+    <string name="sega_crop_border">Pangkas tepi vertikal</string>
+    <string name="sega_gg_resolution">Resolusi SMS penuh di Game Gear</string>
+    <string name="sega_pause">Jeda</string>
+    <string name="sega_mode">Mode</string>
+    <string name="home_platform_genesis">Mega Drive / Genesis</string>
+    <string name="home_platform_sega_cd">Sega CD / Mega-CD</string>
+    <string name="home_platform_sega_32x">Sega 32X</string>
+    <string name="home_platform_master_system">Master System</string>
+    <string name="home_platform_game_gear">Game Gear</string>
+    <string name="home_platform_sg_1000">SG-1000</string>
+    <string name="formats_sega_title">Sega</string>
+    <string name="sega_ntsc">NTSC</string>
+    <string name="sega_pal">PAL</string>
+    <string name="settings_about_jgenesis_source_desc">Emulasi Sega dengan lisensi GNU GPLv3. Tautan membuka sumber hulu; pohon sumber EmuCoreH memuat integrasi libretro. Lisensi dan metadata versi disertakan. BIOS Sega CD disediakan pengguna; firmware 32X dari hulu tetap tertanam.</string>
+    <string name="settings_about_jgenesis_source_link">Lihat sumber jgenesis di GitHub</string>
+    <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
+    <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
+    <string name="sega_ds_collection_unsupported">ROM Sonic Classic Collection ini memerlukan emulator Nintendo DS. Gunakan ROM Mega Drive / Genesis asli.</string>
 </resources>

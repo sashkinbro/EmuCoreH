@@ -56,7 +56,8 @@ class SettingsBackupRepository(
 
     internal suspend fun writeBackup(output: OutputStream, includeSaveStates: Boolean = false) {
         ZipOutputStream(output).use { zip ->
-            zip.writeJsonEntry("settings.json", preferences.exportJson())
+            zip.writeJsonEntry("settings.json", preferences.exportJson().put("segaSettings",
+                com.sbro.emucoreh.core.SegaSettingsBackup.export(context)))
             zip.writeJsonEntry("per-game-settings.json", perGameSettingsRepository.exportJson())
             zip.writeJsonEntry("cheats.json", cheatRepository.exportJson())
             zip.writeFlatDirectory(
@@ -65,6 +66,11 @@ class SettingsBackupRepository(
                 ::isCheatFile
             )
             zip.writeDirectory("memory-cards", memoryCardsDir())
+            zip.writeDirectory("battery-saves", com.sbro.emucoreh.core.SegaSaveFiles.directory(
+                context, preferences.getEmulatorDataPathSync())) { file ->
+                val root = com.sbro.emucoreh.core.SegaSaveFiles.directory(context, preferences.getEmulatorDataPathSync())
+                com.sbro.emucoreh.core.SegaSaveFiles.isBackupPath(file.relativeTo(root).invariantSeparatorsPath)
+            }
             if (includeSaveStates) {
                 zip.writeFlatDirectory("save-states", saveStatesDir(), ::isQuickSaveState)
             }
@@ -87,7 +93,11 @@ class SettingsBackupRepository(
         ZipInputStream(input).use { zip ->
             generateSequence { zip.nextEntry }.forEach { entry ->
                 when (entry.name) {
-                    "settings.json" -> preferences.importJson(JSONObject(zip.readBytes().decodeToString()))
+                    "settings.json" -> {
+                        val settings = JSONObject(zip.readBytes().decodeToString())
+                        preferences.importJson(settings)
+                        com.sbro.emucoreh.core.SegaSettingsBackup.restore(context, settings.optJSONObject("segaSettings"))
+                    }
                     "per-game-settings.json" -> perGameSettingsRepository.importJson(JSONObject(zip.readBytes().decodeToString()))
                     "cheats.json" -> cheatRepository.importJson(JSONObject(zip.readBytes().decodeToString()))
                     CustomFontRepository.BACKUP_ENTRY -> {
@@ -106,6 +116,14 @@ class SettingsBackupRepository(
                             require(target.path.startsWith(root.path + File.separator)) {
                                 "Invalid memory-card backup path"
                             }
+                            target.parentFile?.mkdirs()
+                            target.outputStream().use { output -> zip.copyTo(output) }
+                        } else if (entry.name.startsWith("battery-saves/") && !entry.isDirectory) {
+                            val relative = entry.name.removePrefix("battery-saves/")
+                            require(com.sbro.emucoreh.core.SegaSaveFiles.isBackupPath(relative)) { "Invalid battery-save path" }
+                            val root = com.sbro.emucoreh.core.SegaSaveFiles.directory(context, preferences.getEmulatorDataPathSync()).canonicalFile
+                            val target = File(root, relative).canonicalFile
+                            require(target.path.startsWith(root.path + File.separator)) { "Invalid battery-save path" }
                             target.parentFile?.mkdirs()
                             target.outputStream().use { output -> zip.copyTo(output) }
                         } else if (entry.name.startsWith("save-states/") && !entry.isDirectory) {

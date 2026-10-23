@@ -1,6 +1,7 @@
 package com.sbro.emucoreh.data
 
 import com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository
+import com.sbro.emucoreh.core.SegaPlatformDetector
 import java.util.Locale
 
 enum class LibraryPlatform {
@@ -9,6 +10,12 @@ enum class LibraryPlatform {
     NAOMI_2,
     ATOMISWAVE,
     SYSTEM_SP,
+    GENESIS,
+    SEGA_CD,
+    SEGA_32X,
+    MASTER_SYSTEM,
+    GAME_GEAR,
+    SG_1000,
     ARCADE,
 }
 
@@ -20,6 +27,9 @@ object LibraryPlatformResolver {
         game: GameItem,
         findArcade: (String) -> ArcadeCatalogRepository.ArcadeGame?,
     ): LibraryPlatform {
+        game.platform?.let { platform -> entriesByName[platform.uppercase(Locale.ROOT)]?.let { return it } }
+        val sega = SegaPlatformDetector.detectName(game.fileName)
+        if (sega.isSega) return entriesByName.getValue(sega.name)
         val extension = game.fileName.substringAfterLast('.', "").lowercase(Locale.ROOT)
         // Arcade GD-ROMs launch through their archives; a same-named disc is Dreamcast.
         if (extension !in arcadeExtensions) return LibraryPlatform.DREAMCAST
@@ -45,4 +55,6 @@ object LibraryPlatformResolver {
         }
         return LibraryPlatform.ARCADE
     }
+
+    private val entriesByName = LibraryPlatform.entries.associateBy { it.name }
 }

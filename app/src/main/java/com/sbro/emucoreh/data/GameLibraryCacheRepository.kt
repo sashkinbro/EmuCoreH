@@ -17,8 +17,8 @@ data class GameLibraryCacheSnapshot(
 class GameLibraryCacheRepository(context: Context) {
 
     companion object {
-        // v7: retain every physical disc behind grouped library cards.
-        private const val CACHE_SCHEMA_VERSION = 7
+        // v8: explicit console identity for Sega content and ambiguous archives/discs.
+        private const val CACHE_SCHEMA_VERSION = 8
 
         fun libraryKey(paths: List<String>): String =
             paths.map(String::trim).filter(String::isNotBlank).distinct().joinToString("\u001F")
@@ -183,6 +183,7 @@ internal fun GameItem.toLibraryCacheJson(): JSONObject = JSONObject().apply {
     put("last_modified", lastModified)
     put("cover_art_path", coverArtPath ?: "")
     put("serial", serial ?: "")
+    put("platform", platform ?: "")
     put("discs", JSONArray().apply {
         discs.forEach { disc ->
             put(JSONObject().apply {
@@ -228,6 +229,7 @@ internal fun JSONObject.readCachedGameItem(): GameItem? {
         fileSize = optLong("file_size"), lastModified = optLong("last_modified"),
         coverArtPath = optString("cover_art_path").takeIf(String::isNotBlank),
         serial = optString("serial").takeIf(String::isNotBlank),
-        discSize = optLong("disc_size").takeIf { it > 0L }, discs = members
+        discSize = optLong("disc_size").takeIf { it > 0L }, discs = members,
+        platform = optString("platform").takeIf(String::isNotBlank)
     )
 }

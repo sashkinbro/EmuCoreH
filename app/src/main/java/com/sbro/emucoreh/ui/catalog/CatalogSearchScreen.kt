@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,6 +38,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -112,7 +115,7 @@ fun CatalogSearchScreen(
     var showYearMenu by remember { mutableStateOf(false) }
     var showRatingMenu by remember { mutableStateOf(false) }
     val guardedBackClick = rememberDebouncedClick(onClick = onBackClick)
-    val hasActiveFilters = uiState.selectedGenre != null || uiState.selectedYear != null || uiState.minRating != null
+    val hasActiveFilters = uiState.selectedPlatform != null || uiState.selectedGenre != null || uiState.selectedYear != null || uiState.minRating != null
     val backFocusRequester = remember { FocusRequester() }
     val firstResultFocusRequester = remember { FocusRequester() }
     val shouldRequestGamepadFocus =
@@ -185,6 +188,16 @@ fun CatalogSearchScreen(
                         )
                     }
 
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(selected = uiState.selectedPlatform == null, onClick = { viewModel.updatePlatform(null) },
+                                label = { Text(stringResource(R.string.achievement_filter_all)) })
+                            uiState.availablePlatforms.forEach { platform ->
+                                FilterChip(selected = uiState.selectedPlatform == platform, onClick = { viewModel.updatePlatform(platform) },
+                                    label = { Text(catalogPlatformLabel(platform)) })
+                            }
+                        }
+                    }
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         OutlinedTextField(
                             value = uiState.query,
@@ -542,6 +555,10 @@ private fun CatalogGameCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                if (game.platforms.isNotEmpty()) Text(
+                    text = game.platforms.map { catalogPlatformLabel(it) }.joinToString(" · "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val meta = buildString {
                     game.year?.let { append(it) }
                     game.rating?.let {
@@ -587,4 +604,19 @@ private fun CatalogMessageCard(
             )
         }
     }
+}
+
+@Composable
+internal fun catalogPlatformLabel(platform: String): String = when (platform) {
+    "Genesis" -> stringResource(R.string.home_platform_genesis)
+    "Sega CD" -> stringResource(R.string.home_platform_sega_cd)
+    "32X" -> stringResource(R.string.home_platform_sega_32x)
+    "Master System" -> stringResource(R.string.home_platform_master_system)
+    "Game Gear" -> stringResource(R.string.home_platform_game_gear)
+    "SG-1000" -> stringResource(R.string.home_platform_sg_1000)
+    "Arcade" -> stringResource(R.string.home_platform_arcade)
+    "Sega Naomi", "Naomi" -> stringResource(R.string.home_platform_naomi)
+    "Naomi 2" -> stringResource(R.string.home_platform_naomi_2)
+    "Sammy Atomiswave", "Atomiswave" -> stringResource(R.string.home_platform_atomiswave)
+    else -> platform
 }

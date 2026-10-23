@@ -4,7 +4,7 @@
     <string name="app_name">EmuCoreH</string>
 
     <string name="shell_library">遊戲庫</string>
-    <string name="shell_catalog_search">搜索 Dreamcast</string>
+    <string name="shell_catalog_search">搜索游戏</string>
     <string name="shell_supported_formats">支援的格式</string>
 
     <string name="home_empty_title">找不到遊戲</string>
@@ -39,8 +39,8 @@
     <string name="detail_show_more">顯示更多</string>
     <string name="detail_show_less">顯示較少</string>
     <string name="detail_no_data_title">沒有可用的詳細資訊</string>
-    <string name="detail_no_data_body">我们尚未能将这款游戏与本地 Dreamcast 目录匹配。</string>
-    <string name="detail_catalog_missing_body">Dreamcast 目录详情暂时不可用。</string>
+    <string name="detail_no_data_body">暂时无法在本地目录中匹配此游戏。</string>
+    <string name="detail_catalog_missing_body">游戏目录详情暂时不可用。</string>
     <string name="detail_save_screenshot">儲存截圖</string>
     <string name="detail_screenshot_saved">截圖已儲存</string>
     <string name="detail_screenshot_save_failed">無法儲存截圖</string>
@@ -137,7 +137,7 @@
     <string name="settings_version">版本</string>
     <string name="settings_emulator_core">模擬器核心</string>
     <string name="settings_about_app">關於 EmuCoreH</string>
-    <string name="settings_about_app_desc">EmuCoreH 是一款由 Flycast 核心驱动的 Dreamcast、Naomi、Naomi 2 和 Atomiswave 模拟器与游戏库，提供快速设置、清晰的导航和适合掌机的界面。</string>
+    <string name="settings_about_app_desc">EmuCoreH 将游戏库与模拟核心结合：Dreamcast 和街机系统使用 Flycast，Mega Drive/Genesis、Sega CD、32X、Master System、Game Gear 和 SG-1000 使用 jgenesis。</string>
     <string name="settings_about_studio">開發者</string>
     <string name="settings_about_studio_desc">由 Sashkin Apps 製作。</string>
     <string name="settings_about_support_project">支持專案</string>
@@ -240,15 +240,15 @@
     <string name="settings_fps_overlay_mode_detailed">詳細統計</string>
 
     <string name="onboarding_page_1_title">歡迎使用 EmuCoreH</string>
-    <string name="onboarding_page_1_subtitle">您的 Dreamcast 游戏库与启动器，专为快速设置、清晰导航和在任何屏幕上流畅使用而设计。</string>
+    <string name="onboarding_page_1_subtitle">您的Sega游戏库，适配每一块屏幕。</string>
     <string name="onboarding_page_2_title">強大的模擬功能</string>
-    <string name="onboarding_page_2_subtitle">通过高级图形选项、可自定义的控制和性能优化，畅玩您喜爱的 Dreamcast 游戏。</string>
+    <string name="onboarding_page_2_subtitle">Flycast和jgenesis将受支持的Sega主机与街机系统汇聚一处。</string>
     <string name="onboarding_page_3_title">您的遊戲庫</string>
     <string name="onboarding_page_3_subtitle">建立您的個人遊戲庫，擁有精美的封面、詳細的資訊，並能快速存取您的最愛。</string>
     <string name="onboarding_page_4_title">準備遊玩</string>
     <string name="onboarding_page_4_subtitle">选择游戏文件夹和模拟器数据存储位置即可开始。</string>
     <string name="onboarding_title">準備開始遊玩</string>
-    <string name="onboarding_subtitle">选择您的 Dreamcast 游戏文件夹并授予文件访问权限。</string>
+    <string name="onboarding_subtitle">选择游戏文件夹并授予文件访问权限。</string>
     <string name="onboarding_games_title">選擇遊戲資料夾</string>
     <string name="onboarding_games_desc">選擇包含您遊戲的資料夾。</string>
     <string name="onboarding_status_required">必填</string>
@@ -268,7 +268,7 @@
     <string name="no">否</string>
     <string name="back">返回</string>
 
-    <string name="catalog_search_title">Dreamcast 目录</string>
+    <string name="catalog_search_title">游戏目录</string>
     <string name="catalog_filters_title">過濾器</string>
     <string name="catalog_filter_genre">類型</string>
     <string name="catalog_filter_year">年份</string>
@@ -278,7 +278,7 @@
     <string name="catalog_filter_any_rating">任何分級</string>
     <string name="catalog_filters_clear">清除過濾器</string>
     <string name="catalog_missing_title">找不到目錄資料庫</string>
-    <string name="catalog_missing_body">Dreamcast 目录目前暂时不可用。</string>
+    <string name="catalog_missing_body">游戏目录暂时不可用。</string>
     <string name="catalog_empty_title">找不到符合的結果</string>
     <string name="catalog_empty_body">請嘗試其他遊戲名稱或較短的搜尋關鍵字。</string>
     <string name="formats_title">支援的格式</string>
@@ -383,7 +383,7 @@
     <string name="settings_help_recent_games">为您最后玩过的游戏显示一个快速访问行。如果您经常在几个游戏之间切换，这很好；如果您想要一个更干净的主屏幕，请将其关闭。</string>
     <string name="settings_help_home_search">直接在主屏幕上显示库搜索栏。对于大型游戏库，请保持开启；如果您喜欢更干净的布局并且很少按名称搜索，请将其关闭。</string>
     <string name="settings_help_renderer">选择用于硬件渲染的图形后端。Vulkan 在现代设备上通常是最快的，OpenGL 在某些 GPU 上的兼容性可能更安全，而 Software（软件）渲染主要作为测试后备或用于在硬件模式下严重损坏的游戏。</string>
-    <string name="settings_help_aspect_ratio">控制最终画面在屏幕上的取景方式。Auto 跟随游戏，4:3 保留大多数 Dreamcast 游戏的原始观感，16:9 适合打了宽屏补丁的游戏，只有在您不介意几何变形时才应使用拉伸。</string>
+    <string name="settings_help_aspect_ratio">选择自动、4:3、16:9、10:7或拉伸。自动遵循系统比例；拉伸可能使画面变形。</string>
     <string name="settings_help_overlay_scale">更改屏幕按钮和摇杆的大小。如果触摸精度比屏幕空间更重要，请增加它；如果覆盖层遮挡了太多图像，请减小它。</string>
     <string name="settings_help_overlay_opacity">控制触摸控件的不透明度或透明度。较低的不透明度可保持游戏视图更干净，而较高的不透明度可使按钮在黑暗或复杂的场景中更容易看到。</string>
     <string name="settings_help_hide_overlay_on_gamepad">当物理控制器处于活动状态时隐藏触摸覆盖层。这使屏幕更干净，但如果您仍希望在连接控制器时使用触摸按钮，请将其关闭。</string>
@@ -519,7 +519,7 @@
     <string name="onboarding_status_custom_folder">已选择自定义文件夹</string>
     <string name="settings_emulator_data_path">模拟器文件夹</string>
     <string name="settings_fetch_boxart">获取封面图</string>
-    <string name="settings_fetch_boxart_desc">从 Flycast 来源下载封面图：光盘内的 GD-ROM 图像、flycast-content 街机封面和 TheGamesDB。</string>
+    <string name="settings_fetch_boxart_desc">从 EmuCoreH 目录、IGDB、光盘和街机图像以及 TheGamesDB 下载各平台专用封面。</string>
     <string name="shell_texture_manager">纹理管理器</string>
     <string name="texture_manager_title">纹理管理器</string>
     <string name="texture_manager_import_zip">导入 ZIP</string>
@@ -603,9 +603,9 @@
     <string name="settings_about_app_source_desc">打开 EmuCoreH 的 GitHub 代码库以查看应用和项目源码。</string>
     <string name="settings_about_app_source_link">在 GitHub 上打开 EmuCoreH</string>
     <string name="settings_about_app_source_url">https://github.com/sashkinbro/EmuCoreH</string>
-    <string name="settings_about_core_source">模擬核心</string>
-    <string name="settings_about_core_source_desc">基于 Flycast —— Dreamcast 模拟核心。</string>
-    <string name="settings_about_core_source_link">在 GitHub 上檢視核心原始碼</string>
+    <string name="settings_about_core_source">Flycast (GNU GPLv2)</string>
+    <string name="settings_about_core_source_desc">Flycast 在 GNU GPLv2 许可下模拟 Dreamcast 和街机系统。</string>
+    <string name="settings_about_core_source_link">在 GitHub 查看 Flycast 源码</string>
     <string name="settings_about_core_source_url">https://github.com/flyinghead/flycast</string>
     <string name="settings_touch_haptics_strength">触摸震动强度</string>
     <string name="settings_touch_haptics_test">测试触摸震动</string>
@@ -1110,7 +1110,7 @@
     <string name="hub_title">EmuCoreH - 枢纽</string>
     <string name="hub_tab_news">新闻</string>
     <string name="hub_tab_videos">视频</string>
-    <string name="hub_tab_history">Dreamcast 历史</string>
+    <string name="hub_tab_history">Sega历史</string>
     <string name="hub_tab_manuals">指南</string>
     <string name="hub_related_materials">相关资料</string>
     <string name="hub_tab_favorites">已保存</string>
@@ -1127,7 +1127,7 @@
     <string name="hub_empty_news">暂无可用新闻。</string>
     <string name="hub_empty_videos">暂无可用视频。</string>
     <string name="hub_empty_history">暂无可用历史文章。</string>
-    <string name="hub_empty_manuals">暂无 Dreamcast 模拟指南。</string>
+    <string name="hub_empty_manuals">暂无模拟器使用手册。</string>
     <string name="hub_empty_favorites">已保存的文章、指南和视频将显示在这里。</string>
     <string name="hub_no_search_results">未找到匹配的内容。</string>
     <string name="hub_load_failed">无法加载枢纽内容。</string>
@@ -1192,7 +1192,7 @@
     <string name="emulation_swap_disc">更换光盘</string>
     <string name="emulation_swap_disc_success">光盘已成功更换。</string>
     <string name="emulation_swap_disc_failed">无法更换光盘，已恢复之前的光盘。</string>
-    <string name="emulation_swap_disc_invalid">请选择受支持的 Dreamcast 光盘映像。</string>
+    <string name="emulation_swap_disc_invalid">请选择受支持的光盘镜像。</string>
     <string name="settings_customization_background_presets">内置背景</string>
     <string name="settings_customization_background_preset_olympus">奥林匹斯烈焰</string>
     <string name="settings_customization_background_preset_neon_racing">霓虹疾驰</string>
@@ -1223,7 +1223,7 @@
     <string name="discord_share_serial">显示游戏序列号</string>
     <string name="discord_preview_game_title">游戏标题</string>
     <string name="discord_preview_serial">序列号</string>
-    <string name="discord_share_serial_desc">包含 Dreamcast 光盘序列号，例如 MK-51000</string>
+    <string name="discord_share_serial_desc">包含游戏序列号，例如MK-51000</string>
     <string name="discord_preview_title">状态预览</string>
     <string name="discord_privacy_note">登录使用带 PKCE 的 Discord OAuth。访问令牌由 Android Keystore 加密，绝不会发送到 EmuCoreH 服务器。</string>
     <string name="discord_status_disabled">已停用</string>
@@ -1237,7 +1237,7 @@
     <string name="settings_discord_service_error">无法启动 Discord 辅助服务。</string>
     <string name="settings_discord_token_error">无法保护 Discord 登录令牌。</string>
     <string name="discord_presence_library">正在浏览游戏库</string>
-    <string name="discord_presence_private_game">正在玩 Dreamcast 游戏</string>
+    <string name="discord_presence_private_game">正在玩游戏</string>
     <string name="discord_presence_paused">已暂停</string>
     <string name="discord_presence_playing">正在玩 %1$s</string>
     <string name="discord_friends_title">EmuCoreH 中的好友</string>
@@ -1262,7 +1262,7 @@
     <string name="settings_frame_limit">幀率限制</string>
     <string name="settings_frame_limit_desc">將模擬限制在主機的刷新率。關閉後以裝置允許的最高速度運行。</string>
     <string name="settings_target_fps">目標幀率</string>
-    <string name="settings_target_fps_desc">Auto 使用 Flycast 报告的帧率。手动值设定模拟速度；游戏实际渲染的帧数可能更少。</string>
+    <string name="settings_target_fps_desc">自动模式使用当前核心报告的帧率。手动值设置模拟速度；游戏实际渲染的帧数可能更少。</string>
     <string name="settings_display_crop">畫面裁切</string>
     <string name="settings_display_crop_desc">缩放前从四边裁剪相同数量的像素。选择 0 可关闭裁剪。</string>
     <string name="settings_display_crop_pixels">%1$d 像素</string>
@@ -1300,7 +1300,7 @@
     <string name="achievements_unavailable">此版本不支援 RetroAchievements。</string>
     <string name="shell_achievements">成就</string>
     <string name="formats_psp_supported_title">支持的 Dreamcast 格式</string>
-    <string name="formats_psp_supported_body">内置的 Flycast 核心可直接读取这些游戏文件。</string>
+    <string name="formats_psp_supported_body">Dreamcast 光盘镜像使用 Flycast。卡带系统和 Sega CD 使用 jgenesis，其格式列于下方。</string>
     <string name="formats_psp_recommended_title">GD-ROM 光盘映像</string>
     <string name="formats_psp_recommended_body">GDI 是标准的 GD-ROM 转储。同时也支持 CHD、CDI 和 CUE/BIN 光盘映像。</string>
     <string name="formats_psp_homebrew_title">街机 ROM 集</string>
@@ -2075,7 +2075,7 @@
     <string name="profile_player">玩家</string>
     <string name="profile_player_blocked">Player blocked.</string>
     <string name="profile_player_card_brand">EMUCOREH 玩家名片</string>
-    <string name="profile_player_card_footer">Dreamcast 的珍贵回忆，由 EmuCoreH 记录</string>
+    <string name="profile_player_card_footer">EmuCoreH记录您的游戏回忆</string>
     <string name="profile_player_card_share">分享玩家名片</string>
     <string name="profile_player_card_share_text">在 EmuCoreH 上加我好友：%1$s</string>
     <string name="profile_player_id_format">玩家 ID：%1$s</string>
@@ -2252,4 +2252,40 @@
     <string name="settings_mouse_vertical_sensitivity">垂直灵敏度</string>
     <string name="settings_mouse_wheel_shoulders">L1 / R1</string>
     <string name="settings_gamepad_mapping_use_global_desc">移除此游戏的游戏手柄按键覆盖。</string>
+
+    <!-- Sega systems: labels, firmware and supported core options. -->
+    <string name="sega_flycast_systems">Dreamcast / 街机</string>
+    <string name="sega_six_button_controls">六键手柄：A、B、C、X、Y、Z、Start 和 Mode。</string>
+    <string name="sega_two_button_controls">双键手柄：1 和 2，以及对应系统的开始或暂停键。</string>
+    <string name="sega_bios_title">Sega CD BIOS</string>
+    <string name="sega_bios_description">选择区域并导入您自己的 128 KiB BIOS 文件。</string>
+    <string name="sega_bios_import">导入 BIOS</string>
+    <string name="sega_bios_installed">已安装 BIOS</string>
+    <string name="sega_bios_invalid">请选择大小恰好为 128 KiB 的 BIOS 文件。</string>
+    <string name="sega_bios_missing">缺少 Sega CD BIOS。请打开设置，选择 Sega CD，然后导入与光盘区域对应的 BIOS。</string>
+    <string name="formats_sega_body">支持 Mega Drive、32X、Master System、Game Gear 和 SG-1000 ROM，以及 Sega CD 的 CUE/BIN 和 CHD 光盘。ZIP 支持单个卡带 ROM。Sega CD 需要您自己的 BIOS。</string>
+    <string name="sega_region">区域</string>
+    <string name="sega_timing">视频制式</string>
+    <string name="sega_restart_required">重新启动游戏后生效。</string>
+    <string name="sega_remove_sprite_limit">移除精灵数量限制</string>
+    <string name="sega_low_pass_filter">音频低通滤波器</string>
+    <string name="sega_fm_audio">Master System FM 音频</string>
+    <string name="sega_crop_border">裁剪垂直边框</string>
+    <string name="sega_gg_resolution">Game Gear 使用完整 SMS 分辨率</string>
+    <string name="sega_pause">暂停</string>
+    <string name="sega_mode">模式</string>
+    <string name="home_platform_genesis">Mega Drive / Genesis</string>
+    <string name="home_platform_sega_cd">Sega CD / Mega-CD</string>
+    <string name="home_platform_sega_32x">Sega 32X</string>
+    <string name="home_platform_master_system">Master System</string>
+    <string name="home_platform_game_gear">Game Gear</string>
+    <string name="home_platform_sg_1000">SG-1000</string>
+    <string name="formats_sega_title">Sega</string>
+    <string name="sega_ntsc">NTSC</string>
+    <string name="sega_pal">PAL</string>
+    <string name="settings_about_jgenesis_source_desc">基于 GNU GPLv3 的 Sega 模拟。链接打开上游源码，EmuCoreH 源码树包含 libretro 集成。许可证和版本信息随应用提供。Sega CD BIOS 由用户提供；上游 32X 固件仍然内嵌。</string>
+    <string name="settings_about_jgenesis_source_link">在 GitHub 查看 jgenesis 源码</string>
+    <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
+    <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
+    <string name="sega_ds_collection_unsupported">此 Sonic Classic Collection ROM 需要 Nintendo DS 模拟器。请使用原版 Mega Drive / Genesis ROM。</string>
 </resources>

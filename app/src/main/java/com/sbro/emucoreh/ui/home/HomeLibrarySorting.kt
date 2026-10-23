@@ -9,7 +9,7 @@ enum class HomeSortOption {
     TITLE_ASC, TITLE_DESC, RECENT_DESC, RECENT_ASC, SIZE_DESC, SIZE_ASC, PLATFORM;
 
     companion object {
-        fun fromPreference(value: String?): HomeSortOption = entries.firstOrNull { it.name == value } ?: TITLE_ASC
+        fun fromPreference(value: String?): HomeSortOption = entries.firstOrNull { it.name == value } ?: PLATFORM
     }
 }
 

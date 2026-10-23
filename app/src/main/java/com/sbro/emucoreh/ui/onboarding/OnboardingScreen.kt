@@ -26,11 +26,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -91,6 +93,8 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -155,6 +159,11 @@ fun OnboardingScreen(
     val scope = rememberCoroutineScope()
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val horizontalSystemBarPadding = navigationBarsHorizontalPaddingValues()
+    val density = LocalDensity.current
+    var navigationHeightPx by remember(isLandscape) { mutableStateOf(0) }
+    val navigationReservedHeight = if (navigationHeightPx > 0) {
+        with(density) { navigationHeightPx.toDp() }
+    } else (if (isLandscape) 106.dp else 160.dp) + bottomInset
     val tvSafeHorizontal = if (tvUiEnabled) {
         TvUiMetrics.safeHorizontalDp().dp
     } else {
@@ -405,6 +414,7 @@ fun OnboardingScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
                                 .statusBarsPadding()
                                 .displayCutoutPadding()
                                 .padding(start = 24.dp, bottom = 12.dp),
@@ -431,7 +441,7 @@ fun OnboardingScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxSize()
-                                .padding(bottom = 106.dp + bottomInset),
+                                .padding(bottom = navigationReservedHeight),
                             contentAlignment = Alignment.Center
                         ) {
                             if (page < 3) {
@@ -496,7 +506,8 @@ fun OnboardingScreen(
                                     Column(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .verticalScroll(landscapeSetupScrollState),
+                                            .verticalScroll(landscapeSetupScrollState)
+                                            .testTag("onboarding_setup_scroll"),
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         verticalArrangement = Arrangement.Top
                                     ) {
@@ -548,6 +559,8 @@ fun OnboardingScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
+                        .onSizeChanged { navigationHeightPx = it.height }
+                        .testTag("onboarding_navigation")
                         .displayCutoutPadding()
                         .padding(bottom = 16.dp + bottomInset),
                     horizontalArrangement = Arrangement.spacedBy(32.dp)
@@ -601,12 +614,13 @@ fun OnboardingScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
+                            .testTag(if (page == 4) "onboarding_setup_scroll" else "onboarding_page_scroll")
                             .statusBarsPadding()
                             .padding(
                                 start = 24.dp,
                                 end = 24.dp,
                                 top = 48.dp,
-                                bottom = 160.dp + bottomInset
+                                bottom = navigationReservedHeight + 24.dp
                             ),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -660,6 +674,8 @@ fun OnboardingScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
+                        .onSizeChanged { navigationHeightPx = it.height }
+                        .testTag("onboarding_navigation")
                         .padding(bottom = 24.dp + bottomInset)
                         .padding(horizontal = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -1000,6 +1016,7 @@ private fun OnboardingPageIndicator(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun OnboardingNavigation(
     currentPage: Int,
@@ -1012,6 +1029,7 @@ private fun OnboardingNavigation(
     modifier: Modifier = Modifier
 ) {
     val tvUiEnabled = LocalTvUiEnvironment.current.enabled
+    val largeFont = LocalDensity.current.fontScale >= 1.3f
     val actionShape = neonShape(12.dp)
     val backActionFocusRequester = remember { FocusRequester() }
     val primaryActionFocusRequester = remember { FocusRequester() }
@@ -1025,7 +1043,7 @@ private fun OnboardingNavigation(
             runCatching { primaryActionFocusRequester.requestFocus() }
         }
     }
-    Row(
+    FlowRow(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
@@ -1063,15 +1081,17 @@ private fun OnboardingNavigation(
                     else -> false
                 }
             },
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        maxItemsInEachRow = if (largeFont) 1 else 2
     ) {
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
             if (currentPage > 0) {
                 OutlinedButton(
                     onClick = onPrevious,
                     modifier = Modifier
-                        .height(44.dp)
+                        .heightIn(min = 44.dp)
+                        .testTag("onboarding_back")
                         .focusRequester(backActionFocusRequester)
                         .gamepadFocusableCard(
                             enabled = tvUiEnabled,
@@ -1086,7 +1106,7 @@ private fun OnboardingNavigation(
                         1.dp,
                         MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                     ),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
@@ -1105,14 +1125,12 @@ private fun OnboardingNavigation(
             }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
-
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
             if (currentPage < totalPages - 1) {
                 Button(
                     onClick = onNext,
-                    modifier = Modifier
-                        .height(52.dp)
+                    modifier = Modifier.testTag("onboarding_next")
+                        .heightIn(min = 52.dp)
                         .focusRequester(primaryActionFocusRequester)
                         .gamepadFocusableCard(
                             enabled = tvUiEnabled,
@@ -1126,7 +1144,7 @@ private fun OnboardingNavigation(
                     elevation = androidx.compose.material3.ButtonDefaults.buttonElevation(
                         defaultElevation = 0.dp
                     ),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.onboarding_next),
@@ -1146,8 +1164,8 @@ private fun OnboardingNavigation(
                 Button(
                     onClick = onContinue,
                     enabled = canContinue,
-                    modifier = Modifier
-                        .height(52.dp)
+                    modifier = Modifier.testTag("onboarding_finish")
+                        .heightIn(min = 52.dp)
                         .focusRequester(primaryActionFocusRequester)
                         .gamepadFocusableCard(
                             enabled = tvUiEnabled && canContinue,
@@ -1162,7 +1180,7 @@ private fun OnboardingNavigation(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp)
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 12.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.onboarding_get_started),
@@ -1224,7 +1242,22 @@ private fun OnboardingSetupContent(
             modifier = if (reserveScrollHintSpace) Modifier.weight(1f) else Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // BIOS first: it is optional, but a real BIOS improves compatibility.
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = neonShape(24.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                tonalElevation = 4.dp
+            ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(stringResource(R.string.settings_about_app_desc),
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                    Text(stringResource(R.string.formats_sega_body),
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Flycast BIOS selection remains separate from Sega CD region imports.
             SetupCard(
                 icon = Icons.Rounded.Memory,
                 title = stringResource(R.string.settings_bios_path),
@@ -1245,6 +1278,17 @@ private fun OnboardingSetupContent(
                 onClick = launchBiosPicker
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = neonShape(24.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                tonalElevation = 4.dp
+            ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    com.sbro.emucoreh.ui.settings.SegaCdBiosSettings()
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             SetupCard(

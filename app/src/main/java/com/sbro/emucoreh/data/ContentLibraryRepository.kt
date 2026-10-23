@@ -2,6 +2,8 @@ package com.sbro.emucoreh.data
 
 import android.content.Context
 import com.sbro.emucoreh.core.EmulatorBridge
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.core.SegaPlatformDetector
 import com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository
 import kotlinx.coroutines.flow.first
 import java.util.Locale
@@ -25,11 +27,16 @@ class ContentLibraryRepository(context: Context) {
         val preferEnglish = preferences.preferEnglishGameTitles.first()
         return cache.loadSnapshot(GameLibraryCacheRepository.libraryKey(paths), preferEnglish)
             .games
+            .filterNot { game ->
+                (EmulationPlatform.fromName(game.platform) ?: SegaPlatformDetector.detect(appContext, game.path)).isSega
+            }
             .filter { !it.serial.isNullOrBlank() || arcadeCatalog.isKnownRomset(it.fileName) }
             .sortedBy { it.title.lowercase(Locale.getDefault()) }
     }
 
     fun resolveIdentity(game: GameItem): SelectedGameIdentity {
+        if ((EmulationPlatform.fromName(game.platform) ?: SegaPlatformDetector.detect(appContext, game.path)).isSega)
+            return SelectedGameIdentity(serial = null, crc = null)
         val metadata = runCatching { EmulatorBridge.getGameMetadata(game.path) }.getOrNull()
         val rawSerial = metadata?.serial?.trim()?.takeIf { it.isNotBlank() }
             ?: game.serial?.trim()?.takeIf { it.isNotBlank() }

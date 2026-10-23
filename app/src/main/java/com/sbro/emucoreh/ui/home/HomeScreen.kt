@@ -20,6 +20,8 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -76,6 +78,7 @@ import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.material.icons.rounded.ViewCarousel
 import androidx.compose.material.icons.rounded.ViewModule
 import com.sbro.emucoreh.ui.common.AppAlertDialog as AlertDialog
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -521,6 +524,17 @@ fun HomeScreen(
                                 )
                             }
 
+                            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = horizontalInset),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilterChip(selected = uiState.platformFilter == null, onClick = { viewModel.updatePlatformFilter(null) },
+                                        label = { Text(stringResource(R.string.achievement_filter_all)) })
+                                    uiState.availablePlatforms.forEach { platform ->
+                                        FilterChip(selected = uiState.platformFilter == platform, onClick = { viewModel.updatePlatformFilter(platform) },
+                                            label = { Text(stringResource(libraryPlatformLabelRes(platform))) })
+                                    }
+                                }
+                            }
                             if (uiState.showHomeSearch) {
                                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                     HomeSearchField(
@@ -617,7 +631,9 @@ fun HomeScreen(
                                             section.platform?.let { platform ->
                                                 HomePlatformHeader(platform, section.games.size)
                                             }
-                                            section.games.chunked(if (isListView) 1 else columnsCount).forEach { rowGames ->
+                                            val sectionColumns = if (isListView) 1 else
+                                                (columnsCount / libraryCoverAspectRatio(section.games.firstOrNull()?.platform, 1f)).toInt().coerceAtLeast(1)
+                                            section.games.chunked(sectionColumns).forEach { rowGames ->
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
                                                     horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 3.dp)
@@ -666,7 +682,7 @@ fun HomeScreen(
                                                             }
                                                         }
                                                     }
-                                                    repeat((if (isListView) 1 else columnsCount) - rowGames.size) {
+                                                    repeat(sectionColumns - rowGames.size) {
                                                         Spacer(modifier = Modifier.weight(1f))
                                                     }
                                                 }
@@ -838,14 +854,8 @@ private fun HomeSectionDivider(modifier: Modifier = Modifier) {
 
 @Composable
 private fun HomePlatformHeader(platform: LibraryPlatform, count: Int) {
-    val label = when (platform) {
-        LibraryPlatform.DREAMCAST -> R.string.home_platform_dreamcast
-        LibraryPlatform.NAOMI -> R.string.home_platform_naomi
-        LibraryPlatform.NAOMI_2 -> R.string.home_platform_naomi_2
-        LibraryPlatform.ATOMISWAVE -> R.string.home_platform_atomiswave
-        LibraryPlatform.SYSTEM_SP -> R.string.home_platform_system_sp
-        LibraryPlatform.ARCADE -> R.string.home_platform_arcade
-    }
+    val label = libraryPlatformLabelRes(platform)
+
     Column(
         modifier = Modifier.fillMaxWidth()
             .padding(top = 16.dp, bottom = 8.dp)
@@ -1465,11 +1475,11 @@ private fun RecentGameCard(
     } else {
         neonShape(16.dp)
     }
-    val resolvedCoverAspectRatio = GameCoverAspectRatio
+    val resolvedCoverAspectRatio = libraryCoverAspectRatio(game.platform, GameCoverAspectRatio)
 
     Box(
         modifier = modifier
-            .width((if (compact) 98.dp else 108.dp) * coverScale)
+            .width((if (compact) 98.dp else 108.dp) * coverScale * resolvedCoverAspectRatio)
     ) {
         Surface(
             modifier = focusModifier
@@ -1506,11 +1516,11 @@ private fun RecentGameCard(
                             contentScale = ContentScale.Fit
                         )
                     } else {
-                        GameCoverArt(
+                        LibraryCoverArt(
                             coverPath = game.coverArtPath,
                             fallbackTitle = game.title,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit
+                            platform = game.platform,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                     GameDiscCountBadge(
@@ -1588,7 +1598,7 @@ private fun GameCard(
     } else {
         neonShape(16.dp)
     }
-    val resolvedCoverAspectRatio = GameCoverAspectRatio
+    val resolvedCoverAspectRatio = libraryCoverAspectRatio(game.platform, GameCoverAspectRatio)
     val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
     val gridCardBorder = if (isLightTheme) {
         BorderStroke(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.34f))
@@ -1634,11 +1644,11 @@ private fun GameCard(
                         contentScale = ContentScale.Fit
                     )
                 } else {
-                    GameCoverArt(
+                    LibraryCoverArt(
                         coverPath = game.coverArtPath,
                         fallbackTitle = game.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
+                            platform = game.platform,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
                 GameDiscCountBadge(
@@ -1754,11 +1764,11 @@ private fun GameListCard(
                         .clip(listCoverShape)
                         .background(if (is3dCover) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                 ) {
-                    GameCoverArt(
+                    LibraryCoverArt(
                         coverPath = game.coverArtPath,
                         fallbackTitle = game.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
+                            platform = game.platform,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }
@@ -2067,3 +2077,18 @@ internal fun formatCompactFileSize(bytes: Long): String {
         else -> "$bytes B"
     }
 }
+
+private fun libraryPlatformLabelRes(platform: LibraryPlatform): Int = when (platform) {
+        LibraryPlatform.DREAMCAST -> R.string.home_platform_dreamcast
+        LibraryPlatform.NAOMI -> R.string.home_platform_naomi
+        LibraryPlatform.NAOMI_2 -> R.string.home_platform_naomi_2
+        LibraryPlatform.ATOMISWAVE -> R.string.home_platform_atomiswave
+        LibraryPlatform.SYSTEM_SP -> R.string.home_platform_system_sp
+        LibraryPlatform.GENESIS -> R.string.home_platform_genesis
+        LibraryPlatform.SEGA_CD -> R.string.home_platform_sega_cd
+        LibraryPlatform.SEGA_32X -> R.string.home_platform_sega_32x
+        LibraryPlatform.MASTER_SYSTEM -> R.string.home_platform_master_system
+        LibraryPlatform.GAME_GEAR -> R.string.home_platform_game_gear
+        LibraryPlatform.SG_1000 -> R.string.home_platform_sg_1000
+        LibraryPlatform.ARCADE -> R.string.home_platform_arcade
+    }

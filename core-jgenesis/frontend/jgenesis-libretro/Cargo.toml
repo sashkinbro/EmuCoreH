@@ -10,6 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cdrom = { workspace = true }
+crc = { workspace = true }
 genesis-config = { workspace = true }
 genesis-core = { workspace = true }
 jgenesis-common = { workspace = true }

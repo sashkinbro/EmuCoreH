@@ -4,7 +4,7 @@
     <string name="app_name">EmuCoreH</string>
 
     <string name="shell_library">Kütüphane</string>
-    <string name="shell_catalog_search">Dreamcast Araması</string>
+    <string name="shell_catalog_search">Oyun Ara</string>
     <string name="shell_supported_formats">Desteklenen Formatlar</string>
 
     <string name="home_empty_title">Oyun bulunamadı</string>
@@ -49,8 +49,8 @@
     <string name="detail_show_more">Daha fazla göster</string>
     <string name="detail_show_less">Daha az göster</string>
     <string name="detail_no_data_title">Ayrıntı mevcut değil</string>
-    <string name="detail_no_data_body">Bu oyun henüz yerel Dreamcast kataloğuyla eşleştirilemedi.</string>
-    <string name="detail_catalog_missing_body">Dreamcast katalog ayrıntıları geçici olarak kullanılamıyor.</string>
+    <string name="detail_no_data_body">Bu oyun henüz yerel katalogla eşleştirilemedi.</string>
+    <string name="detail_catalog_missing_body">Oyun kataloğu ayrıntıları geçici olarak kullanılamıyor.</string>
     <string name="detail_save_screenshot">Ekran görüntüsünü kaydet</string>
     <string name="detail_screenshot_saved">Ekran görüntüsü kaydedildi</string>
     <string name="detail_screenshot_save_failed">Ekran görüntüsü kaydedilemedi</string>
@@ -199,7 +199,7 @@
     <string name="settings_version">Sürüm</string>
     <string name="settings_emulator_core">Emülasyon Çekirdeği</string>
     <string name="settings_about_app">EmuCoreH Hakkında</string>
-    <string name="settings_about_app_desc">EmuCoreH, Flycast çekirdeğiyle çalışan Dreamcast, Naomi, Naomi 2 ve Atomiswave emülatörü ve oyun kütüphanesidir; hızlı kurulum, anlaşılır gezinme ve taşınabilir cihazlara uygun bir arayüz sunar.</string>
+    <string name="settings_about_app_desc">EmuCoreH, oyun kitaplığını Dreamcast ve arcade sistemleri için Flycast, Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear ve SG-1000 için jgenesis ile birleştirir.</string>
     <string name="settings_about_studio">Geliştirici</string>
     <string name="settings_about_studio_desc">Sashkin Apps tarafından oluşturuldu.</string>
     <string name="settings_about_support_project">Projeyi Destekle</string>
@@ -245,7 +245,7 @@
     <string name="settings_help_prefer_english_game_titles">Japonca veya diğer bölgesel isimlerle gönderilen oyunlar için EmuCoreH\'nin GameIndex veritabanındaki İngilizce isimleri kullanır. Bu, öncelikle ithal sürümlerin kütüphanede daha okunaklı olmasına yardımcı olurken, İngilizce veritabanı ismi olmayan oyunlar normal isimlerini korur.</string>
     <string name="settings_help_game_path">Oyun kütüphanesine klasör ekler. EmuCoreH seçilen her klasörü özyinelemeli olarak tarar ve sonuçları yinelenen dosya yolları olmadan birleştirir. Kaldırmak için listedeki bir klasöre dokunun. Geçerli çekirdek GDI, CHD, CDI ve CUE/BIN disk görüntülerini destekler.</string>
     <string name="settings_help_renderer">Donanım oluşturma (rendering) için kullanılan grafik arka ucunu seçer. Vulkan modern cihazlarda genellikle en hızlısıdır, OpenGL bazı GPU\'larda uyumluluk için daha güvenli olabilir ve Yazılım (Software) temel olarak donanım modunda kötü şekilde bozulan oyunlar veya testler için bir geri dönüştür.</string>
-    <string name="settings_help_aspect_ratio">Nihai görüntünün ekranınızda nasıl çerçeveleneceğini denetler. Auto oyunu izler, 4:3 çoğu Dreamcast oyununun özgün görünümünü korur, 16:9 geniş ekran yamalı oyunlara uygundur ve Uzat yalnızca geometrik bozulmayı önemsemiyorsanız kullanılmalıdır.</string>
+    <string name="settings_help_aspect_ratio">Otomatik, 4:3, 16:9, 10:7 veya Uzat seçin. Otomatik sisteme uyar; uzatma görüntüyü bozabilir.</string>
     <string name="settings_help_overlay_scale">Ekran üstü düğmelerin ve çubukların boyutunu değiştirir. Dokunma doğruluğu ekran alanından daha önemliyse artırın; arayüz resmin çok büyük bir bölümünü kaplıyorsa küçültün.</string>
     <string name="settings_help_overlay_opacity">Dokunmatik kontrollerin ne kadar katı veya şeffaf görüneceğini kontrol eder. Daha düşük opaklık oyun görünümünü daha temiz tutarken, daha yüksek opaklık düğmelerin karanlık veya yoğun sahnelerde görülmesini kolaylaştırır.</string>
     <string name="settings_help_left_stick_sensitivity">Sol dokunmatik çubuğun daha güçlü hareket girdisine ne kadar hızlı ulaşacağını ayarlar. Daha yüksek değerler daha hızlı tepki verirken, daha düşük değerler küçük hareket düzeltmelerini kolaylaştırır.</string>
@@ -378,15 +378,15 @@
     <string name="settings_fps_overlay_mode_detailed">İstatistikler</string>
 
     <string name="onboarding_page_1_title">EmuCoreH\'e Hoş Geldiniz</string>
-    <string name="onboarding_page_1_subtitle">Dreamcast kitaplığınız ve başlatıcınız; hızlı kurulum, anlaşılır gezinme ve her ekranda akıcı deneyim için tasarlandı.</string>
+    <string name="onboarding_page_1_subtitle">Her ekrana hazır Sega oyun kitaplığınız.</string>
     <string name="onboarding_page_2_title">Güçlü Emülasyon</string>
-    <string name="onboarding_page_2_subtitle">En sevdiğiniz Dreamcast oyunlarını gelişmiş grafik seçenekleri, özelleştirilebilir kontroller ve performans iyileştirmeleriyle deneyimleyin.</string>
+    <string name="onboarding_page_2_subtitle">Flycast ve jgenesis, desteklenen Sega konsollarını ve arcade sistemlerini bir araya getirir.</string>
     <string name="onboarding_page_3_title">Oyun Kütüphaneniz</string>
     <string name="onboarding_page_3_subtitle">Güzel kapaklar, detaylı bilgiler ve favorilerinize hızlı erişim ile kişisel oyun kütüphanenizi oluşturun.</string>
     <string name="onboarding_page_4_title">Oynamaya Hazır</string>
     <string name="onboarding_page_4_subtitle">Başlamak için oyun klasörlerinizi ve emülatör verilerinin konumunu seçin.</string>
     <string name="onboarding_title">Oynamak için hazırlanın</string>
-    <string name="onboarding_subtitle">Dreamcast oyun klasörlerinizi seçin ve dosya erişimi verin.</string>
+    <string name="onboarding_subtitle">Oyun klasörlerinizi seçin ve dosya erişimine izin verin.</string>
     <string name="onboarding_bios_desc">Dreamcast BIOS dosyalarınızı (dc_boot.bin, dc_flash.bin) veya arcade BIOS setlerini (naomi.zip, naomi2.zip, awbios.zip) içeren bir klasör seçin.</string>
     <string name="onboarding_bios_optional">İsteğe bağlı, ancak önerilir</string>
     <string name="onboarding_games_title">Oyun klasörünü seç</string>
@@ -408,7 +408,7 @@
     <string name="no">Hayır</string>
     <string name="back">Geri</string>
 
-    <string name="catalog_search_title">Dreamcast Kataloğu</string>
+    <string name="catalog_search_title">Oyun Kataloğu</string>
     <string name="catalog_filters_title">Filtreler</string>
     <string name="catalog_filter_genre">Tür</string>
     <string name="catalog_filter_year">Yıl</string>
@@ -418,7 +418,7 @@
     <string name="catalog_filter_any_rating">Herhangi bir derecelendirme</string>
     <string name="catalog_filters_clear">Filtreleri temizle</string>
     <string name="catalog_missing_title">Katalog veritabanı bulunamadı</string>
-    <string name="catalog_missing_body">Dreamcast kataloğu şu anda geçici olarak kullanılamıyor.</string>
+    <string name="catalog_missing_body">Oyun kataloğu geçici olarak kullanılamıyor.</string>
     <string name="catalog_empty_title">Eşleşme bulunamadı</string>
     <string name="catalog_empty_body">Farklı bir oyun ismi veya daha kısa bir arama ifadesi deneyin.</string>
     <string name="formats_title">Desteklenen Formatlar</string>
@@ -517,7 +517,7 @@
     <string name="onboarding_status_custom_folder">Özel klasör seçildi</string>
     <string name="settings_emulator_data_path">Emülatör Klasörü</string>
     <string name="settings_fetch_boxart">Kapak resimlerini indir</string>
-    <string name="settings_fetch_boxart_desc">Kapak resimlerini Flycast kaynaklarından indir: diskteki GD-ROM görseli, flycast-content arcade kapakları ve TheGamesDB.</string>
+    <string name="settings_fetch_boxart_desc">EmuCoreH katalogları, IGDB, disk ve arcade görselleri ile TheGamesDB kaynaklarından platforma özgü kapaklar indirin.</string>
     <string name="shell_texture_manager">Doku Yöneticisi</string>
     <string name="texture_manager_title">Doku Yöneticisi</string>
     <string name="texture_manager_import_zip">ZIP İçe Aktar</string>
@@ -601,9 +601,9 @@
     <string name="settings_about_app_source_desc">Uygulama ve proje kaynağı için EmuCoreH GitHub deposunu açın.</string>
     <string name="settings_about_app_source_link">GitHub\'da EmuCoreH\'i açın</string>
     <string name="settings_about_app_source_url">https://github.com/sashkinbro/EmuCoreH</string>
-    <string name="settings_about_core_source">Emülasyon çekirdeği</string>
-    <string name="settings_about_core_source_desc">Dreamcast emülasyon çekirdeği Flycast\'e dayanır.</string>
-    <string name="settings_about_core_source_link">Çekirdek kaynağını GitHub\'da görüntüle</string>
+    <string name="settings_about_core_source">Flycast (GNU GPLv2)</string>
+    <string name="settings_about_core_source_desc">Flycast, Dreamcast ve arcade sistemlerini GNU GPLv2 lisansı altında emüle eder.</string>
+    <string name="settings_about_core_source_link">Flycast kaynak kodunu GitHub üzerinde görüntüle</string>
     <string name="settings_about_core_source_url">https://github.com/flyinghead/flycast</string>
     <string name="settings_touch_haptics_strength">Dokunmatik titreşim gücü</string>
     <string name="settings_touch_haptics_test">Dokunmatik titreşimi test et</string>
@@ -1109,7 +1109,7 @@
     <string name="hub_title">EmuCoreH - Merkez</string>
     <string name="hub_tab_news">Haberler</string>
     <string name="hub_tab_videos">Videolar</string>
-    <string name="hub_tab_history">Dreamcast Geçmişi</string>
+    <string name="hub_tab_history">Sega Tarihi</string>
     <string name="hub_tab_manuals">Kılavuzlar</string>
     <string name="hub_related_materials">İlgili materyaller</string>
     <string name="hub_tab_favorites">Kaydedilenler</string>
@@ -1126,7 +1126,7 @@
     <string name="hub_empty_news">Henüz haber yok.</string>
     <string name="hub_empty_videos">Henüz video yok.</string>
     <string name="hub_empty_history">Henüz tarih makalesi yok.</string>
-    <string name="hub_empty_manuals">Henüz Dreamcast emülasyon kılavuzu yok.</string>
+    <string name="hub_empty_manuals">Henüz emülasyon kılavuzu yok.</string>
     <string name="hub_empty_favorites">Kaydedilen makaleler, kılavuzlar ve videolar burada görünür.</string>
     <string name="hub_no_search_results">Eşleşen içerik bulunamadı.</string>
     <string name="hub_load_failed">Merkez içeriği yüklenemedi.</string>
@@ -1191,7 +1191,7 @@
     <string name="emulation_swap_disc">Diski değiştir</string>
     <string name="emulation_swap_disc_success">Disk başarıyla değiştirildi.</string>
     <string name="emulation_swap_disc_failed">Disk değiştirilemedi. Önceki disk geri yüklendi.</string>
-    <string name="emulation_swap_disc_invalid">Desteklenen bir Dreamcast disk görüntüsü seçin.</string>
+    <string name="emulation_swap_disc_invalid">Desteklenen bir disk görüntüsü seçin.</string>
     <string name="settings_customization_background_presets">Yerleşik arka planlar</string>
     <string name="settings_customization_background_preset_olympus">Olimpos Cehennemi</string>
     <string name="settings_customization_background_preset_neon_racing">Neon Yarışı</string>
@@ -1222,7 +1222,7 @@
     <string name="discord_share_serial">Oyun seri numarasını göster</string>
     <string name="discord_preview_game_title">Oyun adı</string>
     <string name="discord_preview_serial">Seri numarası</string>
-    <string name="discord_share_serial_desc">Dreamcast disk seri numarasını ekleyin, örneğin MK-51000</string>
+    <string name="discord_share_serial_desc">MK-51000 gibi oyun seri numarasını ekle</string>
     <string name="discord_preview_title">Durum önizlemesi</string>
     <string name="discord_privacy_note">Giriş, PKCE ile Discord OAuth kullanır. Erişim belirteci Android Keystore tarafından şifrelenir ve EmuCoreH sunucularına asla gönderilmez.</string>
     <string name="discord_status_disabled">Devre dışı</string>
@@ -1236,7 +1236,7 @@
     <string name="settings_discord_service_error">Discord yardımcı hizmeti başlatılamadı.</string>
     <string name="settings_discord_token_error">Discord giriş belirteci korunamadı.</string>
     <string name="discord_presence_library">Oyun kitaplığına göz atıyor</string>
-    <string name="discord_presence_private_game">Dreamcast oyunu oynuyor</string>
+    <string name="discord_presence_private_game">Oyun oynuyor</string>
     <string name="discord_presence_paused">Duraklatıldı</string>
     <string name="discord_presence_playing">%1$s oynuyor</string>
     <string name="discord_friends_title">EmuCoreH\'teki arkadaşlar</string>
@@ -1261,7 +1261,7 @@
     <string name="settings_frame_limit">Kare sınırı</string>
     <string name="settings_frame_limit_desc">Emülasyonu konsolun yenileme hızıyla sınırlar. Cihazın izin verdiği kadar hızlı çalışması için kapatın.</string>
     <string name="settings_target_fps">Hedef kare hızı</string>
-    <string name="settings_target_fps_desc">Auto, Flycast\'in bildirdiği kare hızını kullanır. Manuel değerler emülasyon hızını belirler; oyun daha az kare çizebilir.</string>
+    <string name="settings_target_fps_desc">Otomatik, etkin çekirdeğin bildirdiği kare hızını kullanır. Elle girilen değerler emülasyon hızını belirler; oyunlar daha az kare işleyebilir.</string>
     <string name="settings_display_crop">Görüntü kırpma</string>
     <string name="settings_display_crop_desc">Ölçeklemeden önce dört kenardan eşit sayıda piksel kırpar. Kırpmayı kapatmak için 0 seçin.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1299,7 +1299,7 @@
     <string name="achievements_unavailable">Bu sürüm RetroAchievements\'ı desteklemiyor.</string>
     <string name="shell_achievements">Başarımlar</string>
     <string name="formats_psp_supported_title">Desteklenen Dreamcast biçimleri</string>
-    <string name="formats_psp_supported_body">Paketlenmiş Flycast çekirdeği bu oyun dosyalarını doğrudan kabul eder.</string>
+    <string name="formats_psp_supported_body">Dreamcast disk görüntüleri Flycast kullanır. Kartuş sistemleri ve Sega CD jgenesis kullanır; biçimleri aşağıda listelenmiştir.</string>
     <string name="formats_psp_recommended_title">GD-ROM disk görüntüleri</string>
     <string name="formats_psp_recommended_body">GDI, standart GD-ROM dökümüdür. CHD, CDI ve CUE/BIN disk görüntüleri de desteklenir.</string>
     <string name="formats_psp_homebrew_title">Arcade ROM setleri</string>
@@ -2074,7 +2074,7 @@
     <string name="profile_player">Oyuncu</string>
     <string name="profile_player_blocked">Player blocked.</string>
     <string name="profile_player_card_brand">EMUCOREH OYUNCU KARTI</string>
-    <string name="profile_player_card_footer">EmuCoreH tarafından takip edilen Dreamcast anıları</string>
+    <string name="profile_player_card_footer">EmuCoreH ile kaydedilen oyun anıları</string>
     <string name="profile_player_card_share">Oyuncu Kartını Paylaş</string>
     <string name="profile_player_card_share_text">Beni EmuCoreH\'te bul: %1$s</string>
     <string name="profile_player_id_format">Oyuncu Kimliği: %1$s</string>
@@ -2251,4 +2251,40 @@
     <string name="settings_mouse_vertical_sensitivity">Dikey hassasiyet</string>
     <string name="settings_mouse_wheel_shoulders">L1 / R1</string>
     <string name="settings_gamepad_mapping_use_global_desc">Bu oyun için denetleyici düğmesi atamalarını kaldırır.</string>
+
+    <!-- Sega systems: labels, firmware and supported core options. -->
+    <string name="sega_flycast_systems">Dreamcast / arcade</string>
+    <string name="sega_six_button_controls">Altı düğmeli oyun kolu: A, B, C, X, Y, Z, Start ve Mode.</string>
+    <string name="sega_two_button_controls">İki düğmeli oyun kolu: 1 ve 2, sisteme göre Start veya Duraklat.</string>
+    <string name="sega_bios_title">Sega CD BIOS</string>
+    <string name="sega_bios_description">Bölge seçip kendi 128 KiB BIOS dosyanızı içe aktarın.</string>
+    <string name="sega_bios_import">BIOS içe aktar</string>
+    <string name="sega_bios_installed">BIOS yüklendi</string>
+    <string name="sega_bios_invalid">Tam olarak 128 KiB boyutunda bir BIOS dosyası seçin.</string>
+    <string name="sega_bios_missing">Sega CD BIOS eksik. Ayarları açın, Sega CD seçin ve disk bölgesine uygun BIOS dosyasını içe aktarın.</string>
+    <string name="formats_sega_body">Mega Drive, 32X, Master System, Game Gear ve SG-1000 ROM dosyaları; Sega CD CUE/BIN ve CHD diskleri. ZIP tek bir kartuş ROM dosyasını destekler. Sega CD kendi BIOS dosyanızı gerektirir.</string>
+    <string name="sega_region">Bölge</string>
+    <string name="sega_timing">Video zamanlaması</string>
+    <string name="sega_restart_required">Oyunu yeniden başlattıktan sonra uygulanır.</string>
+    <string name="sega_remove_sprite_limit">Sprite sınırını kaldır</string>
+    <string name="sega_low_pass_filter">Alçak geçiren ses filtresi</string>
+    <string name="sega_fm_audio">Master System FM sesi</string>
+    <string name="sega_crop_border">Dikey kenarlığı kırp</string>
+    <string name="sega_gg_resolution">Game Gear tam SMS çözünürlüğü</string>
+    <string name="sega_pause">Duraklat</string>
+    <string name="sega_mode">Mod</string>
+    <string name="home_platform_genesis">Mega Drive / Genesis</string>
+    <string name="home_platform_sega_cd">Sega CD / Mega-CD</string>
+    <string name="home_platform_sega_32x">Sega 32X</string>
+    <string name="home_platform_master_system">Master System</string>
+    <string name="home_platform_game_gear">Game Gear</string>
+    <string name="home_platform_sg_1000">SG-1000</string>
+    <string name="formats_sega_title">Sega</string>
+    <string name="sega_ntsc">NTSC</string>
+    <string name="sega_pal">PAL</string>
+    <string name="settings_about_jgenesis_source_desc">GNU GPLv3 altında Sega emülasyonu. Bağlantı özgün kaynak kodunu açar; EmuCoreH kaynak ağacı libretro entegrasyonunu içerir. Lisans ve sürüm bilgileri paketlenmiştir. Sega CD BIOS dosyasını kullanıcı sağlar; özgün 32X ürün yazılımı gömülü kalır.</string>
+    <string name="settings_about_jgenesis_source_link">jgenesis kaynak kodunu GitHub üzerinde görüntüle</string>
+    <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
+    <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
+    <string name="sega_ds_collection_unsupported">Bu Sonic Classic Collection ROM’u Nintendo DS emülatörü gerektirir. Orijinal bir Mega Drive / Genesis ROM’u kullanın.</string>
 </resources>

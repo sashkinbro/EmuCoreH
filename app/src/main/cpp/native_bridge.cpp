@@ -120,7 +120,31 @@ struct CoreApi {
 };
 
 CoreApi g_core;
+std::atomic<int> g_core_id{0};
 std::mutex g_core_load_mutex;
+
+// Core code can register pthread/TLS destructors on scanner and coroutine workers.
+// retro_deinit ends emulation, but those workers can exit much later. Keep one
+// process-lifetime loader reference per DSO so their destructor addresses stay valid.
+// This also bounds loader references when the library is used only for disc probes.
+std::mutex g_core_library_mutex;
+void* g_core_libraries[2]{};
+
+const char* CoreLibraryName(int core_id) {
+    return core_id == 1 ? "libjgenesis_libretro.so" : "flycast_libretro.so";
+}
+
+void* RetainCoreLibrary(int core_id) {
+    if (core_id != 0 && core_id != 1) return nullptr;
+    std::lock_guard<std::mutex> lock(g_core_library_mutex);
+    void*& handle = g_core_libraries[core_id];
+    if (handle == nullptr) {
+        handle = dlopen(CoreLibraryName(core_id), RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
+    }
+    // Deliberately no dlclose: even a failed symbol lookup may have run DSO
+    // constructors, and later thread cleanup must not jump into unmapped code.
+    return handle;
+}
 
 // Disc product code reported by the core once the bootstrap has been parsed,
 // for example "MK-51035". Read by the frontend to fill library serials that
@@ -260,9 +284,11 @@ bool LoadCoreLocked() {
     std::lock_guard<std::mutex> load_lock(g_core_load_mutex);
     if (g_core.handle != nullptr) return true;
 
-    void* handle = dlopen("flycast_libretro.so", RTLD_NOW | RTLD_LOCAL);
+    const int core_id = g_core_id.load();
+    [[maybe_unused]] const char* library = CoreLibraryName(core_id);
+    void* handle = RetainCoreLibrary(core_id);
     if (handle == nullptr) {
-        LOGE("Unable to load Flycast libretro core: %s", dlerror());
+        LOGE("Unable to load %s: %s", library, dlerror());
         return false;
     }
 
@@ -283,7 +309,7 @@ bool LoadCoreLocked() {
     g_core.set_lightgun_cursor_visible = reinterpret_cast<void (*)(bool)>(resolve("flycast_set_lightgun_cursor_visible"));
     g_core.set_cabinet_buttons = reinterpret_cast<void (*)(unsigned, unsigned)>(resolve("flycast_set_cabinet_buttons"));
     g_core.get_memory_data = reinterpret_cast<void* (*)(unsigned)>(resolve("retro_get_memory_data"));
-    g_core.boot_error = reinterpret_cast<const char* (*)()>(resolve("emucorea_boot_error"));
+    g_core.boot_error = reinterpret_cast<const char* (*)()>(resolve(g_core_id.load() == 1 ? "jgenesis_boot_error" : "emucorea_boot_error"));
     g_core.scrape_disc = reinterpret_cast<int (*)(const char*, const char*, char*, int, char*, int)>(
         resolve("emucoreh_scrape_disc"));
     g_core.get_memory_size = reinterpret_cast<size_t (*)(unsigned)>(resolve("retro_get_memory_size"));
@@ -299,14 +325,14 @@ bool LoadCoreLocked() {
 
     if (g_core.set_environment == nullptr || g_core.init == nullptr || g_core.load_game == nullptr ||
         g_core.run == nullptr || g_core.get_system_info == nullptr) {
-        LOGE("Flycast libretro core is missing required symbols");
-        dlclose(handle);
+        LOGE("%s is missing required symbols", library);
+        g_core = {};
         return false;
     }
 
     g_core.handle = handle;
     g_core.set_environment(EnvironmentCallback);
-    LOGI("Flycast libretro core loaded");
+    LOGI("%s loaded", library);
     return true;
 }
 
@@ -1291,6 +1317,52 @@ size_t EmuCoreHGetMemorySize(unsigned id) {
     return g_core.get_memory_size != nullptr ? g_core.get_memory_size(id) : 0;
 }
 
+JNIEXPORT jboolean JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeSelectCore(JNIEnv*, jobject, jint core_id) {
+    if (core_id != 0 && core_id != 1) return JNI_FALSE;
+    std::lock_guard<std::mutex> core_lock(g_frontend.core_mutex);
+    if (g_core_id.load() == core_id) return LoadCoreLocked() ? JNI_TRUE : JNI_FALSE;
+    // Kotlin joins the worker and destroys its session before reaching this boundary.
+    if (g_frontend.core_initialized.load() || g_frontend.game_loaded.load()) return JNI_FALSE;
+    std::lock_guard<std::mutex> load_lock(g_core_load_mutex);
+    // Reset the active API without unmapping a library used by surviving TLS owners.
+    // destroySession still calls retro_unload_game/retro_deinit before this boundary.
+    g_core = {};
+    g_core_id.store(core_id);
+    {
+        std::lock_guard<std::mutex> state_lock(g_frontend.mutex);
+        g_frontend.options.clear();
+        g_frontend.registered_options.clear();
+        g_frontend.update_display_callback = {};
+        g_frontend.disk_control = {};
+        g_frontend.options_dirty.store(false);
+        g_frontend.frame_width = 0;
+        g_frontend.frame_height = 0;
+        g_frontend.pixel_format = RETRO_PIXEL_FORMAT_XRGB8888;
+        g_frontend.av_info_refresh_pending.store(true);
+        g_frontend.shutdown_requested.store(false);
+    }
+    {
+        std::lock_guard<std::mutex> serial_lock(g_game_serial_mutex);
+        g_game_serial.clear();
+    }
+    // LoadCoreLocked takes the loader mutex itself, so defer loading to createSession.
+    return JNI_TRUE;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_probeSegaDisc(JNIEnv* env, jobject, jstring path) {
+    const std::string file = ToString(env, path);
+    if (file.empty()) return 0;
+    // Probe without touching the running core; its DSO remains mapped when this
+    // coroutine/scanner thread later runs native thread-local destructors.
+    void* handle = RetainCoreLibrary(1);
+    if (handle == nullptr) return 0;
+    auto probe = reinterpret_cast<int (*)(const char*)>(dlsym(handle, "jgenesis_probe_disc"));
+    const int result = probe != nullptr ? probe(file.c_str()) : 0;
+    return result;
+}
+
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeInit(JNIEnv* env, jobject, jstring system_dir,
                                                         jstring save_dir, jstring core_assets_dir) {
@@ -1408,7 +1480,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_runFrame(JNIEnv* env, jobject, jlon
                           detail && *detail ? detail : "Flycast requested shutdown");
             return;
         }
-        EmuCoreHAchievementsOnFrame();
+        if (g_core_id.load() == 0) EmuCoreHAchievementsOnFrame();
     }, [&](const char* message) {
         // Stop further frames after a native renderer failure; the Kotlin
         // run loop handles the pending Java exception and reports the error.
@@ -1761,22 +1833,31 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_clearCheats(JNIEnv*, jobject) {
 
 JNIEXPORT jstring JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_getSystemInfo(JNIEnv* env, jobject) {
+    std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
     if (!LoadCoreLocked() || g_core.get_system_info == nullptr) {
-        return env->NewStringUTF("Flycast");
+        return env->NewStringUTF(g_core_id.load() == 1 ? "jgenesis" : "Flycast");
     }
     retro_system_info info{};
     g_core.get_system_info(&info);
-    std::string name = info.library_name != nullptr ? info.library_name : "Flycast";
+    std::string name = info.library_name != nullptr ? info.library_name : (g_core_id.load() == 1 ? "jgenesis" : "Flycast");
     std::string version = info.library_version != nullptr ? info.library_version : "";
     std::string result = version.empty() ? name : name + " " + version;
     return env->NewStringUTF(result.c_str());
 }
 
 JNIEXPORT jstring JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeLastBootError(JNIEnv* env, jobject) {
+    std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
+    const char* detail = g_core.boot_error != nullptr ? g_core.boot_error() : nullptr;
+    return detail != nullptr && *detail != '\0' ? env->NewStringUTF(detail) : nullptr;
+}
+
+JNIEXPORT jstring JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_getDiagnostics(JNIEnv* env, jobject) {
     char buffer[256];
     std::snprintf(buffer, sizeof(buffer),
-                  "{\"core\":\"Flycast\",\"initialized\":%d,\"game\":%d,\"renderer\":%d,\"w\":%u,\"h\":%u}",
+                  "{\"core\":\"%s\",\"initialized\":%d,\"game\":%d,\"renderer\":%d,\"w\":%u,\"h\":%u}",
+                  g_core_id.load() == 1 ? "jgenesis" : "Flycast",
                   g_frontend.core_initialized.load() ? 1 : 0, g_frontend.game_loaded.load() ? 1 : 0,
                   g_frontend.requested_renderer, g_frontend.frame_width, g_frontend.frame_height);
     return env->NewStringUTF(buffer);
@@ -1784,6 +1865,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_getDiagnostics(JNIEnv* env, jobject
 
 JNIEXPORT jint JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_apiVersion(JNIEnv* env, jobject) {
+    std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
     if (!LoadCoreLocked()) {
         jclass exception_class = env->FindClass("java/lang/IllegalStateException");
         if (exception_class != nullptr) {
@@ -1856,6 +1938,12 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeGameSerial(JNIEnv* env, jobje
 
 JNIEXPORT jboolean JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_hasDiscMedia(JNIEnv*, jobject, jlong handle) {
+    if (g_core_id.load() == 1) {
+        std::lock_guard<std::mutex> lock(g_frontend.mutex);
+        return handle != 0 && g_frontend.game_loaded.load() &&
+            g_frontend.disk_control.get_num_images != nullptr &&
+            g_frontend.disk_control.get_num_images() > 0 ? JNI_TRUE : JNI_FALSE;
+    }
     return (handle != 0 && g_frontend.game_loaded.load()) ? JNI_TRUE : JNI_FALSE;
 }
 
@@ -1863,14 +1951,22 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_hasDiscMedia(JNIEnv*, jobject, jlon
 // (GDI, CUE, ISO, CDI and CHD) and returns "searchName\nuniqueId" plus the
 // core's result bit mask. False when the disc cannot be opened at all.
 static bool ScrapeDisc(JNIEnv* env, jstring jPath, jstring jPngPath, std::string& metadata, int& result) {
-    if (!LoadCoreLocked() || g_core.scrape_disc == nullptr) return false;
+    // Metadata scanning may run while a Sega session owns the frontend. Resolve a
+    // dedicated Flycast scraper reference without switching the active emulator.
+    static std::mutex scrape_mutex;
+    std::lock_guard<std::mutex> scrape_lock(scrape_mutex);
+    static void* scraper_handle = RetainCoreLibrary(0);
+    using Scraper = int (*)(const char*, const char*, char*, int, char*, int);
+    static Scraper scrape = scraper_handle != nullptr
+        ? reinterpret_cast<Scraper>(dlsym(scraper_handle, "emucoreh_scrape_disc")) : nullptr;
+    if (scrape == nullptr) return false;
     const std::string path = ToString(env, jPath);
     if (path.empty()) return false;
     std::string pngPath;
     if (jPngPath != nullptr) pngPath = ToString(env, jPngPath);
     char searchName[128] = {};
     char uniqueId[16] = {};
-    result = g_core.scrape_disc(path.c_str(), pngPath.empty() ? nullptr : pngPath.c_str(),
+    result = scrape(path.c_str(), pngPath.empty() ? nullptr : pngPath.c_str(),
         searchName, sizeof(searchName), uniqueId, sizeof(uniqueId));
     if (result == 0) return false;
     metadata = searchName;

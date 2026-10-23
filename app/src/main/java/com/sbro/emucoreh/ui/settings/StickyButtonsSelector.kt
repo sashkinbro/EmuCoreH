@@ -29,6 +29,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.core.SegaControlProfiles
+import com.sbro.emucoreh.ui.common.gamepadActionLabel
 import com.sbro.emucoreh.ui.common.SettingHelpButton
 import com.sbro.emucoreh.ui.common.premiumFilterChipColors
 import com.sbro.emucoreh.ui.common.tvFocusGroup
@@ -72,7 +75,8 @@ internal fun StickyButtonsSelector(
     helpText: String? = null,
     onResetToDefault: (() -> Unit)? = null,
     horizontalPadding: Dp = 16.dp,
-    fullBleedPadding: Dp = 0.dp
+    fullBleedPadding: Dp = 0.dp,
+    platform: EmulationPlatform = EmulationPlatform.DREAMCAST
 ) {
     val context = LocalContext.current
     val tvUiEnabled = LocalTvUiEnvironment.current.enabled
@@ -140,7 +144,7 @@ internal fun StickyButtonsSelector(
             contentPadding = PaddingValues(horizontal = horizontalPadding),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(STICKY_BUTTON_IDS) { id ->
+            items(STICKY_BUTTON_IDS.filter { SegaControlProfiles.supports(platform, it) }) { id ->
                 val chipInteractionSource = remember { MutableInteractionSource() }
                 FilterChip(
                     modifier = Modifier.tvGamepadFocusableCard(
@@ -155,7 +159,7 @@ internal fun StickyButtonsSelector(
                     },
                     interactionSource = chipInteractionSource,
                     colors = premiumFilterChipColors(),
-                    label = { Text(text = stickyButtonLabel(id)) }
+                    label = { Text(text = if (platform.isSega) gamepadActionLabel(id, platform = platform) else stickyButtonLabel(id)) }
                 )
             }
         }

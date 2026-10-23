@@ -130,6 +130,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sbro.emucoreh.R
+import com.sbro.emucoreh.ui.catalog.catalogPlatformLabel
+import com.sbro.emucoreh.data.igdb.catalogPlatformName
 import com.sbro.emucoreh.data.PlayerActivityDay
 import com.sbro.emucoreh.data.PlayerGamePlayStat
 import com.sbro.emucoreh.data.PlayerLeaderboardEntry
@@ -1988,6 +1990,7 @@ private fun FavoriteGamesShowcase(
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
+                        ProfileGamePlatformLabel(game)
                         Text(
                             text = formatDuration(game.totalPlayTimeMs),
                             style = MaterialTheme.typography.labelSmall,
@@ -2340,6 +2343,7 @@ private fun ProShowcaseGameChoice(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                ProfileGamePlatformLabel(game)
                 Text(
                     text = formatDuration(game.totalPlayTimeMs),
                     style = MaterialTheme.typography.labelSmall,
@@ -2840,6 +2844,7 @@ private fun GamePlayStatRow(
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis
                     )
+                    ProfileGamePlatformLabel(game)
                     Text(
                         text = stringResource(R.string.profile_game_sessions_format, game.sessions),
                         style = MaterialTheme.typography.labelMedium,
@@ -3153,6 +3158,7 @@ private fun RecentGamesCard(
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
+                        ProfileGamePlatformLabel(game)
                     }
                 }
             }
@@ -3609,4 +3615,12 @@ private fun formatCompactDecimal(value: Double, locale: Locale): String {
 
 private fun formatDate(timestampMs: Long): String {
     return DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(timestampMs))
+}
+
+@Composable
+private fun ProfileGamePlatformLabel(game: PlayerGamePlayStat) {
+    val label = game.platform?.let { catalogPlatformLabel(catalogPlatformName(it)) }
+        ?: stringResource(if (game.arcade) R.string.home_platform_arcade else R.string.home_platform_dreamcast)
+    Text(label, style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }

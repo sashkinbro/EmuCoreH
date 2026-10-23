@@ -1,7 +1,8 @@
 package com.sbro.emucoreh.core
 
 object ArcadeInputPolicy {
-    fun isLightGun(device: Int, mode: Int): Boolean = device == 2 || (device == 0 && mode == 2)
+    fun isLightGun(device: Int, mode: Int, platform: EmulationPlatform = EmulationPlatform.DREAMCAST): Boolean =
+        !platform.isSega && (device == 2 || (device == 0 && mode == 2))
 }
 
 data class AimPoint(val x: Float, val y: Float, val offscreen: Boolean)

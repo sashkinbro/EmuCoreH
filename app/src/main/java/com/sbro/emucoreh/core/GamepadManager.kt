@@ -350,13 +350,34 @@ object GamepadManager {
         resetModeInputState((0 until MAX_PAD_SLOTS).toSet())
     }
 
+    @Volatile private var activePlatform = EmulationPlatform.DREAMCAST
+
+    fun setPlatform(platform: EmulationPlatform) {
+        if (activePlatform == platform) return
+        activePlatform = platform
+        if (platform.isSega) {
+            lightGunPorts = emptySet()
+            lightGunAimSource = 0
+        }
+        perGameBindingsOverride = null
+        refreshActiveBindings()
+        resetModeInputState((0 until MAX_PAD_SLOTS).toSet())
+    }
+
+    fun refreshSegaProfile(platform: EmulationPlatform) {
+        if (activePlatform == platform) refreshActiveBindings()
+    }
+
     private fun activeProfileBindings(): Map<Int, Map<String, Int>> =
-        if (arcadeModeActive) arcadeBindingsByPad else consoleBindingsByPad
+        if (activePlatform.isSega) SegaControlProfiles.resolve(activePlatform,
+            appContext?.let { SegaControlProfiles.load(it, activePlatform) }.orEmpty())
+        else if (arcadeModeActive) arcadeBindingsByPad else consoleBindingsByPad
 
     /** Recomputes [customBindingsByPad] after a profile or override change. */
     private fun refreshActiveBindings() {
         val desired = if (perGameBindingsActive) {
-            perGameBindingsOverride ?: activeProfileBindings()
+            if (activePlatform.isSega) GamepadBindingRules.merge(activeProfileBindings(), perGameBindingsOverride.orEmpty())
+            else perGameBindingsOverride ?: activeProfileBindings()
         } else {
             activeProfileBindings()
         }
@@ -375,7 +396,8 @@ object GamepadManager {
     }
 
     fun setLightGunPorts(activePadIndices: Set<Int>, aimSource: Int = 0) {
-        val ports = activePadIndices.filterTo(mutableSetOf()) { it in 0 until MAX_PAD_SLOTS }
+        val ports = if (activePlatform.isSega) emptySet() else
+            activePadIndices.filterTo(mutableSetOf()) { it in 0 until MAX_PAD_SLOTS }
         val source = aimSource.coerceIn(0, AppPreferences.LIGHT_GUN_AIM_MAX)
         if (lightGunPorts == ports && lightGunAimSource == source) return
         val changedPorts = lightGunPorts + ports
@@ -687,6 +709,8 @@ object GamepadManager {
         }
         if (bindingsByPad != null && bindingsByPad.isNotEmpty()) {
             perGameBindingsOverride = bindingsByPad
+        } else if (activePlatform.isSega) {
+            perGameBindingsOverride = null
         }
         refreshActiveBindings()
         if (deadzone != null) {
@@ -759,7 +783,7 @@ object GamepadManager {
         val leftY = processStickAxis(event.getAxisValue(MotionEvent.AXIS_Y), leftStickSensitivity)
             .let { if (invertLeftStick) -it else it }
         val useLeftStickForGun = padIndex in lightGunPorts && lightGunAimSource == 1
-        if (!useLeftStickForGun && (leftX != state.prevLeftX || leftY != state.prevLeftY)) {
+        if (!activePlatform.isSega && !useLeftStickForGun && (leftX != state.prevLeftX || leftY != state.prevLeftY)) {
             dispatchAnalogStick(
                 padIndex = padIndex,
                 x = leftX,
@@ -799,7 +823,7 @@ object GamepadManager {
         selectLightGunStick(lightGunPorts, padIndex, lightGunAimSource, leftX to leftY, rightX to rightY)?.let { vector ->
             _lightGunStickByPad.value = _lightGunStickByPad.value + (padIndex to vector)
         }
-        if (!useRightStickForGun && (rightX != state.prevRightX || rightStickY != state.prevRightY)) {
+        if (!activePlatform.isSega && !useRightStickForGun && (rightX != state.prevRightX || rightStickY != state.prevRightY)) {
             dispatchAnalogStick(
                 padIndex = padIndex,
                 x = rightX,
@@ -837,7 +861,16 @@ object GamepadManager {
 
         val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
         val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
-        if (hatX != state.prevHatX || hatY != state.prevHatY) {
+        if (activePlatform.isSega) {
+            val previous = segaDpadDirections(state.prevLeftX, state.prevLeftY, state.prevHatX, state.prevHatY)
+            val directions = segaDpadDirections(leftX, leftY, hatX, hatY)
+            for (key in previous - directions) dispatchDpadDirection(padIndex, key, false)
+            for (key in directions - previous) dispatchDpadDirection(padIndex, key, true)
+            state.prevLeftX = leftX
+            state.prevLeftY = leftY
+            state.prevHatX = hatX
+            state.prevHatY = hatY
+        } else if (hatX != state.prevHatX || hatY != state.prevHatY) {
             dispatchDpadDirection(padIndex, PadKey.Left, hatX < -0.5f)
             dispatchDpadDirection(padIndex, PadKey.Right, hatX > 0.5f)
             dispatchDpadDirection(padIndex, PadKey.Up, hatY < -0.5f)
@@ -861,6 +894,7 @@ object GamepadManager {
      * emulated pad and true is returned so the caller suppresses the dispatch.
      */
     private fun updateDpadLightGunDirection(padIndex: Int, padKey: Int, pressed: Boolean): Boolean {
+        if (activePlatform.isSega) return false
         val bit = when (padKey) {
             PadKey.Up -> DPAD_DIRECTION_UP
             PadKey.Down -> DPAD_DIRECTION_DOWN
@@ -1137,10 +1171,13 @@ object GamepadManager {
             .filter { (actionId, keyCode) -> keyCode in triggerAction.defaultKeyCodes && isActionActive(actionId, padIndex) }
             .maxByOrNull { (actionId, _) -> if (GamepadBindingRules.isArcadeAction(actionId)) 1 else 0 }
             ?.let { return it.key }
-        return triggerActionId.takeUnless { it in customBindings }
+        return triggerActionId.takeUnless {
+            it in customBindings || (activePlatform.isSega && !isActionActive(it, padIndex))
+        }
     }
 
     private fun isActionActive(actionId: String, padIndex: Int): Boolean = when {
+        activePlatform.isSega -> SegaControlProfiles.supports(activePlatform, actionId)
         actionId in gunActionIds -> padIndex in lightGunPorts
         GamepadBindingRules.isArcadeAction(actionId) -> arcadeModeActive || padIndex in lightGunPorts
         else -> actionId in actionsById

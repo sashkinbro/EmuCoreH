@@ -4,7 +4,7 @@
     <string name="app_name">EmuCoreH</string>
 
     <string name="shell_library">Biblioteca</string>
-    <string name="shell_catalog_search">Búsqueda de Dreamcast</string>
+    <string name="shell_catalog_search">Buscar juegos</string>
     <string name="shell_supported_formats">Formatos compatibles</string>
 
     <string name="home_empty_title">No se encontraron juegos</string>
@@ -39,8 +39,8 @@
     <string name="detail_show_more">Mostrar más</string>
     <string name="detail_show_less">Mostrar menos</string>
     <string name="detail_no_data_title">Sin detalles disponibles</string>
-    <string name="detail_no_data_body">Todavía no hemos podido asociar este juego al catálogo local de Dreamcast.</string>
-    <string name="detail_catalog_missing_body">Los detalles del catálogo de Dreamcast no están disponibles temporalmente.</string>
+    <string name="detail_no_data_body">Todavía no hemos podido encontrar este juego en el catálogo local.</string>
+    <string name="detail_catalog_missing_body">Los detalles del catálogo de juegos no están disponibles temporalmente.</string>
     <string name="detail_save_screenshot">Guardar captura de pantalla</string>
     <string name="detail_screenshot_saved">Captura de pantalla guardada</string>
     <string name="detail_screenshot_save_failed">No se pudo guardar la captura de pantalla</string>
@@ -137,7 +137,7 @@
     <string name="settings_version">Versión</string>
     <string name="settings_emulator_core">Núcleo de emulación</string>
     <string name="settings_about_app">Acerca de EmuCoreH</string>
-    <string name="settings_about_app_desc">EmuCoreH es un emulador y una biblioteca de juegos de Dreamcast, Naomi, Naomi 2 y Atomiswave impulsado por el núcleo Flycast, con configuración rápida, navegación clara y una interfaz ideal para dispositivos portátiles.</string>
+    <string name="settings_about_app_desc">EmuCoreH combina una biblioteca de juegos con Flycast para Dreamcast y sistemas arcade, y jgenesis para Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear y SG-1000.</string>
     <string name="settings_about_studio">Desarrollador</string>
     <string name="settings_about_studio_desc">Creado por Sashkin Apps.</string>
     <string name="settings_about_support_project">Apoyar el proyecto</string>
@@ -240,15 +240,15 @@
     <string name="settings_fps_overlay_mode_detailed">Estadísticas</string>
 
     <string name="onboarding_page_1_title">Bienvenido a EmuCoreH</string>
-    <string name="onboarding_page_1_subtitle">Tu biblioteca y tu lanzador de Dreamcast, diseñados para una configuración rápida, una navegación clara y una experiencia fluida en cualquier pantalla.</string>
+    <string name="onboarding_page_1_subtitle">Tu biblioteca de juegos Sega, preparada para cualquier pantalla.</string>
     <string name="onboarding_page_2_title">Emulación potente</string>
-    <string name="onboarding_page_2_subtitle">Disfruta de tus juegos de Dreamcast favoritos con opciones gráficas avanzadas, controles personalizables y optimizaciones de rendimiento.</string>
+    <string name="onboarding_page_2_subtitle">Flycast y jgenesis reúnen las consolas Sega y los sistemas arcade compatibles.</string>
     <string name="onboarding_page_3_title">Tu biblioteca de juegos</string>
     <string name="onboarding_page_3_subtitle">Crea tu biblioteca de juegos personal con hermosas portadas, información detallada y acceso rápido a tus favoritos.</string>
     <string name="onboarding_page_4_title">Listo para jugar</string>
     <string name="onboarding_page_4_subtitle">Elige tus carpetas de juegos y dónde se guardan los datos del emulador para empezar.</string>
     <string name="onboarding_title">Prepárate para jugar</string>
-    <string name="onboarding_subtitle">Elige tus carpetas de juegos de Dreamcast y concede acceso a los archivos.</string>
+    <string name="onboarding_subtitle">Elige tus carpetas de juegos y permite el acceso a los archivos.</string>
     <string name="onboarding_games_title">Elegir carpeta de juegos</string>
     <string name="onboarding_games_desc">Selecciona la carpeta que contiene tus juegos.</string>
     <string name="onboarding_status_required">Requerido</string>
@@ -268,7 +268,7 @@
     <string name="no">No</string>
     <string name="back">Atrás</string>
 
-    <string name="catalog_search_title">Catálogo de Dreamcast</string>
+    <string name="catalog_search_title">Catálogo de juegos</string>
     <string name="catalog_filters_title">Filtros</string>
     <string name="catalog_filter_genre">Género</string>
     <string name="catalog_filter_year">Año</string>
@@ -278,7 +278,7 @@
     <string name="catalog_filter_any_rating">Cualquier clasificación</string>
     <string name="catalog_filters_clear">Borrar filtros</string>
     <string name="catalog_missing_title">Base de datos del catálogo no encontrada</string>
-    <string name="catalog_missing_body">El catálogo de Dreamcast no está disponible temporalmente ahora mismo.</string>
+    <string name="catalog_missing_body">El catálogo de juegos no está disponible temporalmente.</string>
     <string name="catalog_empty_title">No se encontraron coincidencias</string>
     <string name="catalog_empty_body">Prueba con un nombre de juego diferente o una frase de búsqueda más corta.</string>
     <string name="formats_title">Formatos compatibles</string>
@@ -383,7 +383,7 @@
     <string name="settings_help_recent_games">Muestra una fila de acceso rápido a los juegos a los que jugaste por última vez. Útil si cambias a menudo entre unos pocos títulos; desactívalo si quieres una pantalla de inicio más limpia.</string>
     <string name="settings_help_home_search">Muestra la barra de búsqueda de la biblioteca directamente en la pantalla de inicio. Déjala activada para bibliotecas grandes; desactívala si prefieres un diseño más limpio y rara vez buscas por nombre.</string>
     <string name="settings_help_renderer">Selecciona el motor gráfico utilizado para el renderizado por hardware. Vulkan suele ser el más rápido en dispositivos modernos, OpenGL puede ser más seguro por compatibilidad en algunas GPU, y Software es principalmente una alternativa para pruebas o juegos que fallan mucho en el modo de hardware.</string>
-    <string name="settings_help_aspect_ratio">Controla cómo se encuadra la imagen final en tu pantalla. Auto sigue al juego, 4:3 conserva el aspecto original de la mayoría de títulos de Dreamcast, 16:9 va bien para juegos con parche panorámico, y Estirar solo debería usarse si no te importan las distorsiones geométricas.</string>
+    <string name="settings_help_aspect_ratio">Elige Auto, 4:3, 16:9, 10:7 o Estirar. Auto sigue al sistema; Estirar puede deformar la imagen.</string>
     <string name="settings_help_overlay_scale">Cambia el tamaño de los botones y sticks en pantalla. Auméntalo si la precisión táctil importa más que el espacio en pantalla; redúcelo si la superposición cubre gran parte de la imagen.</string>
     <string name="settings_help_overlay_opacity">Controla si los controles táctiles se ven sólidos o transparentes. Una menor opacidad mantiene la vista del juego más limpia, mientras que una mayor opacidad facilita ver los botones en escenas oscuras o recargadas.</string>
     <string name="settings_help_hide_overlay_on_gamepad">Oculta la superposición táctil siempre que un mando físico esté activo. Esto hace que la pantalla se vea más limpia, pero desactívalo si aún quieres tener los botones táctiles disponibles mientras hay un mando conectado.</string>
@@ -519,7 +519,7 @@
     <string name="onboarding_status_custom_folder">Carpeta personalizada seleccionada</string>
     <string name="settings_emulator_data_path">Carpeta del emulador</string>
     <string name="settings_fetch_boxart">Descargar carátulas</string>
-    <string name="settings_fetch_boxart_desc">Descargar carátulas de las fuentes de Flycast: arte GD-ROM del disco, carátulas arcade de flycast-content y TheGamesDB.</string>
+    <string name="settings_fetch_boxart_desc">Descargar carátulas por plataforma de los catálogos EmuCoreH, IGDB, imágenes de discos y arcade, y TheGamesDB.</string>
     <string name="shell_texture_manager">Gestor de texturas</string>
     <string name="texture_manager_title">Gestor de texturas</string>
     <string name="texture_manager_import_zip">Importar ZIP</string>
@@ -603,9 +603,9 @@
     <string name="settings_about_app_source_desc">Abre el repositorio de GitHub de EmuCoreH para ver la aplicación y el código fuente del proyecto.</string>
     <string name="settings_about_app_source_link">Abrir EmuCoreH en GitHub</string>
     <string name="settings_about_app_source_url">https://github.com/sashkinbro/EmuCoreH</string>
-    <string name="settings_about_core_source">Núcleo de emulación</string>
-    <string name="settings_about_core_source_desc">Basado en Flycast, el núcleo de emulación de Dreamcast.</string>
-    <string name="settings_about_core_source_link">Ver el código fuente del núcleo en GitHub</string>
+    <string name="settings_about_core_source">Flycast (GNU GPLv2)</string>
+    <string name="settings_about_core_source_desc">Flycast emula Dreamcast y sistemas arcade bajo GNU GPLv2.</string>
+    <string name="settings_about_core_source_link">Ver el código de Flycast en GitHub</string>
     <string name="settings_about_core_source_url">https://github.com/flyinghead/flycast</string>
     <string name="settings_touch_haptics_strength">Intensidad de respuesta háptica</string>
     <string name="settings_touch_haptics_test">Probar respuesta háptica</string>
@@ -1111,7 +1111,7 @@
     <string name="hub_title">EmuCoreH - Hub</string>
     <string name="hub_tab_news">Noticias</string>
     <string name="hub_tab_videos">Vídeos</string>
-    <string name="hub_tab_history">Historial de Dreamcast</string>
+    <string name="hub_tab_history">Historia de Sega</string>
     <string name="hub_tab_manuals">Manuales</string>
     <string name="hub_related_materials">Materiales relacionados</string>
     <string name="hub_tab_favorites">Guardado</string>
@@ -1128,7 +1128,7 @@
     <string name="hub_empty_news">Aún no hay noticias disponibles.</string>
     <string name="hub_empty_videos">Aún no hay vídeos disponibles.</string>
     <string name="hub_empty_history">Aún no hay artículos de historia disponibles.</string>
-    <string name="hub_empty_manuals">Todavía no hay manuales de emulación de Dreamcast disponibles.</string>
+    <string name="hub_empty_manuals">Todavía no hay manuales de emulación disponibles.</string>
     <string name="hub_empty_favorites">Los artículos, manuales y vídeos guardados aparecerán aquí.</string>
     <string name="hub_no_search_results">No se ha encontrado contenido coincidente.</string>
     <string name="hub_load_failed">No se ha podido cargar el contenido del Hub.</string>
@@ -1193,7 +1193,7 @@
     <string name="emulation_swap_disc">Cambiar disco</string>
     <string name="emulation_swap_disc_success">El disco se cambió correctamente.</string>
     <string name="emulation_swap_disc_failed">No se pudo cambiar el disco. Se restauró el disco anterior.</string>
-    <string name="emulation_swap_disc_invalid">Elige una imagen de disco de Dreamcast compatible.</string>
+    <string name="emulation_swap_disc_invalid">Elige una imagen de disco compatible.</string>
     <string name="settings_customization_background_presets">Fondos incluidos</string>
     <string name="settings_customization_background_preset_olympus">Infierno del Olimpo</string>
     <string name="settings_customization_background_preset_neon_racing">Impulso de neón</string>
@@ -1224,7 +1224,7 @@
     <string name="discord_share_serial">Mostrar serie del juego</string>
     <string name="discord_preview_game_title">Título del juego</string>
     <string name="discord_preview_serial">Número de serie</string>
-    <string name="discord_share_serial_desc">Incluir el número de serie del disco de Dreamcast, por ejemplo MK-51000</string>
+    <string name="discord_share_serial_desc">Incluir el número de serie del juego, como MK-51000</string>
     <string name="discord_preview_title">Vista previa del estado</string>
     <string name="discord_privacy_note">El inicio de sesión usa Discord OAuth con PKCE. Android Keystore cifra el token de acceso y nunca se envía a los servidores de EmuCoreH.</string>
     <string name="discord_status_disabled">Desactivado</string>
@@ -1238,7 +1238,7 @@
     <string name="settings_discord_service_error">No se pudo iniciar el servicio auxiliar de Discord.</string>
     <string name="settings_discord_token_error">No se pudo proteger el token de inicio de sesión de Discord.</string>
     <string name="discord_presence_library">Explorando la biblioteca de juegos</string>
-    <string name="discord_presence_private_game">Jugando a un juego de Dreamcast</string>
+    <string name="discord_presence_private_game">Jugando a un juego</string>
     <string name="discord_presence_paused">En pausa</string>
     <string name="discord_presence_playing">Jugando a %1$s</string>
     <string name="discord_friends_title">Amigos en EmuCoreH</string>
@@ -1263,7 +1263,7 @@
     <string name="settings_frame_limit">Límite de fotogramas</string>
     <string name="settings_frame_limit_desc">Limita la emulación a la frecuencia de actualización de la consola. Desactívalo para ir tan rápido como permita el dispositivo.</string>
     <string name="settings_target_fps">Frecuencia de fotogramas objetivo</string>
-    <string name="settings_target_fps_desc">Auto usa la tasa de fotogramas que informa Flycast. Los valores manuales fijan la velocidad de emulación; un juego puede renderizar menos fotogramas.</string>
+    <string name="settings_target_fps_desc">Automático usa la frecuencia de fotogramas indicada por el núcleo activo. Los valores manuales fijan la velocidad de emulación; los juegos pueden renderizar menos fotogramas.</string>
     <string name="settings_display_crop">Recorte de imagen</string>
     <string name="settings_display_crop_desc">Recorta la misma cantidad de píxeles de los cuatro bordes antes del escalado. Selecciona 0 para desactivar el recorte.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1301,7 +1301,7 @@
     <string name="achievements_unavailable">Esta versión no admite RetroAchievements.</string>
     <string name="shell_achievements">Logros</string>
     <string name="formats_psp_supported_title">Formatos de Dreamcast compatibles</string>
-    <string name="formats_psp_supported_body">El núcleo Flycast incluido acepta estos archivos de juego directamente.</string>
+    <string name="formats_psp_supported_body">Las imágenes de disco de Dreamcast usan Flycast. Los sistemas de cartuchos y Sega CD usan jgenesis; sus formatos se indican abajo.</string>
     <string name="formats_psp_recommended_title">Imágenes de disco GD-ROM</string>
     <string name="formats_psp_recommended_body">GDI es el volcado estándar de un GD-ROM. También se admiten imágenes CHD, CDI y CUE/BIN.</string>
     <string name="formats_psp_homebrew_title">Sets ROM arcade</string>
@@ -2076,7 +2076,7 @@
     <string name="profile_player">Jugador</string>
     <string name="profile_player_blocked">Jugador bloqueado.</string>
     <string name="profile_player_card_brand">TARJETA DE JUGADOR EMUCOREH</string>
-    <string name="profile_player_card_footer">Recuerdos de Dreamcast, rastreados por EmuCoreH</string>
+    <string name="profile_player_card_footer">Recuerdos de juego registrados por EmuCoreH</string>
     <string name="profile_player_card_share">Compartir Tarjeta de Jugador</string>
     <string name="profile_player_card_share_text">Encuéntrame en EmuCoreH: %1$s</string>
     <string name="profile_player_id_format">ID de Jugador: %1$s</string>
@@ -2253,4 +2253,40 @@
     <string name="settings_mouse_vertical_sensitivity">Sensibilidad vertical</string>
     <string name="settings_mouse_wheel_shoulders">L1 / R1</string>
     <string name="settings_gamepad_mapping_use_global_desc">Elimina las asignaciones de botones del mando para este juego.</string>
+
+    <!-- Sega systems: labels, firmware and supported core options. -->
+    <string name="sega_flycast_systems">Dreamcast / arcade</string>
+    <string name="sega_six_button_controls">Mando de seis botones: A, B, C, X, Y, Z, Start y Mode.</string>
+    <string name="sega_two_button_controls">Mando de dos botones: 1 y 2, con Start o Pausa según el sistema.</string>
+    <string name="sega_bios_title">BIOS de Sega CD</string>
+    <string name="sega_bios_description">Selecciona una región e importa tu archivo BIOS de 128 KiB.</string>
+    <string name="sega_bios_import">Importar BIOS</string>
+    <string name="sega_bios_installed">BIOS instalada</string>
+    <string name="sega_bios_invalid">Selecciona un archivo BIOS de exactamente 128 KiB.</string>
+    <string name="sega_bios_missing">Falta la BIOS de Sega CD. Abre Ajustes, selecciona Sega CD e importa la BIOS de la región del disco.</string>
+    <string name="formats_sega_body">ROM de Mega Drive, 32X, Master System, Game Gear y SG-1000; discos Sega CD en CUE/BIN y CHD. ZIP admite una ROM de cartucho. Sega CD requiere tu propia BIOS.</string>
+    <string name="sega_region">Región</string>
+    <string name="sega_timing">Temporización de vídeo</string>
+    <string name="sega_restart_required">Se aplica al reiniciar el juego.</string>
+    <string name="sega_remove_sprite_limit">Eliminar límite de sprites</string>
+    <string name="sega_low_pass_filter">Filtro de audio paso bajo</string>
+    <string name="sega_fm_audio">Audio FM de Master System</string>
+    <string name="sega_crop_border">Recortar borde vertical</string>
+    <string name="sega_gg_resolution">Resolución SMS completa en Game Gear</string>
+    <string name="sega_pause">Pausa</string>
+    <string name="sega_mode">Modo</string>
+    <string name="home_platform_genesis">Mega Drive / Genesis</string>
+    <string name="home_platform_sega_cd">Sega CD / Mega-CD</string>
+    <string name="home_platform_sega_32x">Sega 32X</string>
+    <string name="home_platform_master_system">Master System</string>
+    <string name="home_platform_game_gear">Game Gear</string>
+    <string name="home_platform_sg_1000">SG-1000</string>
+    <string name="formats_sega_title">Sega</string>
+    <string name="sega_ntsc">NTSC</string>
+    <string name="sega_pal">PAL</string>
+    <string name="settings_about_jgenesis_source_desc">Emulación Sega bajo GNU GPLv3. El enlace abre el código original; el árbol de fuentes de EmuCoreH contiene la integración libretro. Se incluyen la licencia y los datos de versión. El usuario aporta la BIOS de Sega CD; el firmware original de 32X sigue integrado.</string>
+    <string name="settings_about_jgenesis_source_link">Ver el código de jgenesis en GitHub</string>
+    <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
+    <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
+    <string name="sega_ds_collection_unsupported">Esta ROM de Sonic Classic Collection necesita el emulador de Nintendo DS. Usa una ROM original de Mega Drive / Genesis.</string>
 </resources>

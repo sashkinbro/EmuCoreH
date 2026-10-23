@@ -1167,6 +1167,9 @@ class AppPreferences(private val context: Context) {
             }
         }
         localePrefs.edit().remove("language_tag").apply()
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            com.sbro.emucoreh.core.SegaSettingsBackup.resetAll(context)
+        }
     }
 
 
@@ -1863,7 +1866,7 @@ class AppPreferences(private val context: Context) {
     }
 
     val homeSortOption: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[HOME_SORT_OPTION] ?: "TITLE_ASC"
+        prefs[HOME_SORT_OPTION] ?: "PLATFORM"
     }
 
     suspend fun setHomeSortOption(option: String) {
@@ -3144,7 +3147,7 @@ class AppPreferences(private val context: Context) {
             put("preferEnglishGameTitles", prefs[PREFER_ENGLISH_GAME_TITLES] ?: false)
             put("recentGames", prefs[RECENT_GAMES] ?: "[]")
             put("homeLibraryViewMode", prefs[HOME_LIBRARY_VIEW_MODE] ?: 0)
-            put("homeSortOption", prefs[HOME_SORT_OPTION] ?: "TITLE_ASC")
+            put("homeSortOption", prefs[HOME_SORT_OPTION] ?: "PLATFORM")
             put("overlayScale", prefs[OVERLAY_SCALE] ?: 100)
             put(
                 "overlayOpacity",
