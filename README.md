@@ -4,7 +4,7 @@
 [![Support EmuCoreH on Patreon](https://img.shields.io/badge/Patreon-Support%20EmuCoreH-ff424d?logo=patreon&logoColor=white)](https://www.patreon.com/c/emucore/membership)
 [![Join the EmuCoreH Discord](https://img.shields.io/badge/Discord-Join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.com/invite/c5EBeNRpz2)
 
-EmuCoreH is a Sega Dreamcast, Naomi, Naomi 2, and Atomiswave library, launcher, and emulator frontend for Android. It pairs a purpose-built Compose interface with a vendored [Flycast](https://github.com/flyinghead/flycast) core that is built together with the app, so no separate core download is needed.
+EmuCoreH is a Sega game library, launcher, and emulator frontend for Android. Its Compose interface includes [Flycast](https://github.com/flyinghead/flycast) for Dreamcast and arcade systems, and [jgenesis](https://github.com/jsgroth/jgenesis) for Mega Drive / Genesis, Sega CD, Sega 32X, Master System, Game Gear, and SG-1000. Both cores are built with the app; no separate core download is required.
 
 Website: [emucoreh.web.app](https://emucoreh.web.app/)
 
@@ -16,39 +16,41 @@ The project is under active development. Use your own legally obtained games. Fl
 
 ## Highlights
 
-- Flycast-based emulation core built together with the app for ARM64 devices
-- Vulkan, OpenGL ES, and software rendering with internal resolution controls
-- Game library with Dreamcast and arcade title detection, cover art, search, and per-game settings
+- Two bundled emulation cores for ARM64 Android devices
+- Flycast Vulkan, OpenGL ES, and software rendering; jgenesis software video presented through OpenGL ES
+- Platform-aware game library, catalog, cover art, search, filters, and per-game settings
 - Home hub with shelves, recently played titles, and quick resume
 - In-game overlay with rendering, speed, and save state controls, opened with the Back gesture
-- Touch controls with a layout editor, plus physical gamepad support
-- Save states, VMU and memory card management
-- Cheat and texture replacement support for compatible games
-- RetroAchievements and optional Discord integration
+- System-specific touch controls and independent Sega gamepad profiles, including six-button Mega Drive controls
+- Shared touch layout editor with platform-specific buttons, independent system layouts, and per-game overrides
+- Save states with core/platform validation, Sega battery saves, and Dreamcast VMU management
+- Local and optional Drive backups, including Sega battery saves
+- Flycast cheats, texture replacements, and RetroAchievements for compatible games
+- Unsupported options are hidden for Sega games; optional Discord integration
 - Localized interface in 18 languages for phones, tablets, and Android TV
 
 ## What This Repository Contains
 
-This repository contains the Android application, its Kotlin UI, the JNI frontend, the vendored Flycast sources, and the Gradle module that builds the emulation core for Android. No games, BIOS files, save data, or account credentials are included.
+This repository contains the Android application, Kotlin UI, C++ JNI frontend, vendored Flycast and jgenesis sources, and their Android build modules. Games, user save data, account credentials, Dreamcast BIOS dumps, and Sega CD BIOS dumps are not included. Upstream jgenesis includes 32X startup ROM data; see its [Android integration notes](core-jgenesis/README-ANDROID.md).
 
 ## Tech Stack
 
 - Kotlin + Jetpack Compose
 - Android DataStore and Room
 - JNI bridge to native C++ built with CMake and the Android NDK
-- Vendored Flycast core built as a libretro library and driven by the app's own frontend
+- Independently loaded Flycast and Rust jgenesis libretro libraries, driven by the app's frontend
 - Vulkan and OpenGL ES rendering paths with a shader chain runtime
 - RetroAchievements integration through rcheevos
 - Optional Discord Social SDK integration
 
 ## Current App Scope
 
-EmuCoreH is published on [Google Play](https://play.google.com/store/apps/details?id=com.sbro.emucoreh). Version `0.0.6` currently targets Android with:
+EmuCoreH is available on [Google Play](https://play.google.com/store/apps/details?id=com.sbro.emucoreh). The current source tree uses:
 
 - `minSdk 26` (Android 8.0)
 - `targetSdk 37`
 - package id `com.sbro.emucoreh`
-- version `0.0.6`
+- source version `0.1.1` (version code `31`)
 - ARM64 devices only
 
 ## Building Locally
@@ -59,6 +61,20 @@ EmuCoreH is published on [Google Play](https://play.google.com/store/apps/detail
 - JDK 17
 - Android SDK 37 and Android NDK `29.0.14206865`
 - CMake `3.30.5`
+- Rust `1.98.1` and the `aarch64-linux-android` target
+- On Windows, the Rust GNU toolchain and MSYS2 UCRT64 GCC (default path `C:/msys64/ucrt64/bin`)
+- Your own local Firebase configuration when building with the Google Services plugin
+
+### Rust Setup
+
+On Windows:
+
+```powershell
+rustup toolchain install 1.98.1-x86_64-pc-windows-gnu
+rustup target add aarch64-linux-android --toolchain 1.98.1-x86_64-pc-windows-gnu
+```
+
+On Linux or macOS, install toolchain `1.98.1` and add `aarch64-linux-android` to it. Gradle builds the Rust core automatically. Override `jgenesis.hostToolsDir` or `jgenesis.rustToolchain` as Gradle properties when your toolchain is installed elsewhere.
 
 ### Debug Build
 
@@ -84,25 +100,51 @@ Discord support is built when a compatible Discord Social SDK directory is suppl
 - `app/src/main/cpp` Native bridge and core integration
 - `app/src/main/res` Android resources and translations
 - `core/` Vendored Flycast sources
-- `core-android/` Gradle module that builds the Flycast core for Android
+- `core-android/` Gradle module that builds Flycast for Android
+- `core-jgenesis/` Vendored jgenesis sources and the libretro wrapper
+- `core-jgenesis-android/` Gradle module that builds and packages jgenesis
+- `app/src/main/assets/catalog/` Bundled platform-aware game catalog and cover indexes
 - `tools/` Local release, catalog, and cover tooling (not part of the app build)
 
 ## Supported Content
 
-CHD, CDI, GDI, and CUE/BIN images are the main game formats. LST, DAT, ZIP, 7Z, and M3U are supported as well. Arcade content for Naomi, Naomi 2, and Atomiswave runs from ROM sets. Dreamcast BIOS files are optional: without one the core boots through its HLE BIOS. No games, BIOS files, save data, or account credentials are included here.
+| System | Core | Content |
+|---|---|---|
+| Dreamcast | Flycast | GDI, CHD, CDI, CUE/BIN, ISO, M3U |
+| Naomi, Naomi 2, Atomiswave, System SP | Flycast | Compatible ROM sets: ZIP, 7Z, DAT, LST, supported raw dumps |
+| Mega Drive / Genesis | jgenesis | MD, GEN, SMD, recognized BIN cartridges, single-ROM ZIP |
+| Sega 32X | jgenesis | 32X, recognized BIN cartridges, single-ROM ZIP |
+| Sega CD | jgenesis | CHD, CUE with every referenced track; M3U playlists |
+| Master System | jgenesis | SMS, recognized BIN cartridges, single-ROM ZIP |
+| Game Gear | jgenesis | GG, recognized BIN cartridges, single-ROM ZIP |
+| SG-1000 | jgenesis | SG, single-ROM ZIP |
+
+Unknown disc/archive formats retain the existing Flycast route. CUE track files are grouped with their disc instead of appearing as separate games. Sega CD 32X combined hardware is not advertised as a separate supported system.
+
+### BIOS
+
+Dreamcast can boot through Flycast HLE without an installed BIOS. Arcade ROM sets may require their matching firmware.
+
+Sega CD requires your own **128 KiB BIOS** for the disc region. In Settings, select Sega CD, open Library, and import the BIOS into the matching US, Europe, or Japan slot. The app uses `bios_CD_U.bin`, `bios_CD_E.bin`, and `bios_CD_J.bin` internally. Missing regional firmware produces a BIOS message instead of starting an unrelated system.
+
+### Sega Controls and Settings
+
+Mega Drive / Genesis, Sega CD, and 32X use A/B/C, X/Y/Z, Start, and Mode. Master System and Game Gear use two action buttons; Master System has Pause and Game Gear has Start. SG-1000 uses two action buttons without a Start/Pause button.
+
+Each Sega system has independent default touch and gamepad profiles. The shared controls editor supports the selected platform's buttons and saves global system layouts separately from per-game overrides. Global system options, per-game settings, and the in-game menu expose the options supported by the selected system. Sega saves and core settings are isolated from Flycast data. Game Gear defaults to its original screen proportions in Auto aspect mode.
 
 ## Notes
 
-- Game images, BIOS files, save data, and account credentials are not distributed with this project.
+- Game images, user save data, account credentials, and user-supplied Dreamcast/Sega CD BIOS dumps are not distributed with this project.
 - Compatibility, performance, and graphics behavior vary by game, device, renderer, and driver stack.
 
 ## Credits and license
 
-EmuCoreH builds on Flycast. The root [LICENSE](LICENSE) is an exact copy of Flycast's upstream license file (GPL-2.0). The vendored core and its dependencies retain their copyright and license notices in `core/`.
+The root [LICENSE](LICENSE) contains Flycast's upstream GPL-2.0 text. Flycast and its dependencies retain their notices in `core/`. jgenesis is separately licensed under [GPL-3.0](core-jgenesis/LICENSE); its pinned revision, local changes, build instructions, and distribution notes are recorded in [UPSTREAM.txt](core-jgenesis/UPSTREAM.txt) and [README-ANDROID.md](core-jgenesis/README-ANDROID.md). The Android package includes the jgenesis license and source notices.
 
-Thanks to the Flycast contributors and to the RetroAchievements team for rcheevos.
+Thanks to the Flycast and jgenesis contributors, the RetroAchievements team for rcheevos, and IGDB for game metadata.
 
-EmuCoreH is independent of Sega, Flycast, IGDB, Discord, and RetroAchievements. Dreamcast, Naomi, Naomi 2, and Atomiswave are trademarks of Sega. Game artwork and game data belong to their respective owners.
+EmuCoreH is independent of Sega, Flycast, jgenesis, IGDB, Discord, and RetroAchievements. System names and game artwork belong to their respective owners.
 
 ## Support
 
