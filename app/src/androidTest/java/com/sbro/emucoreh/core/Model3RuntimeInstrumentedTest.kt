@@ -92,13 +92,13 @@ class Model3RuntimeInstrumentedTest {
         val nativeSet = requireNotNull(Model3ContentPreparer.resolveExpectedSet(context, rom.absolutePath)) {
             "Selected Model 3 program revision is incomplete or ambiguous"
         }
-        val targetFrames = args.getString("model3QaFrames")?.toIntOrNull()?.coerceIn(120, 3600) ?: 600
+        val targetFrames = args.getString("model3QaFrames")?.toIntOrNull()?.coerceIn(120, 9000) ?: if (nativeSet.startsWith("von2")) 4800 else 600
         val timeoutSeconds = args.getString("model3QaTimeoutSeconds")?.toLongOrNull()?.coerceIn(30, 900) ?: 300
         val scriptedSteps = args.getString("model3QaServiceScript")?.split(',')?.map { step ->
             val parts = step.split(':')
             require(parts.size == 2)
             parts[0].toInt().also { require(it in 0..65535) } to
-                parts[1].toInt().also { require(it in 1..3600) }
+                parts[1].toInt().also { require(it in 1..9000) }
         }
         val scriptedInputs = scriptedSteps?.flatMap { (buttons, frames) -> List(frames) { buttons } }
         require(scriptedInputs == null || scriptedInputs.size <= targetFrames)

@@ -2312,5 +2312,5 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_model3_source_link">Ver a revisão fixada do Super3 no GitHub</string>
     <string name="settings_about_model3_upstream_link">Repositório original do Supermodel</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
-    <string name="model3_cabinet_setup_help">Alguns jogos precisam de configuração da máquina no primeiro início. Para erros da placa de rede em Daytona USA 2, abra TEST → GAME ASSIGNMENTS → LINK ID e escolha SINGLE (independente). Siga as instruções TEST/SERVICE do jogo e saia normalmente para salvar.</string>
+    <string name="model3_cabinet_setup_help">Alguns jogos precisam de configuração da máquina no primeiro início. Para erros da placa de rede em Daytona USA 2, abra TEST → GAME ASSIGNMENTS → LINK ID e escolha SINGLE (independente). Siga as instruções TEST/SERVICE do jogo e saia normalmente para salvar. Alguns jogos, incluindo Virtual On 2, mostram uma tela preta por mais de um minuto durante as verificações iniciais do hardware. Aguarde até que o jogo termine de iniciar. Para erros da alavanca com retorno de força ao iniciar Star Wars Trilogy, selecione TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLE, saia normalmente e reinicie o jogo.</string>
 </resources>

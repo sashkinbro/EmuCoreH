@@ -2331,5 +2331,5 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_model3_source_link">Zobrazit pevnou revizi Super3 na GitHubu</string>
     <string name="settings_about_model3_upstream_link">Původní repozitář Supermodel</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
-    <string name="model3_cabinet_setup_help">Některé hry vyžadují při prvním spuštění nastavení automatu. Při chybě síťové desky v Daytona USA 2 otevřete TEST → GAME ASSIGNMENTS → LINK ID a zvolte SINGLE (samostatný automat). Řiďte se pokyny TEST/SERVICE ve hře a poté ji běžně ukončete, aby se nastavení uložilo.</string>
+    <string name="model3_cabinet_setup_help">Některé hry vyžadují při prvním spuštění nastavení automatu. Při chybě síťové desky v Daytona USA 2 otevřete TEST → GAME ASSIGNMENTS → LINK ID a zvolte SINGLE (samostatný automat). Řiďte se pokyny TEST/SERVICE ve hře a poté ji běžně ukončete, aby se nastavení uložilo. Některé hry, včetně Virtual On 2, zobrazují během úvodních kontrol hardwaru černou obrazovku déle než minutu. Počkejte, až se hra plně spustí. Při chybách páky se zpětnou vazbou během spouštění Star Wars Trilogy nastavte TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLE, poté nabídku běžně opusťte a hru restartujte.</string>
 </resources>

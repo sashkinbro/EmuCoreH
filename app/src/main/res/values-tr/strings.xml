@@ -2310,5 +2310,5 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_model3_source_link">Sabitlenen Super3 kaynak kodunu GitHub üzerinde görüntüle</string>
     <string name="settings_about_model3_upstream_link">Supermodel ana kaynak deposu</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
-    <string name="model3_cabinet_setup_help">Bazı oyunlar ilk açılışta kabin kurulumu gerektirir. Daytona USA 2 ağ kartı hatalarında TEST → GAME ASSIGNMENTS → LINK ID yolunu açıp SINGLE (bağımsız) seçin. Oyundaki TEST/SERVICE yönergelerini izleyin, ardından ayarları kaydetmek için normal şekilde çıkın.</string>
+    <string name="model3_cabinet_setup_help">Bazı oyunlar ilk açılışta kabin kurulumu gerektirir. Daytona USA 2 ağ kartı hatalarında TEST → GAME ASSIGNMENTS → LINK ID yolunu açıp SINGLE (bağımsız) seçin. Oyundaki TEST/SERVICE yönergelerini izleyin, ardından ayarları kaydetmek için normal şekilde çıkın. Virtual On 2 dahil bazı oyunlar, başlangıçtaki donanım kontrolleri sırasında bir dakikadan uzun süre siyah ekran gösterir. Oyunun açılışını tamamlamasını bekleyin. Star Wars Trilogy açılışında geri bildirimli kol hataları için TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLE seçeneğini ayarlayın, ardından normal şekilde çıkıp oyunu yeniden başlatın.</string>
 </resources>

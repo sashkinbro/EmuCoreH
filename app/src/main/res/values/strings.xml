@@ -2335,5 +2335,5 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_model3_source_link">View pinned Super3 source on GitHub</string>
     <string name="settings_about_model3_upstream_link">Supermodel upstream repository</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
-    <string name="model3_cabinet_setup_help">Some games need first-start cabinet setup. For Daytona USA 2 network-board errors, open TEST → GAME ASSIGNMENTS → LINK ID and choose SINGLE (standalone). Follow the game’s TEST/SERVICE prompts, then exit normally to save.</string>
+    <string name="model3_cabinet_setup_help">Some games need first-start cabinet setup. For Daytona USA 2 network-board errors, open TEST → GAME ASSIGNMENTS → LINK ID and choose SINGLE (standalone). Follow the game’s TEST/SERVICE prompts, then exit normally to save. Some games, including Virtual On 2, show a black screen for over a minute during their initial hardware checks. Wait for the game to finish booting. For Star Wars Trilogy feedback-lever startup errors, set TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLE, then exit normally and restart the game.</string>
 </resources>
