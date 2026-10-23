@@ -2,6 +2,9 @@ package com.sbro.emucoreh.ui.onboarding
 
 import android.app.Application
 import android.content.res.Configuration
+import android.content.ContextWrapper
+import android.content.res.Resources
+import android.content.res.AssetManager
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalConfiguration
@@ -41,7 +44,13 @@ class OnboardingLocalizationInstrumentedTest {
                 setLocale(locale.value)
                 fontScale = 1.6f
             }
-            val context = app.createConfigurationContext(config)
+            val activityContext = LocalContext.current
+            val localized = activityContext.createConfigurationContext(config)
+            // Keep the Activity in the wrapper chain for result/back registries.
+            val context = object : ContextWrapper(activityContext) {
+                override fun getResources(): Resources = localized.resources
+                override fun getAssets(): AssetManager = localized.assets
+            }
             CompositionLocalProvider(LocalConfiguration provides config, LocalContext provides context,
                 LocalDensity provides Density(LocalDensity.current.density, 1.6f)) {
                 EmuCoreHTheme { OnboardingScreen(onComplete = {}, viewModel = model) }

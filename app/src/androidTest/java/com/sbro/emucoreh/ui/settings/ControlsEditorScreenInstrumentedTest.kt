@@ -33,6 +33,7 @@ class ControlsEditorScreenInstrumentedTest {
                     state = ControlsEditorState(customControls = customControls,
                         controlLayouts = SegaTouchLayouts.defaultProfile(platform).controlLayouts),
                     platform = platform,
+                    manageActivityOrientation = false,
                     onBackClick = {},
                     onUpdateControlOffset = { _, _ -> },
                     onUpdateControlOffsets = {},
@@ -55,9 +56,9 @@ class ControlsEditorScreenInstrumentedTest {
         showEditor(CustomTouchControlLibrary.Empty, saved::set)
 
         composeRule.onNodeWithTag("controls_editor_add_button").performClick()
-        composeRule.onNodeWithTag("controls_editor_combo_primary_square").performClick()
-        composeRule.onNodeWithTag("controls_editor_combo_secondary_l1").performClick()
-        composeRule.onNodeWithTag("controls_editor_combo_confirm").performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_primary_square").performScrollTo().performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_secondary_l1").performScrollTo().performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_confirm").performScrollTo().performClick()
 
         composeRule.runOnIdle {
             val control = saved.get()?.controls?.single()
@@ -83,7 +84,7 @@ class ControlsEditorScreenInstrumentedTest {
         )
         showEditor(initial, saved::set)
 
-        composeRule.onNodeWithTag("controls_editor_custom_jump").performClick()
+        composeRule.onNodeWithTag("controls_editor_custom_jump", useUnmergedTree = true).performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("controls_editor_duplicate").performClick()
 
@@ -108,10 +109,10 @@ class ControlsEditorScreenInstrumentedTest {
         )
         showEditor(initial, saved::set)
 
-        composeRule.onNodeWithTag("controls_editor_custom_jump").performClick()
+        composeRule.onNodeWithTag("controls_editor_custom_jump", useUnmergedTree = true).performClick()
         composeRule.onNodeWithTag("controls_editor_combo").performClick()
-        composeRule.onNodeWithTag("controls_editor_combo_secondary_circle").performClick()
-        composeRule.onNodeWithTag("controls_editor_combo_confirm").performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_secondary_circle").performScrollTo().performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_confirm").performScrollTo().performClick()
 
         composeRule.runOnIdle {
             val control = saved.get()?.controls?.single()
@@ -124,8 +125,8 @@ class ControlsEditorScreenInstrumentedTest {
         showEditor(CustomTouchControlLibrary.Empty, saved::set, EmulationPlatform.GENESIS)
         composeRule.onNodeWithTag("controls_editor_add_button").performClick()
         composeRule.onNodeWithTag("controls_editor_combo_primary_l2").assertDoesNotExist()
-        composeRule.onNodeWithTag("controls_editor_combo_primary_x").performClick()
-        composeRule.onNodeWithTag("controls_editor_combo_secondary_l1").performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_primary_x").performScrollTo().performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_secondary_l1").performScrollTo().performClick()
         composeRule.onNodeWithTag("controls_editor_combo_confirm").performScrollTo().performClick()
         composeRule.runOnIdle {
             val button = saved.get()?.controls?.single()
@@ -142,9 +143,9 @@ class ControlsEditorScreenInstrumentedTest {
         for (unsupported in listOf("start", "select", "x", "y", "l1", "r1", "l2")) {
             composeRule.onNodeWithTag("controls_editor_combo_primary_$unsupported").assertDoesNotExist()
         }
-        composeRule.onNodeWithTag("controls_editor_combo_primary_a").performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_primary_a").performScrollTo().performClick()
         composeRule.onNodeWithTag("controls_editor_combo_confirm").performScrollTo().performClick()
-        composeRule.runOnIdle { assertEquals("a", saved.get()?.controls?.single()?.actionId) }
+        composeRule.runOnIdle { assertEquals("a", SegaTouchLayouts.canonicalId(saved.get()!!.controls.single().actionId)) }
     }
 
 }
