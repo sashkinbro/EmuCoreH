@@ -16,6 +16,9 @@ reports them through the standard libretro shutdown environment callback;
 normal context waits, load rejection and NVRAM diagnostics remain separate.
 
 Modified upstream files:
+- Src/Model3/DriveBoard/SkiBoard.cpp and SkiBoard.h: keep the simulated Ski
+  board's guest protocol independent of optional physical motor output; preserve
+  initialization, status/read-mode, DIP and vibration-command state on save/load.
 - Src/CPU/PowerPC/ppc.cpp: preserve pending interrupts across save/load.
 - Src/Model3/DSB.cpp and DSB.h: preserve sound-board timer progress,
   resampler phase and buffered MPEG samples; reset and restore decoder history.

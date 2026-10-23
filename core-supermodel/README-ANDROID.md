@@ -86,3 +86,9 @@ C++ exceptions across separately linked static C++ runtimes.
 Not implemented: network cabinets, force feedback, cheats, RetroAchievements,
 Vulkan, enhanced multipass effects, frontend hotkey/config menus. These
 features are not advertised through the core API.
+
+The Ski drive board's existing simulated guest protocol is enabled independently
+of physical force-feedback output. Its handshake/status state is serialized and
+tested with authored host sequences, including mid-initialization restoration;
+this alone does not establish Ski Champ gameplay compatibility. Physical motor
+output remains disabled.

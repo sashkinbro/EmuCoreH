@@ -58,7 +58,7 @@ public:
    * Parameters:
    *    SaveState Block file to save state information to.
    */
-  //void SaveState(CBlockFile *SaveState);
+  void SaveState(CBlockFile *SaveState) override;
 
   /*
    * LoadState(SaveState):

@@ -176,20 +176,20 @@ void poll_inputs(){
       value(in.accelerator,pedal_input(state(p,RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_BUTTON,RETRO_DEVICE_ID_JOYPAD_R2),button(p,RETRO_DEVICE_ID_JOYPAD_R2)));
       value(in.brake,pedal_input(state(p,RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_BUTTON,RETRO_DEVICE_ID_JOYPAD_L2),button(p,RETRO_DEVICE_ID_JOYPAD_L2)));
       value(in.gearShiftUp,button(p,RETRO_DEVICE_ID_JOYPAD_R));value(in.gearShiftDown,button(p,RETRO_DEVICE_ID_JOYPAD_L));
-      if(in.gearShiftUp->value&&!in.gearShiftUp->prevValue)host->gear=std::min(host->gear+1,4);
-      if(in.gearShiftDown->value&&!in.gearShiftDown->prevValue)host->gear=std::max(host->gear-1,1);
+      host->gear=shifted_gear(host->gear,in.gearShiftUp->value&&!in.gearShiftUp->prevValue,in.gearShiftDown->value&&!in.gearShiftDown->prevValue);
       value(in.gearShift4,static_cast<uint16_t>(host->gear));
       value(in.viewChange,a);value(in.handBrake,b);value(in.rearBrake,b?255:0);value(in.musicSelect,c);
       for(unsigned v=0;v<4;v++)value(in.vr[v],button(p,action_buttons[v]));
       value(in.shift,a);value(in.beat,b);value(in.charge,c);value(in.jump,d);
-      value(in.analogJoyX,axis_byte(x));value(in.analogJoyY,axis_byte(y,true));
+      value(in.analogJoyX,axis_byte(x));value(in.analogJoyY,analog_joystick_y(y));
       value(in.analogJoyTrigger1,a);value(in.analogJoyTrigger2,b);value(in.analogJoyEvent1,c);value(in.analogJoyEvent2,d);
       const auto rx=state(p,RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_RIGHT,RETRO_DEVICE_ID_ANALOG_X),ry=state(p,RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_RIGHT,RETRO_DEVICE_ID_ANALOG_Y);
       value(in.twinJoyLeft1,x<-16384);value(in.twinJoyRight1,x>16384);value(in.twinJoyUp1,y<-16384);value(in.twinJoyDown1,y>16384);
       value(in.twinJoyLeft2,rx<-16384);value(in.twinJoyRight2,rx>16384);value(in.twinJoyUp2,ry<-16384);value(in.twinJoyDown2,ry>16384);
       value(in.twinJoyShot1,button(p,RETRO_DEVICE_ID_JOYPAD_L2));value(in.twinJoyShot2,button(p,RETRO_DEVICE_ID_JOYPAD_R2));value(in.twinJoyTurbo1,button(p,RETRO_DEVICE_ID_JOYPAD_L));value(in.twinJoyTurbo2,button(p,RETRO_DEVICE_ID_JOYPAD_R));
       value(in.skiX,axis_byte(x,true));value(in.skiY,axis_byte(y));value(in.skiPollLeft,a);value(in.skiPollRight,b);value(in.skiSelect1,c);value(in.skiSelect2,d);value(in.skiSelect3,button(p,RETRO_DEVICE_ID_JOYPAD_L));
-      value(in.magicalLever1,axis_byte(y,true));value(in.magicalLever2,axis_byte(ry,true));value(in.magicalPedal1,a);value(in.magicalPedal2,b);
+      const auto truckP2=magical_p2_input(ry,b,state(1,RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_LEFT,RETRO_DEVICE_ID_ANALOG_Y),button(1,action_buttons[0]));
+      value(in.magicalLever1,axis_byte(y,true));value(in.magicalLever2,truckP2.lever);value(in.magicalPedal1,a);value(in.magicalPedal2,truckP2.pedal);
       value(in.fishingRodX,axis_byte(x));value(in.fishingRodY,axis_byte(y));value(in.fishingStickX,axis_byte(rx));value(in.fishingStickY,axis_byte(ry));value(in.fishingReel,button(p,RETRO_DEVICE_ID_JOYPAD_R2)?255:0);value(in.fishingCast,a);value(in.fishingSelect,b);value(in.fishingTension,button(p,RETRO_DEVICE_ID_JOYPAD_L2)?255:0);
     }
   }
@@ -265,6 +265,7 @@ RETRO_API bool retro_load_game(const retro_game_info* game_info){
     if(!fs::is_regular_file(xml))return fail("Missing system/supermodel/Games.xml ROM definitions");
     host=std::make_unique<Host>();GameLoader loader(xml.string());ROMSet roms;
     if(loader.Load(&host->game,&roms,game_info->path,"")){host.reset();return fail("ROM set is unsupported, incomplete, or has incorrect CRCs");}
+    if(host->game.driveboard_type==Game::DRIVE_BOARD_SKI)host->config.Set("EmulateSkiBoard",true);
     host->directory=fs::path(save)/"supermodel"/host->game.name;fs::create_directories(host->directory);
     if(host->game.name.rfind("von2",0)==0)host->config.Set("AndroidSimpleShader",true);
     host->model=std::make_unique<CModel3>(host->config);
@@ -290,7 +291,7 @@ RETRO_API size_t retro_serialize_size(){try{if(!host)return 0;if(!host->state_si
 RETRO_API bool retro_serialize(void* data,size_t size){try{if(!host||size<retro_serialize_size()||!host->state_size)return false;auto bytes=capture_state();return pack_state(data,size,host->game.name,bytes.data(),bytes.size());}catch(...){return false;}}
 RETRO_API bool retro_unserialize(const void* data,size_t size){
   try{if(!host||!host->model)return false;const unsigned char* payload=nullptr;size_t length=0;
-    if(!unpack_state(data,size,host->game.name,payload,length)||length<4||read32(payload)<1||read32(payload)>4||!valid_blocks(payload+4,length-4))return false;
+    if(!unpack_state(data,size,host->game.name,payload,length)||length<4||!valid_gear(read32(payload))||!valid_blocks(payload+4,length-4))return false;
     const auto expected=capture_state();
     if(expected.size()<4||!same_block_layout(payload+4,length-4,expected.data()+4,expected.size()-4)||!valid_state_scalars(payload+4,length-4))return false;
     TempFile tmp{host->directory/"unserialize.tmp"};if(!write_file(tmp.path,payload+4,length-4))return false;

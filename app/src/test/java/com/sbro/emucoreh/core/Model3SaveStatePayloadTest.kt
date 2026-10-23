@@ -9,13 +9,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 /** Authored format fixture, containing no game ROM, BIOS or emulator memory. */
-internal fun model3PayloadFixture(set: String = "srally2"): ByteArray {
+internal fun model3PayloadFixture(set: String = "srally2", gear: Int = 1): ByteArray {
     fun block(name: String): ByteArray {
         val bytes = (name + "\u0000").toByteArray(Charsets.US_ASCII)
         return ByteBuffer.allocate(12 + bytes.size + 1).order(ByteOrder.LITTLE_ENDIAN)
             .putInt(12 + bytes.size + 1).putInt(bytes.size).putInt(1).put(bytes).put(0.toByte()).array()
     }
-    val payload = byteArrayOf(1, 0, 0, 0) + block("Supermodel Save State") + block("Model 3")
+    val payload = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(gear).array() +
+        block("Supermodel Save State") + block("Model 3")
     var hash = 0x811c9dc5.toInt()
     payload.forEach { hash = (hash xor (it.toInt() and 255)) * 16777619 }
     return ByteBuffer.allocate(80 + payload.size).order(ByteOrder.LITTLE_ENDIAN).apply {
@@ -25,6 +26,14 @@ internal fun model3PayloadFixture(set: String = "srally2"): ByteArray {
 }
 
 class Model3SaveStatePayloadTest {
+    @Test fun acceptsNeutralAndLegacyGearsButRejectsInvalidGearsWithValidChecksums() {
+        (0..4).forEach { gear ->
+            assertNotNull("gear $gear", Model3SaveStatePayload.read(model3PayloadFixture(gear = gear).inputStream()))
+        }
+        listOf(-1, 5, Int.MAX_VALUE).forEach { gear ->
+            assertNull("gear $gear", Model3SaveStatePayload.read(model3PayloadFixture(gear = gear).inputStream()))
+        }
+    }
     @Test fun validatesVersionSetChecksumAndShortReads() {
         val bytes = model3PayloadFixture()
         val source = object : ByteArrayInputStream(bytes) {

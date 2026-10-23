@@ -53,12 +53,37 @@ void CSkiBoard::SetForceFeedbackStrength(unsigned strength)
 
 }
 
+void CSkiBoard::SaveState(CBlockFile *SaveState)
+{
+  CDriveBoard::SaveState(SaveState);
+  SaveState->NewBlock("Ski Board Protocol", __FILE__);
+  const UINT8 state[6] = {static_cast<UINT8>(m_initialized), m_initState,
+    m_statusFlags, m_readMode, m_dip1, m_lastVibrate};
+  SaveState->Write(state, sizeof(state));
+}
+
 void CSkiBoard::LoadState(CBlockFile *SaveState)
 {
   CDriveBoard::LoadState(SaveState);
 
   if (!IsDisabled())
     SendVibrate(0);
+
+  if (SaveState->FindBlock("Ski Board Protocol") == OKAY)
+  {
+    UINT8 state[6]{};
+    if (SaveState->Read(state, sizeof(state)) != sizeof(state) || state[0] > 1 || state[3] > 7)
+    {
+      Disable();
+      return;
+    }
+    m_initialized = state[0] != 0;
+    m_initState = state[1];
+    m_statusFlags = state[2];
+    m_readMode = state[3];
+    m_dip1 = state[4];
+    m_lastVibrate = state[5];
+  }
 }
 
 void CSkiBoard::Disable(void)
@@ -78,8 +103,10 @@ void CSkiBoard::Reset(void)
 {
   CDriveBoard::Reset();
   m_lastVibrate = 0;
+  m_statusFlags = 0;
 
-  if (!m_config["ForceFeedback"].ValueAsDefault<bool>(false))
+  if (!m_config["ForceFeedback"].ValueAsDefault<bool>(false) &&
+      !m_config["EmulateSkiBoard"].ValueAsDefault<bool>(false))
     Disable();
 
   // Stop any effects that may still be playing
@@ -241,10 +268,14 @@ void CSkiBoard::SendVibrate(UINT8 val)
     DebugLog(">> Vibrate %02X\n", val);
   */
 
-  ForceFeedbackCmd ffCmd;
-  ffCmd.id = FFVibrate;
-  ffCmd.force = (float)val / 255.0f;
-  m_inputs->skiX->SendForceFeedbackCmd(ffCmd);
+  // The guest protocol is required even when the frontend has no motor output.
+  if (m_config["ForceFeedback"].ValueAsDefault<bool>(false))
+  {
+    ForceFeedbackCmd ffCmd;
+    ffCmd.id = FFVibrate;
+    ffCmd.force = (float)val / 255.0f;
+    m_inputs->skiX->SendForceFeedbackCmd(ffCmd);
+  }
 
   m_lastVibrate = val;
 }

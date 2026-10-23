@@ -28,7 +28,7 @@ internal object Model3SaveStatePayload {
             (expectedSet != null && expectedSet != set)) return null
         val payload = PayloadReader(input, size)
         val gear = payload.word() ?: return null
-        if (gear !in 1..4) return null
+        if (gear !in 0..4) return null
         var foundModel = false
         var blocks = 0
         while (payload.remaining > 0) {

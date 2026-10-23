@@ -14,4 +14,31 @@ int main() {
     auto analog=static_cast<int16_t>((n*32767+127)/255);
     assert(pedal_input(analog,false)==n && pedal_input(analog,true)==n);
   }
+  // Inputs.cpp's AnalogJoyY uses the default CAxisInput range: the "Up"
+  // negative input produces 0, neutral is 0x80, and "Down" produces 0xFF.
+  // Model3.cpp passes this value directly to ADC channel 0 for swtrilgy.
+  assert(analog_joystick_y(-32768)==0);
+  assert(analog_joystick_y(0)==0x80);
+  assert(analog_joystick_y(32767)==0xFF);
+  assert(analog_joystick_y(-16384)<0x80);
+  assert(analog_joystick_y(16384)>0x80);
+  // Original CGearShift4Input permits neutral and gives an up edge priority.
+  assert(shifted_gear(1,false,true)==0);
+  assert(shifted_gear(0,false,true)==0);
+  assert(shifted_gear(0,true,false)==1);
+  assert(shifted_gear(4,true,false)==4);
+  assert(shifted_gear(2,true,true)==3);
+  assert(shifted_gear(2,false,false)==2);
+  for(uint32_t gear=0;gear<=4;++gear)assert(valid_gear(gear));
+  assert(!valid_gear(5) && !valid_gear(UINT32_MAX));
+  // Preserve one-controller play while allowing the second cabinet player's
+  // own controller to override only its actively moved lever.
+  auto onePad=magical_p2_input(-32768,true,0,false);
+  assert(onePad.lever==255 && onePad.pedal==1);
+  auto twoPads=magical_p2_input(-32768,false,32767,true);
+  assert(twoPads.lever==0 && twoPads.pedal==1);
+  auto independentPedal=magical_p2_input(0,false,0,true);
+  assert(independentPedal.lever==128 && independentPedal.pedal==1);
+  auto released=magical_p2_input(0,false,0,false);
+  assert(released.lever==128 && released.pedal==0);
 }

@@ -75,6 +75,7 @@ inline bool safe_state_block(const std::string& name,const unsigned char* p,size
   if(name=="DSB2 Timing")return n==8&&read32(p)<=65536&&read32(p+4)<=11000;
   if(name=="Sound Board Timing"||name=="PowerPC Pending IRQ")return n==4&&read32(p)<=7;
   if(name=="Libretro Input Latches")return n==8&&read32(p)<=1&&read32(p+4)<=1;
+  if(name=="Ski Board Protocol")return n==6&&p[0]<=1&&p[3]<=7;
   if(name=="Model 3 RTC") {
     if(n!=32)return false;
     const Model3Clock::Calendar clock{read32(p),read32(p+4),read32(p+8),read32(p+12),

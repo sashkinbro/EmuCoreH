@@ -12,4 +12,20 @@ inline constexpr std::array<unsigned,4> action_buttons{
 inline uint16_t pedal_input(int16_t analog,bool digital) {
   return analog>0?static_cast<uint16_t>((int(analog)*255+16383)/32767):digital?255:0;
 }
+inline uint16_t analog_joystick_y(int16_t y) {
+  return axis_byte(y);
+}
+inline int shifted_gear(int gear,bool upEdge,bool downEdge) {
+  if(upEdge)gear=std::min(gear+1,4);
+  else if(downEdge)gear=std::max(gear-1,0);
+  return gear;
+}
+inline bool valid_gear(uint32_t gear) { return gear<=4; }
+struct MagicalP2Input { uint16_t lever,pedal; };
+inline MagicalP2Input magical_p2_input(int16_t fallbackY,bool fallbackPedal,int16_t player2Y,bool player2Pedal) {
+  // One pad can still operate both levers. An actively moved P2 lever takes
+  // priority, while either pad can press the P2 pedal.
+  return {axis_byte(player2Y!=0?player2Y:fallbackY,true),
+          static_cast<uint16_t>(fallbackPedal||player2Pedal)};
+}
 }

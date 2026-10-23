@@ -160,7 +160,8 @@ class Model3RuntimeInstrumentedTest {
                         val after = requireNotNull(bridge.audioOutputStats(0))
                         assertTrue("Guest video callbacks must advance", after[9] > before[9])
                         assertTrue("Guest must produce PCM source frames", after[5] > before[5])
-                        verifyStateRoundTrip(handle, qa)
+                        verifyStateRoundTrip(handle, qa,
+                            Model3Romsets.find("$nativeSet.zip")?.inputs?.contains("shift4") == true)
                         report += "result=PASS"
                         report += "presentedFrames=${pixels.frames.get()}"
                         report += "sourceVideoFrames=${after[9]-before[9]}"
@@ -190,7 +191,7 @@ class Model3RuntimeInstrumentedTest {
         }
     }
 
-    private fun verifyStateRoundTrip(handle: Long, qa: File) {
+    private fun verifyStateRoundTrip(handle: Long, qa: File, fourSpeedShifter: Boolean) {
         val saved = File(qa, "model3.rawstate")
         val check = File(qa, "model3-restored.rawstate")
         assertEquals("Serialize Model 3", 0, bridge.saveState(handle, saved.absolutePath))
@@ -247,6 +248,27 @@ class Model3RuntimeInstrumentedTest {
         assertArrayEquals("Restoring a held shift cannot add another gear edge",
             heldFuture.readBytes(), check.readBytes())
         bridge.setPadButtons(handle, 0, 0xffff)
+        if (fourSpeedShifter) {
+            repeat(4) {
+                bridge.setPadButtons(handle, 0, (1 shl 10).inv() and 0xffff)
+                bridge.runFrame(handle)
+                bridge.setPadButtons(handle, 0, 0xffff)
+                bridge.runFrame(handle)
+            }
+            val neutral = File(qa, "model3-neutral.rawstate")
+            assertEquals(0, bridge.saveState(handle, neutral.absolutePath))
+            val neutralBytes = neutral.readBytes()
+            assertEquals("Downshifting through first gear reaches neutral", 0,
+                ByteBuffer.wrap(neutralBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt(80))
+            assertNotNull("Import validation accepts a native neutral checkpoint",
+                neutral.inputStream().use { Model3SaveStatePayload.read(it) })
+            bridge.setPadButtons(handle, 0, up)
+            bridge.runFrame(handle)
+            bridge.setPadButtons(handle, 0, 0xffff)
+            assertEquals("Native loader accepts neutral", 0, bridge.loadState(handle, neutral.absolutePath))
+            assertEquals(0, bridge.saveState(handle, check.absolutePath))
+            assertArrayEquals("Neutral survives exact state restoration", neutralBytes, check.readBytes())
+        }
     }
 
     private fun silenceFingerprint(sourceFrames: Long): Long {
