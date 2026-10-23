@@ -357,6 +357,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }.stateIn(viewModelScope, SharingStarted.Eagerly,
         _uiState.value.withRuntimeFailure(EmulatorBridge.runtimeFailure.value))
     private val lifecycleMutex = Mutex()
+    @Volatile private var hostForeground = true
     private var pausedForBackground = false
     @Volatile
     private var isShuttingDown = false
@@ -1354,7 +1355,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     val loaded = EmulatorBridge.loadState(normalizedSlotToLoad)
                     _uiState.value = _uiState.value.copy(
                         isRunning = true,
-                        isPaused = false,
                         statusMessage = if (loaded) "status_running" else null,
                         toastMessage = if (loaded) null else "load_failed"
                     )
@@ -1420,6 +1420,19 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             }
             Log.i(TAG, "EmulatorBridge.startEmulation returned $started path=$pathToLaunch")
             if (started) {
+                // A background callback can arrive before the native VM exists.
+                // Reconcile its retained intent after startup, without resuming a
+                // manually paused/menu session or a launch already being canceled.
+                lifecycleMutex.withLock {
+                    val state = _uiState.value
+                    val intentionallyPaused = state.showMenu || (state.isPaused && !pausedForBackground)
+                    val backgrounded = !hostForeground
+                    val shouldPause = backgrounded || intentionallyPaused || cancelPendingStart || isShuttingDown
+                    if (shouldPause) EmulatorBridge.pause() else EmulatorBridge.resume()
+                    pausedForBackground = backgrounded && !intentionallyPaused && !cancelPendingStart
+                    _uiState.value = _uiState.value.copy(isPaused = shouldPause)
+                    DiscordIntegration.setPaused(shouldPause)
+                }
                 _uiState.value = _uiState.value.copy(
                     performanceOverlayHeader = buildPerformanceOverlayHeader(getApplication())
                 )
@@ -1457,6 +1470,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     toastMessage = when {
                         com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
                             ?.startsWith("UNSUPPORTED_DS_COLLECTION_ROM:") == true -> "sega_ds_collection_unsupported"
+                        com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
+                            ?.startsWith("UNSUPPORTED_ALESTE_COLLECTION_ROM:") == true -> "sega_aleste_collection_unsupported"
                         com.sbro.emucoreh.core.CoreRuntime.platform == com.sbro.emucoreh.core.EmulationPlatform.SEGA_CD &&
                             (com.sbro.emucoreh.core.SegaCdBios.Region.entries.none {
                                 com.sbro.emucoreh.core.SegaCdBios.isInstalled(getApplication(), it)
@@ -1466,7 +1481,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                         else -> "launch_failed"
                     }
                 )
-                delay(if (_uiState.value.toastMessage == "sega_ds_collection_unsupported") 8000.milliseconds else 2500.milliseconds)
+                delay(if (_uiState.value.toastMessage in setOf("sega_ds_collection_unsupported", "sega_aleste_collection_unsupported"))
+                    8000.milliseconds else 2500.milliseconds)
                 _uiState.value = _uiState.value.copy(toastMessage = null)
             }
         }
@@ -3423,10 +3439,12 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun onHostBackgrounded() {
+        hostForeground = false
+        com.sbro.emucoreh.core.CoreRuntime.setHostForeground(false)
         viewModelScope.launch(Dispatchers.IO) {
             lifecycleMutex.withLock {
                 val state = _uiState.value
-                if (!state.isRunning || state.isStarting || state.isPaused || state.showMenu || isShuttingDown) {
+                if (hostForeground || !state.isRunning || state.isStarting || state.isPaused || state.showMenu || isShuttingDown) {
                     return@withLock
                 }
                 try {
@@ -3442,10 +3460,12 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun onHostForegrounded() {
+        hostForeground = true
+        com.sbro.emucoreh.core.CoreRuntime.setHostForeground(true)
         viewModelScope.launch(Dispatchers.IO) {
             lifecycleMutex.withLock {
                 val state = _uiState.value
-                if (!pausedForBackground ||
+                if (!hostForeground || !pausedForBackground ||
                     !state.isRunning ||
                     state.isStarting ||
                     !state.isPaused ||

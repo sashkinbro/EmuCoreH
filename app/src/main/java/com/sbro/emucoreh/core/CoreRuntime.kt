@@ -49,7 +49,8 @@ internal object CoreRuntime {
     private var context: Context? = null
     @Volatile private var session = 0L
     @Volatile private var worker: Thread? = null
-    private var audioOutput: NativeAudioOutput? = null
+    @Volatile private var audioOutput: NativeAudioOutput? = null
+    private val hostPlayback = HostPlaybackGate()
 
     private var systemDirectory = ""
     private var saveDirectory = ""
@@ -313,14 +314,17 @@ internal object CoreRuntime {
             padEdgeHoldFrames[port] = 0
         }
         running = true
-        paused = false
+        paused = true
         renderedFirstFrame = false
         sessionStartedAtNanos = startupStartedAtNanos
         var started = false
         try {
             val output = NativeAudioOutput()
             audioOutput = output
-            output.play()
+            hostPlayback.runIfForeground {
+                output.play()
+                paused = false
+            }
             worker = thread(name = "EmuCoreH-Frame", isDaemon = true, start = true) {
                 // The frame loop shares the CPU with the UI, background work
                 // and the audio output. A display-level priority keeps the
@@ -501,15 +505,27 @@ internal object CoreRuntime {
             .onFailure { Log.w(TAG, "Unable to apply shader preset", it) }
     }
 
+    // Host intent must reach startup even while the VM is copying SAF content or
+    // waiting for the native lifecycle lock. Foregrounding alone never resumes a menu.
+    fun setHostForeground(foreground: Boolean) {
+        hostPlayback.setForeground(foreground) {
+            paused = true
+            audioOutput?.let { output -> runCatching { output.pause() } }
+        }
+    }
+
     fun pause() = lifecycleLock.withLock {
+        if (paused) return@withLock
         paused = true
         audioOutput?.pause()
     }
 
     fun resume() = lifecycleLock.withLock {
-        if (!running) return@withLock
-        audioOutput?.play()
-        paused = false
+        if (!running || !paused) return@withLock
+        hostPlayback.runIfForeground {
+            audioOutput?.play()
+            paused = false
+        }
     }
 
     fun shutdown() = lifecycleLock.withLock {
@@ -582,6 +598,11 @@ internal object CoreRuntime {
         }
     }
 
+    /** Native snapshot owns its lock; never requires a live/visible Android surface. */
+    fun captureSoftwareFrame(): IntArray? = sessionLock.withLock {
+        if (session == 0L || !platform.isSega) null else bridge.captureSoftwareFrame(session)
+    }
+
     fun saveState(path: String): Boolean {
         val target = File(path)
         target.parentFile?.mkdirs()
@@ -624,8 +645,12 @@ internal object CoreRuntime {
             }
             loaded
         } finally {
-            if (!wasPaused && running) audioOutput?.play()
-            paused = wasPaused
+            if (!wasPaused && running) {
+                hostPlayback.runIfForeground {
+                    audioOutput?.play()
+                    paused = false
+                }
+            }
         }
     }
 
@@ -914,7 +939,7 @@ internal object CoreRuntime {
                     break
                 }
                 drainFrameTasks()
-                if (paused) {
+                if (paused || !hostPlayback.isForeground) {
                     framePacer.reset()
                     resetMetrics = true
                     timingClock.reset()

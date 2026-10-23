@@ -72,7 +72,10 @@ class SettingsBackupRepository(
                 com.sbro.emucoreh.core.SegaSaveFiles.isBackupPath(file.relativeTo(root).invariantSeparatorsPath)
             }
             if (includeSaveStates) {
-                zip.writeFlatDirectory("save-states", saveStatesDir(), ::isQuickSaveState)
+                zip.writeFlatDirectory("save-states", saveStatesDir()) { file ->
+                    isQuickSaveState(file) || (isSaveStatePreviewName(file.name) &&
+                        File(file.path.removeSuffix(".png")).isFile && isValidSaveStatePreview(file))
+                }
             }
             val activeBackgroundType = preferences.homeBackgroundType.first()
             homeBackgroundRepository.existingFile(activeBackgroundType)?.let { file ->
@@ -128,7 +131,8 @@ class SettingsBackupRepository(
                             target.outputStream().use { output -> zip.copyTo(output) }
                         } else if (entry.name.startsWith("save-states/") && !entry.isDirectory) {
                             val relative = entry.name.removePrefix("save-states/")
-                            require(relative == File(relative).name && isQuickSaveState(File(relative))) {
+                            require(relative == File(relative).name &&
+                                (isQuickSaveState(File(relative)) || isSaveStatePreviewName(relative))) {
                                 "Invalid save-state backup path"
                             }
                             val root = saveStatesDir().canonicalFile
@@ -137,7 +141,8 @@ class SettingsBackupRepository(
                                 "Invalid save-state backup path"
                             }
                             root.mkdirs()
-                            target.outputStream().use { output -> zip.copyTo(output) }
+                            if (isSaveStatePreviewName(relative)) copySaveStatePreview(zip, target)
+                            else target.outputStream().use { output -> zip.copyTo(output) }
                         } else if (entry.name.startsWith("cheat-files/") && !entry.isDirectory) {
                             val relative = entry.name.removePrefix("cheat-files/")
                             require(relative == File(relative).name && isCheatFile(File(relative))) {

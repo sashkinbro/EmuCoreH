@@ -315,7 +315,7 @@
     <string name="save_manager_import_preview_title">Перевірка імпорту</string>
     <string name="save_manager_import_detected_source">Джерело: %1$s</string>
     <string name="save_manager_import_detected_format">Формат: %1$s</string>
-    <string name="save_manager_import_format_current">EmuCoreH ECST v1</string>
+    <string name="save_manager_import_format_current">EmuCoreH ECST</string>
     <string name="save_manager_import_format_unknown">Невідомий</string>
     <string name="save_manager_import_target_game">Збереження буде розподілено у вільні слоти цієї гри.</string>
     <string name="save_manager_import_target_library">Збереження буде розподілено між відповідними іграми бібліотеки.</string>
@@ -2292,4 +2292,5 @@
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">Цей ROM із Sonic Classic Collection потребує емулятора Nintendo DS. Використайте оригінальний ROM для Mega Drive / Genesis.</string>
+    <string name="sega_aleste_collection_unsupported">Цей захищений ROM GG Aleste 3 з Aleste Collection потребує спеціального емулятора збірки. Використайте версію ROM, сумісну з Game Gear.</string>
 </resources>

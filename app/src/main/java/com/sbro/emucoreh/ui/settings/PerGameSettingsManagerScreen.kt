@@ -1003,7 +1003,7 @@ private fun GameSettingsTabContent(
             }
             GameSettingsManagerTab.Runtime -> {
                 EditorSection(title = stringResource(R.string.game_settings_manager_section_runtime)) {
-                    ToggleRow(
+                    if (!platform.isSega) ToggleRow(
                         title = stringResource(R.string.settings_frame_limit),
                         checked = draft.frameLimitEnabled,
                         onCheckedChange = { onDraftChange(draft.copy(frameLimitEnabled = it)) },

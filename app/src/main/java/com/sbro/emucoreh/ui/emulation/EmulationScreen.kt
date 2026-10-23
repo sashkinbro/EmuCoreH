@@ -944,9 +944,7 @@ fun EmulationScreen(
             when (event) {
                 Lifecycle.Event.ON_START,
                 Lifecycle.Event.ON_RESUME -> {
-                    if (!showControlsEditor && !uiState.showMenu) {
-                        viewModel.onHostForegrounded()
-                    }
+                    viewModel.onHostForegrounded()
                 }
 
                 Lifecycle.Event.ON_PAUSE,
@@ -1157,9 +1155,11 @@ fun EmulationScreen(
             onButton = { port, key, pressed -> NativeApp.setPadButton(port, key, 0, pressed) }
         )
     ) {
-        // Game surface
+        // Only the resumed navigation entry owns a presentation window. Outgoing
+        // screens can remain composed during transitions and observe a new core
+        // generation; they must not create a competing SurfaceView for it.
         val surfaceGeneration = presentationSurfaceGeneration
-        key(surfaceGeneration) {
+        if (hostResumed) key(surfaceGeneration) {
             AndroidView(
                 factory = { ctx ->
                     SurfaceView(ctx).apply {
@@ -1171,7 +1171,7 @@ fun EmulationScreen(
                         holder.setFormat(PixelFormat.OPAQUE)
                         holder.addCallback(object : SurfaceHolder.Callback {
                             override fun surfaceCreated(holder: SurfaceHolder) {
-                                try { EmulatorBridge.onSurfaceCreated(surfaceGeneration) } catch (_: Exception) { }
+                                try { EmulatorBridge.onSurfaceCreated(surfaceGeneration, holder.surface) } catch (_: Exception) { }
                             }
 
                             override fun surfaceChanged(
@@ -1291,6 +1291,7 @@ fun EmulationScreen(
                 "loaded" -> stringResource(R.string.emulation_loaded)
                 "load_failed" -> stringResource(R.string.emulation_load_failed)
                 "sega_ds_collection_unsupported" -> stringResource(R.string.sega_ds_collection_unsupported)
+                "sega_aleste_collection_unsupported" -> stringResource(R.string.sega_aleste_collection_unsupported)
                 "sega_bios_missing" -> stringResource(R.string.sega_bios_missing)
                 "bios_missing" -> stringResource(R.string.emulation_bios_missing)
                 "launch_failed" -> stringResource(R.string.emulation_launch_failed)
@@ -4212,7 +4213,7 @@ private fun EmulationSidebarMenu(
                             }
                         )
 
-                        SettingsToggle(
+                        if (!platform.isSega) SettingsToggle(
                             title = stringResource(R.string.settings_frame_limit),
                             checked = uiState.frameLimitEnabled,
                             onCheckedChange = { onSetFrameLimit() },

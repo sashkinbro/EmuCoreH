@@ -114,6 +114,89 @@ fn smsgg_rom() -> Vec<u8> {
     rom
 }
 
+fn exercise_gg_sms_palette_pause_and_state_identity() {
+    // Authored program, not retail data. Its CRC selects the cartridge pin-42 record.
+    let mut rom = vec![0; 262144];
+    let mut program = vec![0xf3, 0x31, 0xf0, 0xdf];
+    for (port, value) in [
+        (0xbf, 4),
+        (0xbf, 0x80),
+        (0xbf, 0x40),
+        (0xbf, 0x81),
+        (0xbf, 0),
+        (0xbf, 0x87),
+        (0xbf, 0),
+        (0xbf, 0xc0),
+        (0xbe, 3),
+        (0x7f, 0x80),
+        (0x7f, 0x10),
+        (0x7f, 0x90),
+    ] {
+        program.extend_from_slice(&[0x3e, value, 0xd3, port]);
+    }
+    program.extend_from_slice(&[0x18, 0xfe]);
+    rom[..program.len()].copy_from_slice(&program);
+    // Pause/NMI changes the SMS backdrop from red to green using one-byte CRAM writes.
+    rom[0x66..0x74].copy_from_slice(&[
+        0x3e, 0, 0xd3, 0xbf, 0x3e, 0xc0, 0xd3, 0xbf, 0x3e, 0x0c, 0xd3, 0xbe, 0xed, 0x45,
+    ]);
+    rom[0x7ff0..0x7ff8].copy_from_slice(b"TMR SEGA");
+    rom[0x7fff] = 0x60;
+    rom[262140..].copy_from_slice(&[0xe2, 0x0b, 0xd5, 0xdc]);
+    assert_eq!(crc::Crc::<u32>::new(&crc::CRC_32_ISO_HDLC).checksum(&rom), 0x59840fd6);
+    let directory = std::env::temp_dir().join(format!("jgenesis-gg-sms-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let path = directory.join("authored.gg");
+    std::fs::write(&path, &rom).unwrap();
+    let mut core = load_core(&path).unwrap();
+    assert_eq!(core.console, Console::GameGear);
+    let Emulator::SmsGg(emulator) = &core.emulator else { panic!("8-bit core") };
+    assert_eq!(emulator.hardware(), SmsGgHardware::MasterSystem);
+    assert_eq!((core.av.geometry.base_width, core.av.geometry.base_height), (256, 192));
+    for _ in 0..3 {
+        core.run_frame(Inputs::SmsGg(SmsGgInputs::default())).unwrap();
+    }
+    assert_eq!((core.frame.width, core.frame.height), (256, 192));
+    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0xff0000));
+    assert!(core.audio.samples.iter().any(|sample| *sample != 0));
+    let mut inputs = SmsGgInputs::default();
+    inputs.set_field(SmsGgButton::Pause, Player::One, true);
+    for _ in 0..3 {
+        core.run_frame(Inputs::SmsGg(inputs)).unwrap();
+    }
+    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0x00ff00));
+    core.ensure_state_cache().unwrap();
+    let state = core.state_cache.clone();
+    assert_eq!(state[8], Console::GameGear as u8);
+    core.load_state(&state).unwrap();
+    core.run_frame(Inputs::SmsGg(SmsGgInputs::default())).unwrap();
+    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0x00ff00));
+    // The exposed GG crop option must never crop a cartridge that physically uses SMS mode.
+    for full_resolution in [false, true] {
+        let mut config = options::smsgg(Console::GameGear);
+        config.gg_use_sms_resolution = full_resolution;
+        let Emulator::SmsGg(emulator) = &mut core.emulator else { unreachable!() };
+        emulator.reload_config(&config);
+        core.run_frame(Inputs::SmsGg(SmsGgInputs::default())).unwrap();
+        assert_eq!((core.frame.width, core.frame.height), (256, 192));
+    }
+    // Unknown checksums keep native GG mode; legacy states from the broken mode
+    // cannot silently put a corrected cartridge back into native GG video hardware.
+    rom[262143] ^= 1;
+    std::fs::write(&path, &rom).unwrap();
+    let mut native_gg = load_core(&path).unwrap();
+    let Emulator::SmsGg(emulator) = &native_gg.emulator else { unreachable!() };
+    assert_eq!(emulator.hardware(), SmsGgHardware::GameGear);
+    assert_eq!((native_gg.av.geometry.base_width, native_gg.av.geometry.base_height), (160, 144));
+    native_gg.ensure_state_cache().unwrap();
+    assert!(core.load_state(&native_gg.state_cache).is_err());
+    core.run_frame(Inputs::SmsGg(SmsGgInputs::default())).unwrap();
+    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0x00ff00));
+    drop(native_gg);
+    drop(core);
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
 #[test]
 fn libretro_boot_video_audio_states_and_input() {
     // Upstream debug builds copy large 32X state values on the stack.
@@ -133,6 +216,7 @@ fn exercise_libretro() {
     retro_set_video_refresh(Some(video));
     retro_set_audio_sample_batch(Some(audio));
     retro_init();
+    exercise_gg_sms_palette_pause_and_state_identity();
     let mut info: retro_system_info = unsafe { std::mem::zeroed() };
     retro_get_system_info(&mut info);
     assert_eq!(unsafe { CStr::from_ptr(info.library_version) }.to_bytes(), b"0.14.1");

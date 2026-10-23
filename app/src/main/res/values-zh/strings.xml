@@ -1246,7 +1246,7 @@
     <string name="save_manager_import_preview_title">检查导入</string>
     <string name="save_manager_import_detected_source">来源：%1$s</string>
     <string name="save_manager_import_detected_format">格式：%1$s</string>
-    <string name="save_manager_import_format_current">EmuCoreH ECST v1</string>
+    <string name="save_manager_import_format_current">EmuCoreH ECST</string>
     <string name="save_manager_import_format_unknown">未知</string>
     <string name="save_manager_import_target_game">存档将分配到此游戏的空闲槽位。</string>
     <string name="save_manager_import_target_library">存档将分配给游戏库中匹配的游戏。</string>
@@ -2288,4 +2288,5 @@
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">此 Sonic Classic Collection ROM 需要 Nintendo DS 模拟器。请使用原版 Mega Drive / Genesis ROM。</string>
+    <string name="sega_aleste_collection_unsupported">此 Aleste Collection 中受保护的 GG Aleste 3 ROM 需要合集专用模拟器。请使用兼容 Game Gear 的 ROM 版本。</string>
 </resources>

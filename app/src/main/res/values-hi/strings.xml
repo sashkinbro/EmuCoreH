@@ -1245,7 +1245,7 @@
     <string name="save_manager_import_preview_title">आयात जाँचें</string>
     <string name="save_manager_import_detected_source">स्रोत: %1$s</string>
     <string name="save_manager_import_detected_format">फ़ॉर्मैट: %1$s</string>
-    <string name="save_manager_import_format_current">EmuCoreH ECST v1</string>
+    <string name="save_manager_import_format_current">EmuCoreH ECST</string>
     <string name="save_manager_import_format_unknown">अज्ञात</string>
     <string name="save_manager_import_target_game">स्टेट इस गेम के खाली स्लॉट में रखे जाएँगे।</string>
     <string name="save_manager_import_target_library">स्टेट लाइब्रेरी के मेल खाते गेम को दिए जाएँगे।</string>
@@ -2287,4 +2287,5 @@
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">Sonic Classic Collection की इस ROM के लिए Nintendo DS एमुलेटर चाहिए। मूल Mega Drive / Genesis ROM इस्तेमाल करें।</string>
+    <string name="sega_aleste_collection_unsupported">Aleste Collection की इस सुरक्षित GG Aleste 3 ROM को संग्रह के विशेष एमुलेटर की आवश्यकता है। Game Gear के साथ संगत ROM संस्करण का उपयोग करें।</string>
 </resources>

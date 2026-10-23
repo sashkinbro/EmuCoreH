@@ -750,28 +750,52 @@ object EmulatorBridge {
 
     suspend fun saveState(slot: Int): Boolean {
         if (!isNativeLoaded || !isVmActive) return false
-        val saved = runSerial {
-            try {
-                NativeApp.saveStateToSlot(slot)
-            } catch (_: Exception) {
-                false
-            }
+        val captured = runSerial {
+            val saved = runCatching { NativeApp.saveStateToSlot(slot) }.getOrDefault(false)
+            Triple(saved, if (saved) runCatching { NativeApp.getCurrentSaveStatePath(slot) }.getOrNull() else null,
+                if (saved && CoreRuntime.platform.isSega)
+                    runCatching { CoreRuntime.captureSoftwareFrame() }.getOrNull() else null)
         }
-        if (saved) {
-            val savePath = runCatching { NativeApp.getCurrentSaveStatePath(slot) }.getOrNull()
-            if (!savePath.isNullOrBlank()) {
-                captureSaveStatePreview(savePath)
-            }
+        val savePath = captured.second
+        if (captured.first && !savePath.isNullOrBlank()) {
+            captureSaveStatePreview(savePath, captured.third)
         }
-        return saved
+        return captured.first
     }
 
-    private suspend fun captureSaveStatePreview(savePath: String) {
+    private suspend fun captureSaveStatePreview(savePath: String, softwareFrame: IntArray?) {
+        // Sega is rendered in software. Capture the actual source image even if Android
+        // discarded/cleared its paused SurfaceView buffer; Flycast keeps PixelCopy.
+        val bitmap = withContext(Dispatchers.IO) {
+            runCatching { createSoftwareSaveStatePreviewBitmap(softwareFrame) }.getOrNull()
+        } ?: captureSurfacePreview() ?: return
+        withContext(Dispatchers.IO) {
+            val target = File("$savePath.png")
+            try {
+                val temporary = runCatching {
+                    File.createTempFile(".save-preview-", ".tmp", target.parentFile)
+                }.getOrNull() ?: return@withContext
+                try {
+                    runCatching {
+                        temporary.outputStream().use { output ->
+                            check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+                        }
+                        check(temporary.renameTo(target))
+                        invalidateCoverImage(target.path)
+                    }
+                } finally { temporary.delete() }
+            } finally {
+                bitmap.recycle()
+            }
+        }
+    }
+
+    private suspend fun captureSurfacePreview(): Bitmap? {
         val surface = lastSurface
         val width = lastSurfaceWidth
         val height = lastSurfaceHeight
-        if (surface == null || !surface.isValid || width <= 0 || height <= 0) return
-        val bitmap = withContext(Dispatchers.Main) {
+        if (surface == null || !surface.isValid || width <= 0 || height <= 0) return null
+        return withContext(Dispatchers.Main) {
             runCatching {
                 val frame = createSaveStatePreviewBitmap(width, height)
                 val copied = suspendCancellableCoroutine { continuation ->
@@ -797,16 +821,6 @@ object EmulatorBridge {
                     null
                 }
             }.getOrNull()
-        } ?: return
-        val preview = bitmap
-        withContext(Dispatchers.IO) {
-            runCatching {
-                FileOutputStream("$savePath.png").use { output ->
-                    preview.compress(Bitmap.CompressFormat.PNG, 100, output)
-                }
-                invalidateCoverImage("$savePath.png")
-            }
-            preview.recycle()
         }
     }
 
@@ -981,9 +995,9 @@ object EmulatorBridge {
         setSetting("InputSources", "PadVibration", "bool", enabled.toString())
     }
 
-    fun onSurfaceCreated(generation: Long) {
+    fun onSurfaceCreated(generation: Long, surface: Surface) {
         if (!isNativeLoaded) return
-        if (!synchronized(surfaceEpoch) { surfaceEpoch.accepts(generation) }) return
+        if (!synchronized(surfaceEpoch) { surfaceEpoch.created(generation, surface) }) return
         Log.i(TAG, "onSurfaceCreated: generation=$generation")
         NativeApp.setCrashContextString("emu_surface_state", "created")
         NativeApp.logCrashBreadcrumb("surfaceCreated")

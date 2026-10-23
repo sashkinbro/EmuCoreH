@@ -58,6 +58,7 @@ class SegaRetailDeviceInstrumentedTest {
         CoreRuntime.setAudioGain(0, true)
         try {
             for ((platform, game) in matrix) {
+                Log.i("SegaRetailQA", "$platform file=${game.name} result=STARTING")
                 CoreRuntime.setPerformanceMetricsEnabled(true, true)
                 val frames = AtomicInteger()
                 val latestImage = AtomicReference<Bitmap>()
@@ -96,6 +97,11 @@ class SegaRetailDeviceInstrumentedTest {
                         if (!booted && bootError?.startsWith("UNSUPPORTED_DS_COLLECTION_ROM:") == true) {
                             assertEquals(EmulationPlatform.GENESIS, platform)
                             Log.i("SegaRetailQA", "$platform file=${game.name} result=REJECTED_KNOWN_DS_COLLECTION_ROM detail=$bootError")
+                            return@use
+                        }
+                        if (!booted && bootError?.startsWith("UNSUPPORTED_ALESTE_COLLECTION_ROM:") == true) {
+                            assertEquals(EmulationPlatform.GAME_GEAR, platform)
+                            Log.i("SegaRetailQA", "$platform file=${game.name} result=REJECTED_PROTECTED_ALESTE_COLLECTION_ROM detail=$bootError")
                             return@use
                         }
                         assertTrue("Boot $platform: ${game.name}; $bootError", booted)

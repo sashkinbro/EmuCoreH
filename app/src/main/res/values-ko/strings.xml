@@ -1244,7 +1244,7 @@
     <string name="save_manager_import_preview_title">가져오기 확인</string>
     <string name="save_manager_import_detected_source">원본: %1$s</string>
     <string name="save_manager_import_detected_format">형식: %1$s</string>
-    <string name="save_manager_import_format_current">EmuCoreH ECST v1</string>
+    <string name="save_manager_import_format_current">EmuCoreH ECST</string>
     <string name="save_manager_import_format_unknown">알 수 없음</string>
     <string name="save_manager_import_target_game">이 게임의 빈 슬롯에 배정됩니다.</string>
     <string name="save_manager_import_target_library">라이브러리의 일치하는 게임에 배정됩니다.</string>
@@ -2286,4 +2286,5 @@
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">이 Sonic Classic Collection ROM은 Nintendo DS 에뮬레이터가 필요합니다. 원본 Mega Drive / Genesis ROM을 사용하세요.</string>
+    <string name="sega_aleste_collection_unsupported">Aleste Collection의 이 보호된 GG Aleste 3 ROM은 컬렉션 전용 에뮬레이터가 필요합니다. Game Gear 호환 ROM 버전을 사용하세요.</string>
 </resources>

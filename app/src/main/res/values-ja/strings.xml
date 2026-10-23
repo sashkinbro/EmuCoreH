@@ -1244,7 +1244,7 @@
     <string name="save_manager_import_preview_title">インポートを確認</string>
     <string name="save_manager_import_detected_source">取得元: %1$s</string>
     <string name="save_manager_import_detected_format">形式: %1$s</string>
-    <string name="save_manager_import_format_current">EmuCoreH ECST v1</string>
+    <string name="save_manager_import_format_current">EmuCoreH ECST</string>
     <string name="save_manager_import_format_unknown">不明</string>
     <string name="save_manager_import_target_game">このゲームの空きスロットに割り当てます。</string>
     <string name="save_manager_import_target_library">ライブラリ内の一致するゲームに割り当てます。</string>
@@ -2286,4 +2286,5 @@
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">このSonic Classic CollectionのROMにはNintendo DSエミュレーターが必要です。オリジナルのMega Drive / Genesis用ROMを使用してください。</string>
+    <string name="sega_aleste_collection_unsupported">Aleste Collectionに含まれるこの保護されたGG Aleste 3のROMには、コレクション専用のエミュレーターが必要です。Game Gear互換のROMを使用してください。</string>
 </resources>

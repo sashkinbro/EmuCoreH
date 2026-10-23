@@ -83,6 +83,8 @@ class NativeCoreBridge {
     // Save states.
     // ---------------------------------------------------------------------
     external fun saveState(handle: Long, path: String): Int
+    /** Last Sega software image, top-down [width, height, opaque ARGB pixels...]. No GL/window readback. */
+    external fun captureSoftwareFrame(handle: Long): IntArray?
     external fun loadState(handle: Long, path: String): Int
 
     // ---------------------------------------------------------------------

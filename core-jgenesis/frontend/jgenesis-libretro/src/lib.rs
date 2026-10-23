@@ -3,6 +3,7 @@ mod disk;
 mod frontend;
 mod libretro;
 mod options;
+mod smsgg_compat;
 #[cfg(test)]
 mod tests;
 
@@ -191,8 +192,17 @@ impl Core {
         console: Console,
         content_path: PathBuf,
     ) -> Self {
+        let geometry_console = match &emulator {
+            Emulator::SmsGg(value)
+                if console == Console::GameGear
+                    && value.hardware() == SmsGgHardware::MasterSystem =>
+            {
+                Console::MasterSystem
+            }
+            _ => console,
+        };
         let (base_width, base_height, max_width, max_height, aspect_ratio) =
-            console.default_geometry();
+            geometry_console.default_geometry();
         let fps = match &emulator {
             Emulator::Genesis(value) => value.target_fps(),
             Emulator::SmsGg(value) => value.target_fps(),
@@ -306,7 +316,18 @@ impl Core {
         let bytes = &bytes[9..];
         match &mut self.emulator {
             Emulator::Genesis(emulator) => decode_state(emulator, bytes),
-            Emulator::SmsGg(emulator) => decode_state(emulator, bytes),
+            Emulator::SmsGg(emulator) => {
+                let (state, _) =
+                    bincode::decode_from_slice::<SmsGgEmulator, _>(bytes, bincode_config())
+                        .map_err(|error| format!("Unable to deserialize save state: {error}"))?;
+                if state.hardware() != emulator.hardware() {
+                    return Err(
+                        "Save state uses incompatible SMS/Game Gear cartridge hardware mode".into(),
+                    );
+                }
+                emulator.load_state(state);
+                Ok(())
+            }
         }?;
         self.state_cache.clear();
         Ok(())
@@ -509,6 +530,10 @@ fn load_core(path: &Path) -> Result<Core, String> {
         Console::MasterSystem | Console::GameGear | Console::Sg1000 => {
             let hardware = match console {
                 Console::MasterSystem => SmsGgHardware::MasterSystem,
+                Console::GameGear if smsgg_compat::game_gear_uses_sms_mode(&bytes) => {
+                    core_log_info("Game Gear cartridge requests SMS compatibility mode (pin 42)");
+                    SmsGgHardware::MasterSystem
+                }
                 Console::GameGear => SmsGgHardware::GameGear,
                 Console::Sg1000 => SmsGgHardware::Sg1000,
                 _ => unreachable!(),

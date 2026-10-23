@@ -2222,7 +2222,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_show_fps),
                             onResetToDefault = { viewModel.setShowFps(defaults.showFps) }
                         )
-                        ToggleItem(
+                        if (!platform.isSega) ToggleItem(
                             icon = Icons.Rounded.FastForward,
                             title = stringResource(R.string.settings_frame_limit),
                             subtitle = stringResource(R.string.settings_frame_limit_desc),

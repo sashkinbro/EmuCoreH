@@ -1260,7 +1260,7 @@
     <string name="save_manager_import_preview_title">بررسی درون‌ریزی</string>
     <string name="save_manager_import_detected_source">منبع: %1$s</string>
     <string name="save_manager_import_detected_format">قالب: %1$s</string>
-    <string name="save_manager_import_format_current">EmuCoreH ECST v1</string>
+    <string name="save_manager_import_format_current">EmuCoreH ECST</string>
     <string name="save_manager_import_format_unknown">ناشناخته</string>
     <string name="save_manager_import_target_game">ذخیره‌ها در اسلات‌های خالی این بازی قرار می‌گیرند.</string>
     <string name="save_manager_import_target_library">ذخیره‌ها به بازی‌های متناظر کتابخانه اختصاص می‌یابند.</string>
@@ -2302,4 +2302,5 @@
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">این ROM از Sonic Classic Collection به شبیه‌ساز Nintendo DS نیاز دارد. از ROM اصلی Mega Drive / Genesis استفاده کنید.</string>
+    <string name="sega_aleste_collection_unsupported">این ROM محافظت‌شدهٔ GG Aleste 3 از Aleste Collection به شبیه‌ساز اختصاصی مجموعه نیاز دارد. از نسخهٔ ROM سازگار با Game Gear استفاده کنید.</string>
 </resources>

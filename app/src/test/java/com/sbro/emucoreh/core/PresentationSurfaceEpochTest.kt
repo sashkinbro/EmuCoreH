@@ -4,6 +4,49 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PresentationSurfaceEpochTest {
+    @Test fun realSurfaceRecreationCanReactivateTheLastDestroyedOwner() {
+        val epoch = PresentationSurfaceEpoch()
+        val surface = Any()
+        epoch.changed(epoch.generation, surface)
+        assertTrue(epoch.destroyed(epoch.generation, surface))
+        assertNull(epoch.changed(epoch.generation, surface))
+        assertTrue(epoch.created(epoch.generation, surface))
+        assertNotNull(epoch.changed(epoch.generation, surface))
+    }
+
+    @Test fun hiddenSurfaceCreationCannotDisplaceTheCurrentVisibleOwner() {
+        val epoch = PresentationSurfaceEpoch()
+        val old = Any()
+        val visible = Any()
+        epoch.changed(epoch.generation, old)
+        epoch.destroyed(epoch.generation, old)
+        epoch.changed(epoch.generation, visible)
+        assertFalse(epoch.created(epoch.generation, old))
+        assertNull(epoch.changed(epoch.generation, old))
+    }
+
+    @Test fun supersededSurfaceCannotReclaimTheVisibleSessionsWindow() {
+        val epoch = PresentationSurfaceEpoch()
+        val hidden = Any()
+        val visible = Any()
+        epoch.changed(epoch.generation, hidden)
+        val current = epoch.changed(epoch.generation, visible)!!
+        assertNull(epoch.changed(epoch.generation, hidden))
+        assertFalse(epoch.destroyed(epoch.generation, hidden))
+        assertTrue(epoch.isCurrent(epoch.generation, current))
+        assertNotNull(epoch.changed(epoch.generation, visible))
+    }
+
+    @Test fun destroyedOwnerCannotReturnUntilTheNextSession() {
+        val epoch = PresentationSurfaceEpoch()
+        val owner = Any()
+        epoch.changed(epoch.generation, owner)
+        assertTrue(epoch.destroyed(epoch.generation, owner))
+        assertNull(epoch.changed(epoch.generation, owner))
+        epoch.sessionEnded()
+        assertNotNull(epoch.changed(epoch.generation, owner))
+    }
+
     @Test fun replacedViewWithinSameGenerationCannotDestroyTheCurrentSurface() {
         val surface = PresentationSurfaceEpoch()
         val oldView = Any()

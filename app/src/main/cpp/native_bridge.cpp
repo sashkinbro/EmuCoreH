@@ -190,6 +190,11 @@ struct FrontendState {
     // Last frame geometry reported by the core.
     unsigned frame_width = 0;
     unsigned frame_height = 0;
+    // Independent of EGL buffer retention/SurfaceView visibility while a menu pauses emulation.
+    std::mutex software_frame_mutex;
+    std::vector<jint> software_frame;
+    unsigned software_frame_width = 0;
+    unsigned software_frame_height = 0;
     // Aspect ratio reported by the core (widescreen setting, video mode, ...).
     // It drives the Auto display mode on every renderer.
     std::atomic<double> aspect_ratio{16.0 / 9.0};
@@ -242,6 +247,13 @@ struct FrontendState {
 };
 
 FrontendState g_frontend;
+
+void ClearSoftwareFrameSnapshot() {
+    std::lock_guard<std::mutex> lock(g_frontend.software_frame_mutex);
+    g_frontend.software_frame.clear();
+    g_frontend.software_frame_width = 0;
+    g_frontend.software_frame_height = 0;
+}
 
 // ---------------------------------------------------------------------------
 // OpenGL ES hardware renderer state. Created and used exclusively on the frame
@@ -1101,6 +1113,23 @@ void PresentHardwareFrame(GLsizei src_width, GLsizei src_height) {
 
 void PresentSoftwareFrame(const void* data, unsigned width, unsigned height, size_t pitch) {
     if (data == nullptr || width == 0 || height == 0) return;
+    if (g_core_id.load() == 1 && width <= 4096 && height <= 4096 &&
+        pitch >= static_cast<size_t>(width) * sizeof(uint32_t)) {
+        std::lock_guard<std::mutex> lock(g_frontend.software_frame_mutex);
+        g_frontend.software_frame.resize(static_cast<size_t>(width) * height);
+        const auto* pixels = static_cast<const uint8_t*>(data);
+        for (unsigned y = 0; y < height; ++y) {
+            const auto* row = pixels + static_cast<size_t>(y) * pitch;
+            for (unsigned x = 0; x < width; ++x) {
+                uint32_t pixel;
+                std::memcpy(&pixel, row + static_cast<size_t>(x) * sizeof(pixel), sizeof(pixel));
+                g_frontend.software_frame[static_cast<size_t>(y) * width + x] =
+                    static_cast<jint>(0xff000000u | (pixel & 0x00ffffffu));
+            }
+        }
+        g_frontend.software_frame_width = width;
+        g_frontend.software_frame_height = height;
+    }
     if (!g_gl.ready || g_gl.fbo_texture == 0 ||
         width > static_cast<unsigned>(g_gl.fbo_width) ||
         height > static_cast<unsigned>(g_gl.fbo_height) ||
@@ -1388,6 +1417,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_createSession(JNIEnv*, jobject) {
     std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
     if (!LoadCoreLocked()) return 0;
     if (!g_frontend.core_initialized.load()) {
+        ClearSoftwareFrameSnapshot();
         {
             std::lock_guard<std::mutex> state_lock(g_frontend.mutex);
             g_frontend.disk_control = {};
@@ -1410,6 +1440,7 @@ JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_destroySession(JNIEnv*, jobject, jlong handle) {
     if (handle == 0) return;
     std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
+    ClearSoftwareFrameSnapshot();
     g_frontend.time_control.store(0);
     for (int port = 0; port < 2; ++port) {
         g_frontend.rumble_strong[port].store(0);
@@ -1610,6 +1641,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_loadDisc(JNIEnv* env, jobject, jlon
         g_game_serial.clear();
     }
     std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
+    ClearSoftwareFrameSnapshot();
     if (!LoadCoreLocked() || !g_frontend.core_initialized.load()) return -2;
     if (g_frontend.game_loaded.load()) {
         if (g_core.unload_game != nullptr) g_core.unload_game();
@@ -1738,6 +1770,22 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_saveState(JNIEnv* env, jobject, jlo
     out.write(reinterpret_cast<const char*>(buffer.data()), static_cast<std::streamsize>(buffer.size()));
     if (!out.good()) return -5;
     return 0;
+}
+
+JNIEXPORT jintArray JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_captureSoftwareFrame(JNIEnv* env, jobject, jlong handle) {
+    if (handle != reinterpret_cast<jlong>(&g_frontend) || g_core_id.load() != 1 ||
+        !g_frontend.game_loaded.load()) return nullptr;
+    std::lock_guard<std::mutex> lock(g_frontend.software_frame_mutex);
+    const size_t pixels = static_cast<size_t>(g_frontend.software_frame_width) * g_frontend.software_frame_height;
+    if (pixels == 0 || pixels != g_frontend.software_frame.size()) return nullptr;
+    jintArray result = env->NewIntArray(static_cast<jsize>(pixels + 2));
+    if (result == nullptr) return nullptr;
+    const jint dimensions[] = {static_cast<jint>(g_frontend.software_frame_width),
+                               static_cast<jint>(g_frontend.software_frame_height)};
+    env->SetIntArrayRegion(result, 0, 2, dimensions);
+    env->SetIntArrayRegion(result, 2, static_cast<jsize>(pixels), g_frontend.software_frame.data());
+    return result;
 }
 
 JNIEXPORT jint JNICALL

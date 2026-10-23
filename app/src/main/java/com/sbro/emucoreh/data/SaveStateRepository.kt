@@ -266,7 +266,14 @@ class SaveStateRepository(private val context: Context) {
 
     suspend fun enrichGlobalEntries(entries: List<SaveStateEntryInfo>): List<SaveStateEntryInfo> {
         if (entries.isEmpty()) return entries
-        val libraryIndex = loadLibraryIndex()
+        return enrichGlobalEntries(entries, loadLibraryIndex())
+    }
+
+    /** Deterministic library seam for repository/native workflow coverage without changing saved library preferences. */
+    internal fun enrichGlobalEntries(entries: List<SaveStateEntryInfo>, games: List<GameItem>): List<SaveStateEntryInfo> =
+        enrichGlobalEntries(entries, buildLibraryIndex(flattenLibraryGroups(games)))
+
+    private fun enrichGlobalEntries(entries: List<SaveStateEntryInfo>, libraryIndex: LibraryIndex): List<SaveStateEntryInfo> {
         val unresolvedSlots = entries.asSequence()
             .filter { it.gamePath == null }
             .map { it.slot }
@@ -336,6 +343,12 @@ class SaveStateRepository(private val context: Context) {
                         zip.putNextEntry(ZipEntry("slots/${file.name}"))
                         file.inputStream().use { it.copyTo(zip) }
                         zip.closeEntry()
+                        val sidecar = File("${file.absolutePath}.png")
+                        if (isValidSaveStatePreview(sidecar)) {
+                            zip.putNextEntry(ZipEntry("slots/${file.name}.png"))
+                            sidecar.inputStream().use { it.copyTo(zip) }
+                            zip.closeEntry()
+                        }
                     }
                 }
             } != null
@@ -420,7 +433,18 @@ class SaveStateRepository(private val context: Context) {
                             check(!target.exists()) { "Target slot is no longer empty" }
                             check(temporary.renameTo(target)) { "Unable to finalize imported save state" }
                         }.isSuccess
-                        if (success) imported++ else {
+                        if (success) {
+                            imported++
+                            runCatching { candidate.sourceEntryName?.let { stateEntry ->
+                                zip?.getEntry("$stateEntry.png")?.takeUnless(ZipEntry::isDirectory)?.let { preview ->
+                                    if (preview.size in 1..MAX_SAVE_PREVIEW_BYTES) {
+                                        zip.getInputStream(preview).use { input ->
+                                            copySaveStatePreview(input, File("${target.absolutePath}.png"))
+                                        }
+                                    }
+                                }
+                            } }
+                        } else {
                             temporary.delete()
                             failed++
                         }
@@ -695,6 +719,10 @@ class SaveStateRepository(private val context: Context) {
         val libraryGames = (cachedLibraryGames + recentGames)
             .distinctBy { it.path }
 
+        return buildLibraryIndex(libraryGames)
+    }
+
+    private fun buildLibraryIndex(libraryGames: List<GameItem>): LibraryIndex {
         val bySerial = linkedMapOf<String, GameItem>()
         val byTitle = linkedMapOf<String, MutableList<GameItem>>()
         val byPath = linkedMapOf<String, GameItem>()

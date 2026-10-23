@@ -58,6 +58,16 @@ variants, are not rejected by title, filename or header alone. No patches or
 retail ROM data are distributed with the core; its regression fixture is authored
 synthetic data.
 
+Game Gear cartridges wired for SMS mode (cartridge pin 42) are selected by a
+pinned size/CRC database from MAME's CC0 `gamegear.xml`, rather than filenames or
+the inconclusive Sega header. This includes Castle of Illusion; its verified
+Japanese `h1` variant also requires matching boot/header signatures. These games
+retain Game Gear frontend/save-state identity while using SMS video, palette,
+aspect ratio and Start/Pause handling. Their complete SMS frame is always shown;
+the GG crop/resolution option cannot force a native-GG crop. Legacy states made
+with the incorrect native-GG hardware mode are rejected without replacing the
+running session. Other Game Gear images retain native hardware selection.
+
 Sega CD BIOS is user supplied: exactly 131072 bytes, named `bios_CD_U.bin`,
 `bios_CD_E.bin`, or `bios_CD_J.bin` in the system directory. Names are case
 insensitive; additional regional aliases are accepted. A mismatched regional
