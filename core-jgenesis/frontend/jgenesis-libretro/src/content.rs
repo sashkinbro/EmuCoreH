@@ -80,6 +80,27 @@ fn validate_cartridge(bytes: &[u8]) -> Result<(), String> {
     {
         return Err("UNSUPPORTED_DS_COLLECTION_ROM: This Sonic Classic Collection ROM contains Nintendo DS emulator hooks. Use an original Genesis/Mega Drive ROM release.".into());
     }
+    // The protected Switch Aleste Collection dump has a normal Sega mapper, but
+    // intentionally altered code that requires its collection emulator. This exact
+    // CRC/size is documented by the original extractor and reverse engineers:
+    // https://www.smspower.org/forums/18250-GGAleste3
+    // Keep compatible dumps accepted; never identify this from a title or file name.
+    if bytes.len() == 1048576
+        && bytes[..16]
+            == [
+                0xf3, 0xed, 0x56, 0xc3, 0xd7, 0x01, 0x00, 0x00, 0x7b, 0xd3, 0xbf, 0x7a, 0xd3, 0xbf,
+                0xc9, 0x00,
+            ]
+        && bytes[0x1d7..0x1e0] == [0x31, 0xef, 0xdf, 0x3a, 0x00, 0xc0, 0x32, 0x80, 0xdf]
+        && bytes[0x7ff0..0x8000]
+            == [
+                0x54, 0x4d, 0x52, 0x20, 0x53, 0x45, 0x47, 0x41, 0x00, 0x00, 0x00, 0x00, 0x39, 0x23,
+                0xf0, 0x50,
+            ]
+        && crc::Crc::<u32>::new(&crc::CRC_32_ISO_HDLC).checksum(bytes) == 0x5ae64731
+    {
+        return Err("UNSUPPORTED_ALESTE_COLLECTION_ROM: This protected GG Aleste 3 Collection image requires the original collection emulator. Select a compatible Game Gear ROM.".into());
+    }
     Ok(())
 }
 
@@ -249,6 +270,48 @@ fn strip_disc_marker(name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn protected_aleste_collection_image_fails_with_actionable_error() {
+        // Authored zero-filled fixture with only identification signatures. The final
+        // four bytes match the protected image's CRC without bundling its game data.
+        let mut bytes = vec![0; 1048576];
+        bytes[..16].copy_from_slice(&[
+            0xf3, 0xed, 0x56, 0xc3, 0xd7, 0x01, 0x00, 0x00, 0x7b, 0xd3, 0xbf, 0x7a, 0xd3, 0xbf,
+            0xc9, 0x00,
+        ]);
+        bytes[0x1d7..0x1e0]
+            .copy_from_slice(&[0x31, 0xef, 0xdf, 0x3a, 0x00, 0xc0, 0x32, 0x80, 0xdf]);
+        bytes[0x7ff0..0x8000].copy_from_slice(&[
+            0x54, 0x4d, 0x52, 0x20, 0x53, 0x45, 0x47, 0x41, 0x00, 0x00, 0x00, 0x00, 0x39, 0x23,
+            0xf0, 0x50,
+        ]);
+        bytes[1048572..].copy_from_slice(&[0xc4, 0xda, 0x2c, 0xa4]);
+        assert_eq!(crc::Crc::<u32>::new(&crc::CRC_32_ISO_HDLC).checksum(&bytes), 0x5ae64731);
+        let path = std::env::temp_dir()
+            .join(format!("jgenesis-protected-collection-{}.bin", std::process::id()));
+        fs::write(&path, &bytes).unwrap();
+        let error = read_cartridge(&path).err().expect("Protected Collection image must fail");
+        assert!(error.starts_with("UNSUPPORTED_ALESTE_COLLECTION_ROM:"));
+        assert!(error.contains("compatible Game Gear ROM"));
+        let archive_path = path.with_extension("zip");
+        let mut archive = zip::ZipWriter::new(File::create(&archive_path).unwrap());
+        archive.start_file("game.gg", zip::write::SimpleFileOptions::default()).unwrap();
+        std::io::Write::write_all(&mut archive, &bytes).unwrap();
+        archive.finish().unwrap();
+        assert!(
+            read_cartridge(&archive_path)
+                .err()
+                .unwrap()
+                .starts_with("UNSUPPORTED_ALESTE_COLLECTION_ROM:")
+        );
+        fs::remove_file(archive_path).unwrap();
+        // Another dump with the same header/signatures must not be classified by name.
+        bytes[1048575] ^= 1;
+        fs::write(&path, &bytes).unwrap();
+        assert_eq!(read_cartridge(&path).unwrap().0, bytes);
+        fs::remove_file(path).unwrap();
+    }
 
     #[test]
     fn collection_emulator_hooks_fail_with_actionable_error() {

@@ -48,6 +48,16 @@ CPU trap hooks for that collection's emulator and needs the original Mega Drive
 release instead. This check applies to plain/ZIP ROMs, uses full-image identity
 and instruction signatures, and never rewrites ROM bytes or guesses from names.
 
+The protected GG Aleste 3 Aleste Collection image (CRC32 `5AE64731`, 1 MiB,
+verified boot/header signatures) requires its original collection emulator and
+is rejected with `UNSUPPORTED_ALESTE_COLLECTION_ROM`. It uses a normal Sega
+mapper but intentionally altered code; this is not a missing mapper feature.
+The [original extractor and reverse engineers](https://www.smspower.org/forums/18250-GGAleste3)
+identify that exact protected dump. Other images, including compatible Game Gear
+variants, are not rejected by title, filename or header alone. No patches or
+retail ROM data are distributed with the core; its regression fixture is authored
+synthetic data.
+
 Sega CD BIOS is user supplied: exactly 131072 bytes, named `bios_CD_U.bin`,
 `bios_CD_E.bin`, or `bios_CD_J.bin` in the system directory. Names are case
 insensitive; additional regional aliases are accepted. A mismatched regional
