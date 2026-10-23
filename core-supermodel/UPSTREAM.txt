@@ -1,0 +1,52 @@
+Super3 / Supermodel Android libretro port
+
+Source: https://github.com/izzy2lost/Super3
+Pinned commit: c410f82f771b33094b8c1cdbf96ef7c74ec9cff1
+Retrieved: 2026-10-23
+Upstream emulator: https://github.com/trzy/Supermodel
+ARM ancestry recorded by Super3: https://github.com/DirtBagXon/model3emu-code-sinden/tree/arm
+
+The vendored Src tree, generated Musashi sources, Android GLES presenter and
+software TileGen renderer originate from this exact revision. Files retain
+their original notices. The libretro adapter, portable OSD, tests, CMake, and
+Android library module are local modifications by SBRO (2026). The extracted
+CompositedRender3D class is adapted from Super3's native-lib.cpp.
+
+Modified upstream files:
+- Src/CPU/PowerPC/ppc.cpp: preserve pending interrupts across save/load.
+- Src/Model3/DSB.cpp and DSB.h: preserve sound-board timer progress,
+  resampler phase and buffered MPEG samples; reset and restore decoder history.
+- Src/Model3/SoundBoard.cpp: preserve the SCSP interrupt latch.
+- Src/Sound/SCSP.cpp: canonicalize sound-RAM-relative voice offsets; preserve cycle
+  overshoot and FM ring-buffer history without serializing host addresses.
+- Src/Sound/MPEG/MpegAudio.cpp and MpegAudio.h: pointer-free decoder snapshots,
+  including synthesis/PCM history; bound imported ROM cursors and terminate
+  invalid streams without an infinite decode loop.
+- Src/Pkgs/minimp3.h: initialize decoder scratch lanes copied into persistent
+  synthesis history, excluding uninitialized host stack bytes from snapshots.
+- Src/Model3/Model3.cpp, RTC72421.cpp and RTC72421.h: advance the guest calendar
+  with emulated frames and preserve it across save/load.
+- Src/Model3/RTCClock.h: local bounded guest-calendar helper.
+- Src/Graphics/New3D/New3D.cpp and New3D.h: bound scene-node and pointer-list
+  traversal to the mapped culling memory.
+- Src/Graphics/New3D/SceneMemory.h: local bounded scene-memory helpers.
+- Src/Graphics/New3D/R3DFrameBuffers.cpp: restore the frontend's nonzero FBO
+  rather than EGL framebuffer zero; select COLOR_ATTACHMENT0 for that FBO.
+- libretro/gles_presenter.cpp: replace SDL diagnostics with core logging.
+- libretro/compositor.h: extract the bottom-tile/New3D composition wrapper.
+
+No original Android Activity, launcher, touch overlay, flyers, ROMs, BIOS,
+copyrighted game data, or prebuilt emulator binary is included.
+The tests/fixtures MPEG waveform is self-authored; its provenance and CC0
+dedication are recorded in libretro/tests/fixtures/README.md.
+
+Runtime dependencies are Android system EGL/GLESv3/zlib/log/android/m/dl/libc.
+The C++ runtime is linked statically by the Android NDK. No SDL or SDL_net
+library is used by this port. Desktop OSD/network/GLEW sources are excluded.
+
+MiniZip license supplement source:
+https://github.com/madler/zlib/blob/v1.2.8/contrib/minizip/MiniZip64_info.txt
+The actual MiniZip source carries its original 1998-2010 notices.
+
+Source distribution must preserve LICENSE, THIRD-PARTY-NOTICES.txt, component
+source notices, source/build scripts and generated Musashi generator inputs.

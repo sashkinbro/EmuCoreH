@@ -1,0 +1,50 @@
+This emulator library is distributed under GNU GPL version 3. See LICENSE.
+Core sources generally allow GPL version 3 or later; Super3 project-level
+material is GPL version 3. Local GPL notices do not relicense unrelated app
+frontend source or assets. This library does not grant game/BIOS rights.
+
+Supermodel: Copyright 2003-2022 The Supermodel Team; individual files identify
+Bart Trzynadlowski, Nik Henson, Ian Curtis, Harry Tuttle, Spindizzi and other
+contributors. GPL-3.0-or-later notices remain in the source files.
+Super3 Android GLES/TileGen changes: izzy2lost/Super3 contributors, GPL-3.0.
+
+Musashi 3.3: Copyright 1998-2001 Karl Stenerud. Supermodel's Musashi files
+explicitly state permission was obtained from Karl Stenerud to apply GPL.
+The preserved historical noncommercial paragraph must be read together with
+that explicit permission. See Src/CPU/68K/Musashi/m68k.h and m68kcpu.c.
+Generated opcode tables are supplied with the GPL-permission generator and
+input source; see libretro/generated and Src/CPU/68K/Musashi/m68kmake.c.
+
+minimp3: Src/Pkgs/minimp3.h. Public-domain dedication / CC0-1.0, lieff/minimp3.
+To the extent possible under law, the authors have dedicated all copyright
+and related and neighboring rights to this software to the public domain
+worldwide. Distributed without warranty. See the original header.
+
+TinyXML2: Original code by Lee Thomason (www.grinninglizard.com).
+MiniZip: Copyright (C) 1998-2010 Gilles Vollant; Copyright (C) 2007-2008
+Even Rouault; Copyright (C) 2009-2010 Mathias Svensson.
+TinyXML2 and MiniZip have zlib-style terms:
+
+This software is provided 'as-is', without any express or implied warranty.
+In no event will the authors be held liable for any damages arising from
+the use of this software.
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not
+   be misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+
+See Src/Pkgs/tinyxml2.h and licenses/MiniZip64_info.txt. MiniZip's legacy
+crypt.h describes Info-ZIP-derived encryption code; unzip.c defines NOUNCRYPT
+and that code is not compiled or used by this library.
+
+libretro.h: Copyright (C) 2010-2020 The RetroArch team. MIT license, fully
+reproduced at the top of libretro/libretro.h; preserve that notice.
+
+Unused desktop sources retain their individual licenses in the vendored
+source tree, but are not compiled into this Android ARM64 library.

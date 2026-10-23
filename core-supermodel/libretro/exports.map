@@ -1,0 +1,4 @@
+{
+ global: retro_*; supermodel_boot_error; supermodel_input_flags; supermodel_game_name; supermodel_reset_audio_fingerprint; supermodel_audio_fingerprint;
+ local: *;
+};

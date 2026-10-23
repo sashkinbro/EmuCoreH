@@ -128,14 +128,18 @@ std::mutex g_core_load_mutex;
 // process-lifetime loader reference per DSO so their destructor addresses stay valid.
 // This also bounds loader references when the library is used only for disc probes.
 std::mutex g_core_library_mutex;
-void* g_core_libraries[2]{};
+void* g_core_libraries[3]{};
 
 const char* CoreLibraryName(int core_id) {
-    return core_id == 1 ? "libjgenesis_libretro.so" : "flycast_libretro.so";
+    return core_id == 2 ? "libsupermodel_libretro.so" : core_id == 1 ? "libjgenesis_libretro.so" : "flycast_libretro.so";
+}
+
+const char* CoreDisplayName() {
+    return g_core_id.load() == 2 ? "Supermodel" : g_core_id.load() == 1 ? "jgenesis" : "Flycast";
 }
 
 void* RetainCoreLibrary(int core_id) {
-    if (core_id != 0 && core_id != 1) return nullptr;
+    if (core_id < 0 || core_id > 2) return nullptr;
     std::lock_guard<std::mutex> lock(g_core_library_mutex);
     void*& handle = g_core_libraries[core_id];
     if (handle == nullptr) {
@@ -321,7 +325,7 @@ bool LoadCoreLocked() {
     g_core.set_lightgun_cursor_visible = reinterpret_cast<void (*)(bool)>(resolve("flycast_set_lightgun_cursor_visible"));
     g_core.set_cabinet_buttons = reinterpret_cast<void (*)(unsigned, unsigned)>(resolve("flycast_set_cabinet_buttons"));
     g_core.get_memory_data = reinterpret_cast<void* (*)(unsigned)>(resolve("retro_get_memory_data"));
-    g_core.boot_error = reinterpret_cast<const char* (*)()>(resolve(g_core_id.load() == 1 ? "jgenesis_boot_error" : "emucorea_boot_error"));
+    g_core.boot_error = reinterpret_cast<const char* (*)()>(resolve(core_id == 2 ? "supermodel_boot_error" : core_id == 1 ? "jgenesis_boot_error" : "emucorea_boot_error"));
     g_core.scrape_disc = reinterpret_cast<int (*)(const char*, const char*, char*, int, char*, int)>(
         resolve("emucoreh_scrape_disc"));
     g_core.get_memory_size = reinterpret_cast<size_t (*)(unsigned)>(resolve("retro_get_memory_size"));
@@ -1348,7 +1352,7 @@ size_t EmuCoreHGetMemorySize(unsigned id) {
 
 JNIEXPORT jboolean JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeSelectCore(JNIEnv*, jobject, jint core_id) {
-    if (core_id != 0 && core_id != 1) return JNI_FALSE;
+    if (core_id < 0 || core_id > 2) return JNI_FALSE;
     std::lock_guard<std::mutex> core_lock(g_frontend.core_mutex);
     if (g_core_id.load() == core_id) return LoadCoreLocked() ? JNI_TRUE : JNI_FALSE;
     // Kotlin joins the worker and destroys its session before reaching this boundary.
@@ -1895,11 +1899,11 @@ JNIEXPORT jstring JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_getSystemInfo(JNIEnv* env, jobject) {
     std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
     if (!LoadCoreLocked() || g_core.get_system_info == nullptr) {
-        return env->NewStringUTF(g_core_id.load() == 1 ? "jgenesis" : "Flycast");
+        return env->NewStringUTF(CoreDisplayName());
     }
     retro_system_info info{};
     g_core.get_system_info(&info);
-    std::string name = info.library_name != nullptr ? info.library_name : (g_core_id.load() == 1 ? "jgenesis" : "Flycast");
+    std::string name = info.library_name != nullptr ? info.library_name : CoreDisplayName();
     std::string version = info.library_version != nullptr ? info.library_version : "";
     std::string result = version.empty() ? name : name + " " + version;
     return env->NewStringUTF(result.c_str());
@@ -1912,12 +1916,28 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeLastBootError(JNIEnv* env, jo
     return detail != nullptr && *detail != '\0' ? env->NewStringUTF(detail) : nullptr;
 }
 
+JNIEXPORT void JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_resetModel3AudioFingerprint(JNIEnv*, jobject) {
+    if (g_core_id.load() != 2) return;
+    void* handle = RetainCoreLibrary(2);
+    auto reset = handle ? reinterpret_cast<void (*)()>(dlsym(handle, "supermodel_reset_audio_fingerprint")) : nullptr;
+    if (reset) reset();
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_model3AudioFingerprint(JNIEnv*, jobject) {
+    if (g_core_id.load() != 2) return 0;
+    void* handle = RetainCoreLibrary(2);
+    auto fingerprint = handle ? reinterpret_cast<uint64_t (*)()>(dlsym(handle, "supermodel_audio_fingerprint")) : nullptr;
+    return fingerprint ? static_cast<jlong>(fingerprint()) : 0;
+}
+
 JNIEXPORT jstring JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_getDiagnostics(JNIEnv* env, jobject) {
     char buffer[256];
     std::snprintf(buffer, sizeof(buffer),
                   "{\"core\":\"%s\",\"initialized\":%d,\"game\":%d,\"renderer\":%d,\"w\":%u,\"h\":%u}",
-                  g_core_id.load() == 1 ? "jgenesis" : "Flycast",
+                  CoreDisplayName(),
                   g_frontend.core_initialized.load() ? 1 : 0, g_frontend.game_loaded.load() ? 1 : 0,
                   g_frontend.requested_renderer, g_frontend.frame_width, g_frontend.frame_height);
     return env->NewStringUTF(buffer);
@@ -1998,6 +2018,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeGameSerial(JNIEnv* env, jobje
 
 JNIEXPORT jboolean JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_hasDiscMedia(JNIEnv*, jobject, jlong handle) {
+    if (g_core_id.load() == 2) return JNI_FALSE;
     if (g_core_id.load() == 1) {
         std::lock_guard<std::mutex> lock(g_frontend.mutex);
         return handle != 0 && g_frontend.game_loaded.load() &&

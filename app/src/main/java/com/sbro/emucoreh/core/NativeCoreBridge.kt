@@ -29,6 +29,9 @@ class NativeCoreBridge {
     external fun probeSegaDisc(path: String): Int
     /** Duplicates a borrowed SAF descriptor; the caller retains ownership. */
     external fun probeSegaDiscDescriptor(descriptor: Int): Int
+    /** Opt-in QA fingerprint; disabled during ordinary gameplay. */
+    external fun resetModel3AudioFingerprint()
+    external fun model3AudioFingerprint(): Long
     external fun createSession(): Long
     external fun destroySession(handle: Long)
     external fun nativeSetOption(key: String, value: String)

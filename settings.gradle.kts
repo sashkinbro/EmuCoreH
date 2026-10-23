@@ -26,3 +26,4 @@ rootProject.name = "EmuCoreH"
 include(":app")
 include(":core-android")
 include(":core-jgenesis-android")
+include(":core-supermodel-android")
