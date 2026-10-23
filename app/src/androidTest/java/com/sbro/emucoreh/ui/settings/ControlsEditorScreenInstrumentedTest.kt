@@ -148,4 +148,34 @@ class ControlsEditorScreenInstrumentedTest {
         composeRule.runOnIdle { assertEquals("a", SegaTouchLayouts.canonicalId(saved.get()!!.controls.single().actionId)) }
     }
 
+    @Test fun model3EditorCreatesServiceTestCombo() {
+        val saved = AtomicReference<CustomTouchControlLibrary?>()
+        showEditor(CustomTouchControlLibrary.Empty, saved::set, EmulationPlatform.MODEL_3)
+        composeRule.onNodeWithTag("controls_editor_add_button").performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_primary_l3").performScrollTo().performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_secondary_r3").performScrollTo().performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_confirm").performScrollTo().performClick()
+        composeRule.runOnIdle {
+            val button = saved.get()!!.controls.single()
+            assertEquals("l3", button.actionId)
+            assertEquals("r3", button.secondaryActionId)
+            assertEquals(106, SegaTouchLayouts.keyCode(EmulationPlatform.MODEL_3, button.actionId))
+            assertEquals(107, SegaTouchLayouts.keyCode(EmulationPlatform.MODEL_3, button.secondaryActionId!!))
+        }
+    }
+
+    @Test fun model3EditorCreatesPedalCombo() {
+        val saved = AtomicReference<CustomTouchControlLibrary?>()
+        showEditor(CustomTouchControlLibrary.Empty, saved::set, EmulationPlatform.MODEL_3)
+        composeRule.onNodeWithTag("controls_editor_add_button").performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_primary_l2").performScrollTo().performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_secondary_r2").performScrollTo().performClick()
+        composeRule.onNodeWithTag("controls_editor_combo_confirm").performScrollTo().performClick()
+        composeRule.runOnIdle {
+            val button = saved.get()!!.controls.single()
+            assertEquals("l2", button.actionId)
+            assertEquals("r2", button.secondaryActionId)
+        }
+    }
+
 }

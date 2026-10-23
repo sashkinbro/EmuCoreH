@@ -390,7 +390,7 @@
     <string name="onboarding_bios_desc">BIOSファイルを含むフォルダを選択します。もう一度タップすると別のフォルダを追加でき、有効なDreamcast、アーケード、Sega CD、32Xのファイルがまとめてインストールされます。</string>
     <string name="onboarding_bios_optional">任意ですが推奨されます</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB)、dc_flash.bin (128 KiB)
-アーケード: naomi.zip、naomi2.zip、awbios.zip
+アーケード: naomi.zip、naomi2.zip、awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin、bios_CD_E.bin、bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
@@ -1307,7 +1307,7 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="formats_psp_recommended_title">GD-ROMディスクイメージ</string>
     <string name="formats_psp_recommended_body">GDIはGD-ROMの標準ダンプです。CHD、CDI、CUE/BINのディスクイメージにも対応しています。</string>
     <string name="formats_psp_homebrew_title">アーケードROMセット</string>
-<string name="formats_psp_homebrew_body">Naomi、Naomi 2、AtomiswaveのROMセット（zip、7z、bin、dat、lst形式）も開けます。</string>
+<string name="formats_psp_homebrew_body">Naomi、Naomi 2、Atomiswave、Sega System SPのROMセット（zip、7z、bin、dat、lst形式）も開けます。</string>
     <string name="settings_network_tab">ネットワーク</string>
     <string name="emulation_fast_forward">早送り（長押し）</string>
     <string name="emulation_transport_fast_forward">早送り</string>
@@ -2011,7 +2011,7 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="profile_cloud_save_current">Save current settings</string>
     <string name="profile_cloud_saved">Emulator settings saved to your profile.</string>
     <string name="profile_cloud_title">Emulator settings in cloud</string>
-    <string name="profile_cloud_version">App %1$s · core %2$s</string>
+    <string name="profile_cloud_version">アプリ %1$s · エミュレーションコア %2$s</string>
     <string name="profile_create_account">アカウントを作成</string>
     <string name="profile_customize_pro">Proプロフィールをカスタマイズ</string>
     <string name="profile_customize_pro_accent">プロフィールアクセント</string>
@@ -2020,7 +2020,7 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="profile_customize_pro_games_help">公開プロフィールでハイライトするゲームを選択します。</string>
     <string name="profile_customize_pro_title">Proプロフィール</string>
     <string name="profile_device_android">System</string>
-    <string name="profile_device_app_core">App · core</string>
+    <string name="profile_device_app_core">アプリ · エミュレーションコア</string>
     <string name="profile_device_current">This device</string>
     <string name="profile_device_delete">デバイスを削除</string>
     <string name="profile_device_deleted">デバイスを削除しました</string>

@@ -390,7 +390,7 @@
     <string name="onboarding_bios_desc">BIOS 파일이 있는 폴더를 선택하세요. 다시 탭하면 다른 폴더를 추가할 수 있으며, 유효한 Dreamcast, 아케이드, Sega CD, 32X 파일이 함께 설치됩니다.</string>
     <string name="onboarding_bios_optional">선택 사항이지만 권장됩니다</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
-아케이드: naomi.zip, naomi2.zip, awbios.zip
+아케이드: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
@@ -1307,7 +1307,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="formats_psp_recommended_title">GD-ROM 디스크 이미지</string>
     <string name="formats_psp_recommended_body">GDI는 표준 GD-ROM 덤프입니다. CHD, CDI, CUE/BIN 디스크 이미지도 지원합니다.</string>
     <string name="formats_psp_homebrew_title">아케이드 ROM 세트</string>
-<string name="formats_psp_homebrew_body">Naomi, Naomi 2, Atomiswave ROM 세트(zip, 7z, bin, dat, lst 형식)도 열 수 있습니다.</string>
+<string name="formats_psp_homebrew_body">Naomi, Naomi 2, Atomiswave, Sega System SP ROM 세트(zip, 7z, bin, dat, lst 형식)도 열 수 있습니다.</string>
     <string name="settings_network_tab">네트워크</string>
     <string name="emulation_fast_forward">빨리 감기 (길게 누르기)</string>
     <string name="emulation_transport_fast_forward">빨리 감기</string>
@@ -2011,7 +2011,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="profile_cloud_save_current">Save current settings</string>
     <string name="profile_cloud_saved">Emulator settings saved to your profile.</string>
     <string name="profile_cloud_title">Emulator settings in cloud</string>
-    <string name="profile_cloud_version">App %1$s · core %2$s</string>
+    <string name="profile_cloud_version">앱 %1$s · 에뮬레이션 코어 %2$s</string>
     <string name="profile_create_account">계정 만들기</string>
     <string name="profile_customize_pro">Pro 프로필 설정</string>
     <string name="profile_customize_pro_accent">프로필 테마 색상</string>
@@ -2020,7 +2020,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="profile_customize_pro_games_help">공개 프로필에서 돋보이게 할 게임을 선택하세요.</string>
     <string name="profile_customize_pro_title">Pro 프로필</string>
     <string name="profile_device_android">System</string>
-    <string name="profile_device_app_core">App · core</string>
+    <string name="profile_device_app_core">앱 · 에뮬레이션 코어</string>
     <string name="profile_device_current">This device</string>
     <string name="profile_device_delete">기기 삭제</string>
     <string name="profile_device_deleted">기기가 삭제되었습니다</string>

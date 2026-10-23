@@ -74,12 +74,10 @@ internal fun SegaSettingsPanel(platform: EmulationPlatform) {
 }
 
 @Composable
-internal fun Model3SettingsInfo() {
+internal fun Model3SettingsInfo(showNativeVideo: Boolean = true, showCabinetSetup: Boolean = true) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.model3_native_video),
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(stringResource(R.string.model3_cabinet_setup_help),
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (showNativeVideo) SettingsInlineNote(stringResource(R.string.model3_native_video))
+        if (showCabinetSetup) SettingsInlineNote(stringResource(R.string.model3_cabinet_setup_help))
     }
 }
 

@@ -75,6 +75,13 @@ class Model3RuntimeInstrumentedTest {
     @Test fun ownerSuppliedDaytona2RendersAudioAndRestores() = exerciseOwnerSet("daytona2")
     @Test fun ownerSuppliedLostWorldRendersAudioAndRestores() = exerciseOwnerSet("lostwsga")
 
+    @Test fun ownerSuppliedSelectedSetPreparesRendersAndRestores() {
+        val set = InstrumentationRegistry.getArguments().getString("model3QaSet")
+        assumeTrue("Supply model3QaSet for an additional owner ROM", !set.isNullOrBlank())
+        requireNotNull(Model3Romsets.find("$set.zip")) { "Unrecognized Model 3 set" }
+        exerciseOwnerSet(requireNotNull(set))
+    }
+
     private fun exerciseOwnerSet(set: String) {
         val args = InstrumentationRegistry.getArguments()
         val root = File(args.getString("model3QaRoot")
@@ -82,6 +89,9 @@ class Model3RuntimeInstrumentedTest {
         val rom = File(args.getString("model3QaPath_$set") ?: File(root, "$set.zip").absolutePath)
         assumeTrue("Owner-supplied $set.zip is absent or unreadable: $rom", rom.isFile && rom.canRead())
         val qa = newQaDirectory(set)
+        val nativeSet = requireNotNull(Model3ContentPreparer.resolveExpectedSet(context, rom.absolutePath)) {
+            "Selected Model 3 program revision is incomplete or ambiguous"
+        }
         val targetFrames = args.getString("model3QaFrames")?.toIntOrNull()?.coerceIn(120, 3600) ?: 600
         val timeoutSeconds = args.getString("model3QaTimeoutSeconds")?.toLongOrNull()?.coerceIn(30, 900) ?: 300
         val scriptedSteps = args.getString("model3QaServiceScript")?.split(',')?.map { step ->
@@ -101,7 +111,7 @@ class Model3RuntimeInstrumentedTest {
             args.getString("model3QaNvram_$set")?.let { path ->
                 val source = File(path)
                 assertTrue("Owner cabinet NVRAM must be readable", source.isFile && source.canRead())
-                val destination = File(qa, "save/supermodel/$set/nvram.bin")
+                val destination = File(qa, "save/supermodel/$nativeSet/nvram.bin")
                 destination.parentFile!!.mkdirs()
                 source.copyTo(destination, overwrite = true)
             }
@@ -113,7 +123,7 @@ class Model3RuntimeInstrumentedTest {
                         assertEquals(0, bridge.setSurface(handle, pixels.reader.surface, RendererDefaults.CORE_OPENGL))
                         assertTrue("Create EGL context", bridge.ensureHardwareContext())
                         assertEquals("Boot $set: ${bridge.nativeLastBootError()}",
-                            0, bridge.loadDisc(handle, rom.absolutePath))
+                            0, bridge.loadDisc(handle, Model3ContentPreparer.prepare(context, rom.absolutePath)))
                         assertTrue("Bind Model 3 GLES renderer: ${bridge.nativeLastBootError()}", bridge.ensureHardwareContext())
                         assertTrue(bridge.getSystemInfo().contains("Supermodel", true))
                         assertFalse("Loaded Model 3 owns its core", bridge.nativeSelectCore(1))
@@ -167,7 +177,8 @@ class Model3RuntimeInstrumentedTest {
                 if (handle != 0L) bridge.destroySession(handle)
             }
             exerciseJgenesisAndFlycastAfterModel3(qa)
-            assertTrue("Shutdown persists only isolated NVRAM", File(qa, "save/supermodel/$set/nvram.bin").isFile)
+            assertTrue("Shutdown persists the verified set's isolated NVRAM",
+                File(qa, "save/supermodel/$nativeSet/nvram.bin").isFile)
         } catch (error: Throwable) {
             report += "result=FAIL ${error.javaClass.simpleName}: ${error.message}"
             throw error
@@ -175,6 +186,7 @@ class Model3RuntimeInstrumentedTest {
             File(qa, "report.txt").writeText(report.joinToString("\n") + "\n")
             Log.i("Model3RuntimeQA", report.joinToString("; "))
             restoreFrontend()
+            Model3ContentPreparer.releasePreparedContent(context)
         }
     }
 

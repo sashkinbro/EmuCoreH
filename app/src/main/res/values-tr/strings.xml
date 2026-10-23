@@ -390,7 +390,7 @@
     <string name="onboarding_bios_desc">BIOS dosyalarınızın bulunduğu bir klasör seçin. Başka klasör eklemek için tekrar dokunun; geçerli Dreamcast, arcade, Sega CD ve 32X dosyaları birlikte kurulur.</string>
     <string name="onboarding_bios_optional">İsteğe bağlı, ancak önerilir</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
-Arcade: naomi.zip, naomi2.zip, awbios.zip
+Arcade: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
@@ -1308,7 +1308,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="formats_psp_recommended_title">GD-ROM disk görüntüleri</string>
     <string name="formats_psp_recommended_body">GDI, standart GD-ROM dökümüdür. CHD, CDI ve CUE/BIN disk görüntüleri de desteklenir.</string>
     <string name="formats_psp_homebrew_title">Arcade ROM setleri</string>
-<string name="formats_psp_homebrew_body">Naomi, Naomi 2 ve Atomiswave ROM setleri zip, 7z, bin, dat veya lst biçiminde de açılabilir.</string>
+<string name="formats_psp_homebrew_body">Naomi, Naomi 2, Atomiswave ve Sega System SP ROM setleri zip, 7z, bin, dat veya lst biçiminde de açılabilir.</string>
     <string name="settings_network_tab">Ağ</string>
     <string name="emulation_fast_forward">Hızlı ileri sar (basılı tut)</string>
     <string name="emulation_transport_fast_forward">İleri sar</string>
@@ -2012,7 +2012,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="profile_cloud_save_current">Save current settings</string>
     <string name="profile_cloud_saved">Emulator settings saved to your profile.</string>
     <string name="profile_cloud_title">Emulator settings in cloud</string>
-    <string name="profile_cloud_version">App %1$s · core %2$s</string>
+    <string name="profile_cloud_version">Uygulama %1$s · çekirdekler %2$s</string>
     <string name="profile_create_account">Hesap oluştur</string>
     <string name="profile_customize_pro">Pro profili özelleştir</string>
     <string name="profile_customize_pro_accent">Profil vurgusu</string>
@@ -2021,7 +2021,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="profile_customize_pro_games_help">Herkese açık profilinizde öne çıkarılacak oyunları seçin.</string>
     <string name="profile_customize_pro_title">Pro profil</string>
     <string name="profile_device_android">System</string>
-    <string name="profile_device_app_core">App · core</string>
+    <string name="profile_device_app_core">Uygulama · çekirdekler</string>
     <string name="profile_device_current">This device</string>
     <string name="profile_device_delete">Cihazı sil</string>
     <string name="profile_device_deleted">Cihaz silindi</string>

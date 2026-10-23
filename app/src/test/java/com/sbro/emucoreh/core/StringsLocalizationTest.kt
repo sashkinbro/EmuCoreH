@@ -91,11 +91,23 @@ class StringsLocalizationTest {
     }
 
     @Test
+    fun `supported arcade cabinet and firmware guidance includes System SP in every locale`() {
+        resolveResDir().listFiles().orEmpty().map { File(it, "strings.xml") }.filter(File::isFile).forEach { file ->
+            val strings = readStrings(file)
+            assertTrue("System SP is missing from supported arcade formats in ${file.parentFile?.name}",
+                strings.getValue("formats_psp_homebrew_body").contains("System SP"))
+            assertTrue("System SP firmware is missing from BIOS help in ${file.parentFile?.name}",
+                strings.getValue("bios_supported_files").contains("segasp.zip"))
+        }
+    }
+
+    @Test
     fun `catalog platform and core attribution resources preserve locale and format contracts`() {
         val resDir = resolveResDir()
         val english = readStrings(File(resDir, "values/strings.xml"))
         val prefixes = listOf("catalog_", "home_platform_", "formats_", "settings_about_", "model3_")
-        val keys = english.keys.filter { key -> prefixes.any(key::startsWith) }
+        val profileCoreLabels = setOf("profile_cloud_version", "profile_device_app_core")
+        val keys = english.keys.filter { key -> key in profileCoreLabels || prefixes.any(key::startsWith) }
         resDir.listFiles().orEmpty().map { File(it, "strings.xml") }.filter(File::isFile).forEach { file ->
             val localized = readStrings(file)
             keys.forEach { key ->

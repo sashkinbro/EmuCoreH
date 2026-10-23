@@ -168,6 +168,25 @@ internal fun allocateSaveStateSlot(preferred: Int?, occupied: Set<Int>): Int? {
     return (1..10).firstOrNull { it !in occupied }
 }
 
+/** Shared selection for slot previews and the load action; no ROM inspection occurs here. */
+internal fun resolveSaveStateSlotFile(
+    nativePath: String?,
+    legacyPath: String?,
+    files: Array<out File>,
+    gameSerial: String?,
+    slot: Int,
+    expectedModel3Set: String? = null,
+): File? {
+    val primary = sequenceOf(nativePath, legacyPath).filterNotNull().distinct().map(::File).firstOrNull { file ->
+        file.isFile && (expectedModel3Set == null || runCatching {
+            file.inputStream().use(::readSaveStateImportHeader)?.model3Set == expectedModel3Set
+        }.getOrDefault(false))
+    }
+    if (primary != null) return primary
+    val serial = expectedModel3Set?.let { "M3-${it.uppercase(Locale.ROOT)}" } ?: gameSerial
+    return findFallbackSaveStateFile(files, serial, slot)
+}
+
 internal fun findFallbackSaveStateFile(
     files: Array<out File>,
     gameSerial: String?,
@@ -184,7 +203,7 @@ internal fun findFallbackSaveStateFile(
                 ?.let { Model3Romsets.find("$it.zip")?.name }
             val sameSet = model3Set != null && serial.startsWith("M3-") && fileSlot == slot &&
                 runCatching { file.inputStream().use(::readSaveStateImportHeader)?.model3Set == model3Set }.getOrDefault(false)
-            file.takeIf { fileSlot == slot && (serial == normalizedSerial || sameSet) }
+            file.takeIf { fileSlot == slot && if (model3Set != null) sameSet else serial == normalizedSerial }
         }
         .maxByOrNull(File::lastModified)
 }
@@ -248,13 +267,16 @@ class SaveStateRepository(private val context: Context) {
 
     fun listSlots(gamePath: String, gameSerial: String? = null): List<SaveStateSlotInfo> {
         val saveStateFiles = saveStatesDir().listFiles().orEmpty()
+        val activeModel3Set = NativeApp.loadedModel3SetForPath(gamePath)
         return SAVE_STATE_SLOTS.map { slot ->
             val path = runCatching { NativeApp.getSaveStatePathForFile(gamePath, slot) }.getOrNull()
             val file = resolveSaveStateFile(
                 nativePath = path,
                 saveStateFiles = saveStateFiles,
                 gameSerial = gameSerial,
-                slot = slot
+                slot = slot,
+                legacyPath = if (activeModel3Set != null) NativeApp.legacySaveStatePathForActiveGame(gamePath, slot) else null,
+                expectedModel3Set = activeModel3Set,
             )
             SaveStateSlotInfo(
                 slot = slot,
@@ -271,13 +293,10 @@ class SaveStateRepository(private val context: Context) {
         nativePath: String?,
         saveStateFiles: Array<out File>,
         gameSerial: String?,
-        slot: Int
-    ): File? {
-        nativePath?.let(::File)?.takeIf(File::exists)?.let { return it }
-        // GameList can still be warming up after a cold launch. The library already knows the
-        // serial, so use it to locate the slot without waiting for native metadata discovery.
-        return findFallbackSaveStateFile(saveStateFiles, gameSerial, slot)
-    }
+        slot: Int,
+        legacyPath: String? = null,
+        expectedModel3Set: String? = null,
+    ): File? = resolveSaveStateSlotFile(nativePath, legacyPath, saveStateFiles, gameSerial, slot, expectedModel3Set)
 
     fun findLatestSlot(gamePath: String, gameSerial: String? = null): Int? {
         return listSlots(gamePath, gameSerial)

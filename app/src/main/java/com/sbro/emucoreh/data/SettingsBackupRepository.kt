@@ -122,16 +122,14 @@ class SettingsBackupRepository(
                             require(target.path.startsWith(root.path + File.separator)) {
                                 "Invalid memory-card backup path"
                             }
-                            target.parentFile?.mkdirs()
-                            target.outputStream().use { output -> zip.copyTo(output) }
+                            restoreBackupSaveFile(zip, target, 128L * 1024 * 1024, allowEmpty = false)
                         } else if (entry.name.startsWith("battery-saves/") && !entry.isDirectory) {
                             val relative = entry.name.removePrefix("battery-saves/")
                             require(com.sbro.emucoreh.core.SegaSaveFiles.isBackupPath(relative)) { "Invalid battery-save path" }
                             val root = com.sbro.emucoreh.core.SegaSaveFiles.directory(context, preferences.getEmulatorDataPathSync()).canonicalFile
                             val target = File(root, relative).canonicalFile
                             require(target.path.startsWith(root.path + File.separator)) { "Invalid battery-save path" }
-                            target.parentFile?.mkdirs()
-                            target.outputStream().use { output -> zip.copyTo(output) }
+                            restoreBackupSaveFile(zip, target, 16L * 1024 * 1024, allowEmpty = false)
                         } else if (entry.name.startsWith("model3-nvram/") && !entry.isDirectory) {
                             com.sbro.emucoreh.core.Model3SaveFiles.restore(zip,
                                 com.sbro.emucoreh.core.Model3SaveFiles.directory(context, preferences.getEmulatorDataPathSync()),
@@ -149,7 +147,7 @@ class SettingsBackupRepository(
                             }
                             root.mkdirs()
                             if (isSaveStatePreviewName(relative)) copySaveStatePreview(zip, target)
-                            else target.outputStream().use { output -> zip.copyTo(output) }
+                            else restoreBackupSaveFile(zip, target, 1024L * 1024 * 1024, allowEmpty = false)
                         } else if (entry.name.startsWith("cheat-files/") && !entry.isDirectory) {
                             val relative = entry.name.removePrefix("cheat-files/")
                             require(relative == File(relative).name && isCheatFile(File(relative))) {
@@ -158,8 +156,7 @@ class SettingsBackupRepository(
                             val root = EmulatorStorage.importedCheatsDir(context).canonicalFile
                             val target = File(root, relative).canonicalFile
                             require(target.parentFile == root) { "Invalid cheat backup path" }
-                            root.mkdirs()
-                            target.outputStream().use { output -> zip.copyTo(output) }
+                            restoreBackupSaveFile(zip, target, 16L * 1024 * 1024, allowEmpty = true)
                         }
                     }
                 }

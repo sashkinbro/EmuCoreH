@@ -184,7 +184,7 @@ fun ActionSelector(
             )
         }
         CustomTouchControl.ALLOWED_ACTION_IDS
-            .filterNot { it in setOf("l2", "r2", "l3", "r3") }
+            .filterNot { !platform.isModel3 && it in setOf("l2", "r2", "l3", "r3") }
             .filter { !platform.usesPlatformTouchLayouts || SegaTouchLayouts.keyCode(platform, it) != null }
             .filterNot { it == excludedActionId || (platform.usesPlatformTouchLayouts && excludedActionId != null &&
                 SegaTouchLayouts.canonicalId(it) == SegaTouchLayouts.canonicalId(excludedActionId)) }

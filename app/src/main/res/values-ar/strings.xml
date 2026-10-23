@@ -390,7 +390,7 @@
     <string name="onboarding_bios_desc">اختر مجلدًا يحتوي على ملفات BIOS. اضغط مرة أخرى لإضافة مجلد آخر؛ يتم تثبيت ملفات Dreamcast والأركيد وSega CD و32X الصالحة معًا.</string>
     <string name="onboarding_bios_optional">اختياري، لكنه مُستحسن</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB)، dc_flash.bin (128 KiB)
-الأركيد: naomi.zip، naomi2.zip، awbios.zip
+الأركيد: naomi.zip، naomi2.zip، awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin، bios_CD_E.bin، bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
@@ -1316,7 +1316,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="formats_psp_recommended_title">صور أقراص GD-ROM</string>
     <string name="formats_psp_recommended_body">‏GDI هو النسخ القياسي لأقراص GD-ROM. كما تُدعم صور CHD وCDI وCUE/BIN.</string>
     <string name="formats_psp_homebrew_title">مجموعات ROM للأركيد</string>
-<string name="formats_psp_homebrew_body">يمكن أيضًا فتح مجموعات ROM الخاصة بـ Naomi وNaomi 2 وAtomiswave بصيغ zip و7z وbin وdat وlst.</string>
+<string name="formats_psp_homebrew_body">يمكن أيضًا فتح مجموعات ROM الخاصة بـ Naomi وNaomi 2 وAtomiswave وSega System SP بصيغ zip و7z وbin وdat وlst.</string>
     <string name="settings_network_tab">الشبكة</string>
     <string name="emulation_fast_forward">تقديم سريع (ضغط مطوّل)</string>
     <string name="emulation_transport_fast_forward">تقديم سريع</string>
@@ -2020,7 +2020,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="profile_cloud_save_current">Save current settings</string>
     <string name="profile_cloud_saved">Emulator settings saved to your profile.</string>
     <string name="profile_cloud_title">Emulator settings in cloud</string>
-    <string name="profile_cloud_version">App %1$s · core %2$s</string>
+    <string name="profile_cloud_version">التطبيق %1$s · أنوية المحاكاة %2$s</string>
     <string name="profile_create_account">إنشاء حساب</string>
     <string name="profile_customize_pro">تخصيص ملف Pro</string>
     <string name="profile_customize_pro_accent">تمييز الملف الشخصي</string>
@@ -2029,7 +2029,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="profile_customize_pro_games_help">اختر الألعاب التي سيتم إبرازها في ملفك الشخصي العام.</string>
     <string name="profile_customize_pro_title">ملف Pro</string>
     <string name="profile_device_android">System</string>
-    <string name="profile_device_app_core">App · core</string>
+    <string name="profile_device_app_core">التطبيق · أنوية المحاكاة</string>
     <string name="profile_device_current">This device</string>
     <string name="profile_device_delete">حذف الجهاز</string>
     <string name="profile_device_deleted">تم حذف الجهاز</string>

@@ -77,6 +77,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val repository = PlayerProfileRepository(application)
     private val proPurchaseManager = ProPurchaseManager.getInstance(application)
     private val catalogRepository = IgdbCatalogRepository(application)
+    private val arcadeCatalogRepository = com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository(application)
     private val deviceRepository = ProfileDeviceRepository(application)
     private val cloudSettingsRepository = CloudEmulatorSettingsRepository(application)
     private val achievementRepository = EmuAchievementRepository(application)
@@ -514,11 +515,15 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val catalogId = withContext(Dispatchers.IO) {
                 runCatching {
-                    catalogRepository.findBestMatchId(
-                        serial = game.serial,
-                        title = game.title,
-                        platform = com.sbro.emucoreh.data.igdb.catalogPlatformName(game.platform)
-                    )
+                    profileCatalogScope(game.platform, game.arcade, game.serial) { romset ->
+                        arcadeCatalogRepository.find(romset)?.bios
+                    }?.let { platform ->
+                        catalogRepository.findBestMatchId(
+                            serial = game.serial,
+                            title = game.title,
+                            platform = platform
+                        )
+                    }
                 }.getOrNull()
             }
             if (catalogId != null) {

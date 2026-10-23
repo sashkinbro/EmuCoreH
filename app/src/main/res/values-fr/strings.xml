@@ -414,7 +414,7 @@
     <string name="onboarding_bios_desc">Sélectionnez un dossier contenant vos fichiers BIOS. Touchez à nouveau pour ajouter un autre dossier ; les fichiers valides Dreamcast, arcade, Sega CD et 32X sont installés ensemble.</string>
     <string name="onboarding_bios_optional">Facultatif, mais recommandé</string>
     <string name="bios_supported_files">Dreamcast : dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
-Arcade : naomi.zip, naomi2.zip, awbios.zip
+Arcade : naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD : bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
@@ -1310,7 +1310,7 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="formats_psp_recommended_title">Images disque GD-ROM</string>
     <string name="formats_psp_recommended_body">GDI est le dump standard d\'un GD-ROM. Les images CHD, CDI et CUE/BIN sont également prises en charge.</string>
     <string name="formats_psp_homebrew_title">Sets ROM arcade</string>
-<string name="formats_psp_homebrew_body">Les ensembles ROM Naomi, Naomi 2 et Atomiswave aux formats zip, 7z, bin, dat ou lst peuvent également être ouverts.</string>
+<string name="formats_psp_homebrew_body">Les ensembles ROM Naomi, Naomi 2, Atomiswave et Sega System SP aux formats zip, 7z, bin, dat ou lst peuvent également être ouverts.</string>
     <string name="settings_network_tab">Réseau</string>
     <string name="emulation_fast_forward">Avance rapide (maintenir)</string>
     <string name="emulation_transport_fast_forward">Avance rapide</string>
@@ -2014,7 +2014,7 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="profile_cloud_save_current">Enregistrer les paramètres actuels</string>
     <string name="profile_cloud_saved">Paramètres enregistrés dans votre profil.</string>
     <string name="profile_cloud_title">Paramètres de l’émulateur dans le cloud</string>
-    <string name="profile_cloud_version">Application %1$s · cœur %2$s</string>
+    <string name="profile_cloud_version">Application %1$s · cœurs %2$s</string>
     <string name="profile_create_account">Créer un compte</string>
     <string name="profile_customize_pro">Personnaliser le profil Pro</string>
     <string name="profile_customize_pro_accent">Accentuation du profil</string>
@@ -2023,7 +2023,7 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="profile_customize_pro_games_help">Choisissez les jeux qui seront mis en avant sur votre profil public.</string>
     <string name="profile_customize_pro_title">Profil Pro</string>
     <string name="profile_device_android">Système</string>
-    <string name="profile_device_app_core">Application · cœur</string>
+    <string name="profile_device_app_core">Application · cœurs</string>
     <string name="profile_device_current">Cet appareil</string>
     <string name="profile_device_delete">Supprimer l’appareil</string>
     <string name="profile_device_deleted">Appareil supprimé</string>

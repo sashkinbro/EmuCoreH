@@ -545,8 +545,20 @@ internal object CoreRuntime {
     fun resume() = lifecycleLock.withLock {
         if (!running || !paused) return@withLock
         hostPlayback.runIfForeground {
-            audioOutput?.play()
-            paused = false
+            resumeAudioIfRunning()
+        }
+    }
+
+    private fun resumeAudioIfRunning() {
+        audioOutput?.let { output ->
+            synchronized(output) {
+                // Recheck after taking the same monitor used by worker cleanup:
+                // a queued resume/load must not restart a terminal worker's audio.
+                if (running) {
+                    output.play()
+                    paused = false
+                }
+            }
         }
     }
 
@@ -672,8 +684,7 @@ internal object CoreRuntime {
         } finally {
             if (!wasPaused && running) {
                 hostPlayback.runIfForeground {
-                    audioOutput?.play()
-                    paused = false
+                    resumeAudioIfRunning()
                 }
             }
         }
@@ -1166,12 +1177,12 @@ internal object CoreRuntime {
             Log.e(TAG, "Emulation frame loop stopped", error)
             reportFailure("Emulation frame loop stopped: ${error.javaClass.simpleName}: ${error.message.orEmpty()}")
         } finally {
+            running = false
             // A failed worker retains its session for orderly UI cleanup, but
             // must not retain a playing stream after it stops producing audio.
             runCatching { output.pause() }
                 .onFailure { Log.w(TAG, "Unable to pause stopped worker audio", it) }
             drainFrameTasks()
-            running = false
         }
     }
 

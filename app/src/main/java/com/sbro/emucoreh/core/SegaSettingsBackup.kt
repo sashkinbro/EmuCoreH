@@ -13,7 +13,7 @@ object SegaSettingsBackup {
         })
         put("touchLayouts", com.sbro.emucoreh.data.SegaTouchLayoutPreferences(context).exportJson())
         put("gamepadProfiles", JSONObject().apply {
-            EmulationPlatform.entries.filter { it.isSega }.forEach { platform ->
+            EmulationPlatform.entries.filter { it.usesPlatformTouchLayouts }.forEach { platform ->
                 put(platform.name, JSONObject().apply {
                     SegaControlProfiles.load(context, platform).forEach { (pad, bindings) ->
                         put(pad.toString(), JSONObject(bindings))
@@ -40,7 +40,7 @@ object SegaSettingsBackup {
             }
         }
         json.optJSONObject("gamepadProfiles")?.let { profiles ->
-            EmulationPlatform.entries.filter { it.isSega }.forEach { platform ->
+            EmulationPlatform.entries.filter { it.usesPlatformTouchLayouts }.forEach { platform ->
                 profiles.optJSONObject(platform.name)?.let { profile ->
                     val bindings = profile.keys().asSequence().mapNotNull { padKey ->
                         val pad = padKey.toIntOrNull()?.takeIf { it in 0..3 } ?: return@mapNotNull null

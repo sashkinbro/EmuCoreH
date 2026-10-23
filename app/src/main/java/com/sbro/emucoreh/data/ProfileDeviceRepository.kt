@@ -52,7 +52,8 @@ data class PublicPlayerDevice(
 object ProfileDeviceInfoProvider {
     private const val PREFS = "profile_device"
     private const val DEVICE_ID = "device_id"
-        const val CORE_VERSION = "1.0.0"
+    /** Retained for existing backup writers and compatibility comparisons. */
+    const val CORE_VERSION = BundledCoreMetadata.BACKUP_COMPATIBILITY_VERSION
 
     fun current(context: Context, isPublic: Boolean = false): PlayerDevice {
         val appContext = context.applicationContext
@@ -97,7 +98,7 @@ object ProfileDeviceInfoProvider {
             ramMb = ramMb,
             androidVersion = "Android ${Build.VERSION.RELEASE.orEmpty()} (API ${Build.VERSION.SDK_INT})".take(40),
             appVersion = BuildConfig.VERSION_NAME.take(40),
-            coreVersion = CORE_VERSION,
+            coreVersion = BundledCoreMetadata.DISPLAY_VERSION,
             isCurrent = true,
             isPublic = isPublic,
             lastSeenAtMs = System.currentTimeMillis()

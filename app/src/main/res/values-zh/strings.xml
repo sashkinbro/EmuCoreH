@@ -414,7 +414,7 @@
     <string name="onboarding_bios_desc">选择一个包含 BIOS 文件的文件夹。再次点击可添加其他文件夹；有效的 Dreamcast、街机、Sega CD 和 32X 文件会一起安装。</string>
     <string name="onboarding_bios_optional">可选，但推荐</string>
     <string name="bios_supported_files">Dreamcast：dc_boot.bin（2 MiB）、dc_flash.bin（128 KiB）
-街机：naomi.zip、naomi2.zip、awbios.zip
+街机：naomi.zip、naomi2.zip、awbios.zip, segasp.zip
 Sega CD：bios_CD_U.bin、bios_CD_E.bin、bios_CD_J.bin（128 KiB）
 Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
@@ -1309,7 +1309,7 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="formats_psp_recommended_title">GD-ROM 光盘映像</string>
     <string name="formats_psp_recommended_body">GDI 是标准的 GD-ROM 转储。同时也支持 CHD、CDI 和 CUE/BIN 光盘映像。</string>
     <string name="formats_psp_homebrew_title">街机 ROM 集</string>
-<string name="formats_psp_homebrew_body">也可以打开 zip、7z、bin、dat 或 lst 格式的 Naomi、Naomi 2 和 Atomiswave ROM 集。</string>
+<string name="formats_psp_homebrew_body">也可以打开 zip、7z、bin、dat 或 lst 格式的 Naomi、Naomi 2、Atomiswave 和 Sega System SP ROM 集。</string>
     <string name="settings_network_tab">網路</string>
     <string name="emulation_fast_forward">快进（长按）</string>
     <string name="emulation_transport_fast_forward">快進</string>
@@ -2013,7 +2013,7 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="profile_cloud_save_current">Save current settings</string>
     <string name="profile_cloud_saved">Emulator settings saved to your profile.</string>
     <string name="profile_cloud_title">Emulator settings in cloud</string>
-    <string name="profile_cloud_version">App %1$s · core %2$s</string>
+    <string name="profile_cloud_version">应用 %1$s · 模拟核心 %2$s</string>
     <string name="profile_create_account">创建帐户</string>
     <string name="profile_customize_pro">自定义 Pro 个人主页</string>
     <string name="profile_customize_pro_accent">个人主页主题色</string>
@@ -2022,7 +2022,7 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="profile_customize_pro_games_help">选择要在您的公开主页上重点展示的游戏。</string>
     <string name="profile_customize_pro_title">Pro 个人主页</string>
     <string name="profile_device_android">System</string>
-    <string name="profile_device_app_core">App · core</string>
+    <string name="profile_device_app_core">应用 · 模拟核心</string>
     <string name="profile_device_current">This device</string>
     <string name="profile_device_delete">删除设备</string>
     <string name="profile_device_deleted">设备已删除</string>

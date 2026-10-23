@@ -766,11 +766,20 @@ object EmulatorBridge {
                 if (saved && CoreRuntime.platform.isSega)
                     runCatching { CoreRuntime.captureSoftwareFrame() }.getOrNull() else null)
         }
-        val savePath = captured.second
-        if (captured.first && !savePath.isNullOrBlank()) {
-            captureSaveStatePreview(savePath, captured.third)
-        }
+        refreshSaveStatePreviewAfterSave(captured.first, captured.second, captured.third)
         return captured.first
+    }
+
+    internal suspend fun refreshSaveStatePreviewAfterSave(saved: Boolean, savePath: String?, softwareFrame: IntArray?) {
+        if (!saved || savePath.isNullOrBlank()) return
+        // The state has committed. A failed source/Surface capture must not leave
+        // the previous checkpoint's thumbnail attached to the new state.
+        withContext(Dispatchers.IO) {
+            val previous = File("$savePath.png")
+            runCatching { previous.delete() }
+            invalidateCoverImage(previous.path)
+        }
+        captureSaveStatePreview(savePath, softwareFrame)
     }
 
     private suspend fun captureSaveStatePreview(savePath: String, softwareFrame: IntArray?) {

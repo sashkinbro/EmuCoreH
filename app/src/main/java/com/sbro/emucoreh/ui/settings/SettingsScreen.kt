@@ -1106,7 +1106,13 @@ private fun SettingsContent(
                 .padding(top = topInset + 12.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            if (platform.isModel3) Model3SettingsInfo()
+            if (platform.isModel3 && searchQuery.isBlank() &&
+                selectedTab in setOf(SettingsTab.Graphics, SettingsTab.Emulation)) {
+                Model3SettingsInfo(
+                    showNativeVideo = selectedTab == SettingsTab.Graphics,
+                    showCabinetSetup = selectedTab == SettingsTab.Emulation
+                )
+            }
             if (searchQuery.isNotBlank()) {
                 SettingsSearchResults(
                     query = searchQuery,

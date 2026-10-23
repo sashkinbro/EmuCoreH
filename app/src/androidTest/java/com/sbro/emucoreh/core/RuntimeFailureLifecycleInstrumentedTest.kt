@@ -51,7 +51,17 @@ class RuntimeFailureLifecycleInstrumentedTest {
             assertEquals("AAudio must be active before interrupting the owner", 1L, output.stats()!![0])
             // Terminate the playing owner unexpectedly, not through shutdown.
             // This reproduces the ownership boundary shared by fatal frame/audio errors.
-            worker.interrupt()
+            synchronized(output) {
+                worker.interrupt()
+                val deadline = System.nanoTime() + 5_000_000_000L
+                while (EmulatorBridge.runtimeFailure.value == null && System.nanoTime() < deadline) Thread.sleep(1)
+                assertNotNull("worker did not publish its failure", EmulatorBridge.runtimeFailure.value)
+                while (worker.state != Thread.State.BLOCKED && worker.isAlive && System.nanoTime() < deadline) Thread.sleep(1)
+                assertEquals("worker must wait for the held audio monitor", Thread.State.BLOCKED, worker.state)
+                val runningField = CoreRuntime::class.java.getDeclaredField("running").apply { isAccessible = true }
+                assertFalse("failed worker permits audio restart while waiting to pause AAudio",
+                    runningField.getBoolean(CoreRuntime))
+            }
             worker.join(5_000)
             assertFalse("interrupted playing worker did not stop", worker.isAlive)
             Thread.sleep(100) // Allow an already dispatched AAudio callback to finish.

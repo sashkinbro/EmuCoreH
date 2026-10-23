@@ -76,7 +76,7 @@ class CloudEmulatorSettingsRepository(context: Context) {
             "name" to normalizedName,
             "schemaVersion" to SCHEMA_VERSION,
             "appVersion" to BuildConfig.VERSION_NAME,
-            "coreVersion" to ProfileDeviceInfoProvider.CORE_VERSION,
+            "coreVersion" to BundledCoreMetadata.DISPLAY_VERSION,
             "sourceDeviceId" to device.deviceId,
             "portableSettings" to portable.toFirestoreValue(),
             "perGameSettings" to perGame.toFirestoreValue(),
@@ -89,7 +89,7 @@ class CloudEmulatorSettingsRepository(context: Context) {
             name = normalizedName,
             sourceDeviceId = device.deviceId,
             appVersion = BuildConfig.VERSION_NAME,
-            coreVersion = ProfileDeviceInfoProvider.CORE_VERSION,
+            coreVersion = BundledCoreMetadata.DISPLAY_VERSION,
             updatedAtMs = System.currentTimeMillis()
         )
     }

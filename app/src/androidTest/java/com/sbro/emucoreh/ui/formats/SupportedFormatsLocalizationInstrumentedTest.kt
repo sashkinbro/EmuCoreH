@@ -53,6 +53,8 @@ class SupportedFormatsLocalizationInstrumentedTest {
             }).resources
             compose.onNodeWithText(resources.getString(R.string.formats_sega_body))
                 .performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText(resources.getString(R.string.formats_model3_body))
+                .performScrollTo().assertIsDisplayed()
             for (format in listOf("MD", "GEN", "SMD", "32X", "SMS", "GG", "SG", "ZIP", "CUE/BIN", "CHD", "M3U")) {
                 compose.onAllNodesWithText(format).onLast().performScrollTo().assertIsDisplayed()
             }

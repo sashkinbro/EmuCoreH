@@ -13,6 +13,43 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class Model3SaveStateImportTest {
+    @Test fun relocatedSlotUsesSameResolvedFileForPreviewAndLoading() {
+        val root = Files.createTempDirectory("model3-relocated").toFile()
+        try {
+            val imported = File(root, "M3-ABCD123456789012.03.rstate").apply {
+                writeBytes(CoreSaveState.wrap(model3PayloadFixture("srally2"), 2))
+            }
+            val resolved = resolveSaveStateSlotFile(File(root, "M3-9999999999999999.03.rstate").path,
+                null, arrayOf(imported), "M3-SRALLY2", 3, "srally2")
+            assertEquals(imported, resolved)
+            assertEquals(imported.readBytes().toList(), resolved!!.readBytes().toList())
+            assertNull(resolveSaveStateSlotFile(null, null, arrayOf(imported), "M3-SRALLY2", 4, "srally2"))
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun verifiedActualRevisionOverridesOldBasenameAndRejectsWrongRevisionEvenAtExactPath() {
+        val root = Files.createTempDirectory("model3-revision").toFile()
+        try {
+            val wrong = File(root, "M3-SCUD.01.rstate").apply { writeBytes(CoreSaveState.wrap(model3PayloadFixture("scud"), 2)) }
+            val actual = File(root, "M3-ABCD123456789012.01.rstate").apply { writeBytes(CoreSaveState.wrap(model3PayloadFixture("scudau"), 2)) }
+            assertEquals(actual, resolveSaveStateSlotFile(wrong.path, null, arrayOf(wrong, actual), "M3-SCUD", 1, "scudau"))
+            assertNull(resolveSaveStateSlotFile(null, null, arrayOf(wrong), "M3-SCUD", 1, "scudau"))
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun slotResolutionKeepsExactThenLegacyPriorityAndCoreNamespacesSeparate() {
+        val root = Files.createTempDirectory("slot-priority").toFile()
+        try {
+            val exact = File(root, "M3-1111111111111111.01.rstate").apply { writeBytes(CoreSaveState.wrap(model3PayloadFixture(), 2)) }
+            val legacy = File(root, "M3-2222222222222222.01.rstate").apply { writeBytes(exact.readBytes()) }
+            assertEquals(exact, resolveSaveStateSlotFile(exact.path, legacy.path, arrayOf(legacy), "M3-SRALLY2", 1, "srally2"))
+            exact.delete()
+            assertEquals(legacy, resolveSaveStateSlotFile(exact.path, legacy.path, arrayOf(legacy), "M3-SRALLY2", 1, "srally2"))
+            val foreign = File(root, "M3-SRALLY2.01.rstate").apply { writeBytes(CoreSaveState.wrap(byteArrayOf(1, 2, 3), 0)) }
+            assertNull(resolveSaveStateSlotFile(null, null, arrayOf(foreign), "M3-SRALLY2", 1, "srally2"))
+            assertEquals(legacy, resolveSaveStateSlotFile(legacy.path, null, emptyArray(), "unrelated", 1))
+        } finally { root.deleteRecursively() }
+    }
     @Test fun verifiedProgramRevisionKeepsImportsSeparateFromTheOldArchiveName() {
         val definitions = Model3ProgramCrcs.fingerprints
         val actual = definitions.single { it.name == "scudau" }

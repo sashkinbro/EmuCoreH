@@ -519,7 +519,7 @@
     <string name="onboarding_bios_desc">Vyberte složku s BIOS soubory. Dalším klepnutím přidáte další složku; platné soubory Dreamcast, arkád, Sega CD a 32X se nainstalují společně.</string>
     <string name="onboarding_bios_optional">Nepovinné, ale doporučené</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
-Arkády: naomi.zip, naomi2.zip, awbios.zip
+Arkády: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
@@ -1329,7 +1329,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="formats_psp_recommended_title">Obrazy disků GD-ROM</string>
     <string name="formats_psp_recommended_body">GDI je standardní dump GD-ROM. Podporovány jsou také obrazy CHD, CDI a CUE/BIN.</string>
     <string name="formats_psp_homebrew_title">Arcade ROM sady</string>
-<string name="formats_psp_homebrew_body">ROM sady Naomi, Naomi 2 a Atomiswave ve formátech zip, 7z, bin, dat nebo lst lze také otevírat.</string>
+<string name="formats_psp_homebrew_body">ROM sady Naomi, Naomi 2, Atomiswave a Sega System SP ve formátech zip, 7z, bin, dat nebo lst lze také otevírat.</string>
     <string name="settings_network_tab">Síť</string>
     <string name="emulation_fast_forward">Rychlý posun vpřed (podržet)</string>
     <string name="emulation_transport_fast_forward">Posun vpřed</string>
@@ -2033,7 +2033,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="profile_cloud_save_current">Save current settings</string>
     <string name="profile_cloud_saved">Emulator settings saved to your profile.</string>
     <string name="profile_cloud_title">Emulator settings in cloud</string>
-    <string name="profile_cloud_version">App %1$s · core %2$s</string>
+    <string name="profile_cloud_version">Aplikace %1$s · jádra %2$s</string>
     <string name="profile_create_account">Vytvořit účet</string>
     <string name="profile_customize_pro">Přizpůsobit Pro profil</string>
     <string name="profile_customize_pro_accent">Zvýraznění profilu</string>
@@ -2042,7 +2042,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="profile_customize_pro_games_help">Vyberte hry, které budou zvýrazněny na vašem veřejném profilu.</string>
     <string name="profile_customize_pro_title">Pro profil</string>
     <string name="profile_device_android">System</string>
-    <string name="profile_device_app_core">App · core</string>
+    <string name="profile_device_app_core">Aplikace · jádra</string>
     <string name="profile_device_current">This device</string>
     <string name="profile_device_delete">Odstranit zařízení</string>
     <string name="profile_device_deleted">Zařízení odstraněno</string>

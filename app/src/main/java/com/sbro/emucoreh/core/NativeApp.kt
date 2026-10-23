@@ -13,6 +13,7 @@ import android.os.ParcelFileDescriptor
 import android.os.Handler
 import android.os.Looper
 import java.security.MessageDigest
+import com.sbro.emucoreh.data.resolveSaveStateSlotFile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,6 +64,7 @@ object NativeApp {
     // the writer and every listing agree even when the core needs a prepared
     // (materialized) launch path.
     @Volatile private var saveStateIdentityPath: String? = null
+    @Volatile private var activeSavePaths: Model3ActiveSavePaths? = null
     // Keyboard and mouse publish into separate source slots. All sources are merged
     // before the active-low pad state is sent to the core, so releasing one physical
     // source can never clear a button another source is still holding.
@@ -84,6 +86,7 @@ object NativeApp {
 
     @JvmStatic fun reloadDataRoot(path: String) { dataRootOverride = path.takeIf(String::isNotBlank) }
     @JvmStatic fun setSaveStateIdentityPath(path: String?) {
+        activeSavePaths = null
         saveStateIdentityPath = path?.takeIf(String::isNotBlank)
     }
     @JvmStatic fun getGameTitle(path: String): String? {
@@ -404,9 +407,15 @@ object NativeApp {
         CoreRuntime.hasAttachedSurface(surface, width, height)
     @JvmStatic fun onNativeSurfaceDestroyed() = CoreRuntime.detachSurface()
     @JvmStatic fun runVMThread(path: String): Boolean {
+        activeSavePaths = null
         currentGamePath = path
-        CoreRuntime.launchIdentityPath = saveStateIdentityPath ?: path
-        return CoreRuntime.start(path, biosOnly = path.isBlank())
+        val identity = saveStateIdentityPath ?: path
+        CoreRuntime.launchIdentityPath = identity
+        val started = CoreRuntime.start(path, biosOnly = path.isBlank())
+        if (started && currentGamePath == path && saveStatePathSource() == identity) {
+            activeSavePaths = Model3ActiveSavePaths(path, identity)
+        }
+        return started
     }
     /** Disc product code reported by the core after the current game booted. */
     @JvmStatic fun currentGameSerial(): String? = runCatching {
@@ -417,7 +426,7 @@ object NativeApp {
     @JvmStatic fun changeDisc(path: String): Boolean = CoreRuntime.changeDisc(path)
     @JvmStatic fun pause() = CoreRuntime.pause()
     @JvmStatic fun resume() = CoreRuntime.resume()
-    @JvmStatic fun shutdown() = CoreRuntime.shutdown()
+    @JvmStatic fun shutdown() { activeSavePaths = null; CoreRuntime.shutdown() }
     @JvmStatic fun hasValidVm(): Boolean = CoreRuntime.isRunning()
     /** Ownership remains after a worker failure until explicit shutdown completes. */
     @JvmStatic fun hasOwnedVm(): Boolean = CoreRuntime.hasSession()
@@ -425,11 +434,34 @@ object NativeApp {
     private fun saveStatePathSource(): String =
         saveStateIdentityPath?.takeIf(String::isNotBlank) ?: currentGamePath
 
+    /** Uses current verified preparation only; never scans or copies a library game's ROM. */
+    internal fun loadedModel3SetForPath(path: String): String? {
+        val paths = activeSavePaths ?: return null
+        if (!paths.matches(path, currentGamePath, saveStatePathSource(), CoreRuntime.hasSession())) return null
+        return Model3ContentPreparer.preparedSetForPath(paths.launchPath)
+    }
+
+    internal fun legacySaveStatePathForActiveGame(path: String, slot: Int): String? =
+        loadedModel3SetForPath(path)?.let { getSaveStatePathForFile(currentGamePath, slot) }
+
     @JvmStatic fun saveStateToSlot(slot: Int): Boolean =
         getSaveStatePathForFile(saveStatePathSource(), slot)?.let(CoreRuntime::saveState) == true
 
     @JvmStatic fun loadStateFromSlot(slot: Int): Boolean {
         val identityPath = getSaveStatePathForFile(saveStatePathSource(), slot)
+        val context = getContext()
+        if (context != null && SegaPlatformDetector.detect(context, saveStatePathSource()).isModel3) {
+            val actualSet = loadedModel3SetForPath(saveStatePathSource()) ?: return false
+            val selected = resolveSaveStateSlotFile(
+                nativePath = identityPath,
+                legacyPath = getSaveStatePathForFile(currentGamePath, slot),
+                files = EmulatorStorage.saveStatesDir(context, dataRootOverride).listFiles().orEmpty(),
+                gameSerial = null,
+                slot = slot,
+                expectedModel3Set = actualSet,
+            ) ?: return false
+            return CoreRuntime.loadState(selected.absolutePath)
+        }
         if (identityPath != null && File(identityPath).exists()) {
             return CoreRuntime.loadState(identityPath)
         }

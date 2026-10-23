@@ -9,6 +9,24 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class Model3ContentCacheTest {
+    @Test fun activeSaveIdentityCannotLeakAcrossLibraryGamesOrSessionReplacement() {
+        val paths = Model3ActiveSavePaths("prepared-launch", "content://owner/scud.zip")
+        assertTrue(paths.matches("prepared-launch", "prepared-launch", "content://owner/scud.zip", true))
+        assertTrue(paths.matches("content://owner/scud.zip", "prepared-launch", "content://owner/scud.zip", true))
+        assertFalse(paths.matches("content://other/scud.zip", "prepared-launch", "content://owner/scud.zip", true))
+        assertFalse(paths.matches("content://owner/scud.zip", "prepared-launch", "content://next/daytona2.zip", true))
+        assertFalse(paths.matches("content://owner/scud.zip", "next-launch", "content://owner/scud.zip", true))
+        assertFalse(paths.matches("content://owner/scud.zip", "prepared-launch", "content://owner/scud.zip", false))
+        val verified = Model3PreparedSet()
+        verified.record("prepared-launch", "scudau")
+        assertEquals("scudau", verified.forPath("prepared-launch"))
+        assertNull(verified.forPath("next-launch"))
+        verified.clear()
+        assertNull(verified.forPath("prepared-launch"))
+        verified.record("next-launch", "daytona2")
+        assertNull(verified.forPath("prepared-launch"))
+        assertEquals("daytona2", verified.forPath("next-launch"))
+    }
     // Storage/lifecycle tests use authored bytes; identity matching has separate real ZIP tests.
     private fun cache(directory: File, maxZipBytes: Long = 256L * 1024 * 1024,
         maxTotalBytes: Long = 2L * 1024 * 1024 * 1024) =
