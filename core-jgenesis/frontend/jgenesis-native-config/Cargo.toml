@@ -1,0 +1,36 @@
+[package]
+name = "jgenesis-native-config"
+version = { workspace = true }
+edition = "2024"
+
+[features]
+default = []
+clap = ["dep:clap"]
+
+[dependencies]
+jgenesis-common = { workspace = true, features = ["serde"] }
+jgenesis-proc-macros = { workspace = true }
+
+gb-config = { workspace = true, features = ["serde"] }
+gba-config = { workspace = true, features = ["serde"] }
+genesis-config = { workspace = true, features = ["serde"] }
+nes-config = { workspace = true, features = ["serde"] }
+pce-config = { workspace = true, features = ["serde"] }
+smsgg-config = { workspace = true, features = ["serde"] }
+snes-config = { workspace = true, features = ["serde"] }
+
+jgenesis-renderer = { workspace = true, features = ["serde"] }
+
+ti-sn76489 = { workspace = true, features = ["serde"] }
+
+clap = { workspace = true, optional = true }
+directories = { workspace = true }
+log = { workspace = true }
+sdl3 = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
+toml_edit = { workspace = true }
+
+[lints]
+workspace = true

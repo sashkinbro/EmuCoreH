@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>jgenesis web</title>
+        <meta charset="UTF-8">
+        <style>
+            .hidden {
+                visibility: hidden;
+            }
+
+            .cursor-hidden {
+                cursor: none;
+            }
+
+            body {
+                background-color: black;
+                color: white;
+                font-family: sans-serif;
+            }
+
+            /* File dialog has a white background, so font color needs to be not white */
+            #rfd-card {
+                color: black;
+            }
+
+            canvas {
+                margin-top: 15px;
+            }
+
+            fieldset {
+                margin-top: 10px;
+            }
+
+            input[type="checkbox"] {
+                margin-top: 15px;
+            }
+
+            #loading-text {
+                font-size: 60px;
+                text-align: center;
+            }
+
+            #header-text {
+                font-size: 24px;
+                margin-left: 10px;
+            }
+
+            #jgenesis {
+                display: flex;
+                flex-direction: row;
+            }
+
+            #jgenesis-rom-title {
+                text-align: center;
+                margin-top: 10px;
+            }
+
+            .jgenesis-controls {
+                text-align: center;
+                margin-top: 10px;
+            }
+
+            .jgenesis-controls > input {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            #jgenesis-config {
+                margin-left: 30px;
+            }
+
+            #footer {
+                text-align: center;
+            }
+
+            .darken {
+                opacity: 0.5;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="loading-text">Loading...</div>
+        <div id="header-text" class="hidden hide-fullscreen">
+            jgenesis web
+        </div>
+        <div id="jgenesis" class="hidden">
+            <div id="jgenesis-wasm-and-controls">
+                <div id="jgenesis-wasm"></div>
+                <div id="jgenesis-rom-title" class="hide-fullscreen">(No ROM loaded)</div>
+                <div class="jgenesis-controls hide-fullscreen">
+                    <input type="button" id="open-file" value="Open ROM file">
+                    <input type="button" id="reset-emulator" value="Reset">
+                    <input type="button" id="download-save-file" class="save-button" value="Download save file" disabled>
+                    <input type="button" id="upload-save-file" class="save-button" value="Upload save file and reset" disabled>
+                </div>
+                <div class="jgenesis-controls hide-fullscreen">
+                    <input type="button" id="sega-cd-bios" value="Configure Sega CD BIOS">
+                    <input type="button" id="gba-bios" value="Configure GBA BIOS">
+                </div>
+            </div>
+            <div id="jgenesis-config" class="hide-fullscreen">
+                <div id="common-config">
+                    <fieldset>
+                        <legend>Image filtering</legend>
+
+                        <input type="radio" id="image-filter-nearest" name="image-filter" value="Nearest">
+                        <label for="image-filter-nearest">Nearest neighbor</label>
+
+                        <input type="radio" id="image-filter-linear" name="image-filter" value="Linear" checked>
+                        <label for="image-filter-linear">Linear interpolation</label>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Blending shader</legend>
+
+                        <input type="radio" id="blend-shader-none" name="blend-shader" value="None" checked>
+                        <label for="blend-shader-none">None</label>
+
+                        <input type="radio" id="blend-shader-ntsc" name="blend-shader" value="NtscComposite">
+                        <label for="blend-shader-ntsc">NTSC composite</label>
+
+                        <input type="radio" id="blend-shader-xbrz" name="blend-shader" value="Xbrz4x">
+                        <label for="blend-shader-xbrz">xBRZ</label>
+
+                        <input type="radio" id="blend-shader-hblur-3px" name="blend-shader" value="HorizontalBlurThreePixels">
+                        <label for="blend-shader-hblur-3px">Horizontal blur</label>
+                    </fieldset>
+
+                    <input type="checkbox" id="auto-prescale" name="auto-prescale" checked>
+                    <label for="auto-prescale">Prescaling enabled</label>
+                </div>
+                <div id="smsgg-config" hidden>
+                    <fieldset>
+                        <legend>Timing / display mode</legend>
+
+                        <input type="radio" id="sms-timing-mode-ntsc" name="sms-timing-mode" value="Ntsc" checked>
+                        <label for="sms-timing-mode-ntsc">NTSC</label>
+
+                        <input type="radio" id="sms-timing-mode-pal" name="sms-timing-mode" value="Pal">
+                        <label for="sms-timing-mode-pal">PAL</label>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Sega Master System aspect ratio</legend>
+
+                        <input type="radio" id="sms-aspect-ratio-ntsc" name="sms-aspect-ratio" value="Ntsc" checked>
+                        <label for="sms-aspect-ratio-ntsc">NTSC</label>
+
+                        <input type="radio" id="sms-aspect-ratio-pal" name="sms-aspect-ratio" value="Pal">
+                        <label for="sms-aspect-ratio-pal">PAL</label>
+
+                        <input type="radio" id="sms-aspect-ratio-square-pixels" name="sms-aspect-ratio" value="SquarePixels">
+                        <label for="sms-aspect-ratio-square-pixels">Square pixels</label>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Game Gear aspect ratio</legend>
+
+                        <input type="radio" id="gg-aspect-ratio-lcd" name="gg-aspect-ratio" value="GgLcd" checked>
+                        <label for="gg-aspect-ratio-lcd">Game Gear LCD</label>
+
+                        <input type="radio" id="gg-aspect-ratio-square-pixels" name="gg-aspect-ratio" value="SquarePixels">
+                        <label for="gg-aspect-ratio-square-pixels">Square pixels</label>
+                    </fieldset>
+
+                    <div>
+                        <input style="margin-top: 20px;" type="checkbox" id="sms-crop-vertical-border" checked>
+                        <label for="sms-crop-vertical-border">Crop SMS vertical border</label>
+                    </div>
+
+                    <div>
+                        <input type="checkbox" id="sms-crop-left-border">
+                        <label for="sms-crop-left-border">Crop SMS left border</label>
+                    </div>
+
+                    <div>
+                        <input type="checkbox" id="sms-fm-enabled" checked>
+                        <label for="sms-fm-enabled">FM sound unit enabled (requires reset)</label>
+                    </div>
+
+                    <div>
+                        <input type="checkbox" id="sms-remove-sprite-limit">
+                        <label for="sms-remove-sprite-limit">Remove sprite-per-scanline limit</label>
+                    </div>
+                </div>
+                <div id="genesis-config" hidden>
+                    <fieldset>
+                        <legend>Aspect ratio</legend>
+
+                        <input type="radio" id="gen-aspect-auto" name="gen-aspect-ratio" value="Auto">
+                        <label for="gen-aspect-auto">Auto</label>
+
+                        <input type="radio" id="gen-aspect-ntsc" name="gen-aspect-ratio" value="Ntsc">
+                        <label for="gen-aspect-ntsc">NTSC</label>
+
+                        <input type="radio" id="gen-aspect-pal" name="gen-aspect-ratio" value="Pal">
+                        <label for="gen-aspect-pal">PAL</label>
+
+                        <input type="radio" id="gen-aspect-square-pixels" name="gen-aspect-ratio" value="SquarePixels">
+                        <label for="gen-aspect-square-pixels">Square pixels</label>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Main CPU speed</legend>
+
+                        <input type="radio" id="gen-divider-7" name="gen-m68k-divider" value="7" checked>
+                        <label for="gen-divider-7">100%</label>
+
+                        <input type="radio" id="gen-divider-6" name="gen-m68k-divider" value="6">
+                        <label for="gen-divider-6">117%</label>
+
+                        <input type="radio" id="gen-divider-5" name="gen-m68k-divider" value="5">
+                        <label for="gen-divider-5">140%</label>
+
+                        <input type="radio" id="gen-divider-4" name="gen-m68k-divider" value="4">
+                        <label for="gen-divider-4">175%</label>
+
+                        <input type="radio" id="gen-divider-3" name="gen-m68k-divider" value="3">
+                        <label for="gen-divider-3">233%</label>
+                    </fieldset>
+
+                    <div>
+                        <input type="checkbox" id="genesis-non-linear-color-scale" checked>
+                        <label for="genesis-non-linear-color-scale">Emulate non-linear VDP color scale</label>
+                    </div>
+
+                    <div>
+                        <input type="checkbox" id="genesis-remove-sprite-limits">
+                        <label for="genesis-remove-sprite-limits">Remove sprite-per-scanline and sprite-pixel-per-scanline limits</label>
+                    </div>
+
+                    <div>
+                        <input type="checkbox" id="genesis-emulate-low-pass" checked>
+                        <label for="genesis-emulate-low-pass">Emulate 3.39 KHz low-pass filter</label>
+                    </div>
+
+                    <div>
+                        <input type="checkbox" id="genesis-render-vertical-border">
+                        <label for="genesis-render-vertical-border">Render vertical border</label>
+                    </div>
+
+                    <div>
+                        <input type="checkbox" id="genesis-render-horizontal-border">
+                        <label for="genesis-render-horizontal-border">Render horizontal border</label>
+                    </div>
+                </div>
+                <div id="snes-config" hidden>
+                    <fieldset>
+                        <legend>Aspect ratio</legend>
+
+                        <input type="radio" id="snes-aspect-ntsc" name="snes-aspect-ratio" value="Ntsc" checked>
+                        <label for="snes-aspect-ntsc">NTSC</label>
+
+                        <input type="radio" id="snes-aspect-pal" name="snes-aspect-ratio" value="Pal">
+                        <label for="snes-aspect-pal">PAL</label>
+
+                        <input type="radio" id="snes-aspect-square-pixels" name="snes-aspect-ratio" value="SquarePixels">
+                        <label for="snes-aspect-square-pixels">Square pixels</label>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>ADPCM sample interpolation</legend>
+
+                        <input type="radio" id="snes-audio-gaussian" name="snes-audio-interpolation" value="Gaussian" checked>
+                        <label for="snes-audio-gaussian">Gaussian</label>
+
+                        <input type="radio" id="snes-audio-hermite" name="snes-audio-interpolation" value="Hermite">
+                        <label for="snes-audio-hermite">Cubic Hermite</label>
+                    </fieldset>
+                </div>
+                <div id="gba-config" hidden>
+                    <fieldset>
+                        <legend>Color correction</legend>
+
+                        <input type="radio" id="gba-color-correct-none" name="gba-color-correct" value="None">
+                        <label for="gba-color-correct-none">None</label>
+
+                        <input type="radio" id="gba-color-correct-gbalcd" name="gba-color-correct" value="GbaLcd">
+                        <label for="gba-color-correct-gbalcd">Game Boy Advance LCD</label>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Audio interpolation</legend>
+
+                        <input type="radio" id="gba-audio-interpolation-nearest" name="gba-audio-interpolation" value="NearestNeighbor">
+                        <label for="gba-audio-interpolation-nearest">Nearest neighbor</label>
+
+                        <input type="radio" id="gba-audio-interpolation-cubic" name="gba-audio-interpolation" value="CubicHermite">
+                        <label for="gba-audio-interpolation-cubic">Cubic Hermite</label>
+
+                        <input type="radio" id="gba-audio-interpolation-sinc" name="gba-audio-interpolation" value="WindowedSinc">
+                        <label for="gba-audio-interpolation-sinc">Windowed sinc</label>
+                    </fieldset>
+
+                    <div>
+                        <input type="checkbox" id="gba-skip-bios-animation">
+                        <label for="gba-skip-bios-animation">Skip BIOS intro animation</label>
+                    </div>
+
+                    <div>
+                        <input type="checkbox" id="gba-frame-blending">
+                        <label for="gba-frame-blending">Interframe blending</label>
+                    </div>
+
+                    <div>
+                        <input type="checkbox" id="gba-psg-low-pass">
+                        <label for="gba-psg-low-pass">Apply low-pass filter to PSG (enhanced interpolation only)</label>
+                    </div>
+                </div>
+                <div style="margin-top:10px;">
+                    <input type="button" id="restore-defaults" value="Restore default config">
+                </div>
+                <div id="supported-files-info" style="margin-top:10px;">
+                    <p>Supported platforms in this interface:</p>
+                    <ul>
+                        <li>Sega Genesis (.md / .gen / .bin / .smd)</li>
+                        <li>Sega CD (.chd)</li>
+                        <li>Sega 32X (.32x)</li>
+                        <li>Sega Master System (.sms)</li>
+                        <li>Game Gear (.gg)</li>
+                        <li>SNES (.sfc / .smc)</li>
+                        <li>Game Boy Advance (.gba)</li>
+                    </ul>
+                    <p>Sega CD and GBA require a BIOS ROM to be configured</p>
+                    <p>32X is extremely CPU-intensive and may not run at full speed</p>
+                </div>
+                <div id="input-config" hidden>
+                    <p>Controls:</p>
+                    <div id="controls"></div>
+                    <div>Press F8 to toggle fullscreen</div>
+                </div>
+            </div>
+        </div>
+        <div id="footer" class="hide-fullscreen" hidden>
+            <p>Built from <span id="build-commit-link"></span></p>
+            <p>Source and native version: <a href="https://github.com/jsgroth/jgenesis">https://github.com/jsgroth/jgenesis</a></p>
+        </div>
+        <script type="module">
+            import init, {
+                EmulatorChannel,
+                WebConfigRef,
+                build_commit_hash,
+                run_emulator,
+            } from "./pkg/jgenesis_web.js";
+
+            await init();
+
+            let config = new WebConfigRef();
+            let channel = new EmulatorChannel();
+
+            function setChecked(elem, value) {
+                elem.checked = value;
+            }
+
+            function initConfigUi() {
+                // Common UI
+                document.querySelectorAll("input[name='image-filter']").forEach((elem) => {
+                    setChecked(elem, elem.getAttribute("value") === config.filter_mode());
+                });
+
+                document.querySelectorAll("input[name='blend-shader']").forEach((elem) => {
+                    setChecked(elem, elem.getAttribute("value") === config.preprocess_shader());
+                });
+
+                setChecked(document.getElementById("auto-prescale"), config.auto_prescale());
+
+                // SMS/GG UI
+                document.querySelectorAll("input[name='sms-timing-mode']").forEach((elem) => {
+                    setChecked(elem, elem.getAttribute("value") === config.sms_timing_mode());
+                });
+
+                document.querySelectorAll("input[name='sms-aspect-ratio']").forEach((elem) => {
+                    setChecked(elem, elem.getAttribute("value") === config.sms_aspect_ratio());
+                });
+
+                document.querySelectorAll("input[name='gg-aspect-ratio']").forEach((elem) => {
+                    setChecked(elem, elem.getAttribute("value") === config.gg_aspect_ratio());
+                });
+
+                setChecked(document.getElementById("sms-crop-vertical-border"), config.sms_crop_vertical_border());
+                setChecked(document.getElementById("sms-crop-left-border"), config.sms_crop_left_border());
+                setChecked(document.getElementById("sms-fm-enabled"), config.sms_fm_enabled());
+                setChecked(document.getElementById("sms-remove-sprite-limit"), config.sms_remove_sprite_limit());
+
+                // Genesis UI
+                document.querySelectorAll("input[name='gen-aspect-ratio']").forEach((elem) => {
+                    setChecked(elem, elem.getAttribute("value") === config.genesis_aspect_ratio());
+                });
+
+                document.querySelectorAll("input[name='gen-m68k-divider']").forEach((elem) => {
+                    setChecked(elem, parseInt(elem.getAttribute("value")) === config.genesis_m68k_divider());
+                });
+
+                setChecked(document.getElementById("genesis-non-linear-color-scale"), config.genesis_non_linear_color_scale());
+                setChecked(document.getElementById("genesis-remove-sprite-limits"), config.genesis_remove_sprite_limits());
+                setChecked(document.getElementById("genesis-emulate-low-pass"), config.genesis_emulate_low_pass());
+                setChecked(document.getElementById("genesis-render-vertical-border"), config.genesis_render_vertical_border());
+                setChecked(document.getElementById("genesis-render-horizontal-border"), config.genesis_render_horizontal_border());
+
+                // SNES UI
+                document.querySelectorAll("input[name='snes-aspect-ratio']").forEach((elem) => {
+                    setChecked(elem, elem.getAttribute("value") === config.snes_aspect_ratio());
+                });
+
+                document.querySelectorAll("input[name='snes-audio-interpolation']").forEach((elem) => {
+                    setChecked(elem, elem.getAttribute("value") === config.snes_audio_interpolation());
+                });
+
+                // GBA UI
+                document.querySelectorAll("input[name='gba-color-correct']").forEach((elem) => {
+                    setChecked(elem, elem.getAttribute("value") === config.gba_color_correction());
+                });
+
+                document.querySelectorAll("input[name='gba-audio-interpolation']").forEach((elem) => {
+                    setChecked(elem, elem.getAttribute("value") === config.gba_audio_interpolation());
+                });
+
+                setChecked(document.getElementById("gba-skip-bios-animation"), config.gba_skip_bios_animation());
+                setChecked(document.getElementById("gba-frame-blending"), config.gba_frame_blending());
+                setChecked(document.getElementById("gba-psg-low-pass"), config.gba_psg_low_pass());
+            }
+
+            initConfigUi();
+
+            function downloadSaveFile() {
+                const currentFileName = channel.current_file_name();
+
+                const openReq = indexedDB.open("saves");
+                openReq.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const tx = db.transaction(["files"]);
+                    const objectStore = tx.objectStore("files");
+
+                    const getReq = objectStore.get(currentFileName);
+                    getReq.onsuccess = (event) => {
+                        const value = event.target.result;
+                        if (!value || !value["data"] || !value["data"]["sav"]) {
+                            alert(`No save file found for ${currentFileName}`);
+                            return;
+                        }
+
+                        const saveBytes = value["data"]["sav"];
+
+                        const saveFileName = currentFileName.replace(/\.[a-zA-Z]*$/, ".sav");
+
+                        const a = document.createElement("a");
+                        a.href = window.URL.createObjectURL(new Blob([saveBytes], {type: "application/octet-stream"}));
+                        a.download = saveFileName;
+
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    };
+                };
+            }
+
+            document.getElementById("open-file").addEventListener("click", () => {
+                channel.request_open_file();
+            });
+
+            document.getElementById("sega-cd-bios").addEventListener("click", () => {
+                channel.request_open_sega_cd_bios();
+            });
+
+            document.getElementById("gba-bios").addEventListener("click", () => {
+                channel.request_open_gba_bios();
+            });
+
+            document.getElementById("reset-emulator").addEventListener("click", () => {
+                channel.request_reset();
+            });
+
+            document.getElementById("download-save-file").addEventListener("click", downloadSaveFile);
+
+            document.getElementById("upload-save-file").addEventListener("click", () => {
+                channel.request_upload_save_file();
+            });
+
+            document.querySelectorAll("input[name='image-filter']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_filter_mode(event.target.value);
+                });
+            });
+
+            document.querySelectorAll("input[name='blend-shader']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_preprocess_shader(event.target.value);
+                });
+            });
+
+            document.getElementById("auto-prescale").addEventListener("click", (event) => {
+                config.set_auto_prescale(event.target.checked);
+            });
+
+            document.querySelectorAll("input[name='sms-timing-mode']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_sms_timing_mode(event.target.value);
+                });
+            });
+
+            document.querySelectorAll("input[name='sms-aspect-ratio']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_sms_aspect_ratio(event.target.value);
+                });
+            });
+
+            document.querySelectorAll("input[name='gg-aspect-ratio']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_gg_aspect_ratio(event.target.value);
+                });
+            });
+
+            document.getElementById("sms-crop-vertical-border").addEventListener("click", (event) => {
+                config.set_sms_crop_vertical_border(event.target.checked);
+            });
+
+            document.getElementById("sms-crop-left-border").addEventListener("click", (event) => {
+                config.set_sms_crop_left_border(event.target.checked);
+            });
+
+            document.getElementById("sms-fm-enabled").addEventListener("click", (event) => {
+                config.set_sms_fm_enabled(event.target.checked);
+            });
+
+            document.getElementById("sms-remove-sprite-limit").addEventListener("click", (event) => {
+                config.set_sms_remove_sprite_limit(event.target.checked);
+            });
+
+            document.querySelectorAll("input[name='gen-aspect-ratio']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_genesis_aspect_ratio(event.target.value);
+                });
+            });
+
+            document.querySelectorAll("input[name='gen-m68k-divider']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_genesis_m68k_divider(event.target.value);
+                });
+            });
+
+            document.getElementById("genesis-remove-sprite-limits").addEventListener("click", (event) => {
+                config.set_genesis_remove_sprite_limits(event.target.checked);
+            });
+
+            document.getElementById("genesis-non-linear-color-scale").addEventListener("click", (event) => {
+                config.set_genesis_non_linear_color_scale(event.target.checked);
+            });
+
+            document.getElementById("genesis-emulate-low-pass").addEventListener("click", (event) => {
+                config.set_genesis_emulate_low_pass(event.target.checked);
+            });
+
+            document.getElementById("genesis-render-vertical-border").addEventListener("click", (event) => {
+                config.set_genesis_render_vertical_border(event.target.checked);
+            });
+
+            document.getElementById("genesis-render-horizontal-border").addEventListener("click", (event) => {
+                config.set_genesis_render_horizontal_border(event.target.checked);
+            });
+
+            document.querySelectorAll("input[name='snes-aspect-ratio']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_snes_aspect_ratio(event.target.value);
+                });
+            });
+
+            document.querySelectorAll("input[name='snes-audio-interpolation']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_snes_audio_interpolation(event.target.value);
+                });
+            });
+
+            document.querySelectorAll("input[name='gba-color-correct']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_gba_color_correction(event.target.value);
+                });
+            });
+
+            document.querySelectorAll("input[name='gba-audio-interpolation']").forEach((element) => {
+                element.addEventListener("click", (event) => {
+                    config.set_gba_audio_interpolation(event.target.value);
+                });
+            });
+
+            document.getElementById("gba-skip-bios-animation").addEventListener("click", (event) => {
+                config.set_gba_skip_bios_animation(event.target.checked);
+            });
+
+            document.getElementById("gba-frame-blending").addEventListener("click", (event) => {
+                config.set_gba_frame_blending(event.target.checked);
+            });
+
+            document.getElementById("gba-psg-low-pass").addEventListener("click", (event) => {
+                config.set_gba_psg_low_pass(event.target.checked);
+            });
+
+            window.inputClickListener = (event) => {
+                let inputName = event.target.getAttribute("data-name");
+                channel.request_configure_input(inputName);
+            };
+
+            document.getElementById("restore-defaults").addEventListener("click", () => {
+                config.restore_defaults();
+                initConfigUi();
+            });
+
+            (() => {
+                let buildCommitHash = build_commit_hash();
+                let commitLinkSpan = document.getElementById("build-commit-link");
+                if (buildCommitHash) {
+                    let link = document.createElement("a");
+                    link.href = `https://github.com/jsgroth/jgenesis/commit/${buildCommitHash}`;
+                    link.innerText = buildCommitHash;
+                    commitLinkSpan.append(link);
+                } else {
+                    commitLinkSpan.innerText = "<unknown>";
+                }
+            })();
+
+            await run_emulator(config.clone(), channel.clone());
+        </script>
+    </body>
+</html>

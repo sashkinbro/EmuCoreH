@@ -1,0 +1,76 @@
+use bincode::{Decode, Encode};
+use jgenesis_common::define_controller_inputs;
+use jgenesis_common::frontend::{FiniteF64, MappableInputs};
+use jgenesis_common::input::Player;
+use jgenesis_proc_macros::{EnumAll, EnumDisplay};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Encode, Decode, EnumDisplay, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum GbAspectRatio {
+    #[default]
+    SquarePixels,
+    Stretched,
+}
+
+impl GbAspectRatio {
+    #[inline]
+    #[must_use]
+    pub fn to_pixel_aspect_ratio(self) -> Option<FiniteF64> {
+        match self {
+            Self::SquarePixels => Some(FiniteF64::ONE),
+            Self::Stretched => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Encode, Decode, EnumDisplay, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum GbPalette {
+    BlackAndWhite,
+    #[default]
+    GreenTint,
+    LimeGreen,
+    Custom,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Encode, Decode, EnumDisplay, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum GbcColorCorrection {
+    None,
+    #[default]
+    GbcLcd,
+    GbaLcd,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Encode, Decode, EnumDisplay, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum GbAudioResampler {
+    LowPassNearestNeighbor,
+    #[default]
+    WindowedSinc,
+}
+
+define_controller_inputs! {
+    buttons: GameBoyButton {
+        Up -> up "Up",
+        Left -> left "Left",
+        Right -> right "Right",
+        Down -> down "Down",
+        A -> a "A",
+        B -> b "B",
+        Start -> start "Start",
+        Select -> select "Select",
+    },
+    joypad: GameBoyInputs impl with_allow_opposing_directions,
+}
+
+impl MappableInputs<GameBoyButton> for GameBoyInputs {
+    #[inline]
+    fn set_field(&mut self, button: GameBoyButton, _player: Player, pressed: bool) {
+        self.set_button(button, pressed);
+    }
+}

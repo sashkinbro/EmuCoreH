@@ -1,0 +1,264 @@
+//! Code for loading and reading CD-ROM images in CHD format
+
+use crate::cdtime::CdTime;
+use crate::cue::{CueSheet, Track, TrackMode, TrackType};
+use crate::reader::{SECTOR_HEADER_LEN, synthesize_data_header};
+use crate::{CdRomError, CdRomResult, cue};
+use chd::Chd;
+use chd::iter::LendingIterator;
+use std::fmt::{Debug, Formatter};
+use std::io::{Read, Seek};
+use std::str::FromStr;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PregapType {
+    Mode1,
+    Audio,
+}
+
+impl FromStr for PregapType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "MODE1" => Ok(Self::Mode1),
+            "VAUDIO" => Ok(Self::Audio),
+            _ => Err(format!("unrecognized PGTYPE: {s}")),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct CdMetadata {
+    track_number: u8,
+    mode: TrackMode,
+    frames: u32,
+    pregap_frames: u32,
+    pregap_type: Option<PregapType>,
+}
+
+impl CdMetadata {
+    fn parse_from(ascii_bytes: Vec<u8>) -> Option<Self> {
+        let text = String::from_utf8(ascii_bytes).ok()?;
+
+        log::debug!("CHD metadata line: {text}");
+
+        let mut track_number: Option<u8> = None;
+        let mut track_mode: Option<TrackMode> = None;
+        let mut frames: Option<u32> = None;
+        let mut pregap_frames: u32 = 0;
+        let mut pregap_type: Option<PregapType> = None;
+        for token in text.split(' ') {
+            let Some((key, value)) = token.split_once(':') else { continue };
+
+            match key {
+                "TRACK" => track_number = Some(value.parse().ok()?),
+                "TYPE" => match value {
+                    "MODE1/2352" | "MODE1_RAW" => track_mode = Some(TrackMode::Mode1),
+                    "MODE1/2048" | "MODE1" => track_mode = Some(TrackMode::Mode1DataOnly),
+                    "MODE2/2352" | "MODE2_RAW" => track_mode = Some(TrackMode::Mode2),
+                    "AUDIO" => track_mode = Some(TrackMode::Audio),
+                    _ => return None,
+                },
+                "FRAMES" => frames = Some(value.parse().ok()?),
+                "PREGAP" => pregap_frames = value.parse().ok()?,
+                "PGTYPE" => pregap_type = Some(value.parse().ok()?),
+                _ => {}
+            }
+        }
+
+        Some(Self {
+            track_number: track_number?,
+            mode: track_mode?,
+            frames: frames?,
+            pregap_frames,
+            pregap_type,
+        })
+    }
+}
+
+pub struct ChdFile<F: Read + Seek> {
+    chd: Chd<F>,
+    cue: CueSheet,
+    track_start_frames: Vec<u32>,
+    compressed_buffer: Vec<u8>,
+    decompressed_buffer: Vec<u8>,
+    current_hunk_number: u32,
+}
+
+impl<F: Read + Seek> ChdFile<F> {
+    pub fn open(f: F) -> CdRomResult<(Self, CueSheet)> {
+        let mut chd = Chd::open(f, None)?;
+
+        // Parse TOC info from CHD metadata
+        let mut metadata_iter = chd.metadata();
+        let mut cd_metadata_list = Vec::new();
+        while let Some(mut metadata_entry) = metadata_iter.next() {
+            let metadata = metadata_entry.read()?;
+
+            let Some(cd_metadata) = CdMetadata::parse_from(metadata.value.clone()) else {
+                let value_str = String::from_utf8_lossy(&metadata.value).to_string();
+                return Err(CdRomError::ChdHeaderParseError { metadata_value: value_str });
+            };
+
+            cd_metadata_list.push(cd_metadata);
+        }
+
+        cd_metadata_list.sort_by_key(|metadata| metadata.track_number);
+        validate_track_numbers(&cd_metadata_list)?;
+
+        // Use parsed info to build the TOC
+        let mut tracks = Vec::new();
+        let mut track_start_frames = Vec::with_capacity(cd_metadata_list.len());
+        let mut current_start_time = CdTime::ZERO;
+        let mut current_frame = 0;
+        for cd_metadata in cd_metadata_list {
+            let track_type = cd_metadata.mode.to_type();
+            let pregap_len = match track_type {
+                TrackType::Data => {
+                    // Data tracks always have a 2-second pregap
+                    CdTime::new(0, 2, 0)
+                }
+                TrackType::Audio => CdTime::from_frames(cd_metadata.pregap_frames),
+            };
+
+            let postgap_len = track_type.default_postgap_len();
+
+            let track_len = CdTime::from_frames(cd_metadata.frames);
+            let padded_track_len = pregap_len + track_len + postgap_len;
+
+            tracks.push(Track {
+                number: cd_metadata.track_number,
+                mode: cd_metadata.mode,
+                track_type,
+                start_time: current_start_time,
+                end_time: current_start_time + padded_track_len,
+                pregap_len,
+                pause_len: match track_type {
+                    TrackType::Audio
+                        if cd_metadata
+                            .pregap_type
+                            .is_none_or(|pgtype| pgtype == PregapType::Audio) =>
+                    {
+                        pregap_len
+                    }
+                    _ => CdTime::ZERO,
+                },
+                postgap_len,
+            });
+            track_start_frames.push(current_frame);
+
+            current_start_time += padded_track_len;
+
+            // CHD pads all tracks to a multiple of 4 frames
+            current_frame += cd_metadata.frames;
+            if current_frame % 4 != 0 {
+                current_frame = (current_frame & !3) + 4;
+            }
+        }
+
+        cue::finalize_track_list(&mut tracks);
+
+        assert!(
+            cue::tracks_are_continuous(&tracks),
+            "CHD tracks are not continuous; this is a bug"
+        );
+
+        log::debug!("CHD track start frames: {track_start_frames:?}");
+
+        let compressed_buffer = Vec::with_capacity(chd.header().hunk_size() as usize);
+        let decompressed_buffer = chd.get_hunksized_buffer();
+
+        let cue_sheet = CueSheet::new(tracks);
+        let chd_file = Self {
+            chd,
+            cue: cue_sheet.clone(),
+            track_start_frames,
+            compressed_buffer,
+            decompressed_buffer,
+            current_hunk_number: u32::MAX,
+        };
+
+        Ok((chd_file, cue_sheet))
+    }
+
+    pub fn read_sector(
+        &mut self,
+        track_number: u8,
+        relative_time: CdTime,
+        relative_sector_number: u32,
+        out: &mut [u8],
+    ) -> CdRomResult<()> {
+        let track_start_frame = self.track_start_frames[(track_number - 1) as usize];
+        let sector_number = track_start_frame + relative_sector_number;
+
+        let hunk_size = self.chd.header().hunk_size();
+        let unit_bytes = self.chd.header().unit_bytes();
+        let hunk_size_sectors = hunk_size / unit_bytes;
+
+        let hunk_number = sector_number / hunk_size_sectors;
+        let hunk_offset_sectors = sector_number % hunk_size_sectors;
+        let hunk_offset_bytes = (hunk_offset_sectors * unit_bytes) as usize;
+
+        // Only load hunk if necessary
+        if hunk_number != self.current_hunk_number {
+            let mut hunk = self.chd.hunk(hunk_number)?;
+
+            self.compressed_buffer.clear();
+            hunk.read_hunk_in(&mut self.compressed_buffer, &mut self.decompressed_buffer)?;
+
+            self.current_hunk_number = hunk_number;
+        }
+
+        let track = self.cue.track(track_number);
+        let track_mode = track.mode;
+        let track_type = track.track_type;
+
+        match track_mode {
+            TrackMode::Mode1DataOnly => {
+                // 2048-byte sectors
+                out[..SECTOR_HEADER_LEN as usize]
+                    .copy_from_slice(&synthesize_data_header(track_mode, relative_time));
+                out[SECTOR_HEADER_LEN as usize..(SECTOR_HEADER_LEN + 2048) as usize]
+                    .copy_from_slice(
+                        &self.decompressed_buffer[hunk_offset_bytes..hunk_offset_bytes + 2048],
+                    );
+                out[(SECTOR_HEADER_LEN + 2048) as usize..crate::BYTES_PER_SECTOR as usize].fill(0);
+            }
+            TrackMode::Mode1 | TrackMode::Mode2 | TrackMode::Audio => {
+                out[..crate::BYTES_PER_SECTOR as usize].copy_from_slice(
+                    &self.decompressed_buffer
+                        [hunk_offset_bytes..hunk_offset_bytes + crate::BYTES_PER_SECTOR as usize],
+                );
+            }
+        }
+
+        if track_type == TrackType::Audio {
+            // CHD audio tracks decompress into big-endian audio samples for some reason. Swap all
+            // the bytes to make them little-endian to match the CD-DA format
+            for chunk in out[..crate::BYTES_PER_SECTOR as usize].as_chunks_mut::<2>().0 {
+                chunk.swap(0, 1);
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl<F: Read + Seek> Debug for ChdFile<F> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ChdFile {{ current_hunk_number: {} }}", self.current_hunk_number)
+    }
+}
+
+fn validate_track_numbers(cd_metadata_list: &[CdMetadata]) -> CdRomResult<()> {
+    for (i, metadata) in cd_metadata_list.iter().enumerate() {
+        if metadata.track_number != (i + 1) as u8 {
+            let track_numbers =
+                cd_metadata_list.iter().map(|metadata| metadata.track_number).collect();
+            return Err(CdRomError::ChdInvalidTrackList { track_numbers });
+        }
+    }
+
+    Ok(())
+}

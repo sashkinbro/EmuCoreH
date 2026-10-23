@@ -1,0 +1,51 @@
+[package]
+name = "jgenesis-native-driver"
+version = { workspace = true }
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cdrom = { workspace = true }
+jgenesis-proc-macros = { workspace = true }
+jgenesis-common = { workspace = true }
+
+gb-core = { workspace = true }
+gba-core = { workspace = true }
+genesis-components = { workspace = true }
+genesis-core = { workspace = true }
+nes-core = { workspace = true }
+pce-core = { workspace = true }
+s32x-core = { workspace = true }
+segacd-core = { workspace = true }
+smsgg-core = { workspace = true }
+snes-core = { workspace = true }
+
+gb-config = { workspace = true }
+gba-config = { workspace = true }
+genesis-config = { workspace = true }
+nes-config = { workspace = true }
+pce-config = { workspace = true }
+smsgg-config = { workspace = true }
+snes-config = { workspace = true }
+
+egui-sdl3-wgpu = { workspace = true }
+jgenesis-debugger-frontend = { workspace = true }
+jgenesis-native-config = { workspace = true }
+jgenesis-renderer = { workspace = true, features = ["serde", "ttf"] }
+
+bincode = { workspace = true }
+clap = { workspace = true }
+log = { workspace = true }
+pollster = { workspace = true }
+regex = { workspace = true }
+rustc-hash = { workspace = true }
+sdl3 = { workspace = true }
+sdl3-sys = { workspace = true }
+sevenz-rust = { workspace = true }
+thiserror = { workspace = true }
+zip = { workspace = true }
+zstd = { workspace = true }
+
+[lints]
+workspace = true

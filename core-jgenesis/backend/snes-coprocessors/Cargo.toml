@@ -1,0 +1,22 @@
+[package]
+name = "snes-coprocessors"
+version = { workspace = true }
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+jgenesis-common = { workspace = true }
+jgenesis-proc-macros = { workspace = true }
+
+arm7tdmi-emu = { workspace = true }
+wdc65816-emu = { workspace = true }
+
+bincode = { workspace = true }
+bytemuck = { workspace = true }
+log = { workspace = true }
+thiserror = { workspace = true }
+time = { workspace = true }
+
+[lints]
+workspace = true

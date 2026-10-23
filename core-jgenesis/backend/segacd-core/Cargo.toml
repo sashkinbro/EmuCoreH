@@ -1,0 +1,26 @@
+[package]
+name = "segacd-core"
+version = { workspace = true }
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dsp = { workspace = true }
+cdrom = { workspace = true }
+jgenesis-proc-macros = { workspace = true }
+jgenesis-common = { workspace = true }
+
+genesis-config = { workspace = true }
+
+m68000-emu = { workspace = true }
+
+genesis-components = { workspace = true }
+
+bincode = { workspace = true }
+log = { workspace = true }
+regex = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

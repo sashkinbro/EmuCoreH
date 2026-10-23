@@ -1,0 +1,213 @@
+[workspace]
+members = [
+    "common/*",
+    "cpu/*",
+    "config/*",
+    "backend/*",
+    "frontend/*",
+]
+default-members = ["frontend/jgenesis-gui"]
+resolver = "3"
+
+[workspace.package]
+version = "0.14.1"
+
+[workspace.dependencies]
+# Third-party dependencies
+anyhow = "1"
+arboard = "3"
+base64 = "0.22"
+bincode = "2"
+bytemuck = { version = "1", features = ["derive"] }
+chd = "0.3"
+clap = { version = "4", features = ["derive"] }
+crc = "3"
+directories = "6"
+egui = "0.34"
+egui_extras = "0.34"
+egui-system-fonts = "0.34"
+egui-wgpu = "0.34"
+emath = "0.34"
+env_logger = "0.11"
+flate2 = "1"
+getrandom = "0.4"
+glyphon = "0.11"
+image = "0.25"
+log = "0.4"
+multiversion = "0.8"
+num = "0.4"
+open = "5"
+pollster = "0.4"
+polonius-the-crab = "0.5"
+rand = "0.10"
+raw-window-handle = "0.6"
+rayon = "1"
+regex = "1"
+rfd = "0.17"
+rustc-hash = "2"
+sdl3 = { version = "0.18", features = ["raw-window-handle"] }
+sdl3-sys = { version = "0.6" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sevenz-rust = "0.6"
+smithay-clipboard = "0.7"
+test-log = "0.2"
+thiserror = "2"
+time = "0.3"
+tinyvec = "1"
+toml = "1"
+toml_edit = "0.25"
+wgpu = "29"
+zip = "8"
+zstd = "0.13"
+
+# WASM-only dependencies
+console_error_panic_hook = "0.1"
+console_log = "1"
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3"
+web-time = "1"
+winit = "0.30"
+
+# Build-only dependencies
+naga = "29"
+
+# Workspace common libraries
+cdrom = { path = "common/cdrom" }
+dsp = { path = "common/dsp" }
+jgenesis-common = { path = "common/jgenesis-common" }
+jgenesis-proc-macros = { path = "common/jgenesis-proc-macros" }
+
+# Workspace CPU libraries
+arm7tdmi-emu = { path = "cpu/arm7tdmi-emu" }
+huc6280-emu = { path = "cpu/huc6280-emu" }
+m68000-emu = { path = "cpu/m68000-emu" }
+mos6502-emu = { path = "cpu/mos6502-emu" }
+sh2-emu = { path = "cpu/sh2-emu" }
+spc700-emu = { path = "cpu/spc700-emu" }
+wdc65816-emu = { path = "cpu/wdc65816-emu" }
+z80-emu = { path = "cpu/z80-emu" }
+
+# Workspace config libraries
+gba-config = { path = "config/gba-config" }
+gb-config = { path = "config/gb-config" }
+genesis-config = { path = "config/genesis-config" }
+nes-config = { path = "config/nes-config" }
+pce-config = { path = "config/pce-config" }
+smsgg-config = { path = "config/smsgg-config" }
+snes-config = { path = "config/snes-config" }
+
+# Workspace backend libraries
+gba-core = { path = "backend/gba-core" }
+gb-core = { path = "backend/gb-core" }
+genesis-components = { path = "backend/genesis-components" }
+genesis-core = { path = "backend/genesis-core" }
+nes-core = { path = "backend/nes-core" }
+pce-core = { path = "backend/pce-core" }
+s32x-core = { path = "backend/s32x-core" }
+segacd-core = { path = "backend/segacd-core" }
+smsgg-core = { path = "backend/smsgg-core" }
+snes-coprocessors = { path = "backend/snes-coprocessors" }
+snes-core = { path = "backend/snes-core" }
+ti-sn76489 = { path = "backend/ti-sn76489" }
+ym-opll = { path = "backend/ym-opll" }
+
+# Workspace frontend libraries
+egui-sdl3-wgpu = { path = "frontend/egui-sdl3-wgpu" }
+jgenesis-debugger-frontend = { path = "frontend/jgenesis-debugger-frontend" }
+jgenesis-native-config = { path = "frontend/jgenesis-native-config" }
+jgenesis-native-driver = { path = "frontend/jgenesis-native-driver" }
+jgenesis-renderer = { path = "frontend/jgenesis-renderer" }
+
+[profile.dev.build-override]
+opt-level = 1
+
+[profile.dev-fast]
+# dev profile with a few adjustments for faster incremental compile times
+inherits = "dev"
+# disable debuginfo
+debug = false
+strip = "debuginfo"
+# set opt-level=1 because most of the emulators are unusably slow without optimizations
+opt-level = 1
+
+[profile.dev-fast.build-override]
+# build proc-macro crates with full optimizations
+opt-level = 3
+
+[profile.release]
+incremental = true
+lto = "thin"
+
+[profile.release.build-override]
+opt-level = 1
+
+[profile.release-lto]
+inherits = "release"
+incremental = false
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.profiling]
+inherits = "release"
+debug = true
+
+[profile.profiling-lto]
+inherits = "profiling"
+lto = true
+
+[workspace.lints.rust]
+rust_2018_idioms = "warn"
+
+[workspace.lints.clippy]
+# Warn broadly on all/pedantic, allowing the broad warns to be overridden
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+# Warn on a small selection of restriction lints
+clone_on_ref_ptr = "warn"
+dbg_macro = "warn"
+empty_drop = "warn"
+empty_structs_with_brackets = "warn"
+float_cmp_const = "warn"
+fn_to_numeric_cast_any = "warn"
+get_unwrap = "warn"
+if_then_some_else_none = "warn"
+mixed_read_write_in_expression = "warn"
+mod_module_files = "warn"
+mutex_atomic = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+suspicious_xor_used_as_pow = "warn"
+todo = "warn"
+try_err = "warn"
+unneeded_field_pattern = "warn"
+unseparated_literal_suffix = "warn"
+verbose_file_reads = "warn"
+
+# Allow pedantic lints that have a high false positive rate or that I disagree with
+cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"
+enum_glob_use = "allow"
+if_not_else = "allow"
+inline_always = "allow"
+manual_string_new = "allow"
+map_unwrap_or = "allow"
+module_name_repetitions = "allow"
+needless_pass_by_value = "allow"
+similar_names = "allow"
+single_match_else = "allow"
+stable_sort_primitive = "allow"
+struct_excessive_bools = "allow"
+struct_field_names = "allow"
+too_many_lines = "allow"
+unchecked_time_subtraction = "allow"
+unreadable_literal = "allow"
+verbose_bit_mask = "allow"

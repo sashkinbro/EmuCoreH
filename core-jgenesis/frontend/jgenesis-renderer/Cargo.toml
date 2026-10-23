@@ -1,0 +1,34 @@
+[package]
+name = "jgenesis-renderer"
+version = { workspace = true }
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = []
+clap = ["dep:clap"]
+serde = ["dep:serde"]
+ttf = ["dep:glyphon"]
+
+[dependencies]
+jgenesis-proc-macros = { workspace = true }
+jgenesis-common = { workspace = true }
+
+bytemuck = { workspace = true }
+clap = { workspace = true, optional = true }
+glyphon = { workspace = true, optional = true }
+log = { workspace = true }
+raw-window-handle = { workspace = true }
+serde = { workspace = true, optional = true }
+thiserror = { workspace = true }
+wgpu = { workspace = true }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+pollster = { workspace = true }
+
+[build-dependencies]
+naga = { workspace = true, features = ["glsl-in", "wgsl-out"] }
+
+[lints]
+workspace = true

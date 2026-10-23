@@ -1,0 +1,15 @@
+[package]
+name = "wdc65816-emu"
+version = { workspace = true }
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+jgenesis-common = { workspace = true }
+
+bincode = { workspace = true }
+log = { workspace = true }
+
+[lints]
+workspace = true

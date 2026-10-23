@@ -1,0 +1,21 @@
+[package]
+name = "gb-core"
+version = { workspace = true }
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dsp = { workspace = true }
+jgenesis-common = { workspace = true }
+jgenesis-proc-macros = { workspace = true }
+
+gb-config = { workspace = true }
+
+bincode = { workspace = true, features = ["derive"] }
+log = { workspace = true }
+rand = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,18 @@
+[package]
+name = "cdrom"
+version = { workspace = true }
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+jgenesis-proc-macros = { workspace = true }
+
+bincode = { workspace = true, features = ["derive"] }
+chd = { workspace = true, features = ["fast_zstd", "unstable_lending_iterators"] }
+log = { workspace = true }
+regex = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

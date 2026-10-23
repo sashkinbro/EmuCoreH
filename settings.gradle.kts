@@ -25,3 +25,4 @@ dependencyResolutionManagement {
 rootProject.name = "EmuCoreH"
 include(":app")
 include(":core-android")
+include(":core-jgenesis-android")

@@ -1,0 +1,14 @@
+.idea
+*.iml
+/target
+
+/.cargo/config.toml
+
+/jgenesis-config.toml
+/saves
+/states
+
+/scripts/lpf.csv
+
+# SDL2 libraries needed for rust-sdl2
+/SDL2*

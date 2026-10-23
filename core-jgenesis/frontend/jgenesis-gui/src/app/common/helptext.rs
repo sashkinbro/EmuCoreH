@@ -1,0 +1,172 @@
+use crate::app::HelpText;
+
+pub const FULLSCREEN: HelpText = HelpText {
+    heading: "Fullscreen",
+    text: &["If enabled, launch fullscreen instead of windowed."],
+};
+
+pub const INITIAL_WINDOW_SIZE: HelpText = HelpText {
+    heading: "Initial Window Size",
+    text: &[
+        "Initial window size when not running in fullscreen, as a multiple of the console's native resolution.",
+        "Changing this setting will only take effect after opening a new game.",
+    ],
+};
+
+pub const BORDERLESS_WINDOW: HelpText = HelpText {
+    heading: "Borderless Window",
+    text: &[
+        "If enabled, make the emulator window borderless (no window decorations). This has no effect when in fullscreen mode.",
+        "When this is enabled, you can click inside the window to drag it.",
+        "This setting is incompatible with mouse input mappings due to the click-to-drag behavior.",
+    ],
+};
+
+pub const WGPU_BACKEND: HelpText = HelpText {
+    heading: "wgpu Backend",
+    text: &[
+        "Specify which graphics API wgpu will use.",
+        "Auto is generally DirectX 12 on Windows and Vulkan on other platforms.",
+    ],
+};
+
+pub const WGPU_POWER_PREFERENCE: HelpText = HelpText {
+    heading: "wgpu Power Preference",
+    text: &[
+        "Configure the power preference used for choosing a graphics device, if multiple devices are available.",
+        "High performance generally picks a dedicated GPU. Low power generally picks an integrated GPU. No preference lets the OS decide.",
+    ],
+};
+
+pub const VSYNC_MODE: HelpText = HelpText {
+    heading: "VSync Mode",
+    text: &[
+        "Enable video synchronization. Prevents screen tearing and may improve frame pacing, but may also increase input latency.",
+        "Fast VSync prevents screen tearing but otherwise behaves similarly to disabled VSync.",
+    ],
+};
+
+pub const FILTER_MODE: HelpText = HelpText {
+    heading: "Image Filtering",
+    text: &[
+        "Configure texture filtering mode used when rendering frames to the display.",
+        "Nearest neighbor is very sharp but may cause aliasing when using a non-integer resolution scale or non-square pixels.",
+        "Linear interpolation is smooth but can be blurry if not combined with prescaling.",
+    ],
+};
+
+pub const SUPERSAMPLE_MINIFICATION: HelpText = HelpText {
+    heading: "Supersampled Minification",
+    text: &[
+        "Render using supersampling when minifying the image by a factor of 2 or larger, i.e. when the display window is less than half the width or height of the emulator frame.",
+        "When the frame is a very high resolution either natively or because of shaders, this can reduce aliasing at a moderately low GPU performance cost (depending on resolution).",
+    ],
+};
+
+pub const PREPROCESS_SHADER: HelpText = HelpText {
+    heading: "Video Shader",
+    text: &[
+        "Configure an optional shader to apply to the emulated console's video output.",
+        "The NTSC shader only works with consoles that natively support TV output (i.e. not handhelds).",
+        "The SNES Adaptive blur shader blurs horizontally at 2x native resolution, except in SNES high-res mode where it blurs at 1x native.",
+    ],
+};
+
+pub const ANTI_DITHER_SHADER: HelpText = HelpText {
+    heading: "Anti-Dither Shader",
+    text: &[
+        "Configure an optional anti-dither filter, applied before the video shader if enabled.",
+        "This attempts to remove dithering by blending horizontally adjacent colors that appear to be part of a dithered pixel pattern. This is based on heuristics and is not 100% reliable.",
+        "This setting does nothing if the video shader is set to NTSC or horizontal blur.",
+    ],
+};
+
+pub const FRAME_ROTATION: HelpText = HelpText {
+    heading: "Frame Rotation",
+    text: &[
+        "Optionally rotate the entire image.",
+        "Useful for handheld games or demos that are designed around rotating the console.",
+    ],
+};
+
+pub const SCANLINES: HelpText =
+    HelpText { heading: "Scanlines", text: &["Configure an optional scanlines filter."] };
+
+pub const PRESCALING: HelpText = HelpText {
+    heading: "Prescaling",
+    text: &[
+        "Apply integer upscaling before rendering frames to display. When combined with linear filtering, this creates an image that is sharp but with minimal aliasing.",
+        "Auto-prescale dynamically adjusts the upscale factor based on the ratio between the viewport size and the console's native resolution.",
+    ],
+};
+
+pub const INTEGER_HEIGHT_SCALING: HelpText = HelpText {
+    heading: "Force Integer Height Scaling",
+    text: &[
+        "If enabled, frames will always be displayed at the largest possible integer multiple of the console's native vertical resolution that will fit in the current viewport.",
+    ],
+};
+
+pub const MUTE_AUDIO: HelpText =
+    HelpText { heading: "Mute Audio", text: &["Mute all audio output."] };
+
+pub const AUDIO_SAMPLE_RATE: HelpText = HelpText {
+    heading: "Audio Sample Rate",
+    text: &[
+        "Configure the output sample rate.",
+        "Most audio devices should support both of these settings, but some may only support one.",
+    ],
+};
+
+pub const FRAME_TIME_SYNC: HelpText = HelpText {
+    heading: "Frame Time Sync",
+    text: &[
+        "If enabled, make a best effort to present video frames with consistent frame timing while maintaining the emulated system's native framerate.",
+        "This is different from VSync in that it's based purely on system time and does not perform any kind of synchronization with the graphics driver.",
+    ],
+};
+
+pub const AUDIO_SYNC: HelpText = HelpText {
+    heading: "Audio Sync",
+    text: &[
+        "If enabled, synchronize emulation speed to the audio output stream by blocking when the audio buffer is full.",
+        "This prevents audio popping caused by audio buffer overflows.",
+    ],
+};
+
+pub const AUDIO_DYNAMIC_RESAMPLING: HelpText = HelpText {
+    heading: "Audio Dynamic Resampling Ratio",
+    text: &[
+        "If enabled, periodically adjust the audio resampling ratio to try and keep the audio buffer as close as possible to the target buffer size. The audio buffer is allowed to grow to double size when this is enabled.",
+        "This should reduce audio pops caused by audio buffer underflow and overflow when using frame time sync or VSync.",
+        "Changing the resampling ratio this way does slightly change the audio pitch, but the difference should be inaudible - the adjusted ratio is restricted to being within 0.5% of the original ratio.",
+    ],
+};
+
+pub const AUDIO_BUFFER_SIZE: HelpText = HelpText {
+    heading: "Audio Buffer Size",
+    text: &[
+        "Configure the size of the audio buffer in samples. This is where audio is buffered before sending to the audio device.",
+        "This value is the max buffer capacity when audio sync is disabled, and the size at which the emulator will block when audio sync is enabled.",
+        "Dynamic resampling ratio uses this value as the target buffer size and allows the buffer to grow to double this value before dropping samples or blocking.",
+        "This setting affects audio latency.",
+    ],
+};
+
+pub const AUDIO_HARDWARE_QUEUE_SIZE: HelpText = HelpText {
+    heading: "Audio Hardware Queue Size",
+    text: &[
+        "Configure the number of samples to push whenever the audio device asks for more audio data.",
+        "Decreasing this value can increase CPU usage, and decreasing it too much can also cause various audio playback issues.",
+        "Increasing this value makes audio sync and dynamic resampling ratio less accurate, and it will also increase audio latency.",
+    ],
+};
+
+pub const AUDIO_GAIN: HelpText = HelpText {
+    heading: "Audio Gain",
+    text: &[
+        "Optionally configure a gain value to apply to final mixed audio output.",
+        "Positive values increase volume and negative values decrease volume. Can be an integer or decimal value.",
+        "Setting this too high can cause audio distortion.",
+    ],
+};

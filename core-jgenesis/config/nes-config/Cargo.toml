@@ -1,0 +1,21 @@
+[package]
+name = "nes-config"
+version = { workspace = true }
+edition = "2024"
+
+[features]
+default = []
+clap = ["dep:clap"]
+serde = ["dep:serde"]
+
+[dependencies]
+jgenesis-common = { workspace = true }
+jgenesis-proc-macros = { workspace = true }
+
+base64 = { workspace = true }
+bincode = { workspace = true, features = ["derive"] }
+clap = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+
+[lints]
+workspace = true

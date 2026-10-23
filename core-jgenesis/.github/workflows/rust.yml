@@ -1,0 +1,224 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  JGENESIS_VERSION: 0.14.1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install latest stable Rust toolchain
+      run: |
+        rustup update
+
+    - name: Install latest nightly Rust toolchain
+      run: |
+        rustup toolchain add nightly --component rustfmt --component rust-src
+
+    # https://github.com/libsdl-org/SDL/blob/main/docs/README-linux.md#build-dependencies
+    - name: Install SDL3 system dependencies
+      run: |
+        sudo apt-get update && \
+        sudo apt-get -y install build-essential git make \
+        pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev \
+        libaudio-dev libjack-dev libsndio-dev libx11-dev libxext-dev \
+        libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+        libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
+        libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev \
+        libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
+
+    - name: Check formatting
+      run: |
+        cargo +nightly fmt --check
+
+    - name: Build
+      run: |
+        cargo build --all
+
+    - name: Build with unstable cores enabled
+      run: |
+        cargo build --all --features unstable-cores
+
+    - name: Check Clippy warnings
+      run: |
+        cargo clippy --all -- -D warnings
+
+    - name: Run tests
+      run: |
+        cargo test --all
+
+    - name: Run tests with unstable cores enabled
+      run: |
+        cargo test --all --features unstable-cores
+  miri:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install latest stable Rust toolchain
+      run: |
+        rustup update
+
+    - name: Install latest nightly Rust toolchain
+      run: |
+        rustup toolchain add nightly --component rust-src --component miri
+
+    - name: Run miri tests
+      run: |
+        scripts/run-miri-tests.sh
+  build-web:
+    runs-on: ubuntu-latest
+
+    env:
+      JGENESIS_TOOLCHAIN: nightly
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install latest stable Rust toolchain
+        run: |
+          rustup update
+
+      - name: Install latest nightly Rust toolchain
+        run: |
+          rustup toolchain add $JGENESIS_TOOLCHAIN --component rust-src --component clippy
+
+      - name: Install wasm-pack
+        run: |
+          cargo install wasm-pack
+
+      - name: Build web
+        run: |
+          cd frontend/jgenesis-web && ./build.sh --dev
+
+      - name: Check Clippy warnings for web
+        run: |
+          cd frontend/jgenesis-web \
+          && RUSTFLAGS='--cfg getrandom_backend="wasm_js"' cargo +$JGENESIS_TOOLCHAIN clippy --target wasm32-unknown-unknown
+  linux-release-appimage:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install latest stable Rust toolchain
+        run: |
+          rustup update
+
+      - name: Install latest nightly Rust toolchain
+        run: |
+          rustup toolchain add nightly --component rustfmt --component rust-src
+
+      # https://github.com/libsdl-org/SDL/blob/main/docs/README-linux.md#build-dependencies
+      - name: Install SDL3 system dependencies
+        run: |
+          sudo apt-get update && \
+          sudo apt-get -y install build-essential git make \
+          pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev \
+          libaudio-dev libjack-dev libsndio-dev libx11-dev libxext-dev \
+          libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+          libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
+          libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev \
+          libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
+
+      - name: Get latest cargo-packager version
+        id: get-packager-version
+        run: |
+          cargo search cargo-packager | head -1 | cut -d' ' -f3 | sed -re 's/"(.*)"/version=\1/g' >> $GITHUB_OUTPUT
+
+      - name: Cache cargo-packager binary
+        id: packager-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cargo/bin/cargo-packager
+          key: ${{ runner.os }}-${{ steps.get-packager-version.outputs.version }}
+
+      - name: Install cargo-packager
+        if: steps.packager-cache.outputs.cache-hit != 'true'
+        run: |
+          cargo install cargo-packager --version ${{ steps.get-packager-version.outputs.version }}
+
+      - name: Build AppImage packages
+        run: |
+          RUST_LOG=debug cargo packager --profile release-lto -f appimage
+
+      - name: Upload GUI AppImage
+        uses: actions/upload-artifact@v6
+        with:
+          name: linux-x86_64-appimage
+          path: target/release-lto/jgenesis_${{ env.JGENESIS_VERSION }}_x86_64.AppImage
+  windows-release:
+    runs-on: ubuntu-latest
+
+    env:
+      SDL_VERSION: 3.4.10
+      DXC_RELEASE_TAG: v1.9.2602.24
+      DXC_ZIP_FILE: dxc_2026_05_27.zip
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install latest stable Rust toolchain
+        run: |
+          rustup update
+
+      - name: Install latest nightly Rust toolchain
+        run: |
+          rustup toolchain add nightly --component rustfmt --component rust-src
+
+      - name: Install mingw32
+        run: |
+          sudo apt-get update && sudo apt-get install -y mingw-w64
+
+      - name: Install Windows x64 Rust build target (stable)
+        run: |
+          rustup target add x86_64-pc-windows-gnu
+
+      - name: Install Windows x64 Rust build target (nightly)
+        run: |
+          rustup target add --toolchain nightly x86_64-pc-windows-gnu
+
+      - name: Download & extract Windows SDL3 libraries
+        run: |
+          wget https://github.com/libsdl-org/SDL/releases/download/release-$SDL_VERSION/SDL3-$SDL_VERSION-win32-x64.zip && \
+          unzip SDL3-$SDL_VERSION-win32-x64.zip -d sdl3
+
+      - name: Download & extract DirectX shader compiler
+        run: |
+          mkdir dxcompiler && \
+          cd dxcompiler && \
+          wget https://github.com/microsoft/DirectXShaderCompiler/releases/download/$DXC_RELEASE_TAG/$DXC_ZIP_FILE && \
+          unzip $DXC_ZIP_FILE
+
+      - name: Build GUI release
+        run: |
+          RUSTFLAGS="-C target-cpu=x86-64-v2 -Z tune-cpu=x86-64-v3" \
+          cargo +nightly build --profile release-lto --target x86_64-pc-windows-gnu
+
+      - name: Compress binaries
+        run: |
+          mv LICENSE LICENSE-jgenesis.txt && \
+          mv target/x86_64-pc-windows-gnu/release-lto/*.exe ./ && \
+          mv sdl3/SDL3.dll ./ && \
+          mv sdl3/README.md ./README-SDL3.md && \
+          mv sdl3/LICENSE.txt ./LICENSE-SDL3.txt && \
+          mv dxcompiler/bin/x64/dxcompiler.dll ./ && \
+          mv dxcompiler/LICENSE* ./ && \
+          zip -r jgenesis-${JGENESIS_VERSION}-windows-x86_64.zip LICENSE* README-SDL3.md *.dll jgenesis.exe
+
+      - name: Upload GUI binaries
+        uses: actions/upload-artifact@v6
+        with:
+          name: windows-x86_64-exe
+          path: jgenesis-${{ env.JGENESIS_VERSION }}-windows-x86_64.zip

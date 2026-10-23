@@ -1,0 +1,295 @@
+use jgenesis_common::frontend::Rotation;
+use jgenesis_proc_macros::{ConfigDisplay, EnumAll, EnumDisplay, EnumFromStr};
+use std::fmt::{Display, Formatter};
+use std::num::NonZeroU32;
+
+pub const DXCOMPILER_PATH: &str = "dxcompiler.dll";
+
+#[must_use]
+pub fn dx12_backend_options() -> wgpu::Dx12BackendOptions {
+    wgpu::Dx12BackendOptions {
+        shader_compiler: wgpu::Dx12Compiler::DynamicDxc { dxc_path: DXCOMPILER_PATH.into() },
+        ..wgpu::Dx12BackendOptions::default()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumDisplay, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum WgpuBackend {
+    #[default]
+    Auto,
+    Vulkan,
+    DirectX12,
+}
+
+impl WgpuBackend {
+    #[must_use]
+    pub fn to_wgpu(self) -> wgpu::Backends {
+        #[cfg(target_os = "windows")]
+        if self == WgpuBackend::Auto && supports_dx12() {
+            // Prefer DX12 on Windows if supported (necessary because wgpu prefers Vulkan over DX12)
+            // AMD GPUs seem to sometimes have color space bugs on Windows w/ Vulkan
+            return wgpu::Backends::DX12;
+        }
+
+        match self {
+            WgpuBackend::Auto => wgpu::Backends::PRIMARY,
+            WgpuBackend::Vulkan => wgpu::Backends::VULKAN,
+            WgpuBackend::DirectX12 => wgpu::Backends::DX12,
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn supports_dx12() -> bool {
+    use std::sync::LazyLock;
+
+    static SUPPORTS_DX12: LazyLock<bool> = LazyLock::new(|| {
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::DX12,
+            backend_options: wgpu::BackendOptions {
+                dx12: dx12_backend_options(),
+                ..wgpu::BackendOptions::default()
+            },
+            ..wgpu::InstanceDescriptor::new_without_display_handle()
+        });
+
+        let adapter =
+            pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default()));
+        adapter.is_ok()
+    });
+
+    *SUPPORTS_DX12
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumDisplay, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum WgpuPowerPreference {
+    #[default]
+    HighPerformance,
+    LowPower,
+    None,
+}
+
+impl WgpuPowerPreference {
+    #[must_use]
+    pub fn to_wgpu(self) -> wgpu::PowerPreference {
+        match self {
+            Self::HighPerformance => wgpu::PowerPreference::HighPerformance,
+            Self::LowPower => wgpu::PowerPreference::LowPower,
+            Self::None => wgpu::PowerPreference::None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumDisplay, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum VSyncMode {
+    Enabled,
+    #[default]
+    Disabled,
+    Fast,
+}
+
+impl VSyncMode {
+    pub(crate) fn to_wgpu_present_mode(self) -> wgpu::PresentMode {
+        match self {
+            Self::Enabled => wgpu::PresentMode::Fifo,
+            Self::Disabled => wgpu::PresentMode::AutoNoVsync,
+            Self::Fast => wgpu::PresentMode::Mailbox,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct PrescaleFactor(u32);
+
+impl PrescaleFactor {
+    pub const ONE: Self = Self(1);
+
+    #[must_use]
+    pub fn get(self) -> u32 {
+        self.0
+    }
+}
+
+impl From<PrescaleFactor> for u32 {
+    fn from(value: PrescaleFactor) -> Self {
+        value.0
+    }
+}
+
+impl TryFrom<u32> for PrescaleFactor {
+    type Error = String;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Err(format!("invalid prescale factor: {value}")),
+            _ => Ok(Self(value)),
+        }
+    }
+}
+
+impl From<NonZeroU32> for PrescaleFactor {
+    fn from(value: NonZeroU32) -> Self {
+        Self(value.get())
+    }
+}
+
+impl Default for PrescaleFactor {
+    fn default() -> Self {
+        Self::ONE
+    }
+}
+
+impl Display for PrescaleFactor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}x", self.0)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PrescaleMode {
+    Auto,
+    Manual { width: PrescaleFactor, height: PrescaleFactor },
+}
+
+impl Display for PrescaleMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Auto => write!(f, "Auto"),
+            Self::Manual { width, height } => write!(f, "Manual(width={width}, height={height})"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumDisplay, EnumFromStr, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum FilterMode {
+    Nearest,
+    #[default]
+    Linear,
+}
+
+impl FilterMode {
+    pub(crate) fn to_wgpu_filter_mode(self) -> wgpu::FilterMode {
+        match self {
+            Self::Nearest => wgpu::FilterMode::Nearest,
+            Self::Linear => wgpu::FilterMode::Linear,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumDisplay, EnumFromStr, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum AntiDitherShader {
+    #[default]
+    None,
+    Weak,
+    Strong,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumDisplay, EnumFromStr, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum PreprocessShader {
+    #[default]
+    None,
+    HorizontalBlurTwoPixels,
+    HorizontalBlurThreePixels,
+    HorizontalBlurSnesAdaptive,
+    NtscComposite,
+    Xbrz2x,
+    Xbrz3x,
+    Xbrz4x,
+    Xbrz5x,
+    Xbrz6x,
+    Mmpx,
+    MmpxEnhanced,
+}
+
+impl PreprocessShader {
+    // Certain shaders don't make sense to use in combination with an anti-dither filter
+    #[must_use]
+    pub fn exclude_anti_dither(self) -> bool {
+        matches!(
+            self,
+            Self::NtscComposite
+                | Self::HorizontalBlurTwoPixels
+                | Self::HorizontalBlurThreePixels
+                | Self::HorizontalBlurSnesAdaptive
+        )
+    }
+
+    pub(crate) fn xbrz_scale_factor(self) -> Option<u32> {
+        match self {
+            Self::Xbrz2x => Some(2),
+            Self::Xbrz3x => Some(3),
+            Self::Xbrz4x => Some(4),
+            Self::Xbrz5x => Some(5),
+            Self::Xbrz6x => Some(6),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, EnumDisplay, EnumFromStr, EnumAll)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "clap", derive(jgenesis_proc_macros::CustomValueEnum))]
+pub enum FrameRotation {
+    #[default]
+    None,
+    Clockwise,
+    OneEighty,
+    Counterclockwise,
+}
+
+impl From<FrameRotation> for Rotation {
+    fn from(value: FrameRotation) -> Self {
+        match value {
+            FrameRotation::None => Self::None,
+            FrameRotation::Clockwise => Self::Clockwise,
+            FrameRotation::OneEighty => Self::OneEighty,
+            FrameRotation::Counterclockwise => Self::Counterclockwise,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, ConfigDisplay)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct NtscShaderConfig {
+    pub brightness: f64,
+    pub saturation: f64,
+    pub gamma: f64,
+}
+
+impl Default for NtscShaderConfig {
+    fn default() -> Self {
+        Self { brightness: 1.0, saturation: 1.0, gamma: 2.2 }
+    }
+}
+
+#[derive(Debug, Clone, Copy, ConfigDisplay)]
+pub struct RendererConfig {
+    pub wgpu_backend: WgpuBackend,
+    pub wgpu_power_preference: WgpuPowerPreference,
+    pub vsync_mode: VSyncMode,
+    pub frame_time_sync: bool,
+    pub prescale_mode: PrescaleMode,
+    pub scanlines_enabled: bool,
+    pub scanlines_brightness: f64,
+    pub force_integer_height_scaling: bool,
+    pub filter_mode: FilterMode,
+    pub supersample_minification: bool,
+    pub preprocess_shader: PreprocessShader,
+    pub anti_dither_shader: AntiDitherShader,
+    pub frame_rotation: FrameRotation,
+    #[cfg_display(indent_nested)]
+    pub ntsc_config: NtscShaderConfig,
+}

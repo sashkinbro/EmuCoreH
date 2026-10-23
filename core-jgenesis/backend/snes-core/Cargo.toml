@@ -1,0 +1,27 @@
+[package]
+name = "snes-core"
+version = { workspace = true }
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dsp = { workspace = true }
+jgenesis-proc-macros = { workspace = true }
+jgenesis-common = { workspace = true }
+
+snes-config = { workspace = true }
+
+spc700-emu = { workspace = true }
+wdc65816-emu = { workspace = true }
+
+snes-coprocessors = { workspace = true }
+
+bincode = { workspace = true }
+crc = { workspace = true }
+log = { workspace = true }
+rand = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

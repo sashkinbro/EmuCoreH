@@ -1,0 +1,113 @@
+use crate::vdp::registers::Registers;
+use crate::vdp::{ColorTables, Cram, FrameBufferRam, Vdp, VdpConfig, u16_to_rgb};
+use genesis_components::debug::CramEntry;
+use jgenesis_common::debug::{DebugMemoryView, DebugWordsView, Endian};
+
+#[derive(Debug, Clone)]
+pub struct VdpDebugState {
+    frame_buffer_0: Box<FrameBufferRam>,
+    frame_buffer_1: Box<FrameBufferRam>,
+    cram: Box<Cram>,
+    registers: Registers,
+    config: VdpConfig,
+}
+
+impl Vdp {
+    pub fn to_debug_state(&self) -> VdpDebugState {
+        VdpDebugState {
+            frame_buffer_0: self.frame_buffer_0.clone(),
+            frame_buffer_1: self.frame_buffer_1.clone(),
+            cram: self.cram.clone(),
+            registers: self.registers.clone(),
+            config: self.config.clone(),
+        }
+    }
+
+    pub fn debug_frame_buffer_view(&mut self, frame_buffer: usize) -> impl DebugMemoryView {
+        let frame_buffer = match frame_buffer {
+            0 => &mut self.frame_buffer_0,
+            _ => &mut self.frame_buffer_1,
+        };
+
+        DebugWordsView(frame_buffer.as_mut_slice(), Endian::Big)
+    }
+
+    pub fn debug_palette_ram_view(&mut self) -> impl DebugMemoryView {
+        DebugWordsView(self.cram.as_mut_slice(), Endian::Big)
+    }
+}
+
+impl VdpDebugState {
+    pub fn hen_bit(&self) -> bool {
+        self.registers.h_interrupt_in_vblank
+    }
+
+    pub fn h_interrupt_interval(&self) -> u16 {
+        self.registers.h_interrupt_interval
+    }
+
+    pub fn debug_frame_buffer_view(&mut self, frame_buffer: usize) -> impl DebugMemoryView {
+        let frame_buffer = match frame_buffer {
+            0 => &mut self.frame_buffer_0,
+            _ => &mut self.frame_buffer_1,
+        };
+
+        DebugWordsView(frame_buffer.as_mut_slice(), Endian::Big)
+    }
+
+    pub fn debug_palette_ram_view(&mut self) -> impl DebugMemoryView {
+        DebugWordsView(self.cram.as_mut_slice(), Endian::Big)
+    }
+
+    pub fn copy_palette(&self, out: &mut [CramEntry]) {
+        let color_tables = ColorTables::from_tint(self.config.color_tint);
+
+        for (i, entry) in out[..256].iter_mut().enumerate() {
+            let s32x_color = self.cram[i];
+            *entry = CramEntry { value: s32x_color, color: u16_to_rgb(s32x_color, color_tables) };
+        }
+    }
+
+    pub fn dump_registers(&self, mut callback: impl FnMut(&str, &[(&str, &str)])) {
+        callback(
+            "$4100 / $A15180",
+            &[
+                ("Mode", &self.registers.frame_buffer_mode.to_string()),
+                ("Vertical resolution", &self.registers.v_resolution.to_string()),
+                ("Invert priority", bool_str(self.registers.priority)),
+            ],
+        );
+
+        callback(
+            "$4102 / $A15182",
+            &[("Shift screen left", bool_str(self.registers.screen_left_shift))],
+        );
+
+        callback(
+            "$4104 / $A15184",
+            &[("Auto fill length", &self.registers.auto_fill_length.to_string())],
+        );
+
+        callback(
+            "$4106 / $A15186",
+            &[(
+                "Auto fill start address",
+                &format!("${:05X}", u32::from(self.registers.auto_fill_start_address) << 1),
+            )],
+        );
+
+        callback(
+            "$4108 / $A15188",
+            &[("Auto fill data", &format!("0x{:04X}", self.registers.auto_fill_data))],
+        );
+
+        callback(
+            "$410A / $A1518A",
+            &[("Display frame buffer", ["0", "1"][self.registers.display_frame_buffer as usize])],
+        );
+    }
+}
+
+fn bool_str(b: bool) -> &'static str {
+    if b { "true" } else { "false" }
+}

@@ -1,0 +1,27 @@
+[package]
+name = "gba-core"
+version = { workspace = true }
+edition = "2024"
+
+[dependencies]
+dsp = { workspace = true }
+jgenesis-common = { workspace = true }
+jgenesis-proc-macros = { workspace = true }
+
+arm7tdmi-emu = { workspace = true }
+
+gba-config = { workspace = true }
+
+# For some of the GBC APU functionality
+gb-core = { workspace = true }
+
+bincode = { workspace = true, features = ["derive"] }
+crc = { workspace = true }
+log = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+rand = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,47 @@
+[package]
+name = "jgenesis-debugger-frontend"
+version = { workspace = true }
+edition = "2024"
+
+[features]
+default = []
+
+[dependencies]
+jgenesis-common = { workspace = true }
+
+m68000-emu = { workspace = true }
+sh2-emu = { workspace = true }
+z80-emu = { workspace = true }
+
+genesis-config = { workspace = true }
+
+gb-core = { workspace = true }
+gba-core = { workspace = true }
+genesis-components = { workspace = true }
+genesis-core = { workspace = true }
+nes-core = { workspace = true }
+pce-core = { workspace = true }
+s32x-core = { workspace = true }
+segacd-core = { workspace = true }
+smsgg-core = { workspace = true }
+snes-core = { workspace = true }
+ti-sn76489 = { workspace = true }
+
+egui-sdl3-wgpu = { workspace = true }
+jgenesis-native-config = { workspace = true }
+jgenesis-renderer = { workspace = true }
+
+bytemuck = { workspace = true }
+egui = { workspace = true }
+egui_extras = { workspace = true, features = ["image"] }
+egui-wgpu = { workspace = true }
+image = { workspace = true, features = ["png"] } # Needed for egui png loading
+log = { workspace = true }
+rand = { workspace = true }
+rfd = { workspace = true }
+sdl3 = { workspace = true }
+thiserror = { workspace = true }
+wgpu = { workspace = true }
+
+[lints]
+workspace = true

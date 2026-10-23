@@ -1,0 +1,78 @@
+[package]
+name = "jgenesis-gui"
+version = { workspace = true }
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "jgenesis"
+path = "src/main.rs"
+
+[features]
+default = ["sdl3-build-from-source"]
+unstable-cores = []
+
+sdl3-build-from-source = ["sdl3/build-from-source"]
+sdl3-static-link = ["sdl3/static-link"]
+
+[dependencies]
+cdrom = { workspace = true }
+jgenesis-common = { workspace = true, features = ["serde"] }
+jgenesis-proc-macros = { workspace = true }
+
+genesis-components = { workspace = true }
+genesis-core = { workspace = true }
+nes-core = { workspace = true }
+pce-core = { workspace = true }
+segacd-core = { workspace = true }
+smsgg-core = { workspace = true }
+snes-core = { workspace = true }
+ti-sn76489 = { workspace = true }
+
+gb-config = { workspace = true }
+gba-config = { workspace = true }
+genesis-config = { workspace = true }
+nes-config = { workspace = true }
+pce-config = { workspace = true }
+smsgg-config = { workspace = true }
+snes-config = { workspace = true }
+
+jgenesis-native-config = { workspace = true}
+jgenesis-native-driver = { workspace = true }
+jgenesis-renderer = { workspace = true }
+egui-sdl3-wgpu = { workspace = true }
+
+anyhow = { workspace = true }
+clap = { workspace = true }
+egui = { workspace = true }
+egui_extras = { workspace = true }
+egui-system-fonts = { workspace = true }
+emath = { workspace = true }
+env_logger = { workspace = true }
+image = { workspace = true, features = ["png"] }
+log = { workspace = true, features = ["release_max_level_info"] }
+polonius-the-crab = { workspace = true }
+regex = { workspace = true }
+rfd = { workspace = true }
+sdl3 = { workspace = true }
+serde = { workspace = true }
+time = { workspace = true, features = ["formatting", "local-offset"] }
+toml = { workspace = true }
+
+[package.metadata.packager]
+icons = ["../256x256.png"]
+# Nightly toolchain used because of -Ztune-cpu codegen arg
+# Statically link SDL3 because otherwise the AppImage fails to build when building SDL3 from source
+before-packaging-command = """
+RUSTFLAGS='-C target-cpu=x86-64-v2 -Z tune-cpu=x86-64-v3' \
+JGENESIS_APPIMAGE_BUILD=1 \
+cargo +nightly build --profile release-lto --features sdl3-static-link"""
+
+[package.metadata.packager.appimage]
+# Including any Wayland-related libraries in the AppImage package can cause the app to fail to start on some distros,
+# such as Solus Plasma; having mismatched Wayland library versions seems to cause wgpu to fail to load graphics libraries
+excludedLibs = ["libwayland*"]
+
+[lints]
+workspace = true

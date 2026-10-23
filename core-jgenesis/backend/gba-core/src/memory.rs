@@ -1,0 +1,244 @@
+//! GBA internal memory
+
+use crate::api::{GbaEmulatorConfig, GbaLoadError};
+use bincode::{Decode, Encode};
+use jgenesis_common::boxedarray::BoxedByteArray;
+use jgenesis_common::debug::{DebugBytesView, DebugMemoryView};
+use jgenesis_common::num::GetBit;
+use std::array;
+
+const BIOS_ROM_LEN: usize = 16 * 1024;
+const IWRAM_LEN: usize = 32 * 1024;
+const EWRAM_LEN: usize = 256 * 1024;
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct MemoryControl {
+    pub sram_cycles: u64,
+    // There are only 3 waitstate areas, but making arrays len 4 avoids a bounds check on access
+    pub cartridge_n_cycles: [u64; 4],
+    pub cartridge_s_cycles: [u64; 4],
+    pub prefetch_enabled: bool,
+    pub raw_value: u16,
+}
+
+impl MemoryControl {
+    const SRAM_CYCLES: [u64; 4] = [5, 4, 3, 9];
+    const CARTRIDGE_N_CYCLES: [u64; 4] = [5, 4, 3, 9];
+    const CARTRIDGE_0_S_CYCLES: [u64; 2] = [3, 2];
+    const CARTRIDGE_1_S_CYCLES: [u64; 2] = [5, 2];
+    const CARTRIDGE_2_S_CYCLES: [u64; 2] = [9, 2];
+
+    pub fn new() -> Self {
+        Self {
+            sram_cycles: Self::SRAM_CYCLES[0],
+            cartridge_n_cycles: array::from_fn(|_| Self::CARTRIDGE_N_CYCLES[0]),
+            cartridge_s_cycles: [
+                Self::CARTRIDGE_0_S_CYCLES[0],
+                Self::CARTRIDGE_1_S_CYCLES[0],
+                Self::CARTRIDGE_2_S_CYCLES[0],
+                0,
+            ],
+            prefetch_enabled: false,
+            raw_value: 0x0000,
+        }
+    }
+
+    pub fn read(&self) -> u16 {
+        self.raw_value
+    }
+
+    pub fn write(&mut self, value: u16) {
+        self.sram_cycles = Self::SRAM_CYCLES[(value & 3) as usize];
+        self.cartridge_n_cycles[0] = Self::CARTRIDGE_N_CYCLES[((value >> 2) & 3) as usize];
+        self.cartridge_n_cycles[1] = Self::CARTRIDGE_N_CYCLES[((value >> 5) & 3) as usize];
+        self.cartridge_n_cycles[2] = Self::CARTRIDGE_N_CYCLES[((value >> 8) & 3) as usize];
+        self.cartridge_s_cycles[0] = Self::CARTRIDGE_0_S_CYCLES[usize::from(value.bit(4))];
+        self.cartridge_s_cycles[1] = Self::CARTRIDGE_1_S_CYCLES[usize::from(value.bit(7))];
+        self.cartridge_s_cycles[2] = Self::CARTRIDGE_2_S_CYCLES[usize::from(value.bit(10))];
+        self.prefetch_enabled = value.bit(14);
+
+        // Highest bit is not writable; DK King of Swing depends on this
+        self.raw_value = value & 0x7FFF;
+
+        log::debug!("WAITCNT write: {value:04X}");
+        log::debug!("  SRAM cycles: {}", self.sram_cycles);
+        log::debug!("  Cartridge 0 N cycles: {}", self.cartridge_n_cycles[0]);
+        log::debug!("  Cartridge 0 S cycles: {}", self.cartridge_s_cycles[0]);
+        log::debug!("  Cartridge 1 N cycles: {}", self.cartridge_n_cycles[1]);
+        log::debug!("  Cartridge 1 S cycles: {}", self.cartridge_s_cycles[1]);
+        log::debug!("  Cartridge 2 N cycles: {}", self.cartridge_n_cycles[2]);
+        log::debug!("  Cartridge 2 S cycles: {}", self.cartridge_s_cycles[2]);
+        log::debug!("  Cartridge ROM prefetch enabled: {}", self.prefetch_enabled);
+    }
+
+    pub fn rom_n_cycles(&self, address: u32) -> u64 {
+        self.cartridge_n_cycles[wait_states_area(address)]
+    }
+
+    pub fn rom_s_cycles(&self, address: u32) -> u64 {
+        self.cartridge_s_cycles[wait_states_area(address)]
+    }
+}
+
+fn wait_states_area(address: u32) -> usize {
+    // Area 0: $08000000-$09FFFFFF
+    // Area 1: $0A000000-$0BFFFFFF
+    // Area 2: $0C000000-$0DFFFFFF
+    debug_assert!((0x08000000..0x0E000000).contains(&address), "{address:08X}");
+    ((address >> 25) & 3) as usize
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct Memory {
+    bios_rom: BoxedByteArray<BIOS_ROM_LEN>,
+    iwram: BoxedByteArray<IWRAM_LEN>,
+    ewram: BoxedByteArray<EWRAM_LEN>,
+    memory_control: MemoryControl,
+    post_boot: bool,
+}
+
+impl Memory {
+    pub fn new(bios_rom: Vec<u8>, config: GbaEmulatorConfig) -> Result<Self, GbaLoadError> {
+        if bios_rom.len() != BIOS_ROM_LEN {
+            return Err(GbaLoadError::InvalidBiosLength {
+                expected: BIOS_ROM_LEN,
+                actual: bios_rom.len(),
+            });
+        }
+
+        let bios_rom: Box<[u8; BIOS_ROM_LEN]> = bios_rom.into_boxed_slice().try_into().unwrap();
+
+        Ok(Self {
+            bios_rom: bios_rom.into(),
+            iwram: BoxedByteArray::new(),
+            ewram: BoxedByteArray::new(),
+            memory_control: MemoryControl::new(),
+            post_boot: config.skip_bios_animation,
+        })
+    }
+
+    pub fn read_bios_rom(&self, address: u32) -> u32 {
+        let word_addr = (address as usize) & (BIOS_ROM_LEN - 1) & !3;
+        u32::from_le_bytes(self.bios_rom[word_addr..word_addr + 4].try_into().unwrap())
+    }
+
+    pub fn read_iwram_byte(&self, address: u32) -> u8 {
+        read_byte(&self.iwram, address)
+    }
+
+    pub fn read_iwram_halfword(&self, address: u32) -> u16 {
+        read_halfword(&self.iwram, address)
+    }
+
+    pub fn read_iwram_word(&self, address: u32) -> u32 {
+        read_word(&self.iwram, address)
+    }
+
+    pub fn read_ewram_byte(&self, address: u32) -> u8 {
+        read_byte(&self.ewram, address)
+    }
+
+    pub fn read_ewram_halfword(&self, address: u32) -> u16 {
+        read_halfword(&self.ewram, address)
+    }
+
+    pub fn read_ewram_word(&self, address: u32) -> u32 {
+        read_word(&self.ewram, address)
+    }
+
+    pub fn write_iwram_byte(&mut self, address: u32, value: u8) {
+        write_byte(&mut self.iwram, address, value);
+    }
+
+    pub fn write_iwram_halfword(&mut self, address: u32, value: u16) {
+        write_halfword(&mut self.iwram, address, value);
+    }
+
+    pub fn write_iwram_word(&mut self, address: u32, value: u32) {
+        write_word(&mut self.iwram, address, value);
+    }
+
+    pub fn write_ewram_byte(&mut self, address: u32, value: u8) {
+        write_byte(&mut self.ewram, address, value);
+    }
+
+    pub fn write_ewram_halfword(&mut self, address: u32, value: u16) {
+        write_halfword(&mut self.ewram, address, value);
+    }
+
+    pub fn write_ewram_word(&mut self, address: u32, value: u32) {
+        write_word(&mut self.ewram, address, value);
+    }
+
+    pub fn control(&self) -> &MemoryControl {
+        &self.memory_control
+    }
+
+    // $4000204: WAITCNT (Waitstate control)
+    pub fn read_waitcnt(&self) -> u16 {
+        self.memory_control.read()
+    }
+
+    // $4000204: WAITCNT (Waitstate control)
+    pub fn write_waitcnt(&mut self, value: u16) {
+        self.memory_control.write(value);
+    }
+
+    // $4000300: POSTFLG (Post boot flag)
+    pub fn read_postflg(&self) -> u8 {
+        self.post_boot.into()
+    }
+
+    // $4000300: POSTFLG (Post boot flag)
+    pub fn write_postflg(&mut self, value: u8) {
+        // POSTFLG can only change from 0 to 1
+        self.post_boot |= value.bit(0);
+        log::trace!("POSTFLG write {value:02X}");
+    }
+
+    pub fn clone_bios_rom(&mut self) -> Vec<u8> {
+        self.bios_rom.to_vec()
+    }
+
+    pub fn debug_ewram_view(&mut self) -> impl DebugMemoryView {
+        DebugBytesView(self.ewram.as_mut_slice())
+    }
+
+    pub fn debug_iwram_view(&mut self) -> impl DebugMemoryView {
+        DebugBytesView(self.iwram.as_mut_slice())
+    }
+
+    pub fn debug_bios_view(&mut self) -> impl DebugMemoryView {
+        DebugBytesView(self.bios_rom.as_mut_slice())
+    }
+}
+
+fn read_byte<const LEN: usize>(memory: &[u8; LEN], address: u32) -> u8 {
+    let memory_addr = (address as usize) & (LEN - 1);
+    memory[memory_addr]
+}
+
+fn read_halfword<const LEN: usize>(memory: &[u8; LEN], address: u32) -> u16 {
+    let memory_addr = (address as usize) & (LEN - 1) & !1;
+    u16::from_le_bytes(memory[memory_addr..memory_addr + 2].try_into().unwrap())
+}
+
+fn read_word<const LEN: usize>(memory: &[u8; LEN], address: u32) -> u32 {
+    let memory_addr = (address as usize) & (LEN - 1) & !3;
+    u32::from_le_bytes(memory[memory_addr..memory_addr + 4].try_into().unwrap())
+}
+
+fn write_byte<const LEN: usize>(memory: &mut [u8; LEN], address: u32, value: u8) {
+    let memory_addr = (address as usize) & (LEN - 1);
+    memory[memory_addr] = value;
+}
+
+fn write_halfword<const LEN: usize>(memory: &mut [u8; LEN], address: u32, value: u16) {
+    let memory_addr = (address as usize) & (LEN - 1) & !1;
+    memory[memory_addr..memory_addr + 2].copy_from_slice(&value.to_le_bytes());
+}
+
+fn write_word<const LEN: usize>(memory: &mut [u8; LEN], address: u32, value: u32) {
+    let memory_addr = (address as usize) & (LEN - 1) & !3;
+    memory[memory_addr..memory_addr + 4].copy_from_slice(&value.to_le_bytes());
+}
