@@ -50,6 +50,14 @@ fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
 
 @Composable
 fun gamepadActionLabel(actionId: String, arcade: Boolean = false, platform: EmulationPlatform = EmulationPlatform.DREAMCAST): String {
+    if (platform.isModel3) return when (actionId) {
+        "cross" -> "A"; "circle" -> "B"; "square" -> "X"; "triangle" -> "Y"
+        "l1" -> "L"; "r1" -> "R"
+        "select" -> stringResource(R.string.settings_gamepad_action_coin)
+        "l3" -> stringResource(R.string.settings_gamepad_action_service)
+        "r3" -> stringResource(R.string.settings_gamepad_action_test)
+        else -> stringResource(gamepadActionLabelRes(actionId))
+    }
     if (platform.isSega) {
         val twoButtons = platform in setOf(EmulationPlatform.MASTER_SYSTEM, EmulationPlatform.GAME_GEAR, EmulationPlatform.SG_1000)
         return when (actionId) {

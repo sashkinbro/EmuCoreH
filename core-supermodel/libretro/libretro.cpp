@@ -3,6 +3,8 @@
 // Libretro lifecycle for Super3/Supermodel. Emulation code retains upstream notices.
 #include "libretro.h"
 #include "adapter_helpers.h"
+#include "input_mapping.h"
+#include "runtime_guard.h"
 #include "state_safety.h"
 #include "Supermodel.h"
 #include "Model3/Model3.h"
@@ -37,6 +39,7 @@ retro_input_state_t input_state=nullptr;
 retro_log_printf_t logger=nullptr;
 retro_hw_render_callback hw{};
 bool context_alive=false;
+RuntimeGuard runtime_guard;
 std::string error;
 std::array<unsigned,2> controller_types{RETRO_DEVICE_JOYPAD,RETRO_DEVICE_JOYPAD};
 class Outputs final:public COutputs {public:bool Initialize()override{return true;}void Attached()override{} protected:void SendOutput(EOutputs,UINT8,UINT8)override{}};
@@ -87,6 +90,7 @@ struct Host {
 std::unique_ptr<Host> host;
 std::vector<retro_input_descriptor> descriptors;
 bool fail(const std::string& reason){error=reason;if(logger)logger(RETRO_LOG_ERROR,"Model3: %s\n",reason.c_str());return false;}
+void fatal_runtime(const char* reason){fail(reason);if(environment)environment(RETRO_ENVIRONMENT_SHUTDOWN,nullptr);}
 void tile_blit(const uint32_t* pixels,int w,int h,bool blend){if(host&&host->gl_ready&&pixels){host->presenter.UpdateFrameARGB(pixels,w,h);host->presenter.Render(blend);}}
 void destroy_graphics(){
   if(!host||!host->gl_ready)return;
@@ -105,7 +109,8 @@ bool create_graphics(){
   host->model->AttachRenderers(&host->render2d,host->compositor.get());host->gl_ready=true;
   CRender2D::SetAndroidTileBlit(tile_blit);return true;
 }
-void context_reset(){context_alive=true;try{create_graphics();}catch(const std::exception& e){fail(e.what());}}
+const char* graphics_error(){return create_graphics()?nullptr:error.c_str();}
+void context_reset(){context_alive=true;runtime_guard.Run(host&&host->model,graphics_error,[]{},fatal_runtime);}
 void context_destroy(){destroy_graphics();context_alive=false;}
 std::vector<unsigned char> read_file(const fs::path& path){
   std::ifstream stream(path,std::ios::binary|std::ios::ate);if(!stream)return {};
@@ -138,7 +143,11 @@ void unload(){
   host.reset();descriptors.clear();
 }
 int16_t state(unsigned p,unsigned device,unsigned index,unsigned id){return input_state&&p<2&&controller_types[p]!=RETRO_DEVICE_NONE?input_state(p,device,index,id):0;}
-bool button(unsigned p,unsigned id){return state(p,RETRO_DEVICE_JOYPAD,0,id)!=0;}
+bool button(unsigned p,unsigned id){
+  return state(p,RETRO_DEVICE_JOYPAD,0,id)!=0||
+    ((id==RETRO_DEVICE_ID_JOYPAD_L2||id==RETRO_DEVICE_ID_JOYPAD_R2)&&
+      state(p,RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_BUTTON,id)>0);
+}
 void value(CInput* input,uint16_t n){input->prevValue=input->value;input->value=n;}
 void poll_inputs(){
   if(input_poll)input_poll();auto& in=host->inputs;
@@ -149,7 +158,7 @@ void poll_inputs(){
     value(in.service[p],button(p,RETRO_DEVICE_ID_JOYPAD_L3));value(in.test[p],button(p,RETRO_DEVICE_ID_JOYPAD_R3));
     value(in.up[p],button(p,RETRO_DEVICE_ID_JOYPAD_UP)||y<-16384);value(in.down[p],button(p,RETRO_DEVICE_ID_JOYPAD_DOWN)||y>16384);
     value(in.left[p],button(p,RETRO_DEVICE_ID_JOYPAD_LEFT)||x<-16384);value(in.right[p],button(p,RETRO_DEVICE_ID_JOYPAD_RIGHT)||x>16384);
-    const bool a=button(p,RETRO_DEVICE_ID_JOYPAD_A),b=button(p,RETRO_DEVICE_ID_JOYPAD_B),c=button(p,RETRO_DEVICE_ID_JOYPAD_X),d=button(p,RETRO_DEVICE_ID_JOYPAD_Y);
+    const bool a=button(p,action_buttons[0]),b=button(p,action_buttons[1]),c=button(p,action_buttons[2]),d=button(p,action_buttons[3]);
     value(in.punch[p],a);value(in.kick[p],b);value(in.guard[p],c);value(in.escape[p],d);
     value(in.shortPass[p],a);value(in.longPass[p],b);value(in.shoot[p],c);
     const bool gun=(controller_types[p]&RETRO_DEVICE_MASK)==RETRO_DEVICE_LIGHTGUN;
@@ -164,14 +173,14 @@ void poll_inputs(){
     if(p==0){
       const auto steering=x?x:static_cast<int16_t>(button(p,RETRO_DEVICE_ID_JOYPAD_LEFT)?-32768:button(p,RETRO_DEVICE_ID_JOYPAD_RIGHT)?32767:0);
       value(in.steering,axis_byte(steering));
-      value(in.accelerator,button(p,RETRO_DEVICE_ID_JOYPAD_R2)?255:pedal_byte(state(p,RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_BUTTON,RETRO_DEVICE_ID_JOYPAD_R2)));
-      value(in.brake,button(p,RETRO_DEVICE_ID_JOYPAD_L2)?255:pedal_byte(state(p,RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_BUTTON,RETRO_DEVICE_ID_JOYPAD_L2)));
+      value(in.accelerator,pedal_input(state(p,RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_BUTTON,RETRO_DEVICE_ID_JOYPAD_R2),button(p,RETRO_DEVICE_ID_JOYPAD_R2)));
+      value(in.brake,pedal_input(state(p,RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_BUTTON,RETRO_DEVICE_ID_JOYPAD_L2),button(p,RETRO_DEVICE_ID_JOYPAD_L2)));
       value(in.gearShiftUp,button(p,RETRO_DEVICE_ID_JOYPAD_R));value(in.gearShiftDown,button(p,RETRO_DEVICE_ID_JOYPAD_L));
       if(in.gearShiftUp->value&&!in.gearShiftUp->prevValue)host->gear=std::min(host->gear+1,4);
       if(in.gearShiftDown->value&&!in.gearShiftDown->prevValue)host->gear=std::max(host->gear-1,1);
       value(in.gearShift4,static_cast<uint16_t>(host->gear));
       value(in.viewChange,a);value(in.handBrake,b);value(in.rearBrake,b?255:0);value(in.musicSelect,c);
-      for(unsigned v=0;v<4;v++)value(in.vr[v],button(p,std::array<unsigned,4>{RETRO_DEVICE_ID_JOYPAD_A,RETRO_DEVICE_ID_JOYPAD_B,RETRO_DEVICE_ID_JOYPAD_X,RETRO_DEVICE_ID_JOYPAD_Y}[v]));
+      for(unsigned v=0;v<4;v++)value(in.vr[v],button(p,action_buttons[v]));
       value(in.shift,a);value(in.beat,b);value(in.charge,c);value(in.jump,d);
       value(in.analogJoyX,axis_byte(x));value(in.analogJoyY,axis_byte(y,true));
       value(in.analogJoyTrigger1,a);value(in.analogJoyTrigger2,b);value(in.analogJoyEvent1,c);value(in.analogJoyEvent2,d);
@@ -191,7 +200,8 @@ void describe_inputs(){
   for(unsigned p=0;p<2;p++){
     auto add=[p](unsigned dev,unsigned index,unsigned id,const char* label){descriptors.push_back({p,dev,index,id,label});};
     add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_SELECT,"Coin");add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_START,"Start");add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_L3,"Service");add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_R3,"Test menu");
-    add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_A,racing?"View 1 / View change":"Button 1 / Trigger");add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_B,racing?"View 2 / Hand brake":"Button 2 / Reload");add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_X,"Button 3 / View 3");add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_Y,"Button 4 / View 4");
+    add(RETRO_DEVICE_JOYPAD,0,action_buttons[0],racing?"View 1 / View change":"Button 1 / Trigger");add(RETRO_DEVICE_JOYPAD,0,action_buttons[1],racing?"View 2 / Hand brake":"Button 2 / Reload");add(RETRO_DEVICE_JOYPAD,0,action_buttons[2],"Button 3 / View 3");add(RETRO_DEVICE_JOYPAD,0,action_buttons[3],"Button 4 / View 4");
+    add(RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_BUTTON,RETRO_DEVICE_ID_JOYPAD_R2,racing?"Accelerator pressure":"Right trigger pressure");add(RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_BUTTON,RETRO_DEVICE_ID_JOYPAD_L2,racing?"Brake pressure":"Left trigger pressure");
     add(RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_LEFT,RETRO_DEVICE_ID_ANALOG_X,racing?"Steering":"Aim / Left stick X");add(RETRO_DEVICE_ANALOG,RETRO_DEVICE_INDEX_ANALOG_LEFT,RETRO_DEVICE_ID_ANALOG_Y,"Aim / Left stick Y");
     add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_R2,racing?"Accelerator":"Right trigger");add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_L2,racing?"Brake":"Left trigger");add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_R,racing?"Shift up":"Right turbo");add(RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_L,racing?"Shift down":"Left turbo");
   }
@@ -241,11 +251,11 @@ RETRO_API void retro_set_input_poll(retro_input_poll_t cb){input_poll=cb;}
 RETRO_API void retro_set_input_state(retro_input_state_t cb){input_state=cb;}
 RETRO_API void retro_set_controller_port_device(unsigned p,unsigned device){if(p<2)controller_types[p]=device;}
 RETRO_API void retro_init(){error.clear();if(environment){retro_log_callback cb{};if(environment(RETRO_ENVIRONMENT_GET_LOG_INTERFACE,&cb))logger=cb.log;}}
-RETRO_API void retro_deinit(){unload();logger=nullptr;context_alive=false;hw={};}
+RETRO_API void retro_deinit(){unload();runtime_guard.Reset();logger=nullptr;context_alive=false;hw={};}
 RETRO_API void retro_get_system_info(retro_system_info* info){if(info)*info={"Supermodel (Super3)","c410f82-emucoreh1","zip",true,true};}
 RETRO_API void retro_get_system_av_info(retro_system_av_info* info){if(info)*info={{width,height,width,height,4.f/3.f},{60.0,44100.0}};}
 RETRO_API bool retro_load_game(const retro_game_info* game_info){
-  unload();error.clear();
+  unload();runtime_guard.Reset();error.clear();
   if(!environment||!game_info||!game_info->path)return fail("A full-path Model 3 ZIP ROM set is required");
   try{
     if(!fs::is_regular_file(game_info->path))return fail("Model 3 ZIP file is missing");
@@ -269,14 +279,12 @@ RETRO_API bool retro_load_game(const retro_game_info* game_info){
 RETRO_API void retro_unload_game(){unload();}
 RETRO_API void retro_reset(){if(host&&host->model){host->model->Reset();host->gear=1;}}
 RETRO_API void retro_run(){
-  if(!host||!host->model)return;
-  try{
-    if(!create_graphics())return;
+  runtime_guard.Run(host&&host->model&&context_alive,graphics_error,[]{
     poll_inputs();glBindFramebuffer(GL_FRAMEBUFFER,SupermodelFrontendFramebuffer());glViewport(0,0,width,height);glDisable(GL_SCISSOR_TEST);glClearColor(0,0,0,1);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
     host->model->RunFrame();
     if(host->render2d.HasTopSurface()){host->presenter.UpdateFrameARGB(host->render2d.GetTopSurfaceARGB(),host->render2d.GetFrameWidth(),host->render2d.GetFrameHeight());host->presenter.Render(true);}
     if(video)video(RETRO_HW_FRAME_BUFFER_VALID,width,height,0);
-  }catch(const std::exception& e){fail(e.what());}
+  },fatal_runtime);
 }
 RETRO_API size_t retro_serialize_size(){try{if(!host)return 0;if(!host->state_size){auto data=capture_state();if(!data.empty()&&data.size()<=max_state_size-state_header_size)host->state_size=data.size()+state_header_size;}return host->state_size;}catch(...){return 0;}}
 RETRO_API bool retro_serialize(void* data,size_t size){try{if(!host||size<retro_serialize_size()||!host->state_size)return false;auto bytes=capture_state();return pack_state(data,size,host->game.name,bytes.data(),bytes.size());}catch(...){return false;}}

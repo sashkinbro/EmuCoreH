@@ -10,5 +10,8 @@ fun localizedOverlayLabel(label: String): String = when (label) {
     "Mode" -> stringResource(R.string.sega_mode)
     "Pause" -> stringResource(R.string.sega_pause)
     "Start" -> stringResource(R.string.settings_gamepad_action_start)
+    "Coin" -> stringResource(R.string.settings_gamepad_action_coin)
+    "Service" -> stringResource(R.string.settings_gamepad_action_service)
+    "Test" -> stringResource(R.string.settings_gamepad_action_test)
     else -> label
 }

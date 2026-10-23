@@ -1,0 +1,111 @@
+package com.sbro.emucoreh.ui.common
+
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.data.AppPreferences
+import com.sbro.emucoreh.data.OverlayControlLayout
+import com.sbro.emucoreh.data.SegaTouchLayouts
+
+/** Shared by gameplay and the editor. Custom offsets are applied after default slots fit. */
+internal fun buildModel3OverlayCanvasLayout(
+    width: Dp, height: Dp, density: Density, scale: Float, stickScale: Float,
+    controls: Map<String, OverlayControlLayout>, safeLeft: Dp, safeRight: Dp,
+    safeTop: Dp, safeBottom: Dp, dpadOffset: Pair<Float, Float>,
+    leftStickOffset: Pair<Float, Float>, rightStickOffset: Pair<Float, Float>,
+    actionOffset: Pair<Float, Float>, centerOffset: Pair<Float, Float>, preview: Boolean
+): OverlayCanvasLayout {
+    val platform = EmulationPlatform.MODEL_3
+    val ids = SegaTouchLayouts.controlIds(platform)
+    val systemIds = setOf("select", "start", "l3", "r3")
+    fun control(id: String) = controls[id] ?: OverlayControlLayout()
+    fun finite(value: Float, fallback: Float = 0f) = value.takeIf(Float::isFinite) ?: fallback
+    fun pixels(value: Float) = with(density) { finite(value).toDp() }.value
+    fun buttonScale(id: String) = control(id).scale.coerceAtLeast(1) / 100f
+    fun widthScale(id: String) = control(id).widthScale.coerceAtLeast(1) / 100f
+    val left = safeLeft.value + 12f
+    val top = safeTop.value + 12f
+    val w = (width.value - left - safeRight.value - 12f).coerceAtLeast(0f)
+    val h = (height.value - top - safeBottom.value - 12f).coerceAtLeast(0f)
+    val requested = finite(scale, 1f).coerceIn(.5f, 1.5f)
+    val button = 48f * requested
+    // Slots account for saved sizes too. Position changes do not rearrange other controls.
+    val largestButton = ids.maxOf { buttonScale(it) * maxOf(1f, widthScale(it)) }
+    val diameter = button * largestButton
+    val analog = 120f * requested * finite(stickScale, 1f).coerceIn(.5f, 2f)
+    val leftSize = analog * buttonScale("left_stick")
+    val rightSize = analog * buttonScale("right_stick")
+    val leftPanel = leftSize * maxOf(1f, widthScale("left_stick"))
+    val rightPanel = rightSize * maxOf(1f, widthScale("right_stick"))
+    val stickHeight = maxOf(leftSize, rightSize)
+    fun fit(gap: Float) = minOf(1f,
+        ((w - 6f * gap) / (7f * diameter)).coerceAtLeast(0f),
+        ((w - gap) / (leftPanel + rightPanel)).coerceAtLeast(0f),
+        ((h - 4f * gap) / (stickHeight + 3.8f * diameter)).coerceAtLeast(0f))
+    val responsive = fit(4f)
+    val gap = maxOf(4f, 8f * responsive)
+    val factor = fit(gap)
+    val d = diameter * factor
+    val step = d + gap
+    val systemHeight = .8f * d
+    val systemTop = top + h - systemHeight
+    val buttonBottom = systemTop - gap
+    val crossTop = buttonBottom - (3f * d + 2f * gap)
+    val faceLeft = left + w - (4f * d + 3f * gap)
+    val faceTop = buttonBottom - (2f * d + gap)
+    val slots = linkedMapOf(
+        "dpad_up" to (left + step to crossTop),
+        "dpad_left" to (left to crossTop + step),
+        "dpad_right" to (left + 2f * step to crossTop + step),
+        "dpad_down" to (left + step to crossTop + 2f * step)
+    )
+    listOf("l1", "y", "r1", "l2", "x", "a", "b", "r2").forEachIndexed { index, id ->
+        slots[id] = faceLeft + index % 4 * step to faceTop + index / 4 * step
+    }
+    val systemWidth = 1.75f * d
+    val systemLeft = left + (w - (4f * systemWidth + 3f * gap)) / 2f
+    systemIds.forEachIndexed { index, id -> slots[id] = systemLeft + index * (systemWidth + gap) to systemTop }
+    fun adjustment(offset: Pair<Float, Float>, defaultX: Float, defaultY: Float) =
+        pixels(offset.first - defaultX) to pixels(offset.second - defaultY)
+    val buttons = slots.map { (id, slot) ->
+        val layout = control(id)
+        val system = id in systemIds
+        val buttonWidth = (button * factor * buttonScale(id) * widthScale(id) * if (system) 1.75f else 1f).coerceAtMost(w)
+        val buttonHeight = (button * factor * buttonScale(id) * if (system) .8f else 1f).coerceAtMost(h)
+        val group = when {
+            system -> adjustment(centerOffset, AppPreferences.DEFAULT_CENTER_OFFSET_X, AppPreferences.DEFAULT_CENTER_OFFSET_Y)
+            id.startsWith("dpad_") -> adjustment(dpadOffset, AppPreferences.DEFAULT_DPAD_OFFSET_X, AppPreferences.DEFAULT_DPAD_OFFSET_Y)
+            else -> adjustment(actionOffset, AppPreferences.DEFAULT_ACTION_OFFSET_X, AppPreferences.DEFAULT_ACTION_OFFSET_Y)
+        }
+        val baseX = (slot.first + ((if (system) systemWidth else d) - buttonWidth) / 2f + group.first).coerceIn(left, left + w - buttonWidth)
+        val baseY = (slot.second + ((if (system) systemHeight else d) - buttonHeight) / 2f + group.second).coerceIn(top, top + h - buttonHeight)
+        val label = SegaTouchLayouts.label(platform, id)
+        OverlayCanvasButtonSpec(id, requireNotNull(overlayDrawableForControl(id)), buttonWidth.dp, buttonHeight.dp,
+            baseX.dp, baseY.dp,
+            (baseX + pixels(layout.offset.first)).coerceIn(left, left + w - buttonWidth).dp,
+            (baseY + pixels(layout.offset.second)).coerceIn(top, top + h - buttonHeight).dp,
+            if (system) RoundedCornerShape(10.dp) else CircleShape, layout.opacity, layout.visible,
+            label.takeUnless { it in setOf("A", "B", "X", "Y") })
+    }.filter { preview || it.visible }
+    fun stick(id: String, size: Float, panel: Float, onRight: Boolean, offset: Pair<Float, Float>, dx: Float, dy: Float): OverlayCanvasStickSpec {
+        val layout = control(id)
+        val actualSize = (size * factor).coerceAtMost(h)
+        val panelWidth = (panel * factor).coerceAtMost(w)
+        val group = adjustment(offset, dx, dy)
+        val minX = left + (panelWidth - actualSize) / 2f
+        val maxX = left + w - panelWidth + (panelWidth - actualSize) / 2f
+        val baseX = ((if (onRight) maxX else minX) + group.first).coerceIn(minX, maxX)
+        val baseY = (crossTop - gap - actualSize + group.second).coerceIn(top, top + h - actualSize)
+        return OverlayCanvasStickSpec(id, actualSize.dp, layout.widthScale, baseX.dp, baseY.dp,
+            (baseX + pixels(layout.offset.first)).coerceIn(minX, maxX).dp,
+            (baseY + pixels(layout.offset.second)).coerceIn(top, top + h - actualSize).dp,
+            layout.opacity, layout.visible)
+    }
+    return OverlayCanvasLayout(emptyList(), emptyList(), buttons.filter { it.id.startsWith("dpad_") }, null,
+        buttons.filter { !it.id.startsWith("dpad_") && it.id !in systemIds }, buttons.filter { it.id in systemIds },
+        stick("left_stick", leftSize, leftPanel, false, leftStickOffset, AppPreferences.DEFAULT_LSTICK_OFFSET_X, AppPreferences.DEFAULT_LSTICK_OFFSET_Y).takeIf { preview || it.visible },
+        stick("right_stick", rightSize, rightPanel, true, rightStickOffset, AppPreferences.DEFAULT_RSTICK_OFFSET_X, AppPreferences.DEFAULT_RSTICK_OFFSET_Y).takeIf { preview || it.visible })
+}

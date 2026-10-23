@@ -199,7 +199,7 @@
     <string name="settings_version">Sürüm</string>
     <string name="settings_emulator_core">Emülasyon Çekirdeği</string>
     <string name="settings_about_app">EmuCoreH Hakkında</string>
-    <string name="settings_about_app_desc">EmuCoreH, oyun kitaplığını Dreamcast ve arcade sistemleri için Flycast, Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear ve SG-1000 için jgenesis ile birleştirir.</string>
+    <string name="settings_about_app_desc">EmuCoreH, oyun kitaplığını Dreamcast ve arcade sistemleri için Flycast, Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear ve SG-1000 için jgenesis ile birleştirir. Supermodel, Sega Model 3 emülasyonu sunar.</string>
     <string name="settings_about_studio">Geliştirici</string>
     <string name="settings_about_studio_desc">Sashkin Apps tarafından oluşturuldu.</string>
     <string name="settings_about_support_project">Projeyi Destekle</string>
@@ -380,7 +380,7 @@
     <string name="onboarding_page_1_title">EmuCoreH\'e Hoş Geldiniz</string>
     <string name="onboarding_page_1_subtitle">Her ekrana hazır Sega oyun kitaplığınız.</string>
     <string name="onboarding_page_2_title">Güçlü Emülasyon</string>
-    <string name="onboarding_page_2_subtitle">Flycast ve jgenesis, desteklenen Sega konsollarını ve arcade sistemlerini bir araya getirir.</string>
+    <string name="onboarding_page_2_subtitle">Flycast / Supermodel ve jgenesis, desteklenen Sega konsollarını ve arcade sistemlerini bir araya getirir.</string>
     <string name="onboarding_page_3_title">Oyun Kütüphaneniz</string>
     <string name="onboarding_page_3_subtitle">Güzel kapaklar, detaylı bilgiler ve favorilerinize hızlı erişim ile kişisel oyun kütüphanenizi oluşturun.</string>
     <string name="onboarding_page_4_title">Oynamaya Hazır</string>
@@ -2301,4 +2301,14 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">Bu Sonic Classic Collection ROM’u Nintendo DS emülatörü gerektirir. Orijinal bir Mega Drive / Genesis ROM’u kullanın.</string>
     <string name="sega_aleste_collection_unsupported">Aleste Collection içindeki bu korumalı GG Aleste 3 ROM’u, koleksiyona özel emülatör gerektirir. Game Gear uyumlu bir ROM sürümü kullanın.</string>
+    <string name="home_platform_model_3">Sega Model 3</string>
+    <string name="model3_native_video">OpenGL ES 3 · 496 × 384 · 4:3</string>
+    <string name="formats_model3_body">Model 3 arcade ROM setleri (ZIP). Tam uyumlu seti ve ana arşivlerini birlikte tutun. OpenGL ES 3: 496 × 384, ekran oranı 4:3. Bazı oyunlar TEST menüsünde kurulum gerektirir; Daytona USA 2 ağ hatalarında LINK ID değerini SINGLE yapın.</string>
+    <string name="settings_about_model3_source">Supermodel / Super3 (GNU GPLv3)</string>
+    <string name="settings_about_model3_source_url">https://github.com/izzy2lost/Super3/tree/c410f82f771b33094b8c1cdbf96ef7c74ec9cff1</string>
+    <string name="settings_about_model3_source_desc">GNU GPLv3 kapsamında Sega Model 3 emülasyonu; Supermodel emülatörünün Super3 Android portuna dayanır (sabitlenen sürüm c410f82). EmuCoreH, libretro entegrasyonunu ekler. Lisanslar ve üçüncü taraf bildirimleri dahildir.</string>
+    <string name="settings_about_model3_source_link">Sabitlenen Super3 kaynak kodunu GitHub üzerinde görüntüle</string>
+    <string name="settings_about_model3_upstream_link">Supermodel ana kaynak deposu</string>
+    <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
+    <string name="model3_cabinet_setup_help">Bazı oyunlar ilk açılışta kabin kurulumu gerektirir. Daytona USA 2 ağ kartı hatalarında TEST → GAME ASSIGNMENTS → LINK ID yolunu açıp SINGLE (bağımsız) seçin. Oyundaki TEST/SERVICE yönergelerini izleyin, ardından ayarları kaydetmek için normal şekilde çıkın.</string>
 </resources>

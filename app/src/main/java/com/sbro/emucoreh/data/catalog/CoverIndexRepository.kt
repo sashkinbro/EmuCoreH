@@ -70,13 +70,19 @@ class CoverIndexRepository(private val context: Context) {
         style: Int = AppPreferences.COVER_ART_STYLE_3D, isLight: Boolean = false,
     ): String? {
         if (style == AppPreferences.COVER_ART_STYLE_DISABLED || !isSegaPlatform(platform)) return null
-        val titles = loadForPlatform(platform)?.optJSONObject("titles") ?: return null
+        val index = loadForPlatform(platform) ?: return null
+        if (catalogPlatformName(platform) == "Sega Model 3") {
+            val romset = romsetKey(fileName)
+            val path = romset?.let { index.optJSONObject("romsets")?.optString(it) }?.takeIf { it.isNotBlank() }
+            if (path != null) return makeCoverUrl(path, style, isLight)
+        }
+        val titles = index.optJSONObject("titles") ?: return null
         val path = SegaCoverTitleMatcher.resolve(titles, title, fileName) ?: return null
         return makeCoverUrl(path, style, isLight)
     }
 
     private fun isSegaPlatform(platform: String): Boolean = catalogPlatformName(platform) in
-        setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000")
+        setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000", "Sega Model 3")
 
     /**
      * Resolves an arcade cover URL by archive romset name (e.g. 18wheelr) or ROM unique ID.
@@ -202,7 +208,7 @@ class CoverIndexRepository(private val context: Context) {
                 val stem = clean.substringAfterLast('/').substringBeforeLast('.')
                 val variant = if (isLight) "3d/light" else "3d"
                 val folder = clean.substringBefore('/')
-                if (folder in setOf("arcade", "covers", "genesis", "sega_cd", "32x", "master_system", "game_gear", "sg_1000"))
+                if (folder in setOf("arcade", "covers", "genesis", "sega_cd", "32x", "master_system", "game_gear", "sg_1000", "model3"))
                     return "$BASE_URL/$folder/$variant/$stem$ext"
             }
             return "$BASE_URL/$clean"

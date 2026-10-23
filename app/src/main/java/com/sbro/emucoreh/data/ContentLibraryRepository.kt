@@ -27,6 +27,7 @@ class ContentLibraryRepository(context: Context) {
         val preferEnglish = preferences.preferEnglishGameTitles.first()
         return cache.loadSnapshot(GameLibraryCacheRepository.libraryKey(paths), preferEnglish)
             .games
+            .filterNot(GameItem::usesModel3Core)
             .filter { includeSega || !it.isSegaLibraryEntry() }
             .filter { (includeSega && it.isSegaLibraryEntry()) || !it.serial.isNullOrBlank() || arcadeCatalog.isKnownRomset(it.fileName) }
             .sortedBy { it.title.lowercase(Locale.getDefault()) }
@@ -80,3 +81,8 @@ class ContentLibraryRepository(context: Context) {
  * separator untouched.
  */
 private fun String.normalizeGameSerial(): String? = DiscSerial.normalize(this)
+
+/** Model 3 exposes neither executable cheats nor Flycast replacement textures. */
+internal fun GameItem.usesModel3Core(): Boolean =
+    EmulationPlatform.fromName(platform)?.coreId == 2 ||
+        com.sbro.emucoreh.core.Model3Romsets.find(fileName) != null

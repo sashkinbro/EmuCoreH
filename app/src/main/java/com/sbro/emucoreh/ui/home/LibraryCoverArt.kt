@@ -9,5 +9,5 @@ import com.sbro.emucoreh.ui.common.GameCoverArt
 internal fun LibraryCoverArt(coverPath: String?, fallbackTitle: String, modifier: Modifier = Modifier,
     platform: String? = null) {
     GameCoverArt(coverPath, fallbackTitle, modifier,
-        trimTransparentPadding = EmulationPlatform.fromName(platform)?.isSega == true)
+        trimTransparentPadding = EmulationPlatform.fromName(platform)?.usesPlatformTouchLayouts == true)
 }

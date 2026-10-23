@@ -226,6 +226,8 @@ import com.sbro.emucoreh.ui.settings.KeyboardMouseSettingsDialog
 import com.sbro.emucoreh.ui.settings.toControlsEditorState
 import com.sbro.emucoreh.core.FlycastCoreOptions
 import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.ui.settings.supportsAnalogControlSettings
+import com.sbro.emucoreh.ui.settings.Model3SettingsInfo
 import com.sbro.emucoreh.ui.settings.rememberGamePlatform
 import com.sbro.emucoreh.core.SegaCoreOptions
 import com.sbro.emucoreh.data.AchievementItem
@@ -434,7 +436,7 @@ fun EmulationScreen(
     val achievementsRepository = remember(context) { RetroAchievementsRepository.get(context) }
     var achievementUnlockBanner by remember { mutableStateOf<RetroAchievementsEvent?>(null) }
     LaunchedEffect(platform) {
-        if (platform.isSega) {
+        if (platform.usesPlatformTouchLayouts) {
             achievementUnlockBanner = null
             return@LaunchedEffect
         }
@@ -670,7 +672,7 @@ fun EmulationScreen(
     ) {
         val port = overlayPadIndex
         val targetGun = port in gunPorts
-        val sensorMode = if (platform.isSega) {
+        val sensorMode = if (platform.usesPlatformTouchLayouts) {
             AppPreferences.GYRO_MODE_OFF
         } else if (targetGun && uiState.lightGunAimSource == 0) {
             AppPreferences.GYRO_MODE_LIGHT_GUN
@@ -698,7 +700,7 @@ fun EmulationScreen(
         }
     }
     LaunchedEffect(platform, uiState.arcadeDevice1, uiState.arcadeDevice2, uiState.isRunning) {
-        if (!platform.isSega) {
+        if (platform.coreId == 0) {
             NativeApp.setArcadeControllerDevice(0, uiState.arcadeDevice1)
             NativeApp.setArcadeControllerDevice(1, uiState.arcadeDevice2)
         }
@@ -708,7 +710,7 @@ fun EmulationScreen(
         GamepadManager.setArcadeModeActive(arcadeInputActive && arcadeInputMode > 0)
     }
     LaunchedEffect(platform, uiState.isRunning, uiState.lightGunCursorEnabled) {
-        NativeApp.setLightGunCursorEnabled(!platform.isSega && uiState.isRunning && uiState.lightGunCursorEnabled)
+        NativeApp.setLightGunCursorEnabled(platform.coreId == 0 && uiState.isRunning && uiState.lightGunCursorEnabled)
     }
     LaunchedEffect(gunPorts, overlayPadIndex, uiState.lightGunAimSource, uiState.isRunning) {
         touchGunSticks.clear()
@@ -1037,7 +1039,7 @@ fun EmulationScreen(
         if (actionId != null) {
             GamepadManager.startBindingCapture(pendingGamepadPadIndex) { keyCode ->
                 scope.launch {
-                    if (uiState.gameSettingsProfileActive || platform.isSega) {
+                    if (uiState.gameSettingsProfileActive || platform.usesPlatformTouchLayouts) {
                         val currentBindings = uiState.gamepadBindingsByPad.toMutableMap()
                         val padBindings = currentBindings[pendingGamepadPadIndex].orEmpty().toMutableMap()
                         padBindings[actionId] = keyCode
@@ -1349,7 +1351,7 @@ fun EmulationScreen(
         }
 
         // RetroAchievements banner: session notification and achievement unlocks
-        achievementUnlockBanner?.takeIf { !platform.isSega }?.let { banner ->
+        achievementUnlockBanner?.takeIf { platform.coreId == 0 }?.let { banner ->
             val isGameLoaded = banner.type == "game_loaded"
             val accent = if (isGameLoaded) Color(0xFF7DDFA8) else Color(0xFFFFD35A)
             AnimatedVisibility(
@@ -1658,7 +1660,7 @@ fun EmulationScreen(
                     rbtnOffset = uiState.rbtnOffset,
                     centerOffset = uiState.centerOffset,
                     controlLayouts = uiState.controlLayouts,
-                    racingMode = !platform.isSega && uiState.racingMode,
+                    racingMode = platform.coreId == 0 && uiState.racingMode,
                     stickyButtons = uiState.stickyButtons,
                     onToggleLeftInputMode = viewModel::toggleLeftInputMode,
                     onPadInput = { keyCode, range, pressed ->
@@ -2029,7 +2031,7 @@ fun EmulationScreen(
         // A per-game profile replaces the active global profile; otherwise
         // arcade content shows the arcade mapping, like Flycast does.
         val activeGamepadBindingsByPad =
-            if (platform.isSega) {
+            if (platform.usesPlatformTouchLayouts) {
                 com.sbro.emucoreh.data.GamepadBindingRules.merge(
                     com.sbro.emucoreh.core.SegaControlProfiles.resolve(platform, com.sbro.emucoreh.core.SegaControlProfiles.load(context, platform)),
                     uiState.gamepadBindingsByPad)
@@ -2050,7 +2052,7 @@ fun EmulationScreen(
             Text(
                 text = if (uiState.gameSettingsProfileActive) {
                     stringResource(R.string.game_settings_overlay_profile_active)
-                } else if (platform.isSega) {
+                } else if (platform.usesPlatformTouchLayouts) {
                     com.sbro.emucoreh.ui.settings.platformLabel(platform)
                 } else {
                     stringResource(
@@ -2106,7 +2108,7 @@ fun EmulationScreen(
                         actionId = action.id,
                         customBindings = selectedBindings
                     )
-                    val isCustomBinding = if (platform.isSega) uiState.gamepadBindingsByPad[selectedGamepadPadIndex].orEmpty().containsKey(action.id)
+                    val isCustomBinding = if (platform.usesPlatformTouchLayouts) uiState.gamepadBindingsByPad[selectedGamepadPadIndex].orEmpty().containsKey(action.id)
                         else selectedBindings.containsKey(action.id)
                     EmulationGamepadBindingRow(
                         title = gamepadActionLabel(action.id, arcade = arcadeInputMode > 0, platform = platform),
@@ -2124,7 +2126,7 @@ fun EmulationScreen(
                         onClearClick = if (isCustomBinding) {
                             {
                                 scope.launch {
-                                    if (uiState.gameSettingsProfileActive || platform.isSega) {
+                                    if (uiState.gameSettingsProfileActive || platform.usesPlatformTouchLayouts) {
                                         val currentBindings = uiState.gamepadBindingsByPad.toMutableMap()
                                         val padBindings = currentBindings[selectedGamepadPadIndex].orEmpty().toMutableMap()
                                         padBindings.remove(action.id)
@@ -2154,7 +2156,7 @@ fun EmulationScreen(
                 text = stringResource(R.string.settings_gamepad_mapping_reset_title),
                 onClick = {
                     scope.launch {
-                        if (uiState.gameSettingsProfileActive || platform.isSega) {
+                        if (uiState.gameSettingsProfileActive || platform.usesPlatformTouchLayouts) {
                             val currentBindings = uiState.gamepadBindingsByPad.toMutableMap()
                             currentBindings.remove(selectedGamepadPadIndex)
                             viewModel.setGamepadBindingsByPad(currentBindings)
@@ -2378,7 +2380,7 @@ private fun LocalMultiplayerTouchZone(
             rbtnOffset = uiState.rbtnOffset,
             centerOffset = uiState.centerOffset,
             controlLayouts = uiState.controlLayouts,
-            racingMode = !platform.isSega && uiState.racingMode,
+            racingMode = platform.coreId == 0 && uiState.racingMode,
             stickyButtons = uiState.stickyButtons,
             onToggleLeftInputMode = onToggleLeftInputMode,
             onPadInput = { key, range, pressed -> onPadInput(padIndex, key, range, pressed) },
@@ -2462,12 +2464,16 @@ private fun OnScreenControls(
     val hapticView = LocalView.current
     val currentOnPadInput by rememberUpdatedState(onPadInput)
     val currentOnLightGunStickAim by rememberUpdatedState(onLightGunStickAim)
-    val segaModeLabel = stringResource(R.string.sega_mode)
+    val model3ServiceLabel = stringResource(R.string.settings_gamepad_action_service)
+    val model3TestLabel = stringResource(R.string.settings_gamepad_action_test)
+    val segaModeLabel = stringResource(if (platform.isModel3) R.string.settings_gamepad_action_coin else R.string.sega_mode)
     val segaStartLabel = stringResource(if (platform == EmulationPlatform.MASTER_SYSTEM)
         R.string.sega_pause else R.string.settings_gamepad_action_start)
     fun segaLabel(id: String): String? = when (SegaTouchLayouts.canonicalId(id)) {
         "select" -> segaModeLabel
         "start" -> segaStartLabel
+        "l3" -> if (platform.isModel3) model3ServiceLabel else null
+        "r3" -> if (platform.isModel3) model3TestLabel else null
         else -> SegaTouchLayouts.label(platform, id)
     }
     var touchL2Pressed by remember { mutableStateOf(false) }
@@ -2523,7 +2529,7 @@ private fun OnScreenControls(
     }
 
     fun buttonPressHandler(id: String): ((Boolean) -> Unit)? {
-        if (platform.isSega) {
+        if (platform.usesPlatformTouchLayouts) {
             val key = SegaTouchLayouts.keyCode(platform, id) ?: return null
             return { pressed -> currentOnPadInput(key, 0, pressed) }
         }
@@ -2660,7 +2666,7 @@ private fun OnScreenControls(
                 TouchButtonSpec(
                     id = spec.id,
                     drawableRes = spec.drawableRes,
-                    labelOverride = if (platform.isSega) segaLabel(spec.id) else spec.labelOverride,
+                    labelOverride = if (platform.usesPlatformTouchLayouts) segaLabel(spec.id) else spec.labelOverride,
                     width = spec.width,
                     height = spec.height,
                     x = spec.x,
@@ -2674,7 +2680,7 @@ private fun OnScreenControls(
                     },
                     onClick = if (spec.id == "left_input_toggle") onToggleLeftInputMode else null,
                     tapToHold = (racingMode && isRacingTapToHoldButton(spec.id)) ||
-                        (if (platform.isSega) stickyButtons.any { SegaTouchLayouts.canonicalId(it) == spec.id }
+                        (if (platform.usesPlatformTouchLayouts) stickyButtons.any { SegaTouchLayouts.canonicalId(it) == spec.id }
                             else spec.id in stickyButtons)
                 )
             }
@@ -2708,9 +2714,9 @@ private fun OnScreenControls(
             .asSequence()
             .filter(CustomTouchControl::enabled)
             .mapNotNull(CustomTouchControl::sanitized)
-            .filter { !platform.isSega || SegaTouchLayouts.keyCode(platform, it.actionId) != null }
+            .filter { platform.coreId == 0 || SegaTouchLayouts.keyCode(platform, it.actionId) != null }
             .map { control ->
-                val segaBounds = if (platform.isSega) segaCustomControlBounds(
+                val segaBounds = if (platform.usesPlatformTouchLayouts) segaCustomControlBounds(
                     (maxWidth - safeLeft - safeRight).value, (maxHeight - safeTop - safeBottom).value,
                     control.widthDp.toFloat(), control.heightDp.toFloat(), control.positionX, control.positionY,
                     maxVisualScale = if (control.usesVectorStyle) 1.3f else control.pressedScalePercent / 100f,
@@ -2726,7 +2732,7 @@ private fun OnScreenControls(
                 )
                 TouchButtonSpec(
                     id = "custom:${control.id}",
-                    labelOverride = if (platform.isSega) segaLabel(control.actionId) else null,
+                    labelOverride = if (platform.usesPlatformTouchLayouts) segaLabel(control.actionId) else null,
                     width = width,
                     height = height,
                     x = safeLeft + (segaBounds?.x?.dp ?: (travelX * control.positionX)),
@@ -3353,7 +3359,8 @@ private fun EmulationSidebarMenu(
         uiState.gameMenuTabOrder
             .filterNot(uiState.hiddenGameMenuTabs::contains)
             .map(GameMenuTabId::toEmulationMenuTab)
-            .filter { !platform.isSega || it != EmulationMenuTab.Achievements }
+            .filter { platform.coreId == 0 || it != EmulationMenuTab.Achievements }
+            .filter { !platform.isModel3 || it != EmulationMenuTab.Cheats }
             .ifEmpty { listOf(EmulationMenuTab.Session) }
     }
     LaunchedEffect(menuTabs, selectedMenuTab) {
@@ -3866,7 +3873,7 @@ private fun EmulationSidebarMenu(
                             onResetToDefault = { onSetKeepScreenOn(globalDefaults.keepScreenOn) }
                         )
 
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_arcade_device_player_1),
                             options = arcadeDeviceOptions().map { (value, label) -> LiveSelectionOption(value, label) },
@@ -3875,7 +3882,7 @@ private fun EmulationSidebarMenu(
                             onResetToDefault = { onSetArcadeDevice1(globalDefaults.arcadeDevice1) }
                         )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_arcade_device_player_2),
                             options = arcadeDeviceOptions().map { (value, label) -> LiveSelectionOption(value, label) },
@@ -3884,7 +3891,7 @@ private fun EmulationSidebarMenu(
                             onResetToDefault = { onSetArcadeDevice2(globalDefaults.arcadeDevice2) }
                         )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_gyro_mode),
                             options = listOf(
@@ -3901,7 +3908,7 @@ private fun EmulationSidebarMenu(
                             onResetToDefault = { onSetGyroMode(globalDefaults.gyroMode) }
                         )
                         }
-                        if (!platform.isSega && uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
+                        if (platform.coreId == 0 && uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
                             LiveSelectionRow(
                                 title = stringResource(R.string.settings_gyro_stick),
                                 options = gyroStickTargetOptions().map { (value, label) -> LiveSelectionOption(value, label) },
@@ -3910,7 +3917,7 @@ private fun EmulationSidebarMenu(
                                 onResetToDefault = { onSetGyroStickTarget(globalDefaults.gyroStickTarget) }
                             )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_light_gun_aim),
                             options = lightGunAimSourceOptions().map { (value, label) -> LiveSelectionOption(value, label) },
@@ -3919,7 +3926,7 @@ private fun EmulationSidebarMenu(
                             onResetToDefault = { onSetLightGunAimSource(globalDefaults.lightGunAimSource) }
                         )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         SettingsToggle(
                             title = stringResource(R.string.settings_light_gun_cursor),
                             checked = uiState.lightGunCursorEnabled,
@@ -3935,7 +3942,7 @@ private fun EmulationSidebarMenu(
                         } else uiState.gyroMode
                         val sensorControlsVisible = sensorMode != AppPreferences.GYRO_MODE_OFF &&
                             (sensorMode != AppPreferences.GYRO_MODE_LIGHT_GUN || uiState.lightGunAimSource == 0)
-                        if (!platform.isSega && sensorControlsVisible) {
+                        if (platform.coreId == 0 && sensorControlsVisible) {
                             if (!AndroidGyroscopeInput.isModeAvailable(LocalContext.current, sensorMode)) {
                                 Text(stringResource(R.string.settings_gyro_unavailable),
                                     style = MaterialTheme.typography.bodySmall,
@@ -3970,7 +3977,7 @@ private fun EmulationSidebarMenu(
                         }
 
                         CoreOptionRows(
-                            options = if (platform.isSega) emptyList() else FlycastCoreOptions.gameMenuControlsOptions(),
+                            options = if (platform.coreId != 0) emptyList() else FlycastCoreOptions.gameMenuControlsOptions(),
                             version = coreOptionsVersion,
                             perGameOverrides = uiState.perGameCoreOptions,
                             onValueChange = onCoreOptionChange
@@ -4006,7 +4013,7 @@ private fun EmulationSidebarMenu(
                             onResetToDefault = { onSetOverlayOpacity(overlayDefaults.overlayOpacity) }
                         )
 
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         LiveSliderRow(
                             title = stringResource(R.string.emulation_stick_scale),
                             valueLabelForValue = { "$it%" },
@@ -4073,7 +4080,7 @@ private fun EmulationSidebarMenu(
                         )
                         }
 
-                        if (!platform.isSega) {
+                        if (platform.supportsAnalogControlSettings()) {
                         SettingsToggle(
                             title = stringResource(R.string.settings_invert_right_stick_horizontal),
                             checked = uiState.invertRightStickHorizontal,
@@ -4145,7 +4152,7 @@ private fun EmulationSidebarMenu(
                         )
                         }
 
-                        if (!platform.isSega && uiState.touchscreenLeftStick) {
+                        if (platform.supportsAnalogControlSettings() && uiState.touchscreenLeftStick) {
                             LiveSliderRow(
                                 title = stringResource(R.string.settings_touchscreen_left_stick_sensitivity),
                                 valueLabelForValue = { "$it%" },
@@ -4174,7 +4181,7 @@ private fun EmulationSidebarMenu(
                         )
                         }
 
-                        if (!platform.isSega && uiState.touchscreenRightStick) {
+                        if (platform.supportsAnalogControlSettings() && uiState.touchscreenRightStick) {
                             LiveSliderRow(
                                 title = stringResource(R.string.settings_touchscreen_right_stick_sensitivity),
                                 valueLabelForValue = { "$it%" },
@@ -4235,18 +4242,6 @@ private fun EmulationSidebarMenu(
                             onResetToDefault = {
                                 if (uiState.showFps != globalDefaults.showFps) {
                                     onToggleFps()
-                                }
-                            }
-                        )
-
-                        if (!platform.isSega) SettingsToggle(
-                            title = stringResource(R.string.settings_frame_limit),
-                            checked = uiState.frameLimitEnabled,
-                            onCheckedChange = { onSetFrameLimit() },
-                            helpText = stringResource(R.string.settings_frame_limit_desc),
-                            onResetToDefault = {
-                                if (uiState.frameLimitEnabled != globalDefaults.frameLimitEnabled) {
-                                    onSetFrameLimit()
                                 }
                             }
                         )
@@ -4313,7 +4308,7 @@ private fun EmulationSidebarMenu(
                                     GameMenuSectionId.EMULATION_CPU,
                                     GameMenuSectionId.EMULATION_AUDIO -> {
 
-                        if (section == GameMenuSectionId.EMULATION_CPU && !platform.isSega) {
+                        if (section == GameMenuSectionId.EMULATION_CPU && platform.coreId == 0) {
                             SidebarSectionTitle(
                                 text = stringResource(R.string.settings_emulation_tab).uppercase(),
                                 color = sectionTitleColor,
@@ -4393,6 +4388,7 @@ private fun EmulationSidebarMenu(
                     }
 
                     EmulationMenuTab.Graphics -> {
+                        if (platform.isModel3) Model3SettingsInfo()
                         gameMenuSectionsForTab(GameMenuTabId.GRAPHICS, uiState.gameMenuSectionOrder)
                             .filterNot(uiState.hiddenGameMenuSections::contains)
                             .forEach { section ->
@@ -4405,7 +4401,7 @@ private fun EmulationSidebarMenu(
                             horizontalInset = sectionLabelInset
                         )
 
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_renderer),
                             options = listOf(
@@ -4426,7 +4422,7 @@ private fun EmulationSidebarMenu(
                         // persisted changes to the global core-option store, so
                         // they leaked into every game and never appeared in the
                         // game manager.
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_upscale),
                             options = buildUpscaleOptions(
@@ -4471,7 +4467,7 @@ private fun EmulationSidebarMenu(
                         )
 
                         CoreOptionRows(
-                            options = if (platform.isSega) SegaCoreOptions.options(platform, liveOnly = true).filter { it.category == "video" } else FlycastCoreOptions.gameMenuGraphicsOptions(),
+                            options = when { platform.isSega -> SegaCoreOptions.options(platform, liveOnly = true).filter { it.category == "video" }; platform.coreId == 0 -> FlycastCoreOptions.gameMenuGraphicsOptions(); else -> emptyList() },
                             version = coreOptionsVersion,
                             perGameOverrides = uiState.perGameCoreOptions,
                             onValueChange = onCoreOptionChange

@@ -10,9 +10,12 @@ enum class EmulationPlatform(val coreId: Int, val supportsDisc: Boolean = false)
     SEGA_32X(1),
     MASTER_SYSTEM(1),
     GAME_GEAR(1),
-    SG_1000(1);
+    SG_1000(1),
+    MODEL_3(2);
 
     val isSega: Boolean get() = coreId == 1
+    val isModel3: Boolean get() = this == MODEL_3
+    val usesPlatformTouchLayouts: Boolean get() = isSega || isModel3
 
     companion object {
         fun fromName(name: String?): EmulationPlatform? =

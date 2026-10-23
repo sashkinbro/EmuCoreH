@@ -57,13 +57,26 @@ class ArcadeInputPolicyTest {
         input.reset(recenter = false)
         assertEquals(LightGunFrame(AimPoint(.25f, .75f, false), 0), input.nextFrame())
     }
-    @Test fun persistedDreamcastGunSelectionDoesNotEnableSegaGunInput() {
-        for (platform in EmulationPlatform.entries.filter { it.isSega }) {
+    @Test fun persistedDreamcastGunSelectionDoesNotEnableOtherCoresGunInput() {
+        for (platform in EmulationPlatform.entries.filter { it.coreId != 0 }) {
             assertFalse(ArcadeInputPolicy.isLightGun(2, -1, platform))
             assertFalse(ArcadeInputPolicy.isLightGun(2, 2, platform))
             assertFalse(ArcadeInputPolicy.isLightGun(0, 2, platform))
         }
         assertTrue(ArcadeInputPolicy.isLightGun(2, -1, EmulationPlatform.DREAMCAST))
         assertTrue(ArcadeInputPolicy.isLightGun(0, 2, EmulationPlatform.DREAMCAST))
+    }
+
+    @Test fun reusedFlycastGunRequestSelectsJoypadForModel3Session() {
+        val persistedGunRequest = 2
+        assertEquals(4, ArcadeInputPolicy.controllerDevice(persistedGunRequest, 2, EmulationPlatform.DREAMCAST))
+        for (platform in EmulationPlatform.entries.filter { it.coreId != 0 }) {
+            for (mode in listOf(-1, 0, 1, 2)) {
+                assertEquals("Joypad must be selected for $platform", 1,
+                    ArcadeInputPolicy.controllerDevice(persistedGunRequest, mode, platform))
+            }
+        }
+        assertEquals(1, ArcadeInputPolicy.controllerDevice(1, 2, EmulationPlatform.DREAMCAST))
+        assertEquals(4, ArcadeInputPolicy.controllerDevice(0, 2, EmulationPlatform.DREAMCAST))
     }
 }

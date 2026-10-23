@@ -6,7 +6,10 @@ import org.json.JSONObject
 
 object SegaControlProfiles {
     fun supports(platform: EmulationPlatform, action: String): Boolean {
-        if (!platform.isSega) return true
+        if (platform.isModel3) return action in setOf("cross", "circle", "square", "triangle", "l1", "r1", "l2", "r2", "l3", "r3", "select", "start", "dpad_up", "dpad_down", "dpad_left", "dpad_right", "quick_save", "quick_load", "fast_forward",
+            "left_stick_up", "left_stick_down", "left_stick_left", "left_stick_right",
+            "right_stick_up", "right_stick_down", "right_stick_left", "right_stick_right")
+        if (!platform.usesPlatformTouchLayouts) return true
         if (action in setOf("cross", "circle", "dpad_up", "dpad_down", "dpad_left", "dpad_right", "quick_save", "quick_load", "fast_forward")) return true
         if (action == "start") return platform != EmulationPlatform.SG_1000
         return platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X) &&
@@ -14,9 +17,9 @@ object SegaControlProfiles {
     }
 
     /** Independent defaults for every hardware profile, using Android physical button codes. */
-    fun defaults(platform: EmulationPlatform): Map<String, Int> = if (!platform.isSega) emptyMap() else
+    fun defaults(platform: EmulationPlatform): Map<String, Int> = if (!platform.usesPlatformTouchLayouts) emptyMap() else
         linkedMapOf("cross" to 96, "circle" to 97, "square" to 99, "triangle" to 100,
-            "l1" to 102, "r1" to 103, "select" to 109, "start" to 108,
+            "l1" to 102, "r1" to 103, "l2" to 104, "r2" to 105, "l3" to 106, "r3" to 107, "select" to 109, "start" to 108,
             "dpad_up" to 19, "dpad_down" to 20, "dpad_left" to 21, "dpad_right" to 22)
             .filterKeys { supports(platform, it) }
 
@@ -36,11 +39,11 @@ object SegaControlProfiles {
 
     fun resetAll(context: Context) {
         check(preferences(context).edit().clear().commit())
-        if (CoreRuntime.platform.isSega) GamepadManager.refreshSegaProfile(CoreRuntime.platform)
+        if (CoreRuntime.platform.usesPlatformTouchLayouts) GamepadManager.refreshSegaProfile(CoreRuntime.platform)
     }
 
     fun save(context: Context, platform: EmulationPlatform, overrides: Map<Int, Map<String, Int>>) {
-        if (!platform.isSega) return
+        if (!platform.usesPlatformTouchLayouts) return
         val json = JSONObject()
         overrides.forEach { (pad, bindings) -> json.put(pad.toString(), JSONObject(bindings.filterKeys { supports(platform, it) })) }
         preferences(context).edit().putString(platform.name, json.toString()).apply()

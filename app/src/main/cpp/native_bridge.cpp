@@ -16,6 +16,7 @@
 #include "crash_reporter.h"
 #include "disc_control.h"
 #include "light_gun_input.h"
+#include "model3_trigger_input.h"
 #include "native_frame_boundary.h"
 #include "storage_vfs.h"
 
@@ -239,6 +240,7 @@ struct FrontendState {
     // Input: active-high bitmask per port plus analog axes.
     std::atomic<uint16_t> pad_buttons[2]{{0xFFFF}, {0xFFFF}};
     std::atomic<int16_t> pad_analog[2][4]{};
+    std::atomic<uint16_t> model3_triggers[2]{};
     std::atomic<bool> pad_analog_mode[2]{{false}, {false}};
     emucoreh::LightGunState lightgun[2]; // Accessed on the core frame thread only.
 
@@ -1293,6 +1295,8 @@ int16_t RetroInputState(unsigned port, unsigned device, unsigned index, unsigned
     }
 
     if (device == RETRO_DEVICE_ANALOG) {
+        if (g_core_id.load() == 2 && index == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+            return emucoreh::ReadModel3Trigger(2, g_frontend.model3_triggers[port].load(), id);
         const int axis_offset = index == RETRO_DEVICE_INDEX_ANALOG_RIGHT ? 2 : 0;
         if (id == RETRO_DEVICE_ID_ANALOG_X) return g_frontend.pad_analog[port][axis_offset + 0].load();
         if (id == RETRO_DEVICE_ID_ANALOG_Y) return g_frontend.pad_analog[port][axis_offset + 1].load();
@@ -1362,6 +1366,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeSelectCore(JNIEnv*, jobject, 
     // destroySession still calls retro_unload_game/retro_deinit before this boundary.
     g_core = {};
     g_core_id.store(core_id);
+    for (auto& triggers : g_frontend.model3_triggers) triggers.store(0);
     {
         std::lock_guard<std::mutex> state_lock(g_frontend.mutex);
         g_frontend.options.clear();
@@ -1430,6 +1435,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_createSession(JNIEnv*, jobject) {
     std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
     if (!LoadCoreLocked()) return 0;
     if (!g_frontend.core_initialized.load()) {
+        for (auto& triggers : g_frontend.model3_triggers) triggers.store(0);
         ClearSoftwareFrameSnapshot();
         {
             std::lock_guard<std::mutex> state_lock(g_frontend.mutex);
@@ -1455,6 +1461,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_destroySession(JNIEnv*, jobject, jl
     std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
     ClearSoftwareFrameSnapshot();
     g_frontend.time_control.store(0);
+    for (auto& triggers : g_frontend.model3_triggers) triggers.store(0);
     for (int port = 0; port < 2; ++port) {
         g_frontend.rumble_strong[port].store(0);
         g_frontend.rumble_weak[port].store(0);
@@ -1724,6 +1731,13 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_setPadAnalog(JNIEnv*, jobject, jlon
     g_frontend.pad_analog[port][1].store(scale(ly));
     g_frontend.pad_analog[port][2].store(scale(rx));
     g_frontend.pad_analog[port][3].store(scale(ry));
+}
+
+JNIEXPORT void JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_setPadTriggers(JNIEnv*, jobject, jlong handle,
+                                                          jint port, jint left, jint right) {
+    if (handle == 0 || port < 0 || port > 1 || g_core_id.load() != 2) return;
+    g_frontend.model3_triggers[port].store(emucoreh::PackModel3Triggers(left, right));
 }
 
 JNIEXPORT void JNICALL

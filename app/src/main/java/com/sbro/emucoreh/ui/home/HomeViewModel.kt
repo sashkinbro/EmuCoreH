@@ -764,7 +764,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun publishVisibleGames() {
         val covers = CoverArtRepository(getApplication())
-        allGames = allGames.map { game ->
+        allGames = allGames.map { original ->
+            val game = if (covers.isMismatchedManagedCover(original.coverArtPath, original.platform))
+                original.copy(coverArtPath = null) else original
             val selected = covers.displayCoverPath(game.serial, game.title, game.coverArtPath, platform = game.platform)
             when {
                 selected == game.coverArtPath -> game

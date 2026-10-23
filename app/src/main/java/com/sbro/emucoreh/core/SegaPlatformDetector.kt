@@ -36,6 +36,7 @@ object SegaPlatformDetector {
             }
             return@runCatching EmulationPlatform.DREAMCAST
         }
+        if (ext == "zip" && Model3Romsets.find(file.name) != null) return@runCatching EmulationPlatform.MODEL_3
         if (ext == "zip") return@runCatching file.inputStream().use(::detectZip)
         val detected = file.inputStream().use { detectHeader(file.name, it.readPrefix(HEADER_BYTES)) }
         if (ext == "chd" && !detected.isSega) {
@@ -48,6 +49,7 @@ object SegaPlatformDetector {
         if (depth > MAX_DEPTH || !visited.add(path)) return EmulationPlatform.DREAMCAST
         val name = DocumentPathResolver.getDisplayName(context, path)
         val ext = extension(name)
+        if (ext == "zip" && Model3Romsets.find(name) != null) return EmulationPlatform.MODEL_3
         if (ext in setOf("gdi", "cdi", "iso", "7z", "dat", "lst")) return EmulationPlatform.DREAMCAST
         if (ext == "chd") {
             DocumentPathResolver.resolveFilePath(context, path)?.let { direct ->
@@ -85,6 +87,7 @@ object SegaPlatformDetector {
     }
 
     fun detectName(name: String): EmulationPlatform = when (extension(name)) {
+        "zip" -> if (Model3Romsets.find(name) != null) EmulationPlatform.MODEL_3 else EmulationPlatform.DREAMCAST
         "md", "gen", "smd" -> EmulationPlatform.GENESIS
         "32x" -> EmulationPlatform.SEGA_32X
         "sms" -> EmulationPlatform.MASTER_SYSTEM

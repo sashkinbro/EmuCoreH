@@ -231,7 +231,7 @@
     <string name="settings_version">Version</string>
     <string name="settings_emulator_core">Emulation Core</string>
     <string name="settings_about_app">About EmuCoreH</string>
-    <string name="settings_about_app_desc">EmuCoreH combines a game library with Flycast for Dreamcast and arcade systems, and jgenesis for Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear and SG-1000.</string>
+    <string name="settings_about_app_desc">EmuCoreH combines a game library with Flycast for Dreamcast and arcade systems, and jgenesis for Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear and SG-1000. Supermodel emulates Sega Model 3.</string>
     <string name="settings_about_studio">Developer</string>
     <string name="settings_about_studio_desc">Created by Sashkin Apps.</string>
     <string name="settings_about_app_source">EmuCoreH Repository</string>
@@ -511,7 +511,7 @@
     <string name="onboarding_page_1_title">Welcome to EmuCoreH</string>
     <string name="onboarding_page_1_subtitle">Your Sega game library, ready for every screen.</string>
     <string name="onboarding_page_2_title">Powerful Emulation</string>
-    <string name="onboarding_page_2_subtitle">Flycast and jgenesis bring supported Sega consoles and arcade systems together.</string>
+    <string name="onboarding_page_2_subtitle">Flycast, jgenesis and Supermodel bring supported Sega consoles and arcade systems together.</string>
     <string name="onboarding_page_3_title">Your Games Library</string>
     <string name="onboarding_page_3_subtitle">Build your personal game library with beautiful covers, detailed information, and quick access to your favorites.</string>
     <string name="onboarding_page_4_title">Ready to Play</string>
@@ -2326,4 +2326,14 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">This Sonic Classic Collection ROM needs the Nintendo DS emulator. Use an original Mega Drive / Genesis ROM.</string>
     <string name="sega_aleste_collection_unsupported">This protected GG Aleste 3 ROM from Aleste Collection requires its custom emulator. Use a Game Gear-compatible ROM release.</string>
+    <string name="home_platform_model_3">Sega Model 3</string>
+    <string name="model3_native_video">OpenGL ES 3 · 496 × 384 · 4:3</string>
+    <string name="formats_model3_body">Model 3 arcade ROM sets (ZIP). Keep the complete matching set and parent archives together. OpenGL ES 3: 496 × 384, 4:3 display. Some games need TEST-menu setup; for Daytona USA 2 network errors, set LINK ID to SINGLE.</string>
+    <string name="settings_about_model3_source">Supermodel / Super3 (GNU GPLv3)</string>
+    <string name="settings_about_model3_source_url">https://github.com/izzy2lost/Super3/tree/c410f82f771b33094b8c1cdbf96ef7c74ec9cff1</string>
+    <string name="settings_about_model3_source_desc">Sega Model 3 emulation under GNU GPLv3, based on the Super3 Android port of Supermodel (pinned revision c410f82). EmuCoreH adds the libretro integration. Licenses and third-party notices are bundled.</string>
+    <string name="settings_about_model3_source_link">View pinned Super3 source on GitHub</string>
+    <string name="settings_about_model3_upstream_link">Supermodel upstream repository</string>
+    <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
+    <string name="model3_cabinet_setup_help">Some games need first-start cabinet setup. For Daytona USA 2 network-board errors, open TEST → GAME ASSIGNMENTS → LINK ID and choose SINGLE (standalone). Follow the game’s TEST/SERVICE prompts, then exit normally to save.</string>
 </resources>

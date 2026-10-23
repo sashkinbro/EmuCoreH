@@ -168,7 +168,7 @@
     <string name="settings_version">संस्करण</string>
     <string name="settings_emulator_core">एमुलेशन कोर</string>
     <string name="settings_about_app">EmuCoreH के बारे में</string>
-    <string name="settings_about_app_desc">EmuCoreH गेम लाइब्रेरी के साथ Dreamcast और आर्केड सिस्टम के लिए Flycast तथा Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear और SG-1000 के लिए jgenesis प्रदान करता है।</string>
+    <string name="settings_about_app_desc">EmuCoreH गेम लाइब्रेरी के साथ Dreamcast और आर्केड सिस्टम के लिए Flycast तथा Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear और SG-1000 के लिए jgenesis प्रदान करता है। Supermodel, Sega Model 3 का अनुकरण करता है।</string>
     <string name="settings_about_studio">डेवलपर</string>
     <string name="settings_about_studio_desc">Sashkin Apps द्वारा निर्मित।</string>
     <string name="settings_about_support_project">प्रोजेक्ट का समर्थन करें</string>
@@ -340,7 +340,7 @@
     <string name="onboarding_page_1_title">EmuCoreH में आपका स्वागत है</string>
     <string name="onboarding_page_1_subtitle">आपकी Sega गेम लाइब्रेरी, हर स्क्रीन के लिए तैयार।</string>
     <string name="onboarding_page_2_title">शक्तिशाली एमुलेशन</string>
-    <string name="onboarding_page_2_subtitle">Flycast और jgenesis समर्थित Sega कंसोल और आर्केड सिस्टम को एक साथ लाते हैं।</string>
+    <string name="onboarding_page_2_subtitle">Flycast / Supermodel और jgenesis समर्थित Sega कंसोल और आर्केड सिस्टम को एक साथ लाते हैं।</string>
     <string name="onboarding_page_3_title">आपकी गेम्स लाइब्रेरी</string>
     <string name="onboarding_page_3_subtitle">सुंदर कवर, विस्तृत जानकारी और अपने पसंदीदा गेम्स तक त्वरित पहुंच के साथ अपनी व्यक्तिगत गेम लाइब्रेरी बनाएं।</string>
     <string name="onboarding_page_4_title">खेलने के लिए तैयार</string>
@@ -2301,4 +2301,14 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">Sonic Classic Collection की इस ROM के लिए Nintendo DS एमुलेटर चाहिए। मूल Mega Drive / Genesis ROM इस्तेमाल करें।</string>
     <string name="sega_aleste_collection_unsupported">Aleste Collection की इस सुरक्षित GG Aleste 3 ROM को संग्रह के विशेष एमुलेटर की आवश्यकता है। Game Gear के साथ संगत ROM संस्करण का उपयोग करें।</string>
+    <string name="home_platform_model_3">Sega Model 3</string>
+    <string name="model3_native_video">OpenGL ES 3 · 496 × 384 · 4:3</string>
+    <string name="formats_model3_body">Model 3 आर्केड ROM सेट (ZIP)। पूरा संगत सेट और उसके मूल आर्काइव साथ रखें। OpenGL ES 3: 496 × 384, स्क्रीन अनुपात 4:3। कुछ गेम में TEST मेनू से सेटअप करना होता है; Daytona USA 2 की नेटवर्क त्रुटि के लिए LINK ID को SINGLE पर सेट करें।</string>
+    <string name="settings_about_model3_source">Supermodel / Super3 (GNU GPLv3)</string>
+    <string name="settings_about_model3_source_url">https://github.com/izzy2lost/Super3/tree/c410f82f771b33094b8c1cdbf96ef7c74ec9cff1</string>
+    <string name="settings_about_model3_source_desc">GNU GPLv3 के अंतर्गत Sega Model 3 अनुकरण, Supermodel के Super3 Android पोर्ट (निश्चित संशोधन c410f82) पर आधारित है। EmuCoreH, libretro एकीकरण जोड़ता है। लाइसेंस और तृतीय-पक्ष सूचनाएँ शामिल हैं।</string>
+    <string name="settings_about_model3_source_link">GitHub पर Super3 के निश्चित संशोधन का स्रोत देखें</string>
+    <string name="settings_about_model3_upstream_link">Supermodel की मूल रिपॉज़िटरी</string>
+    <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
+    <string name="model3_cabinet_setup_help">कुछ गेम पहली बार शुरू करने पर आर्केड कैबिनेट का सेटअप माँगते हैं। Daytona USA 2 में नेटवर्क बोर्ड की त्रुटि आने पर TEST → GAME ASSIGNMENTS → LINK ID खोलें और SINGLE (स्वतंत्र) चुनें। गेम के TEST/SERVICE निर्देशों का पालन करें और सेटिंग सहेजने के लिए सामान्य तरीके से बाहर निकलें।</string>
 </resources>

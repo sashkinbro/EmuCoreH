@@ -42,6 +42,9 @@ class NativeCoreLibraryLifetimeInstrumentedTest {
                 try {
                     assertTrue("Probe worker completed", probed.await(10, TimeUnit.SECONDS))
                     failure.get()?.let { throw AssertionError("Probe worker failed", it) }
+                    assertTrue("Switch to Model 3 while the Rust caller remains alive", bridge.nativeSelectCore(2))
+                    assertEquals(1, bridge.apiVersion())
+                    assertTrue(bridge.getSystemInfo().contains("Supermodel", ignoreCase = true))
                     assertTrue("Switch away while the Rust caller thread remains alive", bridge.nativeSelectCore(0))
                     assertEquals(1, bridge.apiVersion())
                 } finally {

@@ -15,4 +15,8 @@ class LibraryCoverLayoutTest {
             assertTrue(aspect in 0.7f..0.8f)
         }
     }
+    @Test fun model3UsesItsPortraitCaseBoundsWithoutChangingLegacyDreamcastProportions() {
+        assertEquals(582f / 727f, libraryCoverAspectRatio("MODEL_3", 1f), 0f)
+        assertEquals(1.2f, libraryCoverAspectRatio("DREAMCAST", 1.2f), 0f)
+    }
 }

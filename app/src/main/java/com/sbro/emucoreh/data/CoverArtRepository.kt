@@ -187,6 +187,10 @@ class CoverArtRepository(context: Context) {
     fun isMissingManagedCover(path: String?): Boolean =
         isManagedCoverCachePath(path) && !path.isNullOrBlank() && !isUsableCoverFile(File(path))
 
+    fun isMismatchedManagedCover(path: String?, platform: String?): Boolean =
+        !path.isNullOrBlank() && isManagedCoverCachePath(path) &&
+            !coverCacheFileMatchesPlatform(File(path).name, platform)
+
     /**
      * Prefer the selected online artwork, with disc artwork as an offline
      * fallback. A missing managed-cache file must not erase a candidate
@@ -195,7 +199,8 @@ class CoverArtRepository(context: Context) {
      */
     fun displayCoverPath(serial: String?, title: String?, candidate: String?, platform: String? = null): String? {
         if (candidate != null && !isManagedCoverCachePath(candidate)) return candidate
-        return findCachedCoverPath(serial, title = title, platform = platform) ?: candidate
+        return findCachedCoverPath(serial, title = title, platform = platform)
+            ?: candidate.takeUnless { isMismatchedManagedCover(it, platform) }
     }
 
     fun findCachedCoverPath(
@@ -241,7 +246,7 @@ class CoverArtRepository(context: Context) {
 
     private fun gamePlatform(game: GameItem): String = game.platform ?: SegaPlatformDetector.detectName(game.fileName).name
     private fun isSegaGame(game: GameItem): Boolean =
-        catalogPlatformName(gamePlatform(game)) in setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000")
+        catalogPlatformName(gamePlatform(game)) in setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000", "Sega Model 3")
 
     fun downloadCover(game: GameItem, mode: CoverFetchMode = CoverFetchMode.FULL): String? {
         if (!isFetchBoxartEnabled()) {

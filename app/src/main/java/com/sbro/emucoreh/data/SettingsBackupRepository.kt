@@ -71,6 +71,9 @@ class SettingsBackupRepository(
                 val root = com.sbro.emucoreh.core.SegaSaveFiles.directory(context, preferences.getEmulatorDataPathSync())
                 com.sbro.emucoreh.core.SegaSaveFiles.isBackupPath(file.relativeTo(root).invariantSeparatorsPath)
             }
+            com.sbro.emucoreh.core.Model3SaveFiles.backupFiles(
+                com.sbro.emucoreh.core.Model3SaveFiles.directory(context, preferences.getEmulatorDataPathSync())
+            ).forEach { (relative, file) -> zip.writeFileEntry("model3-nvram/$relative", file) }
             if (includeSaveStates) {
                 zip.writeFlatDirectory("save-states", saveStatesDir()) { file ->
                     isQuickSaveState(file) || (isSaveStatePreviewName(file.name) &&
@@ -129,6 +132,10 @@ class SettingsBackupRepository(
                             require(target.path.startsWith(root.path + File.separator)) { "Invalid battery-save path" }
                             target.parentFile?.mkdirs()
                             target.outputStream().use { output -> zip.copyTo(output) }
+                        } else if (entry.name.startsWith("model3-nvram/") && !entry.isDirectory) {
+                            com.sbro.emucoreh.core.Model3SaveFiles.restore(zip,
+                                com.sbro.emucoreh.core.Model3SaveFiles.directory(context, preferences.getEmulatorDataPathSync()),
+                                entry.name.removePrefix("model3-nvram/"))
                         } else if (entry.name.startsWith("save-states/") && !entry.isDirectory) {
                             val relative = entry.name.removePrefix("save-states/")
                             require(relative == File(relative).name &&

@@ -4,6 +4,25 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SegaControlProfilesTest {
+    @Test fun model3AnalogDirectionsCanBeBoundWithoutAddingDefaultsOrFlycastActions() {
+        val directions = listOf("left_stick_up", "left_stick_down", "left_stick_left", "left_stick_right",
+            "right_stick_up", "right_stick_down", "right_stick_left", "right_stick_right")
+        for (action in directions) {
+            assertTrue("Model3 supports $action", SegaControlProfiles.supports(EmulationPlatform.MODEL_3, action))
+            assertFalse(SegaControlProfiles.defaults(EmulationPlatform.MODEL_3).containsKey(action))
+            for (platform in EmulationPlatform.entries.filter { it.isSega }) {
+                assertFalse(SegaControlProfiles.supports(platform, action))
+            }
+        }
+        val custom = directions.mapIndexed { index, action -> action to (200 + index) }.toMap()
+        val resolved = SegaControlProfiles.resolve(EmulationPlatform.MODEL_3, mapOf(0 to custom))
+        custom.forEach { (action, key) -> assertEquals(key, resolved.getValue(0)[action]) }
+        assertFalse(resolved.getValue(1).keys.any { it in directions })
+        for (action in listOf("gun_trigger", "gun_reload", "pressure", "left_input_toggle")) {
+            assertFalse(SegaControlProfiles.supports(EmulationPlatform.MODEL_3, action))
+        }
+    }
+
     @Test fun genesisHasSixButtonsAndModeButNoAnalogOrArcadeControls() {
         val defaults = SegaControlProfiles.defaults(EmulationPlatform.GENESIS)
         assertTrue(defaults.keys.containsAll(listOf("cross", "circle", "square", "triangle", "l1", "r1", "select", "start")))

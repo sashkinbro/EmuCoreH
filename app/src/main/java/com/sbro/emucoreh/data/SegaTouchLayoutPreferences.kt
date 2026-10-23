@@ -19,23 +19,23 @@ class SegaTouchLayoutPreferences(context: Context) {
     private val preferences = context.applicationContext.getSharedPreferences("sega_touch_layouts", Context.MODE_PRIVATE)
 
     fun load(platform: EmulationPlatform): SegaTouchLayoutProfile {
-        require(platform.isSega)
+        require(platform.usesPlatformTouchLayouts)
         val json = preferences.getString(platform.name, null)?.let { runCatching { JSONObject(it) }.getOrNull() }
         return decode(platform, json)
     }
 
     fun save(platform: EmulationPlatform, layout: TouchControlsLayoutProfile, customControls: CustomTouchControlLibrary) {
-        require(platform.isSega)
+        require(platform.usesPlatformTouchLayouts)
         check(preferences.edit().putString(platform.name, encode(platform, SegaTouchLayoutProfile(layout, customControls)).toString()).commit())
     }
 
     fun reset(platform: EmulationPlatform) {
-        require(platform.isSega)
+        require(platform.usesPlatformTouchLayouts)
         check(preferences.edit().remove(platform.name).commit())
     }
 
     fun observe(platform: EmulationPlatform): Flow<SegaTouchLayoutProfile> = callbackFlow {
-        require(platform.isSega)
+        require(platform.usesPlatformTouchLayouts)
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (key == platform.name || key == null) trySend(load(platform))
         }
@@ -45,7 +45,7 @@ class SegaTouchLayoutPreferences(context: Context) {
     }.distinctUntilChanged()
 
     fun exportJson(): JSONObject = JSONObject().apply {
-        EmulationPlatform.entries.filter { it.isSega }.forEach { platform ->
+        EmulationPlatform.entries.filter { it.usesPlatformTouchLayouts }.forEach { platform ->
             if (preferences.contains(platform.name)) put(platform.name, encode(platform, load(platform)))
         }
     }
@@ -54,7 +54,7 @@ class SegaTouchLayoutPreferences(context: Context) {
     fun restoreJson(json: JSONObject?) {
         if (json == null) return
         val editor = preferences.edit()
-        EmulationPlatform.entries.filter { it.isSega }.forEach { platform ->
+        EmulationPlatform.entries.filter { it.usesPlatformTouchLayouts }.forEach { platform ->
             val value = json.optJSONObject(platform.name)
             if (value == null) editor.remove(platform.name)
             else editor.putString(platform.name, encode(platform, decode(platform, value)).toString())

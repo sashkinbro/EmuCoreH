@@ -199,7 +199,7 @@
     <string name="settings_version">バージョン</string>
     <string name="settings_emulator_core">エミュレーションコア</string>
     <string name="settings_about_app">EmuCoreH について</string>
-    <string name="settings_about_app_desc">EmuCoreHはゲームライブラリに加え、DreamcastとアーケードにはFlycast、メガドライブ/Genesis、Sega CD、32X、マスターシステム、ゲームギア、SG-1000にはjgenesisを使用します。</string>
+    <string name="settings_about_app_desc">EmuCoreHはゲームライブラリに加え、DreamcastとアーケードにはFlycast、メガドライブ/Genesis、Sega CD、32X、マスターシステム、ゲームギア、SG-1000にはjgenesisを使用します。 Supermodel は Sega Model 3 をエミュレートします。</string>
     <string name="settings_about_studio">開発者</string>
     <string name="settings_about_studio_desc">Sashkin Apps により作成。</string>
     <string name="settings_about_support_project">プロジェクトを支援</string>
@@ -380,7 +380,7 @@
     <string name="onboarding_page_1_title">EmuCoreH へようこそ</string>
     <string name="onboarding_page_1_subtitle">あらゆる画面に対応する、あなたのSegaゲームライブラリ。</string>
     <string name="onboarding_page_2_title">強力なエミュレーション</string>
-    <string name="onboarding_page_2_subtitle">Flycastとjgenesisで、対応するSegaの家庭用ゲーム機とアーケードをひとつに。</string>
+    <string name="onboarding_page_2_subtitle">Flycast / Supermodelとjgenesisで、対応するSegaの家庭用ゲーム機とアーケードをひとつに。</string>
     <string name="onboarding_page_3_title">あなたのゲームライブラリ</string>
     <string name="onboarding_page_3_subtitle">美しいカバー、詳細な情報、お気に入りへの素早いアクセスを備えた個人的なゲームライブラリを構築します。</string>
     <string name="onboarding_page_4_title">プレイの準備</string>
@@ -2300,4 +2300,14 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">このSonic Classic CollectionのROMにはNintendo DSエミュレーターが必要です。オリジナルのMega Drive / Genesis用ROMを使用してください。</string>
     <string name="sega_aleste_collection_unsupported">Aleste Collectionに含まれるこの保護されたGG Aleste 3のROMには、コレクション専用のエミュレーターが必要です。Game Gear互換のROMを使用してください。</string>
+    <string name="home_platform_model_3">Sega Model 3</string>
+    <string name="model3_native_video">OpenGL ES 3 · 496 × 384 · 4:3</string>
+    <string name="formats_model3_body">Model 3 アーケード ROM セット（ZIP）。対応する完全なセットと親アーカイブを同じ場所に保存してください。OpenGL ES 3：496 × 384、画面比率 4:3。 一部のゲームはTESTメニューでの初期設定が必要です。Daytona USA 2のネットワークエラーには、LINK IDをSINGLEに設定してください。</string>
+    <string name="settings_about_model3_source">Supermodel / Super3 (GNU GPLv3)</string>
+    <string name="settings_about_model3_source_url">https://github.com/izzy2lost/Super3/tree/c410f82f771b33094b8c1cdbf96ef7c74ec9cff1</string>
+    <string name="settings_about_model3_source_desc">GNU GPLv3 に基づく Sega Model 3 エミュレーションです。Supermodel の Android 移植版 Super3（固定リビジョン c410f82）を基盤とし、EmuCoreH が libretro 統合を追加しています。ライセンスとサードパーティの告知を同梱しています。</string>
+    <string name="settings_about_model3_source_link">GitHub で固定リビジョンの Super3 ソースを表示</string>
+    <string name="settings_about_model3_upstream_link">Supermodel の上流リポジトリ</string>
+    <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
+    <string name="model3_cabinet_setup_help">一部のゲームは初回起動時に筐体設定が必要です。Daytona USA 2でネットワークボードのエラーが出た場合は、TEST → GAME ASSIGNMENTS → LINK IDを開き、SINGLE（単独稼働）を選んでください。ゲーム内のTEST/SERVICEの案内に従い、通常の手順で終了すると設定が保存されます。</string>
 </resources>

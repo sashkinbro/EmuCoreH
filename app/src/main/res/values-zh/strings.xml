@@ -137,7 +137,7 @@
     <string name="settings_version">版本</string>
     <string name="settings_emulator_core">模擬器核心</string>
     <string name="settings_about_app">關於 EmuCoreH</string>
-    <string name="settings_about_app_desc">EmuCoreH 将游戏库与模拟核心结合：Dreamcast 和街机系统使用 Flycast，Mega Drive/Genesis、Sega CD、32X、Master System、Game Gear 和 SG-1000 使用 jgenesis。</string>
+    <string name="settings_about_app_desc">EmuCoreH 将游戏库与模拟核心结合：Dreamcast 和街机系统使用 Flycast，Mega Drive/Genesis、Sega CD、32X、Master System、Game Gear 和 SG-1000 使用 jgenesis。 Supermodel 提供 Sega Model 3 模拟支持。</string>
     <string name="settings_about_studio">開發者</string>
     <string name="settings_about_studio_desc">由 Sashkin Apps 製作。</string>
     <string name="settings_about_support_project">支持專案</string>
@@ -242,7 +242,7 @@
     <string name="onboarding_page_1_title">歡迎使用 EmuCoreH</string>
     <string name="onboarding_page_1_subtitle">您的Sega游戏库，适配每一块屏幕。</string>
     <string name="onboarding_page_2_title">強大的模擬功能</string>
-    <string name="onboarding_page_2_subtitle">Flycast和jgenesis将受支持的Sega主机与街机系统汇聚一处。</string>
+    <string name="onboarding_page_2_subtitle">Flycast / Supermodel和jgenesis将受支持的Sega主机与街机系统汇聚一处。</string>
     <string name="onboarding_page_3_title">您的遊戲庫</string>
     <string name="onboarding_page_3_subtitle">建立您的個人遊戲庫，擁有精美的封面、詳細的資訊，並能快速存取您的最愛。</string>
     <string name="onboarding_page_4_title">準備遊玩</string>
@@ -2302,4 +2302,14 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">此 Sonic Classic Collection ROM 需要 Nintendo DS 模拟器。请使用原版 Mega Drive / Genesis ROM。</string>
     <string name="sega_aleste_collection_unsupported">此 Aleste Collection 中受保护的 GG Aleste 3 ROM 需要合集专用模拟器。请使用兼容 Game Gear 的 ROM 版本。</string>
+    <string name="home_platform_model_3">Sega Model 3</string>
+    <string name="model3_native_video">OpenGL ES 3 · 496 × 384 · 4:3</string>
+    <string name="formats_model3_body">Model 3 街机 ROM 集（ZIP）。请将完整匹配的 ROM 集与父级压缩包放在一起。OpenGL ES 3：496 × 384，显示比例 4:3。 部分游戏需要在TEST菜单中进行初始设置；如果Daytona USA 2出现网络错误，请将LINK ID设为SINGLE。</string>
+    <string name="settings_about_model3_source">Supermodel / Super3 (GNU GPLv3)</string>
+    <string name="settings_about_model3_source_url">https://github.com/izzy2lost/Super3/tree/c410f82f771b33094b8c1cdbf96ef7c74ec9cff1</string>
+    <string name="settings_about_model3_source_desc">基于 GNU GPLv3 的 Sega Model 3 模拟，采用 Supermodel 的 Android 移植版 Super3（固定版本 c410f82）。EmuCoreH 添加了 libretro 集成。随附许可证与第三方声明。</string>
+    <string name="settings_about_model3_source_link">在 GitHub 查看固定版本的 Super3 源代码</string>
+    <string name="settings_about_model3_upstream_link">Supermodel 上游代码仓库</string>
+    <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
+    <string name="model3_cabinet_setup_help">部分游戏首次启动时需要设置机台。如果Daytona USA 2出现网络板错误，请打开TEST → GAME ASSIGNMENTS → LINK ID并选择SINGLE（独立运行）。按照游戏内的TEST/SERVICE提示操作，然后正常退出以保存设置。</string>
 </resources>

@@ -3,8 +3,10 @@
 package com.sbro.emucoreh.core
 
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.io.File
+import javax.xml.parsers.DocumentBuilderFactory
 
 class StringsLocalizationTest {
     private val requiredKeys = listOf(
@@ -86,6 +88,50 @@ class StringsLocalizationTest {
                 assertTrue("Missing $key in ${dir.name}/strings.xml", content.contains("name=\"$key\""))
             }
         }
+    }
+
+    @Test
+    fun `catalog platform and core attribution resources preserve locale and format contracts`() {
+        val resDir = resolveResDir()
+        val english = readStrings(File(resDir, "values/strings.xml"))
+        val prefixes = listOf("catalog_", "home_platform_", "formats_", "settings_about_", "model3_")
+        val keys = english.keys.filter { key -> prefixes.any(key::startsWith) }
+        resDir.listFiles().orEmpty().map { File(it, "strings.xml") }.filter(File::isFile).forEach { file ->
+            val localized = readStrings(file)
+            keys.forEach { key ->
+                val value = localized[key]
+                assertTrue("Missing or empty $key in ${file.parentFile?.name}", !value.isNullOrBlank())
+                assertEquals("Format arguments for $key in ${file.parentFile?.name}",
+                    formatArguments(english.getValue(key)), formatArguments(value.orEmpty()))
+                if (key.endsWith("_url")) {
+                    assertEquals("Core and catalog links must use HTTPS: $key", "https",
+                        java.net.URI(value.orEmpty()).scheme)
+                }
+            }
+        }
+    }
+
+    private fun readStrings(file: File): Map<String, String> {
+        val factory = DocumentBuilderFactory.newInstance().apply {
+            setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+        }
+        val nodes = factory.newDocumentBuilder().parse(file).getElementsByTagName("string")
+        return buildMap {
+            for (index in 0 until nodes.length) {
+                val node = nodes.item(index)
+                val name = node.attributes.getNamedItem("name").nodeValue
+                assertTrue("Duplicate string $name in $file", !containsKey(name))
+                put(name, node.textContent)
+            }
+        }
+    }
+
+    private fun formatArguments(value: String): List<String> {
+        var nextIndex = 1
+        return Regex("%(?:(\\d+)\\$)?[0-9.]*([a-zA-Z])").findAll(value).map { match ->
+            val index = match.groupValues[1].toIntOrNull() ?: nextIndex++
+            "$index:${match.groupValues[2]}"
+        }.sorted().toList()
     }
 
     private fun resolveResDir(): File {

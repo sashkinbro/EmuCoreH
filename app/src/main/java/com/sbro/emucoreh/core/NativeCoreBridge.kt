@@ -75,6 +75,7 @@ class NativeCoreBridge {
     // ---------------------------------------------------------------------
     external fun setPadButtons(handle: Long, port: Int, activeLowButtons: Int)
     external fun setPadAnalog(handle: Long, port: Int, lx: Int, ly: Int, rx: Int, ry: Int)
+    external fun setPadTriggers(handle: Long, port: Int, left: Int, right: Int)
     external fun setPadAnalogMode(handle: Long, port: Int, enabled: Boolean)
     /** Called only by the frame worker. Device: 1 joypad, 4 light gun. */
     external fun setControllerDevice(handle: Long, port: Int, device: Int)

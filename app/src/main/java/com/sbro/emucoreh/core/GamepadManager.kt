@@ -355,7 +355,7 @@ object GamepadManager {
     fun setPlatform(platform: EmulationPlatform) {
         if (activePlatform == platform) return
         activePlatform = platform
-        if (platform.isSega) {
+        if (platform.usesPlatformTouchLayouts) {
             lightGunPorts = emptySet()
             lightGunAimSource = 0
         }
@@ -369,14 +369,14 @@ object GamepadManager {
     }
 
     private fun activeProfileBindings(): Map<Int, Map<String, Int>> =
-        if (activePlatform.isSega) SegaControlProfiles.resolve(activePlatform,
+        if (activePlatform.usesPlatformTouchLayouts) SegaControlProfiles.resolve(activePlatform,
             appContext?.let { SegaControlProfiles.load(it, activePlatform) }.orEmpty())
         else if (arcadeModeActive) arcadeBindingsByPad else consoleBindingsByPad
 
     /** Recomputes [customBindingsByPad] after a profile or override change. */
     private fun refreshActiveBindings() {
         val desired = if (perGameBindingsActive) {
-            if (activePlatform.isSega) GamepadBindingRules.merge(activeProfileBindings(), perGameBindingsOverride.orEmpty())
+            if (activePlatform.usesPlatformTouchLayouts) GamepadBindingRules.merge(activeProfileBindings(), perGameBindingsOverride.orEmpty())
             else perGameBindingsOverride ?: activeProfileBindings()
         } else {
             activeProfileBindings()
@@ -705,7 +705,7 @@ object GamepadManager {
         }
         if (bindingsByPad != null && bindingsByPad.isNotEmpty()) {
             perGameBindingsOverride = bindingsByPad
-        } else if (activePlatform.isSega) {
+        } else if (activePlatform.usesPlatformTouchLayouts) {
             perGameBindingsOverride = null
         }
         refreshActiveBindings()
@@ -748,6 +748,16 @@ object GamepadManager {
             return true
         }
         val rawPadKey = mapKeyCodeToRawPadKey(padIndex, event.keyCode) ?: return false
+        // Android may emit a binary key edge alongside a trigger axis. Keep the
+        // axis authoritative for Model 3 pedals, independent of event ordering.
+        if (activePlatform.isModel3 && event.keyCode in KeyEvent.KEYCODE_BUTTON_L2..KeyEvent.KEYCODE_BUTTON_R2) {
+            val left = event.keyCode == KeyEvent.KEYCODE_BUTTON_L2
+            if (Model3TriggerPressure.suppressAxisKey(true, event.keyCode, rawPadKey,
+                mapTriggerAxisToRawPadKey(padIndex, if (left) "l2" else "r2"),
+                hasAnyJoystickAxis(event.device,
+                    if (left) MotionEvent.AXIS_LTRIGGER else MotionEvent.AXIS_RTRIGGER,
+                    if (left) MotionEvent.AXIS_BRAKE else MotionEvent.AXIS_GAS))) return true
+        }
         if (shouldUseAnalogTriggerAxisForRightStickMapping(event.device, rawPadKey)) {
             return true
         }
@@ -1107,6 +1117,7 @@ object GamepadManager {
     }
 
     private fun shouldUseAnalogTriggerAxisForRightStickMapping(device: InputDevice?, padKey: Int): Boolean {
+        if (activePlatform.isModel3) return false
         return when (padKey) {
             PadKey.L2 -> rightStickDownToL2 && hasAnyJoystickAxis(
                 device = device,
@@ -1168,18 +1179,19 @@ object GamepadManager {
             .maxByOrNull { (actionId, _) -> if (GamepadBindingRules.isArcadeAction(actionId)) 1 else 0 }
             ?.let { return it.key }
         return triggerActionId.takeUnless {
-            it in customBindings || (activePlatform.isSega && !isActionActive(it, padIndex))
+            it in customBindings || (activePlatform.usesPlatformTouchLayouts && !isActionActive(it, padIndex))
         }
     }
 
     private fun isActionActive(actionId: String, padIndex: Int): Boolean = when {
-        activePlatform.isSega -> SegaControlProfiles.supports(activePlatform, actionId)
+        activePlatform.usesPlatformTouchLayouts -> SegaControlProfiles.supports(activePlatform, actionId)
         actionId in gunActionIds -> padIndex in lightGunPorts
         GamepadBindingRules.isArcadeAction(actionId) -> arcadeModeActive || padIndex in lightGunPorts
         else -> actionId in actionsById
     }
 
     private fun remapTriggerPadKeyForRightStick(padKey: Int): Int {
+        if (activePlatform.isModel3) return padKey
         return when (padKey) {
             PadKey.L2 -> if (rightStickDownToL2) PadKey.RightStickDown else PadKey.L2
             PadKey.R2 -> if (rightStickUpToR2) PadKey.RightStickUp else PadKey.R2

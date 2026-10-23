@@ -19,6 +19,11 @@ AV: native 496x384, display aspect 4:3, 60 frames/sec, stereo S16 at 44100Hz.
 The sound core produces 735 samples/frame. Core execution is synchronous
 with no separate sound/device thread. Native resolution and the simpler
 Android New3D shader path are selected; CPU-intensive games may run slowly.
+Fatal graphics initialization failures and frame exceptions latch a runtime
+failure and send RETRO_ENVIRONMENT_SHUTDOWN with the diagnostic retained in
+supermodel_boot_error(). Frames remain stopped until a new game load. A
+missing/destroyed context waits normally; load rejection and NVRAM write
+diagnostics do not request runtime shutdown.
 
 Inputs: two libretro joypads, analog sticks and optional lightgun devices.
 Select inserts a coin, Start starts, L3 is Service, R3 is Test. A/B/X/Y map
@@ -26,7 +31,12 @@ to game action buttons. For driving titles: left-stick X or d-pad steers,
 R2 accelerates, L2 brakes, R/L shift up/down, A changes view. For twin-stick
 titles both analog sticks supply the two sticks; L2/R2 fire and L/R turbo.
 Lightgun device coordinates use SCREEN_X/Y, TRIGGER and RELOAD/OFFSCREEN.
-Joypad left-stick plus A/B is an aiming/trigger/reload fallback.
+Joypad left-stick plus app A/B is an aiming/trigger/reload fallback. The Android
+frontend's existing libretro face-button ABI is Cross=B, Circle=A, Square=Y,
+Triangle=X; this adapter translates that order to the app's A/B/X/Y labels.
+Model 3 receives 0..255 hardware L2/R2 pressure through ANALOG_BUTTON inputs;
+digital touch/key pedals retain full-pressure fallback. Analog pedal releases
+are immediate and do not use the frontend's digital tap-hold queue.
 
 NVRAM is atomically persisted at `<save>/supermodel/<set>/nvram.bin`.
 Libretro serialization wraps upstream CBlockFile bytes in an 80-byte
@@ -43,12 +53,14 @@ must match the current game's layout and pass scalar/range validation before
 the running machine is modified. Decoder snapshots store ROM-relative offsets,
 never host pointers.
 
-On an RG556, owner-supplied `srally2`, `daytona2` and `lostwsga` sets passed
-900-frame render checks with nonblack image pixels and stereo PCM callbacks,
-exact paused state restoration, corrupt-state rejection, identical 12-frame
-future state, exact PCM replay and held-shift restoration. Rally's replay
-window contained nonzero PCM; the sampled Daytona and Lost World windows
-were silent, so these checks do not establish audible music for those games.
+On an RG556, owner-supplied `srally2`, `daytona2` and `lostwsga` sets have
+rendered game scenes and nonzero audio. Exact paused state restoration,
+corrupt-state rejection, identical 12-frame future state, nonzero PCM replay
+and held-shift restoration have separate device checks. Daytona requires
+its original cabinet menu `TEST → GAME ASSIGNMENTS → LINK ID → SINGLE`
+without linked cabinets. Tile layers capture live memory before each visible
+scanline's CPU execution; IRQ2 remains at line 383. The software tile surfaces
+preserve displayed rows when the guest clears VRAM late in the frame.
 These are three tested sets, not a compatibility claim for every XML entry
 or a complete release/lifecycle qualification.
 
@@ -60,6 +72,16 @@ directory). That checks ABI/failure paths only, not a game boot. Host tests
 under libretro/tests cover input scaling, corrupt-state boundaries, audio
 mixing, scene-memory bounds, the guest calendar, actual portable threading
 primitives and exact nonzero MPEG replay using a self-authored stereo fixture.
+They also exercise the production runtime guard's graphics failures, thrown
+initialization/frame work, normal context waits, fatal latch and reload reset.
+The same CMake option builds `model3_runtime_failure_lifecycle`; invoke it as
+`model3_runtime_failure_lifecycle core.so system_directory owner_set.zip temporary_save_directory`.
+It uses a GLES3 pbuffer and the core's normal callbacks to exercise real shader
+initialization failure without a current EGL context, shutdown propagation,
+callback suppression and reload recovery. It requires owner-supplied content
+and is not a production crash interface. Exception-catching coverage is in
+the same-ELF host runtime-guard test; the Android executable does not throw
+C++ exceptions across separately linked static C++ runtimes.
 
 Not implemented: network cabinets, force feedback, cheats, RetroAchievements,
 Vulkan, enhanced multipass effects, frontend hotkey/config menus. These

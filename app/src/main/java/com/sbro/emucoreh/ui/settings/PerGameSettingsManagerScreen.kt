@@ -334,7 +334,7 @@ fun PerGameSettingsManagerScreen(
     }
 
     val platform = rememberGamePlatform(selectedGame?.path, selectedGame?.platform)
-    val supportedTabs = if (platform.isSega) SupportedGameSettingsManagerTabs.filter { it != GameSettingsManagerTab.Network } else SupportedGameSettingsManagerTabs
+    val supportedTabs = if (platform.coreId != 0) SupportedGameSettingsManagerTabs.filter { it != GameSettingsManagerTab.Network } else SupportedGameSettingsManagerTabs
     LaunchedEffect(platform) { if (selectedTab !in supportedTabs) selectedTab = GameSettingsManagerTab.Core }
     val neonThemeActive = LocalNeonTheme.current
     LaunchedEffect(selectedTab) {
@@ -891,8 +891,9 @@ private fun GameSettingsTabContent(
     ) {
         when (selectedTab) {
             GameSettingsManagerTab.Core -> {
+                if (platform.isModel3) Model3SettingsInfo()
                 EditorSection(title = stringResource(R.string.game_settings_manager_section_profile)) {
-                    if (!platform.isSega) {
+                    if (platform.coreId == 0) {
                     SelectionRow(
                         title = stringResource(R.string.settings_renderer),
                         options = listOf(
@@ -916,7 +917,7 @@ private fun GameSettingsTabContent(
                     // while the game ran the in-game value, and a single edit
                     // here pinned a core-option override that shadowed the
                     // app-level value at launch forever.
-                    if (!platform.isSega) {
+                    if (platform.coreId == 0) {
                     SelectionRow(
                         title = stringResource(R.string.settings_upscale),
                         options = buildUpscaleOptions(nativeUpscaleLabel, maxUpscaleMultiplier),
@@ -961,7 +962,7 @@ private fun GameSettingsTabContent(
                         onResetToDefault = { onDraftChange(draft.copy(displayCrop = defaultProfile.displayCrop)) }
                     )
                     CoreOptionManagerRows(
-                        options = if (platform.isSega) com.sbro.emucoreh.core.SegaCoreOptions.options(platform).filter { it.category == "video" } else FlycastCoreOptions.videoOptions(),
+                        options = when { platform.isSega -> com.sbro.emucoreh.core.SegaCoreOptions.options(platform).filter { it.category == "video" }; platform.coreId == 0 -> FlycastCoreOptions.videoOptions(); else -> emptyList() },
                         draft = draft,
                         onDraftChange = onDraftChange
                     )
@@ -1003,13 +1004,6 @@ private fun GameSettingsTabContent(
             }
             GameSettingsManagerTab.Runtime -> {
                 EditorSection(title = stringResource(R.string.game_settings_manager_section_runtime)) {
-                    if (!platform.isSega) ToggleRow(
-                        title = stringResource(R.string.settings_frame_limit),
-                        checked = draft.frameLimitEnabled,
-                        onCheckedChange = { onDraftChange(draft.copy(frameLimitEnabled = it)) },
-                        helpText = stringResource(R.string.settings_frame_limit_desc),
-                        onResetToDefault = { onDraftChange(draft.copy(frameLimitEnabled = defaultProfile.frameLimitEnabled)) }
-                    )
                     SelectionRow(
                         title = stringResource(R.string.settings_target_fps),
                         options = listOf(
@@ -1049,10 +1043,10 @@ private fun GameSettingsTabContent(
                     )
                 }
 
-                EditorSection(title = stringResource(R.string.settings_core_cpu)) {
+                if (!platform.isModel3) EditorSection(title = stringResource(R.string.settings_core_cpu)) {
                     if (platform.isSega) SegaCoreOptionRows(platform, overrides = draft.coreOptions, category = "system",
                         onChange = { key, value -> onDraftChange(draft.copy(coreOptions = draft.coreOptions + (key to value))) })
-                    else CoreOptionManagerRows(
+                    else if (platform.coreId == 0) CoreOptionManagerRows(
                         options = FlycastCoreOptions.systemOptions(),
                         draft = draft,
                         onDraftChange = onDraftChange
@@ -1173,7 +1167,7 @@ private fun GameSettingsTabContent(
                     )
                 }
                 EditorSection(title = stringResource(R.string.settings_controls_tab)) {
-                    if (!platform.isSega) {
+                    if (platform.coreId == 0) {
                     ToggleRow(
                         title = stringResource(R.string.settings_racing_mode),
                         checked = draft.racingMode,
@@ -1202,7 +1196,7 @@ private fun GameSettingsTabContent(
                         onResetToDefault = { onDraftChange(draft.copy(touchscreenLeftStick = defaultProfile.touchscreenLeftStick)) }
                     )
                     }
-                    if (!platform.isSega && draft.touchscreenLeftStick) {
+                    if (platform.supportsAnalogControlSettings() && draft.touchscreenLeftStick) {
                         SliderRow(
                             title = stringResource(R.string.settings_touchscreen_left_stick_sensitivity),
                             value = draft.touchscreenLeftStickSensitivity.toFloat(),
@@ -1233,7 +1227,7 @@ private fun GameSettingsTabContent(
                         onResetToDefault = { onDraftChange(draft.copy(touchscreenRightStick = defaultProfile.touchscreenRightStick)) }
                     )
                     }
-                    if (!platform.isSega && draft.touchscreenRightStick) {
+                    if (platform.supportsAnalogControlSettings() && draft.touchscreenRightStick) {
                         SliderRow(
                             title = stringResource(R.string.settings_touchscreen_right_stick_sensitivity),
                             value = draft.touchscreenRightStickSensitivity.toFloat(),
@@ -1270,7 +1264,7 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_touch_haptics_preset),
                         onResetToDefault = { onDraftChange(draft.copy(touchHapticsPreset = defaultProfile.touchHapticsPreset)) }
                     )
-                    if (!platform.isSega) {
+                    if (platform.coreId == 0) {
                     SelectionRow(
                         title = stringResource(R.string.settings_gyro_mode),
                         options = gyroModeOptions(draft.gyroStickTarget),
@@ -1280,7 +1274,7 @@ private fun GameSettingsTabContent(
                         onResetToDefault = { onDraftChange(draft.copy(gyroMode = defaultProfile.gyroMode)) }
                     )
                     }
-                    if (!platform.isSega && draft.gyroMode == AppPreferences.GYRO_MODE_AIM) {
+                    if (platform.coreId == 0 && draft.gyroMode == AppPreferences.GYRO_MODE_AIM) {
                         SelectionRow(
                             title = stringResource(R.string.settings_gyro_stick),
                             options = gyroStickTargetOptions(),
@@ -1289,7 +1283,7 @@ private fun GameSettingsTabContent(
                             onResetToDefault = { onDraftChange(draft.copy(gyroStickTarget = defaultProfile.gyroStickTarget)) }
                         )
                     }
-                    if (!platform.isSega) {
+                    if (platform.coreId == 0) {
                     SelectionRow(
                         title = stringResource(R.string.settings_arcade_device_player_1),
                         options = arcadeDeviceOptions(),
@@ -1298,7 +1292,7 @@ private fun GameSettingsTabContent(
                         onResetToDefault = { onDraftChange(draft.copy(arcadeDevice1 = defaultProfile.arcadeDevice1)) }
                     )
                     }
-                    if (!platform.isSega) {
+                    if (platform.coreId == 0) {
                     SelectionRow(
                         title = stringResource(R.string.settings_arcade_device_player_2),
                         options = arcadeDeviceOptions(),
@@ -1307,7 +1301,7 @@ private fun GameSettingsTabContent(
                         onResetToDefault = { onDraftChange(draft.copy(arcadeDevice2 = defaultProfile.arcadeDevice2)) }
                     )
                     }
-                    if (!platform.isSega) {
+                    if (platform.coreId == 0) {
                     SelectionRow(
                         title = stringResource(R.string.settings_light_gun_aim),
                         options = lightGunAimSourceOptions(),
@@ -1316,7 +1310,7 @@ private fun GameSettingsTabContent(
                         onResetToDefault = { onDraftChange(draft.copy(lightGunAimSource = defaultProfile.lightGunAimSource)) }
                     )
                     }
-                    if (!platform.isSega) {
+                    if (platform.coreId == 0) {
                     ToggleRow(
                         title = stringResource(R.string.settings_light_gun_cursor),
                         checked = draft.lightGunCursorEnabled,
@@ -1332,7 +1326,7 @@ private fun GameSettingsTabContent(
                     val sensorMode = if (draft.gyroMode == AppPreferences.GYRO_MODE_OFF && gunUsesGyro) {
                         AppPreferences.GYRO_MODE_LIGHT_GUN
                     } else draft.gyroMode
-                    if (!platform.isSega && sensorControlsVisible &&
+                    if (platform.coreId == 0 && sensorControlsVisible &&
                         !AndroidGyroscopeInput.isModeAvailable(LocalContext.current, sensorMode)
                     ) {
                         Text(
@@ -1341,7 +1335,7 @@ private fun GameSettingsTabContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    if (!platform.isSega && sensorControlsVisible) {
+                    if (platform.coreId == 0 && sensorControlsVisible) {
                         SliderRow(stringResource(R.string.settings_gyro_sensitivity), draft.gyroSensitivity.toFloat(), "${draft.gyroSensitivity}%", 25f..300f, 10, { onDraftChange(draft.copy(gyroSensitivity = it.roundToInt())) }, helpText = stringResource(R.string.settings_help_gyro_sensitivity), onResetToDefault = { onDraftChange(draft.copy(gyroSensitivity = defaultProfile.gyroSensitivity)) })
                         SliderRow(stringResource(R.string.settings_gyro_smoothing), draft.gyroSmoothing.toFloat(), "${draft.gyroSmoothing}%", 0f..90f, 8, { onDraftChange(draft.copy(gyroSmoothing = it.roundToInt())) }, helpText = stringResource(R.string.settings_help_gyro_smoothing), onResetToDefault = { onDraftChange(draft.copy(gyroSmoothing = defaultProfile.gyroSmoothing)) })
                         ToggleRow(stringResource(R.string.settings_gyro_invert_x), draft.gyroInvertX, { onDraftChange(draft.copy(gyroInvertX = it)) }, helpText = stringResource(R.string.settings_help_gyro_invert_x), onResetToDefault = { onDraftChange(draft.copy(gyroInvertX = defaultProfile.gyroInvertX)) })
@@ -1406,7 +1400,7 @@ private fun GameSettingsTabContent(
                     }
                 )
 
-                if (!platform.isSega) EditorSection(title = stringResource(R.string.settings_core_input)) {
+                if (platform.coreId == 0) EditorSection(title = stringResource(R.string.settings_core_input)) {
                     CoreOptionManagerRows(
                         options = FlycastCoreOptions.inputOptions(),
                         draft = draft,
@@ -1954,7 +1948,7 @@ private fun PerGameGamepadMappingSection(
     if (showMappingDialog) {
         PerGameGamepadMappingDialog(
             platform = platform,
-            globalBindingsByPad = if (platform.isSega) com.sbro.emucoreh.core.SegaControlProfiles.resolve(platform,
+            globalBindingsByPad = if (platform.usesPlatformTouchLayouts) com.sbro.emucoreh.core.SegaControlProfiles.resolve(platform,
                 com.sbro.emucoreh.core.SegaControlProfiles.load(context, platform)) else globalBindingsByPad,
             bindingsByPad = bindingsByPad,
             onBindingsChange = onBindingsChange,

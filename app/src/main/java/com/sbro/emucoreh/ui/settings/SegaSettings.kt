@@ -41,6 +41,7 @@ internal fun rememberGamePlatform(path: String?, stored: String? = null): Emulat
 
 @Composable
 internal fun platformLabel(platform: EmulationPlatform): String = stringResource(when (platform) {
+    EmulationPlatform.MODEL_3 -> R.string.home_platform_model_3
     EmulationPlatform.DREAMCAST -> R.string.sega_flycast_systems
     EmulationPlatform.GENESIS -> R.string.home_platform_genesis
     EmulationPlatform.SEGA_CD -> R.string.home_platform_sega_cd
@@ -69,6 +70,16 @@ internal fun SegaSettingsPanel(platform: EmulationPlatform) {
         else Text(stringResource(if (platform in setOf(EmulationPlatform.MASTER_SYSTEM, EmulationPlatform.GAME_GEAR, EmulationPlatform.SG_1000))
             R.string.sega_two_button_controls else R.string.sega_six_button_controls),
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+internal fun Model3SettingsInfo() {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.model3_native_video),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.model3_cabinet_setup_help),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

@@ -2147,6 +2147,9 @@ void CModel3::RunMainBoardFrame(void)
 			pingPongFlipLine = static_cast<unsigned>(overrideLine);
 		if (pingPongFlipLine >= 384u)
 			pingPongFlipLine = 383u;
+#ifdef __ANDROID__
+    TileGen.BeginScanlineFrame();
+#endif
 		for (unsigned i = 0; i < 384; i++)
 		{
 			if (i == pingPongFlipLine)
@@ -2154,6 +2157,12 @@ void CModel3::RunMainBoardFrame(void)
 
 			if (i == 383)
 				IRQ.Assert(0x02);
+
+#ifdef __ANDROID__
+      // As on hardware, this line is displayed before IRQ2's handler can
+      // clear or redraw tile memory. LostWorld still needs IRQ2 at line 383.
+      TileGen.DrawLine(i);
+#endif
 
 			unsigned cycles = lineCycles;
 			if (dispCycles < cycles)

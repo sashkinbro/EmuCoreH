@@ -9,7 +9,7 @@ import java.io.File
 class CoverIndexRepositoryTest {
     @Test fun segaFoldersHaveIndependentDarkAndLightCaseUrls() {
         val base = CoverIndexRepository.BASE_URL
-        for (folder in listOf("genesis", "sega_cd", "32x", "master_system", "game_gear", "sg_1000")) {
+        for (folder in listOf("genesis", "sega_cd", "32x", "master_system", "game_gear", "sg_1000", "model3")) {
             assertEquals("$base/$folder/3d/1.webp", CoverIndexRepository.makeCoverUrl("$folder/1.jpg"))
             assertEquals("$base/$folder/3d/light/1.webp", CoverIndexRepository.makeCoverUrl("$folder/1.jpg", isLight = true))
         }

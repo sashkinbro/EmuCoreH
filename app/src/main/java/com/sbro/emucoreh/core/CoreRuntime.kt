@@ -90,6 +90,7 @@ internal object CoreRuntime {
     private val padEdgeHoldMask = IntArray(2)
     private val padEdgeHoldFrames = IntArray(2)
     private val pendingPadAnalog = AtomicIntegerArray(IntArray(2) { 0x80808080.toInt() })
+    private val pendingPadTriggers = Array(2) { Model3TriggerPressure() }
     private val lightGunInputs = Array(2) { LightGunInputState() }
     private val requestedInputDevices = AtomicIntegerArray(2)
     private val appliedInputDevices = IntArray(2) { -1 }
@@ -149,6 +150,7 @@ internal object CoreRuntime {
     fun initialize(context: Context) {
         this.context = context.applicationContext
         if (!hasSession()) JGenesisContentPreparer.cleanupAbandonedContent(context)
+        if (!hasSession()) Model3ContentPreparer.cleanupAbandonedContent(context)
         val root = File(context.filesDir, "flycast")
         systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath
         saveDirectory = File(root, "save").apply { mkdirs() }.absolutePath
@@ -262,16 +264,25 @@ internal object CoreRuntime {
         }
         val app = context ?: return false
         val detectedPlatform = if (biosOnly) EmulationPlatform.DREAMCAST else SegaPlatformDetector.detect(app, gamePath)
-        val requestedCore = if (detectedPlatform.isSega) RendererDefaults.CORE_OPENGL
+        val requestedCore = if (detectedPlatform.coreId != 0) RendererDefaults.CORE_OPENGL
             else RendererDefaults.toCoreRenderer(requestedRenderer)
         val candidates = listOf(requestedCore)
 
         shutdownSession()
         platform = detectedPlatform
-        val root = File(app.filesDir, if (platform.isSega) "jgenesis" else "flycast")
+        val root = File(app.filesDir, when (platform.coreId) { 1 -> "jgenesis"; 2 -> "supermodel"; else -> "flycast" })
         systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath
+        if (platform.isModel3) {
+            val definitions = File(systemDirectory, "supermodel/Games.xml")
+            definitions.parentFile?.mkdirs()
+            app.assets.open("supermodel/Games.xml").use { source ->
+                definitions.outputStream().use { source.copyTo(it) }
+            }
+        }
         saveDirectory = (if (platform.isSega) {
             File(EmulatorStorage.runtimeDirectories(app, dataRootOverride).root, "saves/jgenesis/${platform.name.lowercase(Locale.ROOT)}")
+        } else if (platform.isModel3) {
+            File(EmulatorStorage.runtimeDirectories(app, dataRootOverride).root, "saves")
         } else File(root, "save")).apply { mkdirs() }.absolutePath
         coreAssetsDirectory = File(root, "assets").apply { mkdirs() }.absolutePath
         if (!bridge.nativeSelectCore(platform.coreId)) {
@@ -279,7 +290,7 @@ internal object CoreRuntime {
             return false
         }
         bridge.nativeInit(systemDirectory, saveDirectory, coreAssetsDirectory)
-        if (!platform.isSega) bridge.setDataRootOverride(dataRootOverride)
+        if (platform.coreId == 0) bridge.setDataRootOverride(dataRootOverride)
         // The native audio ring is shared between sessions; clear it so the new
         // AAudio stream does not replay the tail of the previous game.
         bridge.resetAudioQueue()
@@ -307,8 +318,10 @@ internal object CoreRuntime {
         arcadeInputMode = -1
         for (port in 0..1) {
             lightGunInputs[port].reset()
+            if (platform.coreId != 0) requestedInputDevices.set(port, 0)
             appliedInputDevices[port] = -1
             desiredPadButtons.set(port, 0xFFFF)
+            pendingPadTriggers[port].reset()
             pendingPadPressEdges.set(port, 0)
             padEdgeHoldMask[port] = 0
             padEdgeHoldFrames[port] = 0
@@ -366,10 +379,15 @@ internal object CoreRuntime {
                     bridge.nativeSetOption(option.key, value)
                 }
             }
+        } else if (platform.isModel3) {
+            pushAspectRatio(displayAspectRatioPreference() ?: ASPECT_RATIO_AUTO)
+            pushShaderEffect()
+            pushShaderPreset()
         } else applyStartOptions(coreRenderer)
         val handle = bridge.createSession()
         if (handle == 0L) {
             if (platform.isSega) context?.let(JGenesisContentPreparer::releasePreparedContent)
+            if (platform.isModel3) context?.let(Model3ContentPreparer::releasePreparedContent)
             return@withLock false
         }
         // Attach the surface before loading content: SET_HW_RENDER fires inside
@@ -389,6 +407,7 @@ internal object CoreRuntime {
         } else if (loadDisc(handle, gamePath) != 0) {
             bridge.destroySession(handle)
             if (platform.isSega) context?.let(JGenesisContentPreparer::releasePreparedContent)
+            if (platform.isModel3) context?.let(Model3ContentPreparer::releasePreparedContent)
             return@withLock false
         }
         session = handle
@@ -466,6 +485,7 @@ internal object CoreRuntime {
      * that must not pollute the global option store.
      */
     fun applyCoreOption(key: String, value: String) {
+        if (platform.isModel3) return
         if (platform.isSega != key.startsWith("jgenesis_")) return
         bridge.nativeSetOption(key, value)
     }
@@ -510,11 +530,13 @@ internal object CoreRuntime {
     fun setHostForeground(foreground: Boolean) {
         hostPlayback.setForeground(foreground) {
             paused = true
+            clearModel3TriggerPressure()
             audioOutput?.let { output -> runCatching { output.pause() } }
         }
     }
 
     fun pause() = lifecycleLock.withLock {
+        clearModel3TriggerPressure()
         if (paused) return@withLock
         paused = true
         audioOutput?.pause()
@@ -534,6 +556,7 @@ internal object CoreRuntime {
 
     private fun shutdownSession() {
         val releaseSegaContent = platform.isSega && session != 0L
+        val releaseModel3Content = platform.isModel3 && session != 0L
         val activeWorker = worker
         check(activeWorker !== Thread.currentThread()) {
             "The frame worker cannot synchronously shut itself down"
@@ -545,6 +568,7 @@ internal object CoreRuntime {
             lightGunInputs[port].reset()
             appliedInputDevices[port] = -1
             desiredPadButtons.set(port, 0xFFFF)
+            pendingPadTriggers[port].reset()
             pendingPadPressEdges.set(port, 0)
             padEdgeHoldMask[port] = 0
             padEdgeHoldFrames[port] = 0
@@ -572,6 +596,7 @@ internal object CoreRuntime {
                 }
             }
             if (releaseSegaContent) context?.let(JGenesisContentPreparer::releasePreparedContent)
+            if (releaseModel3Content) context?.let(Model3ContentPreparer::releasePreparedContent)
             paused = false
             renderedFirstFrame = false
             sessionStartedAtNanos = 0L
@@ -677,18 +702,20 @@ internal object CoreRuntime {
     @Volatile private var lastCheatFilePath: String? = null
 
     fun loadCheats(path: String) {
+        if (platform.isModel3) return
         lastCheatFilePath = path
         sessionLock.withLock { runCatching { bridge.loadCheats(path) } }
     }
 
     fun clearCheats() {
         lastCheatFilePath = null
+        if (platform.isModel3) return
         sessionLock.withLock { runCatching { bridge.clearCheats() } }
     }
 
     fun setDataRootOverride(path: String?) {
         dataRootOverride = path?.takeIf(String::isNotBlank)
-        if (platform.isSega) return
+        if (platform.coreId != 0) return
         runCatching { bridge.setDataRootOverride(dataRootOverride) }
             .onFailure { Log.w(TAG, "Unable to set the Flycast data root", it) }
     }
@@ -715,10 +742,19 @@ internal object CoreRuntime {
         padEdgeHoldMask[port] = 0
         padEdgeHoldFrames[port] = 0
         pendingPadAnalog.set(port, 0x80808080.toInt())
+        pendingPadTriggers[port].reset()
         lightGunInputs[port].reset(recenter = false)
     }
 
     fun getArcadeInputMode(): Int = arcadeInputMode
+
+    fun setPadTriggerPressure(port: Int, source: Int, right: Boolean, range: Int, pressed: Boolean) {
+        if (platform.isModel3 && port in 0..1) pendingPadTriggers[port].update(source, right, range, pressed)
+    }
+
+    private fun clearModel3TriggerPressure() {
+        if (platform.isModel3) for (port in 0..1) pendingPadTriggers[port].reset()
+    }
 
     fun setArcadeControllerDevice(port: Int, device: Int) {
         if (port !in 0..1) return
@@ -839,7 +875,7 @@ internal object CoreRuntime {
             pushShaderEffect()
             pushShaderPreset()
         }
-        if (platform.isSega) return
+        if (platform.coreId != 0) return
         val bool = value.toBooleanStrictOrNull()
         val target: Pair<String, String>? = when ("$section:$key") {
             "EmuCoreH/Display:Upscale" -> value.toFloatOrNull()?.let {
@@ -874,7 +910,7 @@ internal object CoreRuntime {
         val targetFps = activeFrameRate
         val displayFps = timing?.fps ?: fps
         val speed = timing?.speedPercent ?: (fps / targetFps * 100.0)
-        val renderer = if (platform.isSega) "jgenesis" else RendererDefaults.coreRendererName(activeCoreRenderer)
+        val renderer = if (platform.isSega) "jgenesis" else if (platform.isModel3) "Supermodel" else RendererDefaults.coreRendererName(activeCoreRenderer)
         val frameMs = frameNanos / frames / 1_000_000.0
         val gpuLoad = if (detailedPerformanceMetrics) GpuLoadReader.loadPercent() else null
         val overlay = buildString {
@@ -1002,7 +1038,7 @@ internal object CoreRuntime {
                         null
                     } else {
                         for (port in 0..1) {
-                            val device = if (!platform.isSega && ArcadeInputPolicy.isLightGun(requestedInputDevices.get(port), arcadeInputMode)) 4 else 1
+                            val device = ArcadeInputPolicy.controllerDevice(requestedInputDevices.get(port), arcadeInputMode, platform)
                             if (appliedInputDevices[port] != device) {
                                 bridge.setControllerDevice(session, port, device)
                                 appliedInputDevices[port] = device
@@ -1023,6 +1059,10 @@ internal object CoreRuntime {
                                 padEdgeHoldMask[port] = 0
                             }
                             val analog = pendingPadAnalog.get(port)
+                            if (platform.isModel3) {
+                                val triggers = pendingPadTriggers[port].packed()
+                                bridge.setPadTriggers(session, port, triggers and 255, triggers ushr 8)
+                            }
                             bridge.setPadAnalog(
                                 session,
                                 port,
@@ -1126,6 +1166,10 @@ internal object CoreRuntime {
             Log.e(TAG, "Emulation frame loop stopped", error)
             reportFailure("Emulation frame loop stopped: ${error.javaClass.simpleName}: ${error.message.orEmpty()}")
         } finally {
+            // A failed worker retains its session for orderly UI cleanup, but
+            // must not retain a playing stream after it stops producing audio.
+            runCatching { output.pause() }
+                .onFailure { Log.w(TAG, "Unable to pause stopped worker audio", it) }
             drainFrameTasks()
             running = false
         }
@@ -1140,7 +1184,10 @@ internal object CoreRuntime {
         // SAF documents are exposed to the core through the frontend VFS: the
         // bridge hands out detached descriptors, so a multi-file CUE/GDI set is
         // streamed in place and nothing is copied into app storage.
-        val path = if (platform.isSega) {
+        val path = if (platform.isModel3) {
+            runCatching { Model3ContentPreparer.prepare(app, gamePath) }
+                .onFailure { Log.e(TAG, "Unable to prepare Model 3 content", it) }.getOrNull() ?: return -1
+        } else if (platform.isSega) {
             runCatching { JGenesisContentPreparer.prepare(app, gamePath) }
                 .onFailure { Log.e(TAG, "Unable to prepare Sega content", it) }.getOrNull() ?: return -1
         } else if (gamePath.startsWith("content://")) {

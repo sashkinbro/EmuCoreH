@@ -117,7 +117,7 @@ fun ControlsLayoutEditorHostScreen(
     val saveFailureMessage = stringResource(R.string.controls_editor_save_failed)
 
     suspend fun loadState(): Pair<ControlsEditorState, Boolean> {
-        resolvedPlatform = if (platform.isSega || normalizedGamePath == null) platform else withContext(Dispatchers.IO) {
+        resolvedPlatform = if (platform.usesPlatformTouchLayouts || normalizedGamePath == null) platform else withContext(Dispatchers.IO) {
             SegaPlatformDetector.detect(context, normalizedGamePath)
         }
         preferences.migrateOverlayLayoutIfNeeded()
@@ -126,7 +126,7 @@ fun ControlsLayoutEditorHostScreen(
         val perGame = normalizedGamePath?.let { path ->
             withContext(Dispatchers.IO) { repository.get(path) }
         }
-        val segaGlobal = if (resolvedPlatform.isSega) withContext(Dispatchers.IO) { segaPreferences.load(resolvedPlatform) } else null
+        val segaGlobal = if (resolvedPlatform.usesPlatformTouchLayouts) withContext(Dispatchers.IO) { segaPreferences.load(resolvedPlatform) } else null
         val layout = perGame?.touchControlsLayout ?: segaGlobal?.layout ?: globalLayout.toTouchControlsLayoutProfile()
         val customControls = perGame?.customTouchControls
             ?: segaGlobal?.customControls ?: preferences.customTouchControls.first()
@@ -134,14 +134,14 @@ fun ControlsLayoutEditorHostScreen(
             visualStyle = perGame?.touchControlVisualStyle ?: settings.touchControlVisualStyle,
             pressEffect = perGame?.touchControlPressEffect ?: settings.touchControlPressEffect,
             overlayScale = globalLayout.overlayScale,
-            customControls = if (resolvedPlatform.isSega) SegaTouchLayouts.sanitizeCustomControls(resolvedPlatform, customControls) else customControls
+            customControls = if (resolvedPlatform.usesPlatformTouchLayouts) SegaTouchLayouts.sanitizeCustomControls(resolvedPlatform, customControls) else customControls
         ).copy(platform = resolvedPlatform) to (perGame?.touchControlsLayout != null || perGame?.customTouchControls != null)
     }
 
     suspend fun persistState(state: ControlsEditorState) {
         val layout = state.toTouchControlsLayoutProfile()
         val customControls = state.customControls.sanitized()
-        if (normalizedGamePath == null && resolvedPlatform.isSega) {
+        if (normalizedGamePath == null && resolvedPlatform.usesPlatformTouchLayouts) {
             withContext(Dispatchers.IO) { segaPreferences.save(resolvedPlatform, layout, customControls) }
             persistedCustomControls = customControls
         } else if (normalizedGamePath == null) {
@@ -189,7 +189,7 @@ fun ControlsLayoutEditorHostScreen(
         state: ControlsEditorState,
         controlId: String
     ): OverlayControlLayout {
-        val defaults = if (resolvedPlatform.isSega) SegaTouchLayouts.defaultProfile(resolvedPlatform).controlLayouts else AppPreferences.defaultOverlayControlLayouts(state.stickScale)
+        val defaults = if (resolvedPlatform.usesPlatformTouchLayouts) SegaTouchLayouts.defaultProfile(resolvedPlatform).controlLayouts else AppPreferences.defaultOverlayControlLayouts(state.stickScale)
         return state.controlLayouts[controlId]
             ?: defaults[controlId]
             ?: OverlayControlLayout(scale = if (controlId.contains("stick")) state.stickScale else 100)
@@ -222,7 +222,7 @@ fun ControlsLayoutEditorHostScreen(
                 .getOrDefault(SettingsSnapshot())
             ControlsEditorState(
                 platform = resolvedPlatform,
-                controlLayouts = if (resolvedPlatform.isSega) SegaTouchLayouts.defaultProfile(resolvedPlatform).controlLayouts else AppPreferences.defaultOverlayControlLayouts(),
+                controlLayouts = if (resolvedPlatform.usesPlatformTouchLayouts) SegaTouchLayouts.defaultProfile(resolvedPlatform).controlLayouts else AppPreferences.defaultOverlayControlLayouts(),
                 touchControlVisualStyle = settings.touchControlVisualStyle,
                 touchControlPressEffect = settings.touchControlPressEffect
             ) to false
@@ -357,7 +357,7 @@ fun ControlsLayoutEditorHostScreen(
                 val reset = runCatching {
                     saveMutex.withLock {
                         if (normalizedGamePath == null) {
-                            if (resolvedPlatform.isSega) withContext(Dispatchers.IO) { segaPreferences.reset(resolvedPlatform) }
+                            if (resolvedPlatform.usesPlatformTouchLayouts) withContext(Dispatchers.IO) { segaPreferences.reset(resolvedPlatform) }
                             else preferences.resetControlsLayout()
                         } else {
                             withContext(Dispatchers.IO) {
@@ -369,7 +369,7 @@ fun ControlsLayoutEditorHostScreen(
                                     gameSerial = gameSerial,
                                     layout = SegaTouchLayouts.defaultProfile(resolvedPlatform)
                                 ).let { reset ->
-                                    if (resolvedPlatform.isSega) reset.withCustomTouchControls(
+                                    if (resolvedPlatform.usesPlatformTouchLayouts) reset.withCustomTouchControls(
                                         normalizedGamePath, resolvedGameTitle, gameSerial, CustomTouchControlLibrary.Empty
                                     ) else reset
                                 }.let(repository::save)

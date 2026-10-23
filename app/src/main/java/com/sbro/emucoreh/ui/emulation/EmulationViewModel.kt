@@ -886,7 +886,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                         durationMs = durationMs,
                         sessionCount = if (shouldCountCurrentProfileSession) 1L else 0L,
                         arcade = currentGameIsArcade,
-                        platform = com.sbro.emucoreh.core.CoreRuntime.platform.takeIf { it.isSega }?.name
+                        platform = com.sbro.emucoreh.core.CoreRuntime.platform.takeIf { it.coreId != 0 }?.name
                     )
                 )
             }.isSuccess
@@ -1156,7 +1156,10 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 val launchPath = when {
                     bootToBios -> ""
                     path.isNullOrBlank() -> null
-                    else -> if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isSega) {
+                    else -> if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isModel3) {
+                        runCatching { com.sbro.emucoreh.core.Model3ContentPreparer.prepare(getApplication(), path) }
+                            .onFailure { Log.e(TAG, "Unable to prepare Model 3 content", it) }.getOrNull()
+                    } else if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isSega) {
                         // The previous session (including a failed one) has been unloaded above.
                         // Copy SAF content before taking CoreRuntime's lifecycle lock, so a
                         // background/surface-destroy callback cannot block on a large disc copy.
@@ -1450,7 +1453,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 _uiState.value = _uiState.value.copy(
                     performanceOverlayHeader = buildPerformanceOverlayHeader(getApplication())
                 )
-                if (!com.sbro.emucoreh.core.CoreRuntime.platform.isSega) {
+                if (com.sbro.emucoreh.core.CoreRuntime.platform.coreId == 0) {
                     RetroAchievementsRepository.get(getApplication()).onGameStarted(pathToLaunch)
                 }
                 syncCheatsForCurrentGame()
@@ -2160,7 +2163,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 )
             } else {
                 currentCustomTouchControlsProfile = null
-                if (currentTouchPlatform.isSega) {
+                if (currentTouchPlatform.usesPlatformTouchLayouts) {
                     segaTouchPreferences.save(currentTouchPlatform, _uiState.value.toTouchControlsLayoutProfile(), sanitized)
                 } else preferences.setCustomTouchControls(sanitized)
                 _uiState.value = _uiState.value.copy(customTouchControls = sanitized)
@@ -2457,15 +2460,15 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private suspend fun configureTouchPlatform(platform: EmulationPlatform) {
-        if (currentTouchPlatform == platform && (!platform.isSega || currentGlobalSegaTouchProfile != null)) return
+        if (currentTouchPlatform == platform && (!platform.usesPlatformTouchLayouts || currentGlobalSegaTouchProfile != null)) return
         segaTouchProfileJob?.cancel()
         currentTouchPlatform = platform
-        currentGlobalSegaTouchProfile = if (platform.isSega) segaTouchPreferences.load(platform) else null
-        val baseState = if (platform.isSega) _uiState.value else
+        currentGlobalSegaTouchProfile = if (platform.usesPlatformTouchLayouts) segaTouchPreferences.load(platform) else null
+        val baseState = if (platform.usesPlatformTouchLayouts) _uiState.value else
             _uiState.value.withOverlayLayoutSnapshot(preferences.overlayLayoutSnapshot.first())
                 .copy(customTouchControls = preferences.customTouchControls.first())
         _uiState.value = resolvedTouchState(baseState)
-        if (platform.isSega) segaTouchProfileJob = viewModelScope.launch {
+        if (platform.usesPlatformTouchLayouts) segaTouchProfileJob = viewModelScope.launch {
             segaTouchPreferences.observe(platform).collect { profile ->
                 if (currentTouchPlatform != platform) return@collect
                 currentGlobalSegaTouchProfile = profile
@@ -2578,7 +2581,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private suspend fun persistGlobalTouchControlsLayout(state: EmulationUiState) {
-        if (currentTouchPlatform.isSega) {
+        if (currentTouchPlatform.usesPlatformTouchLayouts) {
             segaTouchPreferences.save(currentTouchPlatform, state.toTouchControlsLayoutProfile(), state.customTouchControls)
         } else preferences.saveTouchControlsLayout(state.toTouchControlsLayoutProfile())
     }
@@ -2613,7 +2616,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         if (gameKey == null) {
             currentTouchControlsLayoutProfile = null
             currentCustomTouchControlsProfile = null
-            if (currentTouchPlatform.isSega) {
+            if (currentTouchPlatform.usesPlatformTouchLayouts) {
                 segaTouchPreferences.reset(currentTouchPlatform)
                 currentGlobalSegaTouchProfile = segaTouchPreferences.load(currentTouchPlatform)
                 _uiState.value = resolvedTouchState(_uiState.value)
@@ -2629,7 +2632,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         val existing = perGameSettingsRepository.get(gameKey)
         // Reset to the built-in defaults for this game; dropping the override would
         // silently inherit the customized global layout.
-        val resetLayout = if (currentTouchPlatform.isSega) SegaTouchLayouts.defaultProfile(currentTouchPlatform)
+        val resetLayout = if (currentTouchPlatform.usesPlatformTouchLayouts) SegaTouchLayouts.defaultProfile(currentTouchPlatform)
             else TouchControlsLayoutProfile()
         val resetProfile = existing.withTouchControlsLayout(
             gameKey = gameKey,
@@ -2637,13 +2640,13 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             gameSerial = currentGameSerial.takeIf { it.isNotBlank() },
             layout = resetLayout
         )
-        perGameSettingsRepository.save(if (currentTouchPlatform.isSega) resetProfile.withCustomTouchControls(
+        perGameSettingsRepository.save(if (currentTouchPlatform.usesPlatformTouchLayouts) resetProfile.withCustomTouchControls(
             gameKey = gameKey, gameTitle = resolvePerGameTitle(_uiState.value),
             gameSerial = currentGameSerial.takeIf { it.isNotBlank() }, library = CustomTouchControlLibrary.Empty
         ) else resetProfile)
 
         currentTouchControlsLayoutProfile = resetLayout
-        currentCustomTouchControlsProfile = if (currentTouchPlatform.isSega) CustomTouchControlLibrary.Empty
+        currentCustomTouchControlsProfile = if (currentTouchPlatform.usesPlatformTouchLayouts) CustomTouchControlLibrary.Empty
             else existing?.customTouchControls
         _uiState.value = _uiState.value
             .withOverlayLayoutSnapshot(preferences.overlayLayoutSnapshot.first())

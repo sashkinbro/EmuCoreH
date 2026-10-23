@@ -34,9 +34,7 @@
 #include <vector>
 namespace Util { namespace Config { class Node; } }
 
-// Android software renderer: decodes the tile generator into an RGBA8888 buffer.
-// This is enough to show the built-in test menus (2D only) while the 3D/GPU path
-// is still stubbed out on Android.
+// Android software renderer: captures tile scanlines into ARGB8888 surfaces.
 class CRender2D
 {
 public:
@@ -46,6 +44,10 @@ public:
   ~CRender2D() = default;
 
   static void SetAndroidTileBlit(AndroidTileBlitFn fn);
+
+  // Capture live tile memory before executing each visible scanline's CPU work.
+  void BeginScanlineFrame();
+  void DrawScanline(unsigned y);
 
   void BeginFrame(void);
   void PreRenderFrame(void);
@@ -65,7 +67,7 @@ public:
   bool HasTopSurface() const { return m_surfacesPresent.first; }
 
 private:
-  std::pair<bool, bool> DrawTilemaps(uint32_t *pixelsBottom, uint32_t *pixelsTop);
+  std::pair<bool, bool> DrawTilemapLine(uint32_t *pixelsBottom, uint32_t *pixelsTop, unsigned y);
   void CompositeTopOntoFrame();
 
   const Util::Config::Node &m_config;
@@ -80,6 +82,7 @@ private:
   std::vector<uint32_t> m_bottomSurface;
   std::vector<uint32_t> m_frame;
   std::pair<bool, bool> m_surfacesPresent{false, false}; // top, bottom
+  bool m_scanlineCapture = false;
 };
 
 #else

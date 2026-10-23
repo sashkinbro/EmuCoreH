@@ -9,6 +9,8 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -42,11 +44,21 @@ class RuntimeFailureLifecycleInstrumentedTest {
             assertTrue(EmulatorBridge.startEmulation("", allowBiosBoot = true))
             EmulatorBridge.pause()
             val worker = Thread.getAllStackTraces().keys.single { it.name == "EmuCoreH-Frame" }
-            // Terminate the paused owner unexpectedly, not through shutdown.
+            CoreRuntime.setHostForeground(true)
+            EmulatorBridge.resume()
+            val audioField = CoreRuntime::class.java.getDeclaredField("audioOutput").apply { isAccessible = true }
+            val output = audioField.get(CoreRuntime) as NativeAudioOutput
+            assertEquals("AAudio must be active before interrupting the owner", 1L, output.stats()!![0])
+            // Terminate the playing owner unexpectedly, not through shutdown.
             // This reproduces the ownership boundary shared by fatal frame/audio errors.
             worker.interrupt()
             worker.join(5_000)
-            assertFalse("interrupted paused worker did not stop", worker.isAlive)
+            assertFalse("interrupted playing worker did not stop", worker.isAlive)
+            Thread.sleep(100) // Allow an already dispatched AAudio callback to finish.
+            val stoppedAudio = output.stats()!!
+            assertNotEquals("failed worker left AAudio playing", 1L, stoppedAudio[0])
+            Thread.sleep(150)
+            assertEquals("failed worker left AAudio callbacks running", stoppedAudio[6], output.stats()!![6])
             assertFalse(NativeApp.hasValidVm())
             val failure = EmulatorBridge.runtimeFailure.value
             assertNotNull("unexpected stop was not published to the UI bridge", failure)
@@ -66,10 +78,7 @@ class RuntimeFailureLifecycleInstrumentedTest {
             assertTrue(EmulatorBridge.hasValidVm())
             // Early validation rejects a replacement without destroying the
             // previous owner. The bridge must not abandon that live session.
-            assertTrue(CoreRuntime.updateSetting("Filenames", "BIOS", "missing-owned-fixture.bin"))
-            assertTrue(CoreRuntime.updateSetting("Folders", "Bios", rom.absolutePath)) // File, not a search directory.
-            assertTrue(CoreRuntime.updateSetting("EmuCoreH", "BiosSource", ""))
-            assertFalse(EmulatorBridge.startEmulation("", allowBiosBoot = true))
+            assertFalse(EmulatorBridge.startEmulation("/missing-owned-fixture.unsupported", allowBiosBoot = false))
             assertTrue(EmulatorBridge.hasValidVm())
             assertTrue(EmulatorBridge.isVmActive())
             EmulatorBridge.shutdown()

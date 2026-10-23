@@ -163,6 +163,8 @@ class IgdbCatalogRepository(private val context: Context) {
             Log.d(TAG, "Catalog match by exact title: $title -> $id")
             return id
         }
+        // Every supported Model 3 set has reviewed aliases; never guess another edition or sequel.
+        if (catalogPlatform == "Sega Model 3") return null
         findFuzzyTitleId(db, candidateTitles, catalogPlatform)?.let { id ->
             Log.d(TAG, "Catalog match by fuzzy title: $title -> $id")
             return id

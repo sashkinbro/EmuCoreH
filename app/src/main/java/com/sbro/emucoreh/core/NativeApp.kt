@@ -268,12 +268,17 @@ object NativeApp {
             return
         }
         val bit = padButtonBit(index) ?: return
+        val model3Trigger = CoreRuntime.platform.isModel3 && (bit == 8 || bit == 9)
+        if (model3Trigger) CoreRuntime.setPadTriggerPressure(padIndex, normalizedSource, bit == 9, range, pressed)
         val buttons = when (normalizedSource) {
             KeyboardMouseBindings.PAD_SOURCE_KEYBOARD -> padKeyboardButtons
             KeyboardMouseBindings.PAD_SOURCE_MOUSE -> padMouseButtons
             else -> padButtons
         }
-        buttons[padIndex] = if (pressed) {
+        // Axis events carry their own pressure. Do not turn them into held digital
+        // tap edges (which would briefly become full throttle after axis release).
+        val digitalPressed = if (model3Trigger) Model3TriggerPressure.digitalPress(range, pressed) else pressed
+        buttons[padIndex] = if (digitalPressed) {
             buttons[padIndex] and (1 shl bit).inv()
         } else {
             buttons[padIndex] or (1 shl bit)
@@ -444,7 +449,9 @@ object NativeApp {
         val context = getContext() ?: return null
         val directory = EmulatorStorage.saveStatesDir(context, dataRootOverride)
         val platform = SegaPlatformDetector.detect(context, path)
-        val identity = if (platform.isSega) {
+        val identity = if (platform.isModel3) {
+            "M3-${path.sha256().take(16).uppercase()}"
+        } else if (platform.isSega) {
             "JG-${platform.name}-${path.sha256().take(16).uppercase()}"
         } else extractDiscSerial(path) ?: path.sha256().take(16).uppercase()
         return File(directory, "$identity.${slot.coerceIn(0, 99).toString().padStart(2, '0')}.rstate").absolutePath

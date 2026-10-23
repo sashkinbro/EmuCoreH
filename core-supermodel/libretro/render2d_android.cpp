@@ -96,7 +96,7 @@ static inline void DrawTileLine(uint32_t *line,
 }
 
 template <int bits, bool alphaTest>
-static void DrawLayer(uint32_t *pixels, int layerNum, const uint32_t *vram, const uint32_t *regs, const uint32_t *palette)
+static void DrawLayerLine(uint32_t *pixels, int layerNum, const uint32_t *vram, const uint32_t *regs, const uint32_t *palette, unsigned y)
 {
   const uint16_t *nameTableBase = (const uint16_t *)&vram[(0xF8000 + layerNum * 0x2000) / 4];
   const uint16_t *hScrollTable = (const uint16_t *)&vram[(0xF6000 + layerNum * 0x400) / 4];
@@ -110,10 +110,8 @@ static void DrawLayer(uint32_t *pixels, int layerNum, const uint32_t *vram, cons
 
   const uint16_t maskPolarity = (layerNum & 1) ? 0xFFFF : 0x0000;
 
-  uint32_t *line = pixels;
-
-  for (int y = 0; y < 384; y++)
-  {
+  uint32_t *line = pixels + y * 496;
+  maskTable += y * 2;
     int hScroll = (lineScrollMode ? hScrollTable[y] : hFullScroll) & 0x1FF;
     int hTile = hScroll / 8;
     int hFine = hScroll & 7;
@@ -139,9 +137,6 @@ static void DrawLayer(uint32_t *pixels, int layerNum, const uint32_t *vram, cons
     ++hTile;
     pixelOffset += 8;
 
-    maskTable += 2;
-    line += 496;
-  }
 }
 } // namespace
 
@@ -180,10 +175,13 @@ void CRender2D::AttachVRAM(const uint8_t *vramPtr) { m_vram = reinterpret_cast<c
 
 void CRender2D::BeginFrame(void) {}
 
-std::pair<bool, bool> CRender2D::DrawTilemaps(uint32_t *pixelsBottom, uint32_t *pixelsTop)
+std::pair<bool, bool> CRender2D::DrawTilemapLine(uint32_t *pixelsBottom, uint32_t *pixelsTop, unsigned y)
 {
   if (!m_regs || !m_vram || !m_palette[0] || !m_palette[1])
     return {false, false};
+
+  std::fill_n(pixelsBottom + y * 496, 496, 0);
+  std::fill_n(pixelsTop + y * 496, 496, 0);
 
   unsigned priority = (m_regs[0x20 / 4] >> 8) & 0xF;
 
@@ -200,16 +198,16 @@ std::pair<bool, bool> CRender2D::DrawTilemaps(uint32_t *pixelsBottom, uint32_t *
       if (noBottomSurface)
       {
         if (is4Bit)
-          DrawLayer<4, false>(pixelsBottom, layerNum, m_vram, m_regs, m_palette[layerNum / 2]);
+          DrawLayerLine<4, false>(pixelsBottom, layerNum, m_vram, m_regs, m_palette[layerNum / 2], y);
         else
-          DrawLayer<8, false>(pixelsBottom, layerNum, m_vram, m_regs, m_palette[layerNum / 2]);
+          DrawLayerLine<8, false>(pixelsBottom, layerNum, m_vram, m_regs, m_palette[layerNum / 2], y);
       }
       else
       {
         if (is4Bit)
-          DrawLayer<4, true>(pixelsBottom, layerNum, m_vram, m_regs, m_palette[layerNum / 2]);
+          DrawLayerLine<4, true>(pixelsBottom, layerNum, m_vram, m_regs, m_palette[layerNum / 2], y);
         else
-          DrawLayer<8, true>(pixelsBottom, layerNum, m_vram, m_regs, m_palette[layerNum / 2]);
+          DrawLayerLine<8, true>(pixelsBottom, layerNum, m_vram, m_regs, m_palette[layerNum / 2], y);
       }
       noBottomSurface = false;
     }
@@ -228,16 +226,16 @@ std::pair<bool, bool> CRender2D::DrawTilemaps(uint32_t *pixelsBottom, uint32_t *
       if (noTopSurface)
       {
         if (is4Bit)
-          DrawLayer<4, false>(pixelsTop, layerNum, m_vram, m_regs, m_palette[layerNum / 2]);
+          DrawLayerLine<4, false>(pixelsTop, layerNum, m_vram, m_regs, m_palette[layerNum / 2], y);
         else
-          DrawLayer<8, false>(pixelsTop, layerNum, m_vram, m_regs, m_palette[layerNum / 2]);
+          DrawLayerLine<8, false>(pixelsTop, layerNum, m_vram, m_regs, m_palette[layerNum / 2], y);
       }
       else
       {
         if (is4Bit)
-          DrawLayer<4, true>(pixelsTop, layerNum, m_vram, m_regs, m_palette[layerNum / 2]);
+          DrawLayerLine<4, true>(pixelsTop, layerNum, m_vram, m_regs, m_palette[layerNum / 2], y);
         else
-          DrawLayer<8, true>(pixelsTop, layerNum, m_vram, m_regs, m_palette[layerNum / 2]);
+          DrawLayerLine<8, true>(pixelsTop, layerNum, m_vram, m_regs, m_palette[layerNum / 2], y);
       }
       noTopSurface = false;
     }
@@ -248,9 +246,27 @@ std::pair<bool, bool> CRender2D::DrawTilemaps(uint32_t *pixelsBottom, uint32_t *
 
 void CRender2D::PreRenderFrame(void)
 {
-  if (m_frame.empty())
+  if (m_frame.empty() || m_scanlineCapture)
     return;
-  m_surfacesPresent = DrawTilemaps(m_bottomSurface.data(), m_topSurface.data());
+  // Legacy timing has no scanline callbacks.
+  m_surfacesPresent = {false, false};
+  for (unsigned y = 0; y < m_yPixels; ++y)
+    DrawScanline(y);
+}
+
+void CRender2D::BeginScanlineFrame()
+{
+  m_scanlineCapture = true;
+  m_surfacesPresent = {false, false};
+}
+
+void CRender2D::DrawScanline(unsigned y)
+{
+  if (m_frame.empty() || y >= m_yPixels)
+    return;
+  const auto present = DrawTilemapLine(m_bottomSurface.data(), m_topSurface.data(), y);
+  m_surfacesPresent.first |= present.first;
+  m_surfacesPresent.second |= present.second;
 }
 
 void CRender2D::RenderFrameBottom(void)
@@ -305,7 +321,7 @@ void CRender2D::RenderFrameTop(void)
   CompositeTopOntoFrame();
 }
 
-void CRender2D::EndFrame(void) {}
+void CRender2D::EndFrame(void) { m_scanlineCapture = false; }
 
 #endif // __ANDROID__
 

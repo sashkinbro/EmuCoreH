@@ -17,8 +17,8 @@ data class GameLibraryCacheSnapshot(
 class GameLibraryCacheRepository(context: Context) {
 
     companion object {
-        // v9: repair disc identities cached before Sega CD header probing.
-        private const val CACHE_SCHEMA_VERSION = 9
+        // v10: identify Model 3 sets; older displayable snapshots refresh in the background.
+        private const val CACHE_SCHEMA_VERSION = 10
 
         fun libraryKey(paths: List<String>): String =
             paths.map(String::trim).filter(String::isNotBlank).distinct().joinToString("\u001F")
@@ -40,7 +40,8 @@ class GameLibraryCacheRepository(context: Context) {
 
             return runCatching {
                 val rootObject = JSONObject(cacheFile.readText())
-                if (rootObject.optInt("schema_version", 0) != CACHE_SCHEMA_VERSION) {
+                val schema = rootObject.optInt("schema_version", 0)
+                if (schema !in 8..CACHE_SCHEMA_VERSION) {
                     return GameLibraryCacheSnapshot(emptyList(), 0L)
                 }
                 val libraries = rootObject.optJSONArray("libraries")
@@ -90,7 +91,7 @@ class GameLibraryCacheRepository(context: Context) {
                 }.distinctBy { GameRepository.libraryIdentity(it.path) }
                 GameLibraryCacheSnapshot(
                     games = parsedGames,
-                    savedAt = libraryObject.optLong("saved_at", 0L),
+                    savedAt = if (schema < CACHE_SCHEMA_VERSION) 0L else libraryObject.optLong("saved_at", 0L),
                     preferEnglishTitles = cachedPreference
                 )
             }.getOrDefault(GameLibraryCacheSnapshot(emptyList(), 0L))

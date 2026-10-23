@@ -199,7 +199,7 @@
     <string name="settings_version">الإصدار</string>
     <string name="settings_emulator_core">نواة المحاكاة</string>
     <string name="settings_about_app">حول EmuCoreH</string>
-    <string name="settings_about_app_desc">يجمع EmuCoreH مكتبة ألعاب مع Flycast لأجهزة Dreamcast والآركيد، وjgenesis لأجهزة Mega Drive/Genesis وSega CD و32X وMaster System وGame Gear وSG-1000.</string>
+    <string name="settings_about_app_desc">يجمع EmuCoreH مكتبة ألعاب مع Flycast لأجهزة Dreamcast والآركيد، وjgenesis لأجهزة Mega Drive/Genesis وSega CD و32X وMaster System وGame Gear وSG-1000. يوفر Supermodel محاكاة Sega Model 3.</string>
     <string name="settings_about_studio">المطور</string>
     <string name="settings_about_studio_desc">تم الإنشاء بواسطة Sashkin Apps.</string>
     <string name="settings_about_support_project">ادعم المشروع</string>
@@ -380,7 +380,7 @@
     <string name="onboarding_page_1_title">مرحبًا بك في EmuCoreH</string>
     <string name="onboarding_page_1_subtitle">مكتبة ألعاب Sega الخاصة بك، جاهزة لكل شاشة.</string>
     <string name="onboarding_page_2_title">محاكاة قوية</string>
-    <string name="onboarding_page_2_subtitle">يجمع Flycast وjgenesis أجهزة Sega المنزلية وأجهزة الآركيد المدعومة.</string>
+    <string name="onboarding_page_2_subtitle">يجمع Flycast / Supermodel وjgenesis أجهزة Sega المنزلية وأجهزة الآركيد المدعومة.</string>
     <string name="onboarding_page_3_title">مكتبة ألعابك</string>
     <string name="onboarding_page_3_subtitle">قم ببناء مكتبة ألعابك الشخصية مع أغلفة جميلة، ومعلومات مفصلة، ووصول سريع إلى ألعابك المفضلة.</string>
     <string name="onboarding_page_4_title">جاهز للعب</string>
@@ -2309,4 +2309,14 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">يتطلب ملف ROM هذا من Sonic Classic Collection محاكي Nintendo DS. استخدم ملف ROM أصليًا لجهاز Mega Drive / Genesis.</string>
     <string name="sega_aleste_collection_unsupported">يتطلب ملف ROM المحمي هذا للعبة GG Aleste 3 من Aleste Collection المحاكي الخاص بالمجموعة. استخدم إصدار ROM متوافقًا مع Game Gear.</string>
+    <string name="home_platform_model_3">Sega Model 3</string>
+    <string name="model3_native_video">OpenGL ES 3 · 496 × 384 · 4:3</string>
+    <string name="formats_model3_body">مجموعات ROM لألعاب Model 3 (ZIP). احتفظ بالمجموعة الكاملة المتوافقة وأرشيفاتها الأصلية معًا. OpenGL ES 3: ‏496 × 384 بنسبة عرض 4:3. تحتاج بعض الألعاب إلى الإعداد من قائمة TEST؛ لأخطاء الشبكة في Daytona USA 2، اضبط LINK ID على SINGLE.</string>
+    <string name="settings_about_model3_source">Supermodel / Super3 (GNU GPLv3)</string>
+    <string name="settings_about_model3_source_url">https://github.com/izzy2lost/Super3/tree/c410f82f771b33094b8c1cdbf96ef7c74ec9cff1</string>
+    <string name="settings_about_model3_source_desc">محاكاة Sega Model 3 بموجب GNU GPLv3، بالاعتماد على نسخة Super3 لنظام Android من Supermodel (المراجعة المثبتة c410f82). يضيف EmuCoreH تكامل libretro. التراخيص وإشعارات الجهات الخارجية مرفقة.</string>
+    <string name="settings_about_model3_source_link">عرض مصدر مراجعة Super3 المثبتة على GitHub</string>
+    <string name="settings_about_model3_upstream_link">المستودع الأصلي لـ Supermodel</string>
+    <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
+    <string name="model3_cabinet_setup_help">تحتاج بعض الألعاب إلى إعداد جهاز الأركيد عند التشغيل الأول. عند ظهور خطأ لوحة الشبكة في Daytona USA 2، افتح TEST → GAME ASSIGNMENTS → LINK ID واختر SINGLE (مستقل). اتبع تعليمات TEST/SERVICE داخل اللعبة، ثم اخرج بالطريقة المعتادة لحفظ الإعدادات.</string>
 </resources>

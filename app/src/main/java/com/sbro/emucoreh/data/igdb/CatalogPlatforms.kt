@@ -14,5 +14,6 @@ fun catalogPlatformName(platform: String?): String = when (platform?.trim()?.upp
     "NAOMI", "SEGA NAOMI" -> "Sega Naomi"
     "NAOMI_2", "SEGA NAOMI 2" -> "Sega Naomi 2"
     "ATOMISWAVE", "SAMMY ATOMISWAVE" -> "Sammy Atomiswave"
+    "MODEL_3", "MODEL3", "MODEL 3", "SEGA MODEL 3" -> "Sega Model 3"
     else -> platform.trim()
 }

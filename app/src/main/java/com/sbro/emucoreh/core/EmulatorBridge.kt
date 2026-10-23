@@ -432,7 +432,7 @@ object EmulatorBridge {
                 // The bundled core silently boots the BIOS when a disc image
                 // cannot be opened. Surface that as a failed launch instead of
                 // leaving the user on a misleading BIOS screen.
-                if (!CoreRuntime.platform.isSega && !NativeApp.hasDiscMedia()) {
+                if (CoreRuntime.platform.coreId == 0 && !NativeApp.hasDiscMedia()) {
                     NativeApp.logCrashBreadcrumb("disc image failed to mount; aborting launch")
                     Log.w(TAG, "Disc image could not be mounted; aborting $pathType launch")
                     runCatching { NativeApp.shutdown() }
@@ -610,6 +610,10 @@ object EmulatorBridge {
             path
         }
         val extension = extensionSource.substringAfterLast('.', "").lowercase()
+        if (knownPlatform?.isModel3 == true || Model3Romsets.find(extensionSource.substringAfterLast('/')) != null) {
+            val game = Model3Romsets.find(extensionSource.substringAfterLast('/'))
+            return game?.let { GameMetadata(it.title, "M3-${it.name.uppercase()}") } ?: inferredMetadata
+        }
 
         getContext()?.let { context ->
             if (knownPlatform?.isSega == true ||

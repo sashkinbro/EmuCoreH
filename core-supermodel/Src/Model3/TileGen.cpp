@@ -143,6 +143,33 @@ void CTileGen::EndVBlank(void)
 	//
 }
 
+#ifdef __ANDROID__
+void CTileGen::BeginScanlineFrame()
+{
+  if (!Render2D)
+    return;
+  // Android runs the main board and renderer in the same thread. Scanlines
+  // sample live memory, not the snapshot taken after the last display line.
+  Render2D->AttachVRAM(vram);
+  Render2D->AttachRegisters(regs);
+  Render2D->AttachPalette((const UINT32 **)pal);
+  Render2D->BeginScanlineFrame();
+}
+
+void CTileGen::DrawLine(unsigned line)
+{
+  if (!Render2D)
+    return;
+  // Color offsets can change during visible display, too.
+  if (recomputePalettes)
+  {
+    RecomputePalettes();
+    recomputePalettes = false;
+  }
+  Render2D->DrawScanline(line);
+}
+#endif
+
 void CTileGen::RecomputePalettes(void)
 {
 	// Writing the colors forces palettes to be computed

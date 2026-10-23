@@ -9,6 +9,9 @@ import com.sbro.emucoreh.core.EmulatorStorage
 import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.core.EmulationPlatform
 import com.sbro.emucoreh.core.SegaPlatformDetector
+import com.sbro.emucoreh.core.Model3Romsets
+import com.sbro.emucoreh.core.Model3ContentPreparer
+import com.sbro.emucoreh.core.Model3SaveStatePayload
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
@@ -28,6 +31,7 @@ private val SAVE_STATE_FILE_REGEX = Regex("""^(.+?)\.(\d{2})\.rstate$""", RegexO
 private const val SAVE_STATE_MAGIC = 0x54534345
 private const val CURRENT_SAVE_STATE_VERSION = 1
 private val SEGA_SAVE_STATE_IDENTITY_REGEX = Regex("^JG-(GENESIS|SEGA_CD|SEGA_32X|MASTER_SYSTEM|GAME_GEAR|SG_1000)-[A-F0-9]{16}$")
+private val MODEL3_SAVE_STATE_IDENTITY_REGEX = Regex("^M3-(?:[A-F0-9]{16}|[A-Z0-9_]+)$")
 private const val MAX_IMPORT_FILE_BYTES = 1_073_741_824L
 private const val MAX_IMPORT_ARCHIVE_BYTES = 4_294_967_296L
 private const val MAX_IMPORT_CANDIDATES = 500
@@ -47,7 +51,8 @@ data class SaveStateImportCandidate(
     val sizeBytes: Long,
     val version: Int = CURRENT_SAVE_STATE_VERSION,
     val coreId: Int = 0,
-    val consoleTag: Int? = null
+    val consoleTag: Int? = null,
+    val model3Set: String? = null
 )
 
 data class SaveStateImportPreview(
@@ -88,8 +93,11 @@ internal fun saveStateFormatForVersion(version: Int?): SaveStateImportFormat {
     else SaveStateImportFormat.UNKNOWN
 }
 
-internal data class SaveStateImportHeader(val version: Int, val coreId: Int, val consoleTag: Int? = null) {
-    val platform: EmulationPlatform? get() = if (coreId == 0) EmulationPlatform.DREAMCAST else when (consoleTag) {
+internal data class SaveStateImportHeader(val version: Int, val coreId: Int, val consoleTag: Int? = null, val model3Set: String? = null) {
+    val platform: EmulationPlatform? get() = when (coreId) {
+        0 -> EmulationPlatform.DREAMCAST
+        2 -> EmulationPlatform.MODEL_3
+        1 -> when (consoleTag) {
         0 -> EmulationPlatform.GENESIS
         1, 3 -> EmulationPlatform.SEGA_CD
         2 -> EmulationPlatform.SEGA_32X
@@ -97,24 +105,37 @@ internal data class SaveStateImportHeader(val version: Int, val coreId: Int, val
         5 -> EmulationPlatform.GAME_GEAR
         6 -> EmulationPlatform.SG_1000
         else -> null
+        }
+        else -> null
     }
 }
 
-/** Read only the container/console prefix; serialized game memory can be very large. */
+/** Legacy cores need a prefix; Model 3 uses bounded streaming validation of its full checksum. */
 internal fun readSaveStateImportHeader(input: InputStream): SaveStateImportHeader? {
     val version = readEmuCoreHSaveStateVersion(input) ?: return null
     if (version == 1) return SaveStateImportHeader(1, 0)
     if (version != 2) return null
-    val suffix = ByteArray(14) // core ID, JGLRSTA1, console ID, at least one payload byte
+    val identity = ByteArray(4)
+    var identityOffset = 0
+    while (identityOffset < identity.size) {
+        val count = input.read(identity, identityOffset, identity.size - identityOffset)
+        if (count <= 0) return null
+        identityOffset += count
+    }
+    if (identity.contentEquals(byteArrayOf(2, 0, 0, 0))) {
+        val metadata = Model3SaveStatePayload.read(input) ?: return null
+        return SaveStateImportHeader(2, 2, model3Set = metadata.setName)
+    }
+    if (!identity.contentEquals(byteArrayOf(1, 0, 0, 0))) return null
+    val suffix = ByteArray(10) // JGLRSTA1, console ID, at least one payload byte
     var offset = 0
     while (offset < suffix.size) {
         val count = input.read(suffix, offset, suffix.size - offset)
         if (count <= 0) return null
         offset += count
     }
-    if (!suffix.copyOfRange(0, 4).contentEquals(byteArrayOf(1, 0, 0, 0)) ||
-        !suffix.copyOfRange(4, 12).contentEquals("JGLRSTA1".toByteArray(Charsets.US_ASCII))) return null
-    return SaveStateImportHeader(2, 1, suffix[12].toInt() and 0xff).takeIf { it.platform != null }
+    if (!suffix.copyOfRange(0, 8).contentEquals("JGLRSTA1".toByteArray(Charsets.US_ASCII))) return null
+    return SaveStateImportHeader(2, 1, suffix[8].toInt() and 0xff).takeIf { it.platform != null }
 }
 
 internal fun isSaveStateImportCompatible(
@@ -127,7 +148,16 @@ internal fun isSaveStateImportCompatible(
     val cleanName = fileName.substringAfterLast('/').substringAfterLast('\\')
     val identity = SAVE_STATE_FILE_REGEX.matchEntire(cleanName)?.groupValues?.get(1)?.uppercase(Locale.ROOT)
     val namespaced = cleanName.startsWith("JG-", ignoreCase = true)
-    if (header.coreId == 0) return !namespaced
+    val model3Namespaced = cleanName.startsWith("M3-", ignoreCase = true)
+    if (header.coreId == 0) return !namespaced && !model3Namespaced
+    if (header.coreId == 2) {
+        if (namespaced || header.model3Set == null) return false
+        if (!model3Namespaced) return selectedPlatform == EmulationPlatform.MODEL_3
+        if (identity == null || !MODEL3_SAVE_STATE_IDENTITY_REGEX.matches(identity)) return false
+        val key = identity.removePrefix("M3-")
+        return key.matches(Regex("[A-F0-9]{16}")) || key.equals(header.model3Set, true)
+    }
+    if (model3Namespaced) return false
     if (!namespaced) return selectedPlatform != null
     val match = identity?.let(SEGA_SAVE_STATE_IDENTITY_REGEX::matchEntire) ?: return false
     return match.groupValues[1] == platform.name
@@ -150,7 +180,11 @@ internal fun findFallbackSaveStateFile(
             val match = SAVE_STATE_FILE_REGEX.matchEntire(file.name) ?: return@mapNotNull null
             val serial = match.groupValues[1].normalizeSaveStateSerialKey() ?: return@mapNotNull null
             val fileSlot = match.groupValues[2].toIntOrNull() ?: return@mapNotNull null
-            file.takeIf { serial == normalizedSerial && fileSlot == slot }
+            val model3Set = normalizedSerial.takeIf { it.startsWith("M3-") }?.removePrefix("M3-")
+                ?.let { Model3Romsets.find("$it.zip")?.name }
+            val sameSet = model3Set != null && serial.startsWith("M3-") && fileSlot == slot &&
+                runCatching { file.inputStream().use(::readSaveStateImportHeader)?.model3Set == model3Set }.getOrDefault(false)
+            file.takeIf { fileSlot == slot && (serial == normalizedSerial || sameSet) }
         }
         .maxByOrNull(File::lastModified)
 }
@@ -160,7 +194,7 @@ private fun String?.normalizeSaveStateSerialKey(): String? {
     val cleanSerial = trim().uppercase(Locale.ROOT)
     // Hashes can themselves contain four letters followed by five digits; never
     // let the legacy product-code normalizer truncate a Sega identity.
-    if (SEGA_SAVE_STATE_IDENTITY_REGEX.matches(cleanSerial)) return cleanSerial
+    if (SEGA_SAVE_STATE_IDENTITY_REGEX.matches(cleanSerial) || MODEL3_SAVE_STATE_IDENTITY_REGEX.matches(cleanSerial)) return cleanSerial
     val regex = Regex("([A-Z]{4})[^A-Z0-9]*([0-9]{3})[^A-Z0-9]*([0-9]{2})")
     val altRegex = Regex("([A-Z]{4})[^A-Z0-9]*([0-9]{5})")
     regex.find(cleanSerial)?.let { match ->
@@ -426,7 +460,7 @@ class SaveStateRepository(private val context: Context) {
                                 }
                             }
                             val header = temporary.inputStream().use(::readSaveStateImportHeader)
-                            check(header != null && header == SaveStateImportHeader(candidate.version, candidate.coreId, candidate.consoleTag) &&
+                            check(header != null && header == SaveStateImportHeader(candidate.version, candidate.coreId, candidate.consoleTag, candidate.model3Set) &&
                                 isSaveStateImportCompatible(header, candidate.targetFileName, null)) {
                                 "Invalid EmuCoreH save state"
                             }
@@ -484,6 +518,11 @@ class SaveStateRepository(private val context: Context) {
         }
         val normalizedGameSerial = gameSerial.normalizeSaveStateSerialKey()
         val selectedPlatform = gamePath?.takeIf { it.isNotBlank() }?.let { SegaPlatformDetector.detect(context, it) }
+        // Explicit import may inspect the selected ZIP once. Never repeat a SAF
+        // materialization for each slot or rely on an old archive's display name.
+        val selectedModel3Set = if (selectedPlatform?.isModel3 == true && !gamePath.isNullOrBlank()) {
+            Model3ContentPreparer.resolveExpectedSet(context, gamePath)
+        } else null
         var skipped = 0
         var incompatible = 0
         val candidates = mutableListOf<SaveStateImportCandidate>()
@@ -500,6 +539,12 @@ class SaveStateRepository(private val context: Context) {
             if (header.coreId == 0 && normalizedGameSerial != null && parsed?.serial != null && parsed.serial != normalizedGameSerial) {
                 skipped++
                 return@forEach
+            }
+            if (header.coreId == 2 && !gamePath.isNullOrBlank()) {
+                if (selectedModel3Set == null || selectedModel3Set != header.model3Set) {
+                    skipped++
+                    return@forEach
+                }
             }
 
             val slotKey = if (gamePath.isNullOrBlank()) {
@@ -548,7 +593,8 @@ class SaveStateRepository(private val context: Context) {
                 sizeBytes = raw.sizeBytes,
                 version = header.version,
                 coreId = header.coreId,
-                consoleTag = header.consoleTag
+                consoleTag = header.consoleTag,
+                model3Set = header.model3Set
             )
         }
         skipped += (rawCandidates.size - MAX_IMPORT_CANDIDATES).coerceAtLeast(0)

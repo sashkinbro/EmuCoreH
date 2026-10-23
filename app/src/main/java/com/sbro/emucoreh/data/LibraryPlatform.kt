@@ -10,6 +10,7 @@ enum class LibraryPlatform {
     NAOMI_2,
     ATOMISWAVE,
     SYSTEM_SP,
+    MODEL_3,
     GENESIS,
     SEGA_CD,
     SEGA_32X,
@@ -27,9 +28,13 @@ object LibraryPlatformResolver {
         game: GameItem,
         findArcade: (String) -> ArcadeCatalogRepository.ArcadeGame?,
     ): LibraryPlatform {
-        game.platform?.let { platform -> entriesByName[platform.uppercase(Locale.ROOT)]?.let { return it } }
+        game.platform?.let { platform ->
+            val normalized = platform.uppercase(Locale.ROOT)
+            if (normalized in setOf("MODEL3", "MODEL 3", "SEGA MODEL 3")) return LibraryPlatform.MODEL_3
+            entriesByName[normalized]?.let { return it }
+        }
         val sega = SegaPlatformDetector.detectName(game.fileName)
-        if (sega.isSega) return entriesByName.getValue(sega.name)
+        if (sega.isSega || sega.isModel3) return entriesByName.getValue(sega.name)
         val extension = game.fileName.substringAfterLast('.', "").lowercase(Locale.ROOT)
         // Arcade GD-ROMs launch through their archives; a same-named disc is Dreamcast.
         if (extension !in arcadeExtensions) return LibraryPlatform.DREAMCAST

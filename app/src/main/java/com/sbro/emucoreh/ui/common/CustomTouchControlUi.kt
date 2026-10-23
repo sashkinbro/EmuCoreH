@@ -185,13 +185,13 @@ fun ActionSelector(
         }
         CustomTouchControl.ALLOWED_ACTION_IDS
             .filterNot { it in setOf("l2", "r2", "l3", "r3") }
-            .filter { !platform.isSega || SegaTouchLayouts.keyCode(platform, it) != null }
-            .filterNot { it == excludedActionId || (platform.isSega && excludedActionId != null &&
+            .filter { !platform.usesPlatformTouchLayouts || SegaTouchLayouts.keyCode(platform, it) != null }
+            .filterNot { it == excludedActionId || (platform.usesPlatformTouchLayouts && excludedActionId != null &&
                 SegaTouchLayouts.canonicalId(it) == SegaTouchLayouts.canonicalId(excludedActionId)) }
-            .distinctBy { if (platform.isSega) SegaTouchLayouts.canonicalId(it) else it }
+            .distinctBy { if (platform.usesPlatformTouchLayouts) SegaTouchLayouts.canonicalId(it) else it }
             .forEach { action ->
                 FilterChip(
-                    selected = selectedActionId == action || (platform.isSega && selectedActionId != null &&
+                    selected = selectedActionId == action || (platform.usesPlatformTouchLayouts && selectedActionId != null &&
                         SegaTouchLayouts.canonicalId(selectedActionId) == SegaTouchLayouts.canonicalId(action)),
                     onClick = { onSelect(action) },
                     label = { Text(

@@ -74,6 +74,12 @@ public:
 	 */
 	void EndVBlank(void);
 
+#ifdef __ANDROID__
+  // Capture the displayed tile line before the CPU can modify it in VBlank.
+  void BeginScanlineFrame();
+  void DrawLine(unsigned line);
+#endif
+
 	/*
 	 * SyncSnapshots(void):
 	 *

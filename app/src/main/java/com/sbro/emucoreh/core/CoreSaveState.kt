@@ -16,9 +16,10 @@ internal object CoreSaveState {
                 put(payload)
             }.array()
 
-    fun unwrap(bytes: ByteArray, coreId: Int): ByteArray? {
+    fun unwrap(bytes: ByteArray, coreId: Int, expectedModel3Set: String? = null): ByteArray? {
         if (bytes.size < 4 || ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).int != MAGIC) {
-            return bytes.takeIf { coreId == 0 }
+            return bytes.takeIf { coreId == 0 && !Model3SaveStatePayload.hasMagic(it) &&
+                !it.take(8).toByteArray().contentEquals("JGLRSTA1".toByteArray(Charsets.US_ASCII)) }
         }
         if (bytes.size <= 8) return null
         val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
@@ -28,6 +29,8 @@ internal object CoreSaveState {
             2 -> if (bytes.size > 12 && buffer.int == coreId) 12 else return null
             else -> return null
         }
-        return bytes.copyOfRange(offset, bytes.size)
+        val payload = bytes.copyOfRange(offset, bytes.size)
+        if (coreId == 2 && Model3SaveStatePayload.read(payload.inputStream(), expectedModel3Set) == null) return null
+        return payload
     }
 }

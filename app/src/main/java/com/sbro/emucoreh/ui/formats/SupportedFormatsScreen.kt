@@ -187,6 +187,12 @@ fun SupportedFormatsScreen(
                 )
                 FormatGroupCard(
                     icon = Icons.Rounded.FolderZip,
+                    title = stringResource(R.string.home_platform_model_3),
+                    body = stringResource(R.string.formats_model3_body),
+                    formats = listOf("ZIP")
+                )
+                FormatGroupCard(
+                    icon = Icons.Rounded.FolderZip,
                     title = stringResource(R.string.formats_psp_homebrew_title),
                     body = stringResource(R.string.formats_psp_homebrew_body),
                     formats = GameFormats.arcadeFormatLabels

@@ -159,7 +159,7 @@ internal fun StickyButtonsSelector(
                     },
                     interactionSource = chipInteractionSource,
                     colors = premiumFilterChipColors(),
-                    label = { Text(text = if (platform.isSega) gamepadActionLabel(id, platform = platform) else stickyButtonLabel(id)) }
+                    label = { Text(text = if (platform.usesPlatformTouchLayouts) gamepadActionLabel(id, platform = platform) else stickyButtonLabel(id)) }
                 )
             }
         }

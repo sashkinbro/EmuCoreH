@@ -2086,6 +2086,7 @@ private fun libraryPlatformLabelRes(platform: LibraryPlatform): Int = when (plat
         LibraryPlatform.NAOMI -> R.string.home_platform_naomi
         LibraryPlatform.NAOMI_2 -> R.string.home_platform_naomi_2
         LibraryPlatform.ATOMISWAVE -> R.string.home_platform_atomiswave
+        LibraryPlatform.MODEL_3 -> R.string.home_platform_model_3
         LibraryPlatform.SYSTEM_SP -> R.string.home_platform_system_sp
         LibraryPlatform.GENESIS -> R.string.home_platform_genesis
         LibraryPlatform.SEGA_CD -> R.string.home_platform_sega_cd

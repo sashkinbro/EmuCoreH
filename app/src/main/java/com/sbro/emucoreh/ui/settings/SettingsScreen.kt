@@ -410,7 +410,7 @@ fun SettingsScreen(
     var selectedPlatformName by rememberSaveable { mutableStateOf(com.sbro.emucoreh.core.CoreRuntime.platform.name) }
     val selectedPlatform = EmulationPlatform.valueOf(selectedPlatformName)
     val settingsTabs = remember(selectedPlatform) {
-        SettingsTab.entries.filter { !selectedPlatform.isSega || segaSettingsTabAvailable(it.name) }
+        SettingsTab.entries.filter { selectedPlatform.coreId == 0 || segaSettingsTabAvailable(it.name) }
     }
     LaunchedEffect(settingsTabs) {
         if (selectedTab !in settingsTabs) selectedTab = SettingsTab.Emulation
@@ -1106,23 +1106,12 @@ private fun SettingsContent(
                 .padding(top = topInset + 12.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            if (platform.isModel3) Model3SettingsInfo()
             if (searchQuery.isNotBlank()) {
                 SettingsSearchResults(
                     query = searchQuery,
                     entries = searchEntries.filter { entry ->
-                        !platform.isSega || (segaSettingsTabAvailable(entry.tab.name) &&
-                            entry.titleRes !in setOf(
-                                R.string.settings_renderer, R.string.settings_upscale,
-                                R.string.settings_touchscreen_right_stick, R.string.settings_touchscreen_right_stick_sensitivity,
-                                R.string.settings_racing_mode, R.string.settings_left_stick_sensitivity, R.string.settings_right_stick_sensitivity,
-                                R.string.settings_invert_right_stick, R.string.settings_invert_right_stick_horizontal,
-                                R.string.settings_gyro_mode, R.string.settings_gyro_mode_light_gun, R.string.settings_gyro_stick,
-                                R.string.settings_arcade_device_player_1, R.string.settings_arcade_device_player_2,
-                                R.string.settings_light_gun_aim, R.string.settings_light_gun_cursor,
-                                R.string.settings_gyro_sensitivity, R.string.settings_gyro_smoothing,
-                                R.string.settings_gamepad_right_stick_sensitivity, R.string.settings_pad_vibration,
-                                R.string.settings_pad_vibration_strength, R.string.settings_pad_vibration_test,
-                                R.string.settings_pad_vibration_fallback, R.string.settings_mouse_aim_mode, R.string.settings_mouse_sensitivity))
+                        settingsSearchEntryAvailable(platform, entry.tab.name, entry.titleRes)
                     },
                     onOpen = onSearchResultSelected
                 )
@@ -1410,7 +1399,7 @@ private fun SettingsContent(
                             }
                         )
                         }
-                        if (!platform.isSega && touchscreenLeftStick) {
+                        if (platform.supportsAnalogControlSettings() && touchscreenLeftStick) {
                             SliderItem(
                                 icon = Icons.Rounded.TouchApp,
                                 title = stringResource(R.string.settings_touchscreen_left_stick_sensitivity),
@@ -1448,7 +1437,7 @@ private fun SettingsContent(
                             }
                         )
                         }
-                        if (!platform.isSega && uiState.touchscreenRightStick) {
+                        if (platform.supportsAnalogControlSettings() && uiState.touchscreenRightStick) {
                             SliderItem(
                                 icon = Icons.Rounded.TouchApp,
                                 title = stringResource(R.string.settings_touchscreen_right_stick_sensitivity),
@@ -1471,7 +1460,7 @@ private fun SettingsContent(
                                 }
                             )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ToggleItem(
                             icon = Icons.Rounded.TouchApp,
                             title = stringResource(R.string.settings_racing_mode),
@@ -1533,7 +1522,7 @@ private fun SettingsContent(
                             },
                             helpText = stringResource(R.string.settings_help_touch_haptics_test)
                         )
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_gyro_mode),
                             options = gyroModeOptions(uiState.gyroStickTarget),
@@ -1543,7 +1532,7 @@ private fun SettingsContent(
                             onResetToDefault = { viewModel.setGyroMode(defaults.gyroMode) }
                         )
                         }
-                        if (!platform.isSega && uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
+                        if (platform.coreId == 0 && uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
                             ChoiceSection(
                                 title = stringResource(R.string.settings_gyro_stick),
                                 options = gyroStickTargetOptions(),
@@ -1552,7 +1541,7 @@ private fun SettingsContent(
                                 onResetToDefault = { viewModel.setGyroStickTarget(defaults.gyroStickTarget) }
                             )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_arcade_device_player_1),
                             options = arcadeDeviceOptions(),
@@ -1561,7 +1550,7 @@ private fun SettingsContent(
                             onResetToDefault = { viewModel.setArcadeDevice1(defaults.arcadeDevice1) }
                         )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_arcade_device_player_2),
                             options = arcadeDeviceOptions(),
@@ -1570,7 +1559,7 @@ private fun SettingsContent(
                             onResetToDefault = { viewModel.setArcadeDevice2(defaults.arcadeDevice2) }
                         )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_light_gun_aim),
                             options = lightGunAimSourceOptions(),
@@ -1579,7 +1568,7 @@ private fun SettingsContent(
                             onResetToDefault = { viewModel.setLightGunAimSource(defaults.lightGunAimSource) }
                         )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ToggleItem(
                             icon = Icons.Rounded.Gamepad,
                             title = stringResource(R.string.settings_light_gun_cursor),
@@ -1597,12 +1586,12 @@ private fun SettingsContent(
                         val sensorMode = if (uiState.gyroMode == AppPreferences.GYRO_MODE_OFF && gunUsesGyro) {
                             AppPreferences.GYRO_MODE_LIGHT_GUN
                         } else uiState.gyroMode
-                        if (!platform.isSega && sensorControlsVisible &&
+                        if (platform.coreId == 0 && sensorControlsVisible &&
                             !AndroidGyroscopeInput.isModeAvailable(context, sensorMode)
                         ) {
                             SettingsInlineNote(text = stringResource(R.string.settings_gyro_unavailable))
                         }
-                        if (!platform.isSega && sensorControlsVisible) {
+                        if (platform.coreId == 0 && sensorControlsVisible) {
                             SliderItem(
                                 icon = Icons.Rounded.ScreenRotation,
                                 title = stringResource(R.string.settings_gyro_sensitivity),
@@ -1703,7 +1692,7 @@ private fun SettingsContent(
                             onResetToDefault = { viewModel.setInvertRightStick(false) }
                         )
                         }
-                        if (!platform.isSega) {
+                        if (platform.supportsAnalogControlSettings()) {
                         ToggleItem(
                             icon = Icons.Rounded.Gamepad,
                             title = stringResource(R.string.settings_invert_right_stick_horizontal),
@@ -1751,7 +1740,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_hide_overlay_on_gamepad),
                             onResetToDefault = { viewModel.setHideOverlayOnGamepad(overlayDefaults.hideOverlayOnGamepad) }
                         )
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ToggleItem(
                             icon = Icons.Rounded.Vibration,
                             title = stringResource(R.string.settings_pad_vibration),
@@ -1771,7 +1760,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_gamepad_button_haptics),
                             onResetToDefault = { viewModel.setGamepadButtonHaptics(defaults.gamepadButtonHaptics) }
                         )
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         SliderItem(
                             icon = Icons.Rounded.Vibration,
                             title = stringResource(R.string.settings_pad_vibration_strength),
@@ -1785,7 +1774,7 @@ private fun SettingsContent(
                             onResetToDefault = { viewModel.setPadVibrationStrength(defaults.padVibrationStrength) }
                         )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ActionItem(
                             icon = Icons.Rounded.Vibration,
                             title = stringResource(R.string.settings_pad_vibration_test),
@@ -1796,7 +1785,7 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_pad_vibration_test)
                         )
                         }
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ToggleItem(
                             icon = Icons.Rounded.Vibration,
                             title = stringResource(R.string.settings_pad_vibration_fallback),
@@ -1843,7 +1832,7 @@ private fun SettingsContent(
                         )
                         }
                     }
-                    if (platform.isSega) SegaGlobalGamepadSettings(platform)
+                    if (platform.usesPlatformTouchLayouts) SegaGlobalGamepadSettings(platform)
                     else SettingsSection(title = stringResource(R.string.settings_gamepad_mapping_title)) {
                         val arcadeProfileSelected = selectedGamepadProfile == 1
                         val selectedBindings = (
@@ -1962,7 +1951,7 @@ private fun SettingsContent(
                     }
                     GlobalKeyboardMouseSettingsSection(platform = platform)
 
-                    if (!platform.isSega) SettingsSection(title = stringResource(R.string.settings_core_input)) {
+                    if (platform.coreId == 0) SettingsSection(title = stringResource(R.string.settings_core_input)) {
                         var coreControlsVersion by remember { mutableIntStateOf(0) }
                         CoreOptionSettingsRows(
                             options = remember { FlycastCoreOptions.inputOptions() },
@@ -2095,7 +2084,7 @@ private fun SettingsContent(
                 SettingsTab.Graphics -> {
                     if (platform.isSega) SegaCoreOptionRows(platform, category = "video")
                     SettingsSection(title = stringResource(R.string.settings_graphics_tab)) {
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_renderer),
                             options = listOf(
@@ -2128,7 +2117,7 @@ private fun SettingsContent(
                         // duplicated the setting under a different name than the
                         // in-game menu / game manager, and persisted a global
                         // core-option override that shadowed per-game values.
-                        if (!platform.isSega) {
+                        if (platform.coreId == 0) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_upscale),
                             options = buildUpscaleOptions(
@@ -2197,7 +2186,7 @@ private fun SettingsContent(
                             onClick = launchShaderPackPicker
                         )
                         CoreOptionSettingsRows(
-                            options = remember(platform) { if (platform.isSega) emptyList() else FlycastCoreOptions.videoOptions() },
+                            options = remember(platform) { if (platform.coreId != 0) emptyList() else FlycastCoreOptions.videoOptions() },
                             version = coreGraphicsVersion,
                             onValueChange = { key, value ->
                                 NativeApp.setCoreOption(key, value)
@@ -2205,7 +2194,7 @@ private fun SettingsContent(
                             }
                         )
                         CoreOptionSettingsRows(
-                            options = remember(platform) { if (platform.isSega) emptyList() else FlycastCoreOptions.performanceOptions() },
+                            options = remember(platform) { if (platform.coreId != 0) emptyList() else FlycastCoreOptions.performanceOptions() },
                             version = coreGraphicsVersion,
                             onValueChange = { key, value ->
                                 NativeApp.setCoreOption(key, value)
@@ -2226,15 +2215,6 @@ private fun SettingsContent(
                             onCheckedChange = viewModel::setShowFps,
                             helpText = stringResource(R.string.settings_help_show_fps),
                             onResetToDefault = { viewModel.setShowFps(defaults.showFps) }
-                        )
-                        if (!platform.isSega) ToggleItem(
-                            icon = Icons.Rounded.FastForward,
-                            title = stringResource(R.string.settings_frame_limit),
-                            subtitle = stringResource(R.string.settings_frame_limit_desc),
-                            checked = uiState.frameLimitEnabled,
-                            onCheckedChange = viewModel::setFrameLimitEnabled,
-                            helpText = stringResource(R.string.settings_frame_limit_desc),
-                            onResetToDefault = { viewModel.setFrameLimitEnabled(defaults.frameLimitEnabled) }
                         )
                         ChoiceSection(
                             title = stringResource(R.string.settings_target_fps),
@@ -2297,7 +2277,7 @@ private fun SettingsContent(
                         SettingsSection(title = platformLabel(platform)) {
                             SegaCoreOptionRows(platform, category = "system")
                         }
-                    } else
+                    } else if (platform.coreId == 0)
                     SettingsSection(title = stringResource(R.string.settings_core_cpu)) {
                         var coreEmulationVersion by remember { mutableIntStateOf(0) }
                         CoreOptionSettingsRows(
@@ -2449,6 +2429,14 @@ private fun SettingsContent(
                             body = stringResource(R.string.settings_about_jgenesis_source_desc),
                             linkLabel = stringResource(R.string.settings_about_jgenesis_source_link),
                             linkUrl = stringResource(R.string.settings_about_jgenesis_source_url)
+                        )
+                        AboutNote(
+                            title = stringResource(R.string.settings_about_model3_source),
+                            body = stringResource(R.string.settings_about_model3_source_desc),
+                            linkLabel = stringResource(R.string.settings_about_model3_source_link),
+                            linkUrl = stringResource(R.string.settings_about_model3_source_url),
+                            upstreamLinkLabel = stringResource(R.string.settings_about_model3_upstream_link),
+                            upstreamLinkUrl = stringResource(R.string.settings_about_model3_upstream_url)
                         )
                         AboutNote(
                             title = stringResource(R.string.settings_about_support_project),
@@ -3113,9 +3101,9 @@ private fun GameMenuSettingsTab(
     platform: EmulationPlatform,
     viewModel: SettingsViewModel
 ) {
-    val supportedTabs = uiState.gameMenuTabOrder.filter { !platform.isSega || it !in setOf(GameMenuTabId.CHEATS, GameMenuTabId.ACHIEVEMENTS) }
+    val supportedTabs = uiState.gameMenuTabOrder.filter { gameMenuCustomizationTabAvailable(platform, it) }
     SettingsSection(title = stringResource(R.string.settings_game_menu_preview_section)) {
-        if (!platform.isSega) SettingsInlineNote(stringResource(R.string.settings_game_menu_content_summary))
+        if (platform.coreId == 0) SettingsInlineNote(stringResource(R.string.settings_game_menu_content_summary))
         GameMenuLayoutStylePicker(
             selected = uiState.gameMenuLayoutStyle,
             visibleTabs = supportedTabs.filterNot(uiState.hiddenGameMenuTabs::contains),
@@ -3148,7 +3136,7 @@ private fun GameMenuSettingsTab(
     }
 
     supportedTabs.forEach { tab ->
-        val sections = uiState.gameMenuSectionOrder.filter { it.tab == tab && (!platform.isSega || it != GameMenuSectionId.EMULATION_CPU) }
+        val sections = uiState.gameMenuSectionOrder.filter { it.tab == tab && (platform.coreId == 0 || it != GameMenuSectionId.EMULATION_CPU) }
         SettingsSection(
             title = stringResource(
                 R.string.settings_game_menu_tab_content_format,
@@ -4031,7 +4019,9 @@ private fun AboutNote(
     title: String,
     body: String,
     linkLabel: String? = null,
-    linkUrl: String? = null
+    linkUrl: String? = null,
+    upstreamLinkLabel: String? = null,
+    upstreamLinkUrl: String? = null
 ) {
     val context = LocalContext.current
     Surface(
@@ -4056,14 +4046,16 @@ private fun AboutNote(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (!linkLabel.isNullOrBlank() && !linkUrl.isNullOrBlank()) {
-                Text(
-                    text = linkLabel,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.primary,
-                    textDecoration = TextDecoration.Underline,
-                    modifier = Modifier.clickable { openUriInChrome(context, linkUrl) }
-                )
+            listOf(linkLabel to linkUrl, upstreamLinkLabel to upstreamLinkUrl).forEach { (label, url) ->
+                if (!label.isNullOrBlank() && !url.isNullOrBlank()) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = TextDecoration.Underline,
+                        modifier = Modifier.clickable { openUriInChrome(context, url) }
+                    )
+                }
             }
         }
     }

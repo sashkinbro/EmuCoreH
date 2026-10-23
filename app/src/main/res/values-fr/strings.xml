@@ -137,7 +137,7 @@
     <string name="settings_version">Version</string>
     <string name="settings_emulator_core">Cœur d\'émulation</string>
     <string name="settings_about_app">À propos d\'EmuCoreH</string>
-    <string name="settings_about_app_desc">EmuCoreH associe une bibliothèque de jeux à Flycast pour Dreamcast et les systèmes arcade, et à jgenesis pour Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear et SG-1000.</string>
+    <string name="settings_about_app_desc">EmuCoreH associe une bibliothèque de jeux à Flycast pour Dreamcast et les systèmes arcade, et à jgenesis pour Mega Drive/Genesis, Sega CD, 32X, Master System, Game Gear et SG-1000. Supermodel émule Sega Model 3.</string>
     <string name="settings_about_studio">Développeur</string>
     <string name="settings_about_studio_desc">Créé par Sashkin Apps.</string>
     <string name="settings_about_support_project">Soutenir le projet</string>
@@ -242,7 +242,7 @@
     <string name="onboarding_page_1_title">Bienvenue dans EmuCoreH</string>
     <string name="onboarding_page_1_subtitle">Votre bibliothèque de jeux Sega, prête pour tous les écrans.</string>
     <string name="onboarding_page_2_title">Émulation puissante</string>
-    <string name="onboarding_page_2_subtitle">Flycast et jgenesis réunissent les consoles Sega et les systèmes arcade compatibles.</string>
+    <string name="onboarding_page_2_subtitle">Flycast / Supermodel et jgenesis réunissent les consoles Sega et les systèmes arcade compatibles.</string>
     <string name="onboarding_page_3_title">Votre bibliothèque de jeux</string>
     <string name="onboarding_page_3_subtitle">Créez votre bibliothèque de jeux personnelle avec de magnifiques jaquettes, des informations détaillées et un accès rapide à vos favoris.</string>
     <string name="onboarding_page_4_title">Prêt à jouer</string>
@@ -2303,4 +2303,14 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>
     <string name="sega_ds_collection_unsupported">Cette ROM de Sonic Classic Collection nécessite l’émulateur Nintendo DS. Utilisez une ROM originale Mega Drive / Genesis.</string>
     <string name="sega_aleste_collection_unsupported">Cette ROM protégée de GG Aleste 3 issue de Aleste Collection nécessite l’émulateur spécifique de la compilation. Utilisez une version ROM compatible Game Gear.</string>
+    <string name="home_platform_model_3">Sega Model 3</string>
+    <string name="model3_native_video">OpenGL ES 3 · 496 × 384 · 4:3</string>
+    <string name="formats_model3_body">Jeux de ROM arcade Model 3 (ZIP). Conservez ensemble le jeu complet compatible et les archives parentes. OpenGL ES 3 : 496 × 384, affichage 4:3. Certains jeux nécessitent une configuration dans le menu TEST ; pour les erreurs réseau de Daytona USA 2, réglez LINK ID sur SINGLE.</string>
+    <string name="settings_about_model3_source">Supermodel / Super3 (GNU GPLv3)</string>
+    <string name="settings_about_model3_source_url">https://github.com/izzy2lost/Super3/tree/c410f82f771b33094b8c1cdbf96ef7c74ec9cff1</string>
+    <string name="settings_about_model3_source_desc">Émulation Sega Model 3 sous GNU GPLv3, basée sur le port Android Super3 de Supermodel (révision fixée c410f82). EmuCoreH ajoute une intégration libretro. Les licences et mentions des composants tiers sont incluses.</string>
+    <string name="settings_about_model3_source_link">Voir la révision fixée de Super3 sur GitHub</string>
+    <string name="settings_about_model3_upstream_link">Dépôt amont de Supermodel</string>
+    <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
+    <string name="model3_cabinet_setup_help">Certains jeux nécessitent de configurer la borne au premier lancement. En cas d’erreur de carte réseau dans Daytona USA 2, ouvrez TEST → GAME ASSIGNMENTS → LINK ID et choisissez SINGLE (borne autonome). Suivez les indications TEST/SERVICE du jeu, puis quittez normalement pour enregistrer.</string>
 </resources>

@@ -103,7 +103,12 @@ fun buildOverlayCanvasLayout(
     previewMode: Boolean = false,
     platform: EmulationPlatform = EmulationPlatform.DREAMCAST
 ): OverlayCanvasLayout {
-    if (platform.isSega) return buildSegaOverlayCanvasLayout(
+    if (platform.isModel3) return buildModel3OverlayCanvasLayout(
+        canvasWidth, canvasHeight, density, scaleFactor, stickScaleFactor, controlLayouts,
+        safeLeftInset, safeRightInset, safeTopInset, safeBottomInset,
+        dpadOffset, lstickOffset, rstickOffset, actionOffset, centerOffset, previewMode
+    )
+    if (platform.usesPlatformTouchLayouts) return buildSegaOverlayCanvasLayout(
         platform, canvasWidth, canvasHeight, density, scaleFactor, controlLayouts,
         safeLeftInset, safeRightInset, safeTopInset, safeBottomInset,
         dpadOffset, actionOffset, centerOffset, previewMode

@@ -11,6 +11,9 @@ software TileGen renderer originate from this exact revision. Files retain
 their original notices. The libretro adapter, portable OSD, tests, CMake, and
 Android library module are local modifications by SBRO (2026). The extracted
 CompositedRender3D class is adapted from Super3's native-lib.cpp.
+The adapter's runtime guard latches fatal renderer/frame exceptions and
+reports them through the standard libretro shutdown environment callback;
+normal context waits, load rejection and NVRAM diagnostics remain separate.
 
 Modified upstream files:
 - Src/CPU/PowerPC/ppc.cpp: preserve pending interrupts across save/load.
@@ -34,6 +37,9 @@ Modified upstream files:
   rather than EGL framebuffer zero; select COLOR_ATTACHMENT0 for that FBO.
 - libretro/gles_presenter.cpp: replace SDL diagnostics with core logging.
 - libretro/compositor.h: extract the bottom-tile/New3D composition wrapper.
+- libretro/libretro.cpp and input_mapping.h: map the Android frontend's existing
+  face-button ABI to app A/B/X/Y labels, including VR/view selectors; consume
+  analog trigger pressure with bounded pedal conversion and digital fallback.
 
 No original Android Activity, launcher, touch overlay, flyers, ROMs, BIOS,
 copyrighted game data, or prebuilt emulator binary is included.

@@ -11,14 +11,14 @@ internal fun segaTouchLayout(
     platform: EmulationPlatform, width: Float, height: Float, scale: Float
 ): List<SegaTouchButtonBounds> {
     if (width <= 0f || height <= 0f || !width.isFinite() || !height.isFinite()) return emptyList()
-    val sixButtons = platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X)
-    val systemButtons = if (sixButtons) listOf(109, 108) else
+    val sixButtons = platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X, EmulationPlatform.MODEL_3)
+    val systemButtons = if (platform.isModel3) listOf(109, 108, 106, 107) else if (sixButtons) listOf(109, 108) else
         if (platform == EmulationPlatform.SG_1000) emptyList() else listOf(108)
     // System buttons stay at the bottom. On narrow screens they get their own row.
-    val diameter = minOf(48f * scale.coerceIn(0.5f, 1.5f), width / (if (sixButtons) 7f else 5.9f),
+    val diameter = minOf(48f * scale.coerceIn(0.5f, 1.5f), width / (if (platform.isModel3) 8.2f else if (sixButtons) 7f else 5.9f),
         height / (if (systemButtons.isEmpty()) 3.2f else 4.1f))
     val gap = diameter * 0.1f
-    val faceColumns = if (sixButtons) 3 else 2
+    val faceColumns = if (platform.isModel3) 4 else if (sixButtons) 3 else 2
     val faceRows = if (sixButtons) 2 else 1
     val faceLeft = width - (faceColumns * diameter + (faceColumns - 1) * gap)
     val systemWidth = diameter * 1.75f
@@ -35,7 +35,8 @@ internal fun segaTouchLayout(
         button(21, 0f, crossTop + diameter + gap)
         button(22, 2f * (diameter + gap), crossTop + diameter + gap)
         button(20, diameter + gap, crossTop + 2f * (diameter + gap))
-        val faces = if (sixButtons) listOf(102, 100, 103, 99, 96, 97) else listOf(96, 97)
+        val faces = if (platform.isModel3) listOf(102, 100, 103, 104, 99, 96, 97, 105) else
+            if (sixButtons) listOf(102, 100, 103, 99, 96, 97) else listOf(96, 97)
         faces.forEachIndexed { index, key ->
             button(key, faceLeft + (index % faceColumns) * (diameter + gap),
                 faceTop + (index / faceColumns) * (diameter + gap))
