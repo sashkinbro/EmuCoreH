@@ -14,6 +14,10 @@ import java.net.URL
 import java.security.MessageDigest
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.ExecutorCompletionService
+import java.util.concurrent.Executors
 
 data class RemoteTexturePart(
     val downloadUrl: String,
@@ -169,16 +173,39 @@ class RemoteContentCatalogRepository(context: Context) {
             }
         }
         var lastError: Throwable? = null
-        urls.forEach { url ->
-            val result = runCatching {
-                val raw = fetchBytes(url, MAX_CATALOG_BYTES).toString(Charsets.UTF_8)
-                val parsed = parser(raw)
-                require(parsed.isNotEmpty()) { "Remote catalog is empty" }
-                writeAtomically(cacheFile, raw)
-                parsed
+        // GitHub hosts can be unreachable on some carriers while the CDN
+        // mirror is fast. Query every mirror concurrently and use the first
+        // successful response instead of waiting through serial timeouts.
+        val executor = Executors.newFixedThreadPool(urls.size.coerceAtLeast(1)) { task ->
+            Thread(task, "remote-catalog").apply { isDaemon = true }
+        }
+        try {
+            val completion = ExecutorCompletionService<Pair<String, List<T>>>(executor)
+            urls.forEach { url ->
+                completion.submit(
+                    Callable {
+                        val raw = fetchBytes(url, MAX_CATALOG_BYTES).toString(Charsets.UTF_8)
+                        val parsed = parser(raw)
+                        require(parsed.isNotEmpty()) { "Remote catalog is empty" }
+                        raw to parsed
+                    }
+                )
             }
-            result.getOrNull()?.let { return RemoteCatalogResult(it, fromCache = false) }
-            lastError = result.exceptionOrNull()
+            repeat(urls.size) {
+                try {
+                    val (raw, parsed) = completion.take().get()
+                    writeAtomically(cacheFile, raw)
+                    return RemoteCatalogResult(parsed, fromCache = false)
+                } catch (error: ExecutionException) {
+                    lastError = error.cause ?: error
+                } catch (error: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    lastError = error
+                    return@repeat
+                }
+            }
+        } finally {
+            executor.shutdownNow()
         }
         if (cacheFile.exists()) {
             runCatching { parser(cacheFile.readText()) }
@@ -384,8 +411,8 @@ class RemoteContentCatalogRepository(context: Context) {
 
     private fun openConnection(url: String): HttpURLConnection {
         val connection = URL(url).openConnection() as HttpURLConnection
-        connection.connectTimeout = 15_000
-        connection.readTimeout = 45_000
+        connection.connectTimeout = 10_000
+        connection.readTimeout = 20_000
         connection.instanceFollowRedirects = true
         connection.setRequestProperty("Accept", "application/json, application/octet-stream, text/plain, */*")
         connection.setRequestProperty("User-Agent", "EmuCoreH-Android")
@@ -422,14 +449,14 @@ class RemoteContentCatalogRepository(context: Context) {
         val LIBRETRO_CHEAT_CODE_REGEX = Regex("^cheat\\d+_code\\s*=", RegexOption.IGNORE_CASE)
 
         val TEXTURE_CATALOG_URLS = listOf(
+            "https://cdn.jsdelivr.net/gh/sashkinbro/EmuCoreH-Textures@main/textures.json",
             "https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Textures/main/textures.json",
-            "https://github.com/sashkinbro/EmuCoreH-Textures/raw/main/textures.json",
-            "https://cdn.jsdelivr.net/gh/sashkinbro/EmuCoreH-Textures@main/textures.json"
+            "https://github.com/sashkinbro/EmuCoreH-Textures/raw/main/textures.json"
         )
         val CHEAT_CATALOG_URLS = listOf(
+            "https://cdn.jsdelivr.net/gh/sashkinbro/EmuCoreH-Cheat@main/cheats.json",
             "https://raw.githubusercontent.com/sashkinbro/EmuCoreH-Cheat/main/cheats.json",
-            "https://github.com/sashkinbro/EmuCoreH-Cheat/raw/main/cheats.json",
-            "https://cdn.jsdelivr.net/gh/sashkinbro/EmuCoreH-Cheat@main/cheats.json"
+            "https://github.com/sashkinbro/EmuCoreH-Cheat/raw/main/cheats.json"
         )
     }
 }

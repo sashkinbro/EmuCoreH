@@ -6,11 +6,10 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sbro.emucoreh.R
+import com.sbro.emucoreh.core.BiosImport
 import com.sbro.emucoreh.core.BiosValidator
 import com.sbro.emucoreh.core.CoreBinaryFingerprint
-import com.sbro.emucoreh.core.DreamcastBios
 import com.sbro.emucoreh.core.EmulatorBridge
-import com.sbro.emucoreh.core.EmulatorStorage
 import com.sbro.emucoreh.core.ProProductOffer
 import com.sbro.emucoreh.core.ProPurchaseManager
 import com.sbro.emucoreh.core.ProPurchaseTier
@@ -273,9 +272,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             preferences.biosPath.distinctUntilChanged().collect { path ->
                 val bios = withContext(Dispatchers.IO) {
-                    val systemDir = EmulatorStorage.flycastSystemDir(getApplication()).absolutePath
-                    val hasBios = DreamcastBios.hasAnyBios(systemDir)
-                    (hasBios || path != null) to DreamcastBios.hasBootRom(systemDir)
+                    val hasBios = BiosImport.hasAnyBios(getApplication())
+                    (hasBios || path != null) to hasBios
                 }
                 _uiState.value = _uiState.value.copy(
                     biosConfigured = bios.first,
@@ -392,19 +390,28 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun onBiosFolderSelected(uri: Uri) {
         val context = getApplication<Application>()
         viewModelScope.launch(Dispatchers.IO) {
-            val previousPath = preferences.biosPath.first()
             StorageAccess.takePersistableReadPermission(context, uri)
-            val systemDir = EmulatorStorage.flycastSystemDir(context).absolutePath
-            if (DreamcastBios.installSelection(context, uri, systemDir)) {
-                preferences.setBiosPath(uri.toString())
-                if (previousPath != uri.toString()) {
-                    StorageAccess.releasePersistedPermission(context, previousPath)
-                }
+            val result = BiosImport.installSelection(context, uri)
+            if (result.installed) {
+                preferences.addBiosPath(uri.toString())
             }
-            val hasBios = DreamcastBios.hasAnyBios(systemDir)
+            withContext(Dispatchers.Main) {
+                android.widget.Toast.makeText(
+                    context,
+                    context.getString(
+                        com.sbro.emucoreh.R.string.bios_import_result,
+                        result.dreamcast,
+                        result.arcade,
+                        result.segaCd,
+                        result.sega32x
+                    ),
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
+            val hasBios = BiosImport.hasAnyBios(context)
             _uiState.value = _uiState.value.copy(
                 biosConfigured = hasBios,
-                biosValid = DreamcastBios.hasBootRom(systemDir)
+                biosValid = hasBios
             )
             updateBootstrapState()
         }
@@ -700,16 +707,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private fun shouldSkipAutoRescan(isInitialLoad: Boolean, cacheSnapshot: GameLibraryCacheSnapshot): Boolean {
         if (!isInitialLoad) return false
         if (cacheSnapshot.games.isEmpty()) return false
-        val coverRepository = CoverArtRepository(getApplication())
-        if (currentFetchBoxart &&
-            cacheSnapshot.games.any {
-                it.serial.isNullOrBlank() || it.coverArtPath.isNullOrBlank() ||
-                    coverRepository.isMissingManagedCover(it.coverArtPath) ||
-                    customGameCoverRepository.isMissingCustomCover(it.coverArtPath)
-            }
-        ) {
-            return false
-        }
+        // Missing serials/covers are repaired by the background cover sync;
+        // they must not force a full metadata rescan on every launch.
         val cacheAge = System.currentTimeMillis() - cacheSnapshot.savedAt
         return cacheAge in 0 until AUTO_REFRESH_INTERVAL_MS
     }

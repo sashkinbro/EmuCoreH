@@ -1112,7 +1112,7 @@ private fun SettingsContent(
                     entries = searchEntries.filter { entry ->
                         !platform.isSega || (segaSettingsTabAvailable(entry.tab.name) &&
                             entry.titleRes !in setOf(
-                                R.string.settings_bios_path, R.string.settings_renderer, R.string.settings_upscale,
+                                R.string.settings_renderer, R.string.settings_upscale,
                                 R.string.settings_touchscreen_right_stick, R.string.settings_touchscreen_right_stick_sensitivity,
                                 R.string.settings_racing_mode, R.string.settings_left_stick_sensitivity, R.string.settings_right_stick_sensitivity,
                                 R.string.settings_invert_right_stick, R.string.settings_invert_right_stick_horizontal,
@@ -2021,7 +2021,6 @@ private fun SettingsContent(
                             onClick = openEmulatorDataLocationDialog,
                             helpText = stringResource(R.string.emulator_data_location_description)
                         )
-                        if (!platform.isSega) {
                         SettingsItem(
                             icon = Icons.Rounded.Memory,
                             label = stringResource(R.string.settings_bios_path),
@@ -2033,10 +2032,14 @@ private fun SettingsContent(
                             onClick = launchBiosPicker,
                             helpText = stringResource(R.string.onboarding_bios_desc)
                         )
-                        } else if (platform == EmulationPlatform.SEGA_CD) {
-                            SegaCdBiosSettings()
-                        } else if (platform == EmulationPlatform.SEGA_32X) {
-                            Sega32XBiosSettings()
+                        SettingsInlineNote(stringResource(R.string.bios_supported_files))
+                        uiState.biosPaths.forEach { path ->
+                            SettingsItem(
+                                icon = Icons.Rounded.DeleteOutline,
+                                label = DocumentPathResolver.getFallbackDisplayName(path),
+                                value = stringResource(R.string.game_folders_remove),
+                                onClick = { viewModel.removeBiosPath(path) }
+                            )
                         }
                     }
 
@@ -2382,8 +2385,17 @@ private fun SettingsContent(
                             label = stringResource(R.string.settings_bios_path),
                             value = arcadeBiosDisplayName,
                             onClick = launchBiosPicker,
-                            helpText = stringResource(R.string.settings_bios_picker_desc)
+                            helpText = stringResource(R.string.onboarding_bios_desc)
                         )
+                        SettingsInlineNote(stringResource(R.string.bios_supported_files))
+                        uiState.biosPaths.forEach { path ->
+                            SettingsItem(
+                                icon = Icons.Rounded.DeleteOutline,
+                                label = DocumentPathResolver.getFallbackDisplayName(path),
+                                value = stringResource(R.string.game_folders_remove),
+                                onClick = { viewModel.removeBiosPath(path) }
+                            )
+                        }
                         SettingsInlineNote(stringResource(R.string.naomi_guide_step_bios))
                     }
                     SettingsSection(title = stringResource(R.string.settings_covers_tab)) {

@@ -493,8 +493,13 @@
     <string name="settings_mediatek_notice_message">Dukungan MediaTek masih bersifat eksperimental. Crash, artefak grafis, dan perilaku tidak stabil dapat terjadi sementara kami terus meningkatkan kompatibilitas dan performa.\n\nJika mengalami masalah grafis, coba OpenGL dengan ANGLE diaktifkan. Jika masalah berlanjut, gunakan perender Perangkat Lunak.</string>
     <string name="onboarding_title">Bersiaplah untuk bermain</string>
     <string name="onboarding_subtitle">Pilih folder game dan izinkan akses file.</string>
-    <string name="onboarding_bios_desc">Pilih folder berisi file BIOS Dreamcast (dc_boot.bin, dc_flash.bin) atau set BIOS arcade (naomi.zip, naomi2.zip, awbios.zip).</string>
+    <string name="onboarding_bios_desc">Pilih satu folder berisi file BIOS. Ketuk lagi untuk menambah folder lain; file Dreamcast, arkade, Sega CD, dan 32X yang valid dipasang bersama.</string>
     <string name="onboarding_bios_optional">Opsional, tetapi disarankan</string>
+    <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
+Arkade: naomi.zip, naomi2.zip, awbios.zip
+Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
+Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
     <string name="onboarding_games_title">Pilih folder game</string>
     <string name="onboarding_games_desc">Pilih folder yang berisi game Anda.</string>
     <string name="onboarding_status_required">Wajib</string>
@@ -2275,9 +2280,9 @@
     <string name="sega_bios_import">Impor BIOS</string>
     <string name="sega_bios_installed">BIOS terpasang</string>
     <string name="sega_bios_invalid">Pilih berkas BIOS berukuran tepat 128 KiB.</string>
-    <string name="sega_bios_missing">BIOS Sega CD tidak tersedia. Buka Pengaturan, pilih Sega CD, lalu impor BIOS untuk wilayah cakram.</string>
+    <string name="sega_bios_missing">BIOS Sega CD tidak tersedia. Buka Pengaturan, Koleksi, dan impor folder BIOS Anda.</string>
     <string name="sega_32x_bios_file">%1$s · %2$d byte · CRC32 %3$s</string>
-    <string name="sega_32x_bios_missing">File BIOS 32X tidak ada atau tidak valid. Buka Pengaturan, pilih Sega 32X, lalu impor ketiga file BIOS.</string>
+    <string name="sega_32x_bios_missing">File BIOS 32X tidak ada atau tidak valid. Buka Pengaturan, Koleksi, dan impor folder BIOS Anda.</string>
     <string name="sega_32x_bios_invalid">File ini tidak cocok dengan BIOS 32X yang dipilih. Periksa ukuran dan checksum file.</string>
     <string name="sega_32x_bios_slave">BIOS SH-2 sekunder</string>
     <string name="sega_32x_bios_master">BIOS SH-2 utama</string>

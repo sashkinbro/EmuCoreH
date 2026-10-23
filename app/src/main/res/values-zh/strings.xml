@@ -411,8 +411,13 @@
     <string name="settings_bios_path">BIOS 文件夹</string>
     <string name="settings_bios_picker_desc">选择包含 Dreamcast BIOS（dc_boot.bin、dc_flash.bin）和街机 BIOS 集（naomi.zip、naomi2.zip、awbios.zip）的文件夹。</string>
     <string name="settings_bios_picker_action">选择文件夹</string>
-    <string name="onboarding_bios_desc">选择包含 Dreamcast BIOS（dc_boot.bin、dc_flash.bin）或街机 BIOS 集（naomi.zip、naomi2.zip、awbios.zip）的文件夹。</string>
+    <string name="onboarding_bios_desc">选择一个包含 BIOS 文件的文件夹。再次点击可添加其他文件夹；有效的 Dreamcast、街机、Sega CD 和 32X 文件会一起安装。</string>
     <string name="onboarding_bios_optional">可选，但推荐</string>
+    <string name="bios_supported_files">Dreamcast：dc_boot.bin（2 MiB）、dc_flash.bin（128 KiB）
+街机：naomi.zip、naomi2.zip、awbios.zip
+Sega CD：bios_CD_U.bin、bios_CD_E.bin、bios_CD_J.bin（128 KiB）
+Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
     <string name="emulation_quick_save_confirm_title">保存状态？</string>
     <string name="emulation_quick_save_confirm_desc">这将使用当前游戏状态覆盖插槽 %1$d。</string>
     <string name="emulation_quick_load_confirm_title">加载状态？</string>
@@ -2262,9 +2267,9 @@
     <string name="sega_bios_import">导入 BIOS</string>
     <string name="sega_bios_installed">已安装 BIOS</string>
     <string name="sega_bios_invalid">请选择大小恰好为 128 KiB 的 BIOS 文件。</string>
-    <string name="sega_bios_missing">缺少 Sega CD BIOS。请打开设置，选择 Sega CD，然后导入与光盘区域对应的 BIOS。</string>
+    <string name="sega_bios_missing">缺少 Sega CD BIOS。请打开设置的资料库并导入 BIOS 文件夹。</string>
     <string name="sega_32x_bios_file">%1$s · %2$d 字节 · CRC32 %3$s</string>
-    <string name="sega_32x_bios_missing">缺少 32X BIOS 文件或文件无效。请打开设置，选择 Sega 32X，然后导入全部三个 BIOS 文件。</string>
+    <string name="sega_32x_bios_missing">缺少 32X BIOS 文件或文件无效。请打开设置的资料库并导入 BIOS 文件夹。</string>
     <string name="sega_32x_bios_invalid">此文件与所选的 32X BIOS 不匹配。请检查文件大小和校验和。</string>
     <string name="sega_32x_bios_slave">从属 SH-2 BIOS</string>
     <string name="sega_32x_bios_master">主 SH-2 BIOS</string>

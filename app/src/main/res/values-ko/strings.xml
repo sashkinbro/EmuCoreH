@@ -387,8 +387,13 @@
     <string name="onboarding_page_4_subtitle">시작하려면 게임 폴더와 에뮬레이터 데이터 저장 위치를 선택하세요.</string>
     <string name="onboarding_title">플레이할 준비를 하세요</string>
     <string name="onboarding_subtitle">게임 폴더를 선택하고 파일 접근을 허용하세요.</string>
-    <string name="onboarding_bios_desc">Dreamcast BIOS(dc_boot.bin, dc_flash.bin) 또는 아케이드 BIOS 세트(naomi.zip, naomi2.zip, awbios.zip)가 있는 폴더를 선택하세요.</string>
+    <string name="onboarding_bios_desc">BIOS 파일이 있는 폴더를 선택하세요. 다시 탭하면 다른 폴더를 추가할 수 있으며, 유효한 Dreamcast, 아케이드, Sega CD, 32X 파일이 함께 설치됩니다.</string>
     <string name="onboarding_bios_optional">선택 사항이지만 권장됩니다</string>
+    <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
+아케이드: naomi.zip, naomi2.zip, awbios.zip
+Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
+Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
     <string name="onboarding_games_title">게임 폴더 선택</string>
     <string name="onboarding_games_desc">게임이 포함된 폴더를 선택하세요.</string>
     <string name="onboarding_status_required">필요함</string>
@@ -2260,9 +2265,9 @@
     <string name="sega_bios_import">BIOS 가져오기</string>
     <string name="sega_bios_installed">BIOS 설치됨</string>
     <string name="sega_bios_invalid">크기가 정확히 128 KiB인 BIOS 파일을 선택하세요.</string>
-    <string name="sega_bios_missing">Sega CD BIOS가 없습니다. 설정에서 Sega CD를 선택한 후 디스크 지역에 맞는 BIOS를 가져오세요.</string>
+    <string name="sega_bios_missing">Sega CD BIOS가 없습니다. 설정의 라이브러리를 열고 BIOS 폴더를 가져오세요.</string>
     <string name="sega_32x_bios_file">%1$s · %2$d바이트 · CRC32 %3$s</string>
-    <string name="sega_32x_bios_missing">32X BIOS 파일이 없거나 유효하지 않습니다. 설정을 열고 Sega 32X를 선택한 뒤 BIOS 파일 세 개를 모두 가져오세요.</string>
+    <string name="sega_32x_bios_missing">32X BIOS 파일이 없거나 유효하지 않습니다. 설정의 라이브러리를 열고 BIOS 폴더를 가져오세요.</string>
     <string name="sega_32x_bios_invalid">이 파일은 선택한 32X BIOS와 일치하지 않습니다. 파일 크기와 체크섬을 확인하세요.</string>
     <string name="sega_32x_bios_slave">슬레이브 SH-2 BIOS</string>
     <string name="sega_32x_bios_master">마스터 SH-2 BIOS</string>

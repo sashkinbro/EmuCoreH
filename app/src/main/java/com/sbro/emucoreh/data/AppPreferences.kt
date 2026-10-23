@@ -96,6 +96,7 @@ data class SettingsSnapshot(
     val profilerLogcat: Boolean = false,
     val preferEnglishGameTitles: Boolean = false,
     val biosPath: String? = null,
+    val biosPaths: List<String> = emptyList(),
     val biosValid: Boolean = false,
     val gamePath: String? = null,
     val gamePaths: List<String> = emptyList(),
@@ -418,6 +419,7 @@ class AppPreferences(private val context: Context) {
         private val SHADER_CHAIN_ENABLED = booleanPreferencesKey("shader_chain_enabled")
         private val SHADER_CHAIN_PRESET = stringPreferencesKey("shader_chain_preset")
         private val BIOS_PATH = stringPreferencesKey("bios_path")
+        private val BIOS_PATHS = stringPreferencesKey("bios_paths")
         private val GAME_PATH = stringPreferencesKey("game_path")
         private val GAME_PATHS = stringPreferencesKey("game_paths")
         private val EMULATOR_DATA_PATH = stringPreferencesKey("emulator_data_path")
@@ -1181,13 +1183,59 @@ class AppPreferences(private val context: Context) {
         context.dataStore.edit { it[UPSCALE] = normalizeUpscale(value) }
     }
 
-    // BIOS Path
-    val biosPath: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[BIOS_PATH]
-    }
+    // BIOS Paths
+    val biosPaths: Flow<List<String>> = context.dataStore.data.map(::readBiosPaths)
+
+    val biosPath: Flow<String?> = biosPaths.map { it.lastOrNull() }
 
     suspend fun setBiosPath(path: String) {
-        context.dataStore.edit { it[BIOS_PATH] = path }
+        setBiosPaths(listOf(path))
+    }
+
+    suspend fun setBiosPaths(paths: List<String>) {
+        val normalized = paths.map(String::trim).filter(String::isNotBlank).distinct()
+        context.dataStore.edit { prefs ->
+            writeBiosPaths(prefs, normalized)
+        }
+    }
+
+    suspend fun addBiosPath(path: String) {
+        val normalized = path.trim()
+        if (normalized.isBlank()) return
+        context.dataStore.edit { prefs ->
+            writeBiosPaths(prefs, (readBiosPaths(prefs) + normalized).distinct())
+        }
+    }
+
+    suspend fun removeBiosPath(path: String) {
+        context.dataStore.edit { prefs ->
+            writeBiosPaths(prefs, readBiosPaths(prefs).filterNot { it == path })
+        }
+    }
+
+    private fun writeBiosPaths(prefs: MutablePreferences, paths: List<String>) {
+        if (paths.isEmpty()) {
+            prefs.remove(BIOS_PATHS)
+            prefs.remove(BIOS_PATH)
+        } else {
+            prefs[BIOS_PATHS] = JSONArray(paths).toString()
+            prefs[BIOS_PATH] = paths.last()
+        }
+    }
+
+    private fun readBiosPaths(prefs: Preferences): List<String> {
+        val stored = prefs[BIOS_PATHS]
+        val paths = stored?.let { encoded ->
+            runCatching {
+                val array = JSONArray(encoded)
+                buildList {
+                    for (index in 0 until array.length()) {
+                        array.optString(index).trim().takeIf(String::isNotBlank)?.let(::add)
+                    }
+                }
+            }.getOrNull()
+        }.orEmpty()
+        return (paths.ifEmpty { listOfNotNull(prefs[BIOS_PATH]?.trim()?.takeIf(String::isNotBlank)) }).distinct()
     }
 
     // Game Path
@@ -1375,7 +1423,7 @@ class AppPreferences(private val context: Context) {
 
     val settingsSnapshot: Flow<SettingsSnapshot> = context.dataStore.data
         .map { prefs ->
-            val biosPath = prefs[BIOS_PATH]
+            val biosPaths = readBiosPaths(prefs)
             val gpuHardwareProfile = resolveGpuHardwareProfile()
             SettingsSnapshot(
                 themeMode = readThemeMode(prefs),
@@ -1460,7 +1508,8 @@ class AppPreferences(private val context: Context) {
                 showDebugOptions = prefs[SHOW_DEBUG_OPTIONS] ?: false,
                 profilerLogcat = prefs[PROFILER_LOGCAT] ?: false,
                 preferEnglishGameTitles = prefs[PREFER_ENGLISH_GAME_TITLES] ?: false,
-                biosPath = biosPath,
+                biosPath = biosPaths.lastOrNull(),
+                biosPaths = biosPaths,
                 gamePath = readGamePaths(prefs).firstOrNull(),
                 gamePaths = readGamePaths(prefs),
                 emulatorDataPath = prefs[EMULATOR_DATA_PATH],
@@ -3110,6 +3159,7 @@ class AppPreferences(private val context: Context) {
             put("shaderChainEnabled", prefs[SHADER_CHAIN_ENABLED] ?: false)
             put("shaderChainPreset", prefs[SHADER_CHAIN_PRESET].orEmpty())
             put("biosPath", prefs[BIOS_PATH])
+            put("biosPaths", JSONArray(readBiosPaths(prefs)))
             put("gamePath", prefs[GAME_PATH])
             put("gamePaths", JSONArray(readGamePaths(prefs)))
             put("emulatorDataPath", prefs[EMULATOR_DATA_PATH])
@@ -3372,7 +3422,16 @@ class AppPreferences(private val context: Context) {
             json.optString("shaderChainPreset").trim().takeIf(String::isNotEmpty)?.let {
                 prefs[SHADER_CHAIN_PRESET] = it
             } ?: prefs.remove(SHADER_CHAIN_PRESET)
-            json.optString("biosPath").takeIf { it.isNotBlank() }?.let { prefs[BIOS_PATH] = it } ?: prefs.remove(BIOS_PATH)
+            val importedBiosPaths = json.optJSONArray("biosPaths")?.let { array ->
+                buildList {
+                    for (index in 0 until array.length()) {
+                        array.optString(index).trim().takeIf(String::isNotBlank)?.let(::add)
+                    }
+                }
+            }.orEmpty().ifEmpty {
+                listOfNotNull(json.optString("biosPath").trim().takeIf(String::isNotBlank))
+            }.distinct()
+            writeBiosPaths(prefs, importedBiosPaths)
             val importedGamePaths = json.optJSONArray("gamePaths")?.let { array ->
                 buildList {
                     for (index in 0 until array.length()) {

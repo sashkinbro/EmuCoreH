@@ -27,16 +27,13 @@ class ContentLibraryRepository(context: Context) {
         val preferEnglish = preferences.preferEnglishGameTitles.first()
         return cache.loadSnapshot(GameLibraryCacheRepository.libraryKey(paths), preferEnglish)
             .games
-            .filterNot { game ->
-                (EmulationPlatform.fromName(game.platform) ?: SegaPlatformDetector.detect(appContext, game.path)).isSega
-            }
+            .filterNot { it.isSegaLibraryEntry() }
             .filter { !it.serial.isNullOrBlank() || arcadeCatalog.isKnownRomset(it.fileName) }
             .sortedBy { it.title.lowercase(Locale.getDefault()) }
     }
 
     fun resolveIdentity(game: GameItem): SelectedGameIdentity {
-        if ((EmulationPlatform.fromName(game.platform) ?: SegaPlatformDetector.detect(appContext, game.path)).isSega)
-            return SelectedGameIdentity(serial = null, crc = null)
+        if (game.isSegaLibraryEntry()) return SelectedGameIdentity(serial = null, crc = null)
         val metadata = runCatching { EmulatorBridge.getGameMetadata(game.path) }.getOrNull()
         val rawSerial = metadata?.serial?.trim()?.takeIf { it.isNotBlank() }
             ?: game.serial?.trim()?.takeIf { it.isNotBlank() }
@@ -56,6 +53,16 @@ class ContentLibraryRepository(context: Context) {
         val romset = ArcadeCatalogRepository.romsetKey(game.fileName) ?: return null
         return romset.takeIf { arcadeCatalog.isKnownRomset(it) }
     }
+
+    /**
+     * The cache stores an explicit platform for Sega content. Never re-open a
+     * multi-gigabyte disc just to classify a legacy Dreamcast/arcade entry;
+     * the filename is enough for these manager lists and keeps both screens
+     * responsive.
+     */
+    private fun GameItem.isSegaLibraryEntry(): Boolean =
+        EmulationPlatform.fromName(platform)?.isSega
+            ?: SegaPlatformDetector.detectName(fileName).isSega
 
     private companion object {
         val CRC_PATTERN = Regex("(?i)(?<![0-9A-F])[0-9A-F]{8}(?![0-9A-F])")

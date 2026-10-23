@@ -6,7 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sbro.emucoreh.core.AppAnalytics
-import com.sbro.emucoreh.core.DreamcastBios
+import com.sbro.emucoreh.core.BiosImport
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.EmulatorDataLocation
 import com.sbro.emucoreh.core.EmulatorStorage
@@ -32,6 +32,7 @@ import kotlinx.coroutines.withContext
 
 data class OnboardingUiState(
     val biosPath: String? = null,
+    val biosPaths: List<String> = emptyList(),
     val gamePath: String? = null,
     val gamePaths: List<String> = emptyList(),
     val emulatorDataPath: String? = null,
@@ -77,12 +78,13 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
                 }
             }
             launch {
-                preferences.biosPath.distinctUntilChanged().collect { path ->
+                preferences.biosPaths.distinctUntilChanged().collect { paths ->
                     val biosValid = withContext(Dispatchers.IO) {
-                        DreamcastBios.hasAnyBios(flycastSystemDir())
+                        BiosImport.hasAnyBios(getApplication())
                     }
                     updateState(
-                        biosPath = path,
+                        biosPath = paths.lastOrNull(),
+                        biosPaths = paths,
                         biosValid = biosValid
                     )
                 }
@@ -111,26 +113,37 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     fun setBiosPath(uri: Uri) {
         val application = getApplication<Application>()
         viewModelScope.launch(Dispatchers.IO) {
-            val previousPath = preferences.biosPath.first()
             StorageAccess.takePersistableReadPermission(application, uri)
-            val systemDir = flycastSystemDir()
-            val installed = DreamcastBios.installSelection(application, uri, systemDir)
+            val result = BiosImport.installSelection(application, uri)
+            val installed = result.installed
+            withContext(Dispatchers.Main) {
+                android.widget.Toast.makeText(
+                    application,
+                    application.getString(
+                        com.sbro.emucoreh.R.string.bios_import_result,
+                        result.dreamcast,
+                        result.arcade,
+                        result.segaCd,
+                        result.sega32x
+                    ),
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
             if (installed) {
-                preferences.setBiosPath(uri.toString())
-                if (previousPath != uri.toString()) {
-                    StorageAccess.releasePersistedPermission(application, previousPath)
-                }
+                preferences.addBiosPath(uri.toString())
                 // Adding a dump must not silently switch the core to the real
                 // BIOS path; keep HLE BIOS enabled so boot behaviour is stable.
                 NativeApp.setCoreOption(FlycastCoreOptions.HLE_BIOS_KEY, "enabled")
             }
+            val activePath = preferences.biosPath.first()
             updateState(
-                biosPath = if (installed) uri.toString() else previousPath,
-                biosValid = DreamcastBios.hasAnyBios(systemDir)
+                biosPath = activePath,
+                biosPaths = preferences.biosPaths.first(),
+                biosValid = BiosImport.hasAnyBios(application)
             )
             val audioSettings = preferences.settingsSnapshot.first()
             EmulatorBridge.applyRuntimeConfig(
-                biosPath = uri.toString(),
+                biosPath = activePath,
                 emulatorDataPath = _uiState.value.emulatorDataPath,
                 renderer = audioSettings.renderer,
                 gpuHardwareProfile = GpuHardwareProfiles.detectHardwareProfile(),
@@ -159,6 +172,13 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     fun removeGamePath(path: String) {
         viewModelScope.launch(Dispatchers.IO) {
             preferences.removeGamePath(path)
+            StorageAccess.releasePersistedPermission(getApplication(), path)
+        }
+    }
+
+    fun removeBiosPath(path: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            preferences.removeBiosPath(path)
             StorageAccess.releasePersistedPermission(getApplication(), path)
         }
     }
@@ -217,11 +237,9 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    private fun flycastSystemDir(): String =
-        EmulatorStorage.flycastSystemDir(getApplication()).absolutePath
-
     private fun updateState(
         biosPath: String? = _uiState.value.biosPath,
+        biosPaths: List<String> = _uiState.value.biosPaths,
         gamePath: String? = _uiState.value.gamePath,
         gamePaths: List<String> = _uiState.value.gamePaths,
         emulatorDataPath: String? = _uiState.value.emulatorDataPath,
@@ -241,6 +259,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     ) {
         _uiState.value = OnboardingUiState(
             biosPath = biosPath,
+            biosPaths = biosPaths,
             gamePath = gamePath,
             gamePaths = gamePaths,
             emulatorDataPath = emulatorDataPath,

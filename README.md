@@ -125,9 +125,14 @@ Unknown disc/archive formats retain the existing Flycast route. CUE track files 
 
 Dreamcast can boot through Flycast HLE without an installed BIOS. Arcade ROM sets may require their matching firmware.
 
-Sega CD requires your own **128 KiB BIOS** for the disc region. In Settings, select Sega CD, open Library, and import the BIOS into the matching US, Europe, or Japan slot. The app uses `bios_CD_U.bin`, `bios_CD_E.bin`, and `bios_CD_J.bin` internally.
+All BIOS files are imported through one **BIOS Folder** card in onboarding or Settings → Library. Select any folder containing your files; every valid BIOS in that folder is installed together. Tap the card again to add BIOS files from another folder, and remove folders from the list without touching the installed copies. The app keeps multiple BIOS source folders for users whose dumps are split across different locations.
 
-Sega 32X requires your own three firmware files: `32X_G_BIOS.bin` (256 bytes), `32X_M_BIOS.bin` (2048 bytes), and `32X_S_BIOS.bin` (1024 bytes). In Settings, select Sega 32X and import each file; exact size and CRC32 role validation is applied before installation. Missing or invalid firmware produces an actionable BIOS message instead of starting an unrelated system.
+- Dreamcast: `dc_boot.bin` (2 MiB) or `dc_bios.bin`, plus `dc_flash.bin` (128 KiB)
+- Arcade: `naomi.zip`, `naomi2.zip`, `awbios.zip`, and other supported MAME BIOS sets
+- Sega CD: `bios_CD_U.bin`, `bios_CD_E.bin`, or `bios_CD_J.bin` (128 KiB, regional aliases accepted)
+- Sega 32X: `32X_G_BIOS.bin` (256 bytes), `32X_M_BIOS.bin` (2048 bytes), and `32X_S_BIOS.bin` (1024 bytes)
+
+Sega CD and 32X firmware is validated before installation; 32X files must match their exact role size and CRC32. Missing or invalid firmware produces an actionable BIOS message and returns to the library instead of leaving the game on a black screen.
 
 ### Sega Controls and Settings
 

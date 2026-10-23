@@ -520,10 +520,12 @@ fun OnboardingScreen(
                                             sdCardDataPath = uiState.sdCardDataPath,
                                             gamePathValid = uiState.gamePathValid,
                                             biosPath = uiState.biosPath,
+                                            biosPaths = uiState.biosPaths,
                                             biosValid = uiState.biosValid,
                                             launchGamePicker = launchGamePicker,
                                             launchBiosPicker = launchBiosPicker,
                                             onRemoveGamePath = viewModel::removeGamePath,
+                                            onRemoveBiosPath = viewModel::removeBiosPath,
                                             openEmulatorDataLocationDialog = openEmulatorDataLocationDialog,
                                             endInset = 0.dp,
                                             bottomInset = 0.dp,
@@ -655,10 +657,12 @@ fun OnboardingScreen(
                                     sdCardDataPath = uiState.sdCardDataPath,
                                     gamePathValid = uiState.gamePathValid,
                                     biosPath = uiState.biosPath,
+                                    biosPaths = uiState.biosPaths,
                                     biosValid = uiState.biosValid,
                                     launchGamePicker = launchGamePicker,
                                     launchBiosPicker = launchBiosPicker,
                                     onRemoveGamePath = viewModel::removeGamePath,
+                                    onRemoveBiosPath = viewModel::removeBiosPath,
                                     openEmulatorDataLocationDialog = openEmulatorDataLocationDialog,
                                     endInset = 0.dp,
                                     bottomInset = 0.dp,
@@ -1209,10 +1213,12 @@ private fun OnboardingSetupContent(
     sdCardDataPath: String?,
     gamePathValid: Boolean,
     biosPath: String?,
+    biosPaths: List<String>,
     biosValid: Boolean,
     launchGamePicker: () -> Unit,
     launchBiosPicker: () -> Unit,
     onRemoveGamePath: (String) -> Unit,
+    onRemoveBiosPath: (String) -> Unit,
     openEmulatorDataLocationDialog: () -> Unit,
     endInset: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
@@ -1242,22 +1248,6 @@ private fun OnboardingSetupContent(
             modifier = if (reserveScrollHintSpace) Modifier.weight(1f) else Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = neonShape(24.dp),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                tonalElevation = 4.dp
-            ) {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(stringResource(R.string.settings_about_app_desc),
-                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                    Text(stringResource(R.string.formats_sega_body),
-                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Flycast BIOS selection remains separate from Sega CD region imports.
             SetupCard(
                 icon = Icons.Rounded.Memory,
                 title = stringResource(R.string.settings_bios_path),
@@ -1265,6 +1255,7 @@ private fun OnboardingSetupContent(
                     !biosPath.isNullOrBlank() -> DocumentPathResolver.getFallbackDisplayName(biosPath)
                     else -> stringResource(R.string.onboarding_bios_desc)
                 },
+                details = stringResource(R.string.bios_supported_files),
                 status = when {
                     biosValid -> stringResource(R.string.onboarding_status_ready)
                     !biosPath.isNullOrBlank() -> stringResource(R.string.onboarding_status_invalid_bios)
@@ -1278,28 +1269,32 @@ private fun OnboardingSetupContent(
                 onClick = launchBiosPicker
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = neonShape(24.dp),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                tonalElevation = 4.dp
-            ) {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    com.sbro.emucoreh.ui.settings.SegaCdBiosSettings()
+            biosPaths.forEach { path ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
+                    shape = neonShape(18.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = DocumentPathResolver.getFallbackDisplayName(path),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        IconButton(onClick = { onRemoveBiosPath(path) }) {
+                            Icon(
+                                imageVector = Icons.Rounded.DeleteOutline,
+                                contentDescription = stringResource(R.string.game_folders_remove)
+                            )
+                        }
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = neonShape(24.dp),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                tonalElevation = 4.dp
-            ) {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    com.sbro.emucoreh.ui.settings.Sega32XBiosSettings()
-                }
-            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             SetupCard(
@@ -1483,7 +1478,8 @@ private fun SetupCard(
     status: String,
     statusColor: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    details: String? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     Surface(
@@ -1538,6 +1534,14 @@ private fun SetupCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (!details.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = details,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 

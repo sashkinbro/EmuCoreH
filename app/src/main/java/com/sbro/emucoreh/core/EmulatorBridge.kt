@@ -591,7 +591,11 @@ object EmulatorBridge {
      * dramatically slower, and the filename/title-index serial is enough to
      * list the library.
      */
-    fun getGameMetadata(path: String, readDiscMetadata: Boolean = true): GameMetadata {
+    fun getGameMetadata(
+        path: String,
+        readDiscMetadata: Boolean = true,
+        knownPlatform: EmulationPlatform? = null
+    ): GameMetadata {
         val inferredMetadata = when {
             path.startsWith("content://") -> {
                 val context = getContext()
@@ -608,7 +612,9 @@ object EmulatorBridge {
         val extension = extensionSource.substringAfterLast('.', "").lowercase()
 
         getContext()?.let { context ->
-            if (SegaPlatformDetector.detect(context, path).isSega) {
+            if (knownPlatform?.isSega == true ||
+                (knownPlatform == null && SegaPlatformDetector.detect(context, path).isSega)
+            ) {
                 return SegaMetadataReader.read(context, path)?.let { metadata ->
                     metadata.copy(title = normalizeNativeGameTitle(metadata.title, inferredMetadata.title))
                 } ?: inferredMetadata

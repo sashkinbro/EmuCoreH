@@ -849,9 +849,34 @@ fun EmulationScreen(
         pendingGamepadActionId != null
 
     // The back gesture and the back button always open the in-game menu; the
-    // menu itself carries the exit action.
+    // menu itself carries the exit action. A failed launch has no running
+    // session to host a menu, so Back returns to the library immediately.
     BackHandler(enabled = true) {
-        toggleMenuClick()
+        if (uiState.launchFailed && !uiState.isStarting && !exitDispatched) {
+            exitDispatched = true
+            completeEmulationExit(
+                activePlayTimeMs = 0L,
+                restoreHostUi = restoreHostUi,
+                navigateFromEmulation = currentOnExit
+            )
+        } else {
+            toggleMenuClick()
+        }
+    }
+
+    LaunchedEffect(uiState.launchFailed, uiState.isStarting, uiState.isRunning) {
+        if (!uiState.launchFailed || uiState.isStarting || uiState.isRunning || exitDispatched) {
+            return@LaunchedEffect
+        }
+        delay(5_000.milliseconds)
+        if (!exitDispatched) {
+            exitDispatched = true
+            completeEmulationExit(
+                activePlayTimeMs = 0L,
+                restoreHostUi = restoreHostUi,
+                navigateFromEmulation = currentOnExit
+            )
+        }
     }
 
     ProvideGamepadMenuAction(onMenu = toggleMenuClick)

@@ -235,6 +235,10 @@ object DreamcastBios {
         val fileName = name?.lowercase()?.trim()?.substringAfterLast('/')?.substringAfterLast('\\')
             ?: return null
         if (fileName.isBlank()) return null
+        // Sega CD and 32X firmware is imported by BiosImport into jgenesis/system.
+        if (SegaCdBios.regionForFileName(fileName) != null ||
+            Sega32XBios.partForFileName(fileName) != null
+        ) return null
         val extension = fileName.substringAfterLast('.', "")
         // Providers that cannot report a size give 0 or -1; the copied file is
         // validated against the expected size afterwards.

@@ -1,8 +1,5 @@
 package com.sbro.emucoreh.ui.settings
 
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -65,51 +62,13 @@ internal fun PlatformSelector(platform: EmulationPlatform, onSelect: (EmulationP
 }
 
 @Composable
-internal fun SegaSettingsPanel(platform: EmulationPlatform, installBios: Boolean = false) {
+internal fun SegaSettingsPanel(platform: EmulationPlatform) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(platformLabel(platform), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
-        if (platform == EmulationPlatform.SG_1000) Text("1 · 2", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (platform == EmulationPlatform.SG_1000) Text("1 �� 2", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         else Text(stringResource(if (platform in setOf(EmulationPlatform.MASTER_SYSTEM, EmulationPlatform.GAME_GEAR, EmulationPlatform.SG_1000))
             R.string.sega_two_button_controls else R.string.sega_six_button_controls),
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (installBios && platform == EmulationPlatform.SEGA_CD) SegaCdBiosSettings()
-        if (installBios && platform == EmulationPlatform.SEGA_32X) Sega32XBiosSettings()
-    }
-}
-
-@Composable
-internal fun SegaCdBiosSettings() {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var region by remember { mutableStateOf(SegaCdBios.Region.US) }
-    var version by remember { mutableIntStateOf(0) }
-    var busy by remember { mutableStateOf(false) }
-    val success = stringResource(R.string.sega_bios_installed)
-    val failure = stringResource(R.string.sega_bios_invalid)
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            val destination = region
-            busy = true
-            scope.launch {
-                val installed = withContext(Dispatchers.IO) { SegaCdBios.install(context, uri, destination) }
-                busy = false
-                version++
-                Toast.makeText(context, if (installed) success else failure, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-    Text(stringResource(R.string.sega_bios_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-    Text(stringResource(R.string.sega_bios_description), color = MaterialTheme.colorScheme.onSurfaceVariant)
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SegaCdBios.Region.entries.forEach { candidate ->
-            FilterChip(selected = candidate == region, enabled = !busy, onClick = { region = candidate }, colors = premiumFilterChipColors(),
-                label = { Text(candidate.name) })
-        }
-    }
-    val installed = remember(region, version) { SegaCdBios.isInstalled(context, region) }
-    Text(stringResource(if (installed) R.string.sega_bios_installed else R.string.settings_not_set), color = MaterialTheme.colorScheme.onSurfaceVariant)
-    Button(enabled = !busy, onClick = { launcher.launch(arrayOf("*/*")) }) {
-        Text(stringResource(R.string.sega_bios_import))
     }
 }
 

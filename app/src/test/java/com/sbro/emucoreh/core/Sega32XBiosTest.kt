@@ -12,6 +12,14 @@ class Sega32XBiosTest {
             Sega32XBios.Part.entries.map { it.crc32 })
     }
 
+    @Test fun recognizesRoleNamesCaseInsensitively() {
+        assertEquals(Sega32XBios.Part.M68K, Sega32XBios.partForFileName("32x_g_bios.bin"))
+        assertEquals(Sega32XBios.Part.MASTER, Sega32XBios.partForFileName("32X_M_BIOS.BIN"))
+        assertEquals(Sega32XBios.Part.SLAVE, Sega32XBios.partForFileName("32X_S_BIOS.bin"))
+        assertNull(Sega32XBios.partForFileName("dc_boot.bin"))
+        assertNull(Sega32XBios.partForFileName(null))
+    }
+
     @Test fun sameSizeGarbageAndWrongRoleNeverCountAsInstalledFirmware() {
         for (part in Sega32XBios.Part.entries) {
             assertFalse(Sega32XBios.isValid(ByteArray(part.size), part))

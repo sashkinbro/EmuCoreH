@@ -516,8 +516,13 @@
     <string name="settings_mediatek_notice_message">Podpora pro MediaTek je stále experimentální. Během naší práce na vylepšení kompatibility a výkonu může docházet k pádům, vizuálním chybám a nestabilnímu chování.\n\nPokud zaznamenáte grafické problémy, zkuste OpenGL se zapnutým ANGLE. Pokud problémy přetrvávají, použijte softwarový vykreslovač.</string>
     <string name="onboarding_title">Připravte se hrát</string>
     <string name="onboarding_subtitle">Vyberte složky s hrami a povolte přístup k souborům.</string>
-    <string name="onboarding_bios_desc">Vyberte slozku s vlastnimi soubory BIOS Dreamcast (dc_boot.bin, dc_flash.bin) nebo sadami BIOS pro arkady (naomi.zip, naomi2.zip, awbios.zip).</string>
+    <string name="onboarding_bios_desc">Vyberte složku s BIOS soubory. Dalším klepnutím přidáte další složku; platné soubory Dreamcast, arkád, Sega CD a 32X se nainstalují společně.</string>
     <string name="onboarding_bios_optional">Nepovinné, ale doporučené</string>
+    <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
+Arkády: naomi.zip, naomi2.zip, awbios.zip
+Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
+Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
     <string name="onboarding_games_title">Přidat složky s hrami</string>
     <string name="onboarding_games_desc">Přidejte jednu nebo více složek obsahujících vaše hry.</string>
     <string name="onboarding_games_selected_count">Vybrané složky: %1$d. Klepnutím přidáte další.</string>
@@ -2282,9 +2287,9 @@
     <string name="sega_bios_import">Importovat BIOS</string>
     <string name="sega_bios_installed">BIOS nainstalován</string>
     <string name="sega_bios_invalid">Vyberte soubor BIOS o velikosti přesně 128 KiB.</string>
-    <string name="sega_bios_missing">Chybí BIOS Sega CD. Otevřete Nastavení, vyberte Sega CD a importujte BIOS pro region disku.</string>
+    <string name="sega_bios_missing">Chybí BIOS Sega CD. Otevřete Nastavení, Knihovnu a importujte složku BIOS.</string>
     <string name="sega_32x_bios_file">%1$s · %2$d bajtů · CRC32 %3$s</string>
-    <string name="sega_32x_bios_missing">Soubory BIOS pro 32X chybí nebo jsou neplatné. Otevřete Nastavení, vyberte Sega 32X a importujte všechny tři soubory BIOS.</string>
+    <string name="sega_32x_bios_missing">Soubory BIOS 32X chybí nebo jsou neplatné. Otevřete Nastavení, Knihovnu a importujte složku BIOS.</string>
     <string name="sega_32x_bios_invalid">Tento soubor neodpovídá vybranému BIOSu 32X. Zkontrolujte velikost a kontrolní součet.</string>
     <string name="sega_32x_bios_slave">BIOS vedlejšího SH-2</string>
     <string name="sega_32x_bios_master">BIOS hlavního SH-2</string>

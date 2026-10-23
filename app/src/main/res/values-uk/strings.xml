@@ -251,8 +251,13 @@
     <string name="onboarding_page_4_subtitle">Виберіть папки з іграми та місце зберігання даних емулятора, щоб почати.</string>
     <string name="onboarding_title">Готуйтеся до гри</string>
     <string name="onboarding_subtitle">Виберіть папки з іграми та надайте доступ до файлів.</string>
-    <string name="onboarding_bios_desc">Виберіть теку з файлами BIOS Dreamcast (dc_boot.bin, dc_flash.bin) або наборами BIOS для аркад (naomi.zip, naomi2.zip, awbios.zip).</string>
+    <string name="onboarding_bios_desc">Виберіть теку з файлами BIOS. Натисніть ще раз, щоб додати іншу теку; коректні файли Dreamcast, аркад, Sega CD і 32X встановлюються разом.</string>
     <string name="onboarding_bios_optional">Не обов\'язково, але рекомендовано</string>
+    <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
+Аркади: naomi.zip, naomi2.zip, awbios.zip
+Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
+Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
     <string name="onboarding_games_title">Виберіть папку з іграми</string>
     <string name="onboarding_games_desc">Виберіть папку, яка містить ваші ігри.</string>
     <string name="onboarding_status_required">Обов\'язково</string>
@@ -2266,9 +2271,9 @@
     <string name="sega_bios_import">Імпортувати BIOS</string>
     <string name="sega_bios_installed">BIOS встановлено</string>
     <string name="sega_bios_invalid">Виберіть файл BIOS розміром рівно 128 КіБ.</string>
-    <string name="sega_bios_missing">Немає BIOS Sega CD. Відкрийте налаштування, виберіть Sega CD та імпортуйте BIOS для регіону диска.</string>
+    <string name="sega_bios_missing">BIOS Sega CD відсутній. Відкрийте налаштування, бібліотеку та імпортуйте теку BIOS.</string>
     <string name="sega_32x_bios_file">%1$s · %2$d байтів · CRC32 %3$s</string>
-    <string name="sega_32x_bios_missing">Файли BIOS 32X відсутні або недійсні. Відкрийте налаштування, виберіть Sega 32X та імпортуйте всі три файли BIOS.</string>
+    <string name="sega_32x_bios_missing">Файли BIOS 32X відсутні або недійсні. Відкрийте налаштування, бібліотеку та імпортуйте теку BIOS.</string>
     <string name="sega_32x_bios_invalid">Цей файл не відповідає вибраному BIOS 32X. Перевірте розмір файлу та контрольну суму.</string>
     <string name="sega_32x_bios_slave">BIOS допоміжного SH-2</string>
     <string name="sega_32x_bios_master">BIOS основного SH-2</string>

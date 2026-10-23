@@ -387,8 +387,13 @@
     <string name="onboarding_page_4_subtitle">Başlamak için oyun klasörlerinizi ve emülatör verilerinin konumunu seçin.</string>
     <string name="onboarding_title">Oynamak için hazırlanın</string>
     <string name="onboarding_subtitle">Oyun klasörlerinizi seçin ve dosya erişimine izin verin.</string>
-    <string name="onboarding_bios_desc">Dreamcast BIOS dosyalarınızı (dc_boot.bin, dc_flash.bin) veya arcade BIOS setlerini (naomi.zip, naomi2.zip, awbios.zip) içeren bir klasör seçin.</string>
+    <string name="onboarding_bios_desc">BIOS dosyalarınızın bulunduğu bir klasör seçin. Başka klasör eklemek için tekrar dokunun; geçerli Dreamcast, arcade, Sega CD ve 32X dosyaları birlikte kurulur.</string>
     <string name="onboarding_bios_optional">İsteğe bağlı, ancak önerilir</string>
+    <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
+Arcade: naomi.zip, naomi2.zip, awbios.zip
+Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
+Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
     <string name="onboarding_games_title">Oyun klasörünü seç</string>
     <string name="onboarding_games_desc">Oyunlarınızı içeren klasörü seçin.</string>
     <string name="onboarding_status_required">Gerekli</string>
@@ -2261,9 +2266,9 @@
     <string name="sega_bios_import">BIOS içe aktar</string>
     <string name="sega_bios_installed">BIOS yüklendi</string>
     <string name="sega_bios_invalid">Tam olarak 128 KiB boyutunda bir BIOS dosyası seçin.</string>
-    <string name="sega_bios_missing">Sega CD BIOS eksik. Ayarları açın, Sega CD seçin ve disk bölgesine uygun BIOS dosyasını içe aktarın.</string>
+    <string name="sega_bios_missing">Sega CD BIOS eksik. Ayarlar, Kitaplık bölümünü açın ve BIOS klasörünüzü içe aktarın.</string>
     <string name="sega_32x_bios_file">%1$s · %2$d bayt · CRC32 %3$s</string>
-    <string name="sega_32x_bios_missing">32X BIOS dosyaları eksik veya geçersiz. Ayarları açın, Sega 32X’i seçin ve üç BIOS dosyasını da içe aktarın.</string>
+    <string name="sega_32x_bios_missing">32X BIOS dosyaları eksik veya geçersiz. Ayarlar, Kitaplık bölümünü açın ve BIOS klasörünüzü içe aktarın.</string>
     <string name="sega_32x_bios_invalid">Bu dosya seçilen 32X BIOS ile eşleşmiyor. Dosya boyutunu ve sağlama toplamını kontrol edin.</string>
     <string name="sega_32x_bios_slave">İkincil SH-2 BIOS</string>
     <string name="sega_32x_bios_master">Ana SH-2 BIOS</string>

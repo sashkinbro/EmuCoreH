@@ -387,8 +387,13 @@
     <string name="onboarding_page_4_subtitle">اختر مجلد الألعاب ومكان تخزين بيانات المحاكي للبدء.</string>
     <string name="onboarding_title">استعد للعب</string>
     <string name="onboarding_subtitle">اختر مجلدات ألعابك وامنح إذن الوصول إلى الملفات.</string>
-    <string name="onboarding_bios_desc">اختر مجلدًا يحتوي على ملفات BIOS الخاصة بـ Dreamcast (dc_boot.bin وdc_flash.bin) أو مجموعات BIOS للأركيد (naomi.zip وnaomi2.zip وawbios.zip).</string>
+    <string name="onboarding_bios_desc">اختر مجلدًا يحتوي على ملفات BIOS. اضغط مرة أخرى لإضافة مجلد آخر؛ يتم تثبيت ملفات Dreamcast والأركيد وSega CD و32X الصالحة معًا.</string>
     <string name="onboarding_bios_optional">اختياري، لكنه مُستحسن</string>
+    <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB)، dc_flash.bin (128 KiB)
+الأركيد: naomi.zip، naomi2.zip، awbios.zip
+Sega CD: bios_CD_U.bin، bios_CD_E.bin، bios_CD_J.bin (128 KiB)
+Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
     <string name="onboarding_games_title">اختر مجلد الألعاب</string>
     <string name="onboarding_games_desc">حدد المجلد الذي يحتوي على ألعابك.</string>
     <string name="onboarding_status_required">مطلوب</string>
@@ -2269,9 +2274,9 @@
     <string name="sega_bios_import">استيراد BIOS</string>
     <string name="sega_bios_installed">تم تثبيت BIOS</string>
     <string name="sega_bios_invalid">اختر ملف BIOS بحجم 128 KiB بالضبط.</string>
-    <string name="sega_bios_missing">ملف BIOS لـ Sega CD مفقود. افتح الإعدادات، واختر Sega CD، ثم استورد BIOS لمنطقة القرص.</string>
+    <string name="sega_bios_missing">BIOS Sega CD مفقود. افتح الإعدادات، المكتبة، واستورد مجلد BIOS.</string>
     <string name="sega_32x_bios_file">%1$s · %2$d بايت · CRC32 %3$s</string>
-    <string name="sega_32x_bios_missing">ملفات BIOS الخاصة بـ Sega 32X مفقودة أو غير صالحة. افتح الإعدادات، واختر Sega 32X، ثم استورد ملفات BIOS الثلاثة.</string>
+    <string name="sega_32x_bios_missing">ملفات BIOS 32X مفقودة أو غير صالحة. افتح الإعدادات، المكتبة، واستورد مجلد BIOS.</string>
     <string name="sega_32x_bios_invalid">هذا الملف لا يطابق BIOS Sega 32X المحدد. تحقق من حجم الملف والمجموع الاختباري.</string>
     <string name="sega_32x_bios_slave">BIOS الثانوي لـ SH-2</string>
     <string name="sega_32x_bios_master">BIOS الرئيسي لـ SH-2</string>

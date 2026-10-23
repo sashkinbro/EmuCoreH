@@ -59,4 +59,11 @@ class DreamcastBiosTest {
         assertNull(DreamcastBios.supportedBiosTargetName("random.zip", 1024L))
         assertNull(DreamcastBios.supportedBiosTargetName(null, 1024L))
     }
+
+    @Test fun segaBiosNamesAreNeverImportedAsDreamcastDumps() {
+        assertNull(DreamcastBios.supportedBiosTargetName("bios_CD_U.bin", DreamcastBios.FLASH_ROM_SIZE))
+        assertNull(DreamcastBios.supportedBiosTargetName("bios_cd_jp.bin", DreamcastBios.FLASH_ROM_SIZE))
+        assertNull(DreamcastBios.supportedBiosTargetName("32X_G_BIOS.bin", 256L))
+        assertNull(DreamcastBios.supportedBiosTargetName("32X_M_BIOS.bin", 2048L))
+    }
 }

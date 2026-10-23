@@ -493,8 +493,13 @@
     <string name="settings_mediatek_notice_message">پشتیبانی از MediaTek هنوز آزمایشی است. تا زمانی که به بهبود سازگاری و عملکرد ادامه می‌دهیم، ممکن است خرابی، اشکالات گرافیکی و عملکرد ناپایدار رخ دهد.\n\nاگر با مشکل گرافیکی روبه‌رو شدید، OpenGL را با ANGLE فعال امتحان کنید. اگر مشکل ادامه داشت، از رندرکننده نرم‌افزاری استفاده کنید.</string>
     <string name="onboarding_title">برای بازی آماده شوید</string>
     <string name="onboarding_subtitle">پوشه‌های بازی را انتخاب کنید و اجازهٔ دسترسی به فایل‌ها را بدهید.</string>
-    <string name="onboarding_bios_desc">پوشه‌ای با فایل‌های BIOS دریم‌کست (dc_boot.bin، dc_flash.bin) یا مجموعه‌های BIOS آرکید (naomi.zip، naomi2.zip، awbios.zip) انتخاب کنید.</string>
+    <string name="onboarding_bios_desc">پوشه‌ای حاوی فایل‌های BIOS انتخاب کنید. برای افزودن پوشه دیگر دوباره بزنید؛ فایل‌های معتبر Dreamcast، آرکید، Sega CD و 32X با هم نصب می‌شوند.</string>
     <string name="onboarding_bios_optional">اختیاری است، اما توصیه می‌شود</string>
+    <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB)، dc_flash.bin (128 KiB)
+آرکید: naomi.zip، naomi2.zip، awbios.zip
+Sega CD: bios_CD_U.bin، bios_CD_E.bin، bios_CD_J.bin (128 KiB)
+Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
     <string name="onboarding_games_title">انتخاب پوشه بازی‌ها</string>
     <string name="onboarding_games_desc">پوشه‌ای را که حاوی بازی‌های شماست انتخاب کنید.</string>
     <string name="onboarding_status_required">الزامی است</string>
@@ -2276,9 +2281,9 @@
     <string name="sega_bios_import">وارد کردن BIOS</string>
     <string name="sega_bios_installed">BIOS نصب شد</string>
     <string name="sega_bios_invalid">فایل BIOS با اندازهٔ دقیقاً 128 KiB انتخاب کنید.</string>
-    <string name="sega_bios_missing">BIOS سگا سی‌دی موجود نیست. تنظیمات را باز کنید، Sega CD را انتخاب و BIOS منطقهٔ دیسک را وارد کنید.</string>
+    <string name="sega_bios_missing">BIOS Sega CD موجود نیست. تنظیمات، کتابخانه را باز کنید و پوشه BIOS خود را وارد کنید.</string>
     <string name="sega_32x_bios_file">%1$s · %2$d بایت · CRC32 %3$s</string>
-    <string name="sega_32x_bios_missing">فایل‌های BIOS 32X موجود نیستند یا نامعتبرند. تنظیمات را باز کنید، Sega 32X را انتخاب کنید و هر سه فایل BIOS را وارد کنید.</string>
+    <string name="sega_32x_bios_missing">فایل‌های BIOS 32X موجود نیستند یا نامعتبرند. تنظیمات، کتابخانه را باز کنید و پوشه BIOS خود را وارد کنید.</string>
     <string name="sega_32x_bios_invalid">این فایل با BIOS 32X انتخاب‌شده مطابقت ندارد. اندازه و چک‌سام فایل را بررسی کنید.</string>
     <string name="sega_32x_bios_slave">BIOS فرعی SH-2</string>
     <string name="sega_32x_bios_master">BIOS اصلی SH-2</string>

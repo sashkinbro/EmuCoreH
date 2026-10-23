@@ -142,6 +142,7 @@ data class EmulationUiState(
     val runtimeFailure: RuntimeFailure? = null,
     val isRunning: Boolean = false,
     val isStarting: Boolean = false,
+    val launchFailed: Boolean = false,
     val isPaused: Boolean = false,
     val showMenu: Boolean = false,
     val transportMode: EmulationTransportMode = EmulationTransportMode.None,
@@ -1093,6 +1094,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
 
                 _uiState.value = _uiState.value.copy(
                     isStarting = true,
+                    launchFailed = false,
                     statusMessage = "status_checking_bios"
                 )
 
@@ -1408,6 +1410,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             }
 
             com.sbro.emucoreh.core.CoreRuntime.launchCoreOptions = pendingPerGameCoreOptions
+            _uiState.value = _uiState.value.copy(launchFailed = false)
             val started = try {
                 EmulatorBridge.startEmulation(
                     pathToLaunch,
@@ -1466,6 +1469,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     )
                 _uiState.value = _uiState.value.copy(
                     isRunning = false,
+                    launchFailed = true,
                     statusMessage = null,
                     toastMessage = when {
                         com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
@@ -3525,6 +3529,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 _uiState.value = _uiState.value.copy(
                     isRunning = false,
                     isStarting = false,
+                    launchFailed = false,
                     isPaused = false,
                     showMenu = false,
                     isActionInProgress = false,

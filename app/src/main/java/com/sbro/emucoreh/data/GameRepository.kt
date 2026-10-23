@@ -345,33 +345,56 @@ class GameRepository {
                 }
                 SetupValidator.DocumentEntryKind.GAME_FILE -> {
                     val uriPath = file.uri.toString()
-                    val fileSize = runCatching { file.length() }.getOrDefault(0L)
-                    val platform = SegaPlatformDetector.detect(context, uriPath)
-                    if (name.endsWith(".bin", true) && !isStandaloneSegaBin(name, platform, name.lowercase(Locale.ROOT) in cueTracks.value)) continue
-                    if (!isLibraryContent(name, arcadeCatalog, platform)) continue
-                    val entrySize = fileSize
+                    val entrySize = runCatching { file.length() }.getOrDefault(0L)
                     val lastModified = runCatching { file.lastModified() }.getOrDefault(0L)
-
                     val cachedGame = cachedGamesByPath[uriPath]
-                    val canReuseCachedMetadata = !platform.isSega && cachedGame != null &&
+                    // A matching cache entry already contains the expensive
+                    // platform/header/disc metadata. Reusing it avoids opening
+                    // every ROM and multi-gigabyte disc on each scan.
+                    val canReuseCachedGame = cachedGame != null &&
                         cachedGame.fileSize == entrySize &&
                         cachedGame.lastModified == lastModified &&
-                        cachedGame.fileName == name &&
-                        !cachedGame.serial.isNullOrBlank()
-                    val metadata = if (canReuseCachedMetadata) {
-                        com.sbro.emucoreh.core.GameMetadata(cachedGame.title, cachedGame.serial)
-                    } else {
-                        val sourcePath = uriPath
-                        val sourceMetadata = EmulatorBridge.getGameMetadata(
-                            sourcePath,
-                            readDiscMetadata = false
+                        cachedGame.fileName == name
+                    if (canReuseCachedGame) {
+                        locations[uriPath] = ScannedDocumentLocation(
+                            document = file,
+                            parentIdentity = libraryIdentity(docFile.uri.toString()),
+                            segments = directorySegments + name
                         )
-                        val discMetadata = if (platform.isSega) null else GameMetadataReader.read(context, sourcePath)
-                        sourceMetadata.copy(
-                            title = discMetadata?.title ?: sourceMetadata.title,
-                            serial = discMetadata?.serial ?: sourceMetadata.serial
-                        )
+                        items += cachedGame
+                        continue
                     }
+                    // CUE/M3U entries only describe tracks. Reading the
+                    // referenced data track here can stall for many seconds on
+                    // large SAF images. The launch path still performs the
+                    // accurate Sega CD detection; the library listing derives
+                    // Dreamcast/Sega identity from the extension and cached
+                    // metadata instead.
+                    val platform = if (name.endsWith(".cue", true) || name.endsWith(".m3u", true)) {
+                        SegaPlatformDetector.detectName(name)
+                    } else {
+                        SegaPlatformDetector.detect(context, uriPath)
+                    }
+                    if (name.endsWith(".bin", true) && !isStandaloneSegaBin(name, platform, name.lowercase(Locale.ROOT) in cueTracks.value)) continue
+                    if (!isLibraryContent(name, arcadeCatalog, platform)) continue
+                    val sourceMetadata = EmulatorBridge.getGameMetadata(
+                        uriPath,
+                        readDiscMetadata = false,
+                        knownPlatform = platform
+                    )
+                    // Opening every SAF disc just to read IP.BIN dominated the
+                    // first onboarding scan. The selected game resolves its
+                    // disc identity on demand, so bulk scans use filename
+                    // metadata for content URIs.
+                    val discMetadata = if (platform.isSega || uriPath.startsWith("content://")) {
+                        null
+                    } else {
+                        GameMetadataReader.read(context, uriPath)
+                    }
+                    val metadata = sourceMetadata.copy(
+                        title = discMetadata?.title ?: sourceMetadata.title,
+                        serial = discMetadata?.serial ?: sourceMetadata.serial
+                    )
 
                     if (BiosValidator.isLikelyBiosLibraryEntry(name, metadata.title, metadata.serial)) {
                         continue

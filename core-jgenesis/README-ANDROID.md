@@ -79,12 +79,14 @@ The system directory must contain `32X_G_BIOS.bin` (256 bytes),
 `32X_M_BIOS.bin` (2048 bytes), and `32X_S_BIOS.bin` (1024 bytes), each with the
 canonical CRC32 for its role. The core requires all three before creating 32X or
 CD 32X hardware and reports `SEGA_32X_BIOS_REQUIRED` with the failing role when
-any file is missing, oversized, truncated, or mismatched. The Android importer
-validates the same size and CRC32 before atomically replacing its private copy.
-No firmware bytes are written into save states, and hard reset / state loading
-retain the active per-instance firmware. No public-release or retail-game
-compatibility claim is implied by synthetic smoke tests. Upstream CD 32X
-emulation is partial.
+any file is missing, oversized, truncated, or mismatched. The Android BIOS Folder
+card scans any number of user-selected folders and installs every valid
+Dreamcast, arcade, Sega CD and 32X file together. Selected folders are kept as a
+list so users can import from multiple locations; installed firmware is
+validated again before atomically replacing its private copy. No firmware bytes
+are written into save states, and hard reset / state loading retain the active
+per-instance firmware. No public-release or retail-game compatibility claim is
+implied by synthetic smoke tests. Upstream CD 32X emulation is partial.
 
 ## ABI and runtime
 

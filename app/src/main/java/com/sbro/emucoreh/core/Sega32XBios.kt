@@ -19,16 +19,47 @@ object Sega32XBios {
 
     fun directory(context: Context) = SegaCdBios.directory(context)
 
+    fun partForFileName(name: String?): Part? {
+        val fileName = name?.trim()?.substringAfterLast('/')?.substringAfterLast('\\') ?: return null
+        return Part.entries.firstOrNull { it.fileName.equals(fileName, ignoreCase = true) }
+    }
+
+    fun partForSize(size: Long): Part? =
+        Part.entries.firstOrNull { it.size.toLong() == size }
+
     fun isInstalled(context: Context, part: Part): Boolean = runCatching {
         val file = File(directory(context), part.fileName)
         file.isFile && file.length() == part.size.toLong() && isValid(file.readBytes(), part)
     }.getOrDefault(false)
 
-    fun install(context: Context, uri: Uri, part: Part): Boolean = runCatching {
+    fun install(context: Context, uri: Uri, part: Part): Boolean =
+        installTo(context, uri, part, directory(context))
+
+    /**
+     * Accepts correctly sized dumps even when a provider renamed the file
+     * (for example 32X_G_BIOS.rom). The CRC32 still determines the exact role,
+     * so a renamed file can never be installed into the wrong slot.
+     */
+    internal fun installDetectedTo(
+        context: Context,
+        uri: Uri,
+        size: Long,
+        directory: File
+    ): Part? {
+        val part = partForSize(size) ?: return null
+        return part.takeIf { installTo(context, uri, it, directory) }
+    }
+
+    internal fun installTo(
+        context: Context,
+        uri: Uri,
+        part: Part,
+        directory: File
+    ): Boolean = runCatching {
         val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
             readValidated(input, part)
         } ?: return false
-        val directory = directory(context).also { check(it.mkdirs() || it.isDirectory) }
+        check(directory.mkdirs() || directory.isDirectory)
         val temporary = File.createTempFile("${part.fileName}.", ".tmp", directory)
         try {
             temporary.outputStream().use { it.write(bytes) }

@@ -67,7 +67,9 @@ class StringsLocalizationTest {
         "sega_32x_bios_slave",
         "sega_32x_bios_invalid",
         "sega_32x_bios_missing",
-        "sega_32x_bios_file"
+        "sega_32x_bios_file",
+        "bios_supported_files",
+        "bios_import_result"
     )
 
     @Test
