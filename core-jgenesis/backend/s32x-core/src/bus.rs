@@ -5,7 +5,7 @@ pub mod debug;
 use crate::pwm::PwmChip;
 use crate::registers::{Access, SystemRegisters};
 use crate::vdp::Vdp;
-use crate::{WhichCpu, bootrom};
+use crate::{BootRoms, WhichCpu};
 use bincode::{Decode, Encode};
 use genesis_components::cartridge::Cartridge;
 use genesis_config::Sega32XEmulatorConfig;
@@ -34,6 +34,8 @@ pub struct SerialInterface {
 pub struct Sega32XBus {
     #[partial_clone(partial)]
     pub cartridge: Option<Cartridge>,
+    #[partial_clone(default)]
+    pub boot_roms: BootRoms,
     pub vdp: Vdp,
     pub pwm: PwmChip,
     pub registers: SystemRegisters,
@@ -47,11 +49,13 @@ impl Sega32XBus {
         timing_mode: TimingMode,
         cartridge: Option<Cartridge>,
         config: &Sega32XEmulatorConfig,
+        boot_roms: BootRoms,
     ) -> Self {
         let cartridge_present = cartridge.is_some();
 
         Self {
             cartridge,
+            boot_roms,
             vdp: Vdp::new(timing_mode, config),
             pwm: PwmChip::new(timing_mode),
             registers: SystemRegisters::new(cartridge_present),
@@ -368,8 +372,14 @@ impl Sh2Bus {
             0x0000..=0x3FFF => {
                 // Boot ROM
                 match self.which {
-                    WhichCpu::Master => sh2_read_memory::<SIZE, _>(bootrom::SH2_MASTER, address),
-                    WhichCpu::Slave => sh2_read_memory::<SIZE, _>(bootrom::SH2_SLAVE, address),
+                    WhichCpu::Master => sh2_read_memory::<SIZE, _>(
+                        self.s32x_bus_shared().boot_roms.master(),
+                        address,
+                    ),
+                    WhichCpu::Slave => sh2_read_memory::<SIZE, _>(
+                        self.s32x_bus_shared().boot_roms.slave(),
+                        address,
+                    ),
                 }
             }
             _ => {

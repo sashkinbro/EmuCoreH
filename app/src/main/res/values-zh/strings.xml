@@ -2263,7 +2263,15 @@
     <string name="sega_bios_installed">已安装 BIOS</string>
     <string name="sega_bios_invalid">请选择大小恰好为 128 KiB 的 BIOS 文件。</string>
     <string name="sega_bios_missing">缺少 Sega CD BIOS。请打开设置，选择 Sega CD，然后导入与光盘区域对应的 BIOS。</string>
-    <string name="formats_sega_body">支持 Mega Drive、32X、Master System、Game Gear 和 SG-1000 ROM，以及 Sega CD 的 CUE/BIN 和 CHD 光盘。ZIP 支持单个卡带 ROM。Sega CD 需要您自己的 BIOS。</string>
+    <string name="sega_32x_bios_file">%1$s · %2$d 字节 · CRC32 %3$s</string>
+    <string name="sega_32x_bios_missing">缺少 32X BIOS 文件或文件无效。请打开设置，选择 Sega 32X，然后导入全部三个 BIOS 文件。</string>
+    <string name="sega_32x_bios_invalid">此文件与所选的 32X BIOS 不匹配。请检查文件大小和校验和。</string>
+    <string name="sega_32x_bios_slave">从属 SH-2 BIOS</string>
+    <string name="sega_32x_bios_master">主 SH-2 BIOS</string>
+    <string name="sega_32x_bios_m68k">68000 BIOS</string>
+    <string name="sega_32x_bios_description">导入您自己的三个 32X BIOS 文件。三者均为必需，每个文件都会在安装前验证。</string>
+    <string name="sega_32x_bios_title">Sega 32X BIOS</string>
+    <string name="formats_sega_body">Mega Drive、32X、Master System、Game Gear 和 SG-1000 ROM；Sega CD CUE/BIN 和 CHD 光盘。ZIP 支持一个卡带 ROM。Sega CD 和 32X 需要您自己的 BIOS 文件。</string>
     <string name="sega_region">区域</string>
     <string name="sega_timing">视频制式</string>
     <string name="sega_restart_required">重新启动游戏后生效。</string>
@@ -2283,7 +2291,7 @@
     <string name="formats_sega_title">Sega</string>
     <string name="sega_ntsc">NTSC</string>
     <string name="sega_pal">PAL</string>
-    <string name="settings_about_jgenesis_source_desc">基于 GNU GPLv3 的 Sega 模拟。链接打开上游源码，EmuCoreH 源码树包含 libretro 集成。许可证和版本信息随应用提供。Sega CD BIOS 由用户提供；上游 32X 固件仍然内嵌。</string>
+    <string name="settings_about_jgenesis_source_desc">Sega 模拟基于 GNU GPLv3。链接会打开上游源代码；EmuCoreH 源代码树包含 libretro 集成。随附许可证和版本元数据。Sega CD 和 32X BIOS 文件必须由用户导入；不包含任何固件。</string>
     <string name="settings_about_jgenesis_source_link">在 GitHub 查看 jgenesis 源码</string>
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>

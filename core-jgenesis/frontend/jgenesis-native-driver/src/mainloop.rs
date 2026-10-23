@@ -273,6 +273,8 @@ pub enum NativeEmulatorError {
     },
     #[error("{0} BIOS is required for Sega CD emulation")]
     SegaCdNoBios(GenesisRegion),
+    #[error("{0}")]
+    Sega32XBios(String),
     #[error("Error opening BIOS file at '{path}': {source}")]
     SegaCdBiosRead {
         path: PathBuf,

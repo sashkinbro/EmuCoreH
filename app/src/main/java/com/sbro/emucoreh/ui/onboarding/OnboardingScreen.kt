@@ -1290,6 +1290,17 @@ private fun OnboardingSetupContent(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = neonShape(24.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                tonalElevation = 4.dp
+            ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    com.sbro.emucoreh.ui.settings.Sega32XBiosSettings()
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
 
             SetupCard(
                 icon = Icons.Rounded.FolderOpen,

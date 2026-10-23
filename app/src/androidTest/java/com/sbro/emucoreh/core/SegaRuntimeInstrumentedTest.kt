@@ -22,6 +22,7 @@ class SegaRuntimeInstrumentedTest {
         val previousSettings = CoreRuntime.settings.toMap()
         CoreRuntime.initialize(context)
         CoreRuntime.setDataRootOverride(directory.absolutePath)
+        val has32xBios = Sega32XBios.Part.entries.all { Sega32XBios.isInstalled(context, it) }
         try {
             var previousState: File? = null
             for ((extension, platform) in listOf("md" to EmulationPlatform.GENESIS,
@@ -29,6 +30,13 @@ class SegaRuntimeInstrumentedTest {
                 "sg" to EmulationPlatform.SG_1000)) {
                 val rom = File(directory, "qa.$extension")
                 rom.writeBytes(if (extension == "md" || extension == "32x") genesisRom() else byteArrayOf(0xf3.toByte(), 0x18, 0xfe.toByte()))
+                if (extension == "32x" && !has32xBios) {
+                    assertFalse("32X without imported BIOS must not boot", CoreRuntime.start(rom.absolutePath, false))
+                    assertEquals(platform, CoreRuntime.platform)
+                    assertTrue(CoreRuntime.bridge.nativeLastBootError().orEmpty()
+                        .startsWith("SEGA_32X_BIOS_REQUIRED:"))
+                    continue
+                }
                 val frames = AtomicInteger()
                 ImageReader.newInstance(320, 240, PixelFormat.RGBA_8888, 3).use { reader ->
                     reader.setOnImageAvailableListener({ source ->
@@ -113,6 +121,41 @@ class SegaRuntimeInstrumentedTest {
         } finally {
             bridge.destroySession(handle)
             assertTrue(bridge.nativeSelectCore(0))
+            CoreRuntime.initialize(context)
+        }
+    }
+
+    @Test fun missing32xBiosFailsWithActionableNativeError() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val root = File(context.cacheDir, "sega-32x-missing-qa").apply { mkdirs() }
+        val system = File(context.filesDir, "jgenesis/system").apply { mkdirs() }
+        val save = File(root, "save").apply { mkdirs() }
+        val backups = Sega32XBios.Part.entries.associateWith { part ->
+            File(system, part.fileName).takeIf { it.isFile }?.readBytes()
+        }
+        CoreRuntime.shutdown()
+        try {
+            backups.keys.forEach { File(system, it.fileName).delete() }
+            val bridge = CoreRuntime.bridge
+            assertTrue(bridge.nativeSelectCore(1))
+            bridge.nativeInit(system.absolutePath, save.absolutePath, root.absolutePath)
+            bridge.resetAudioQueue()
+            val rom = File(root, "missing-bios.32x").apply { writeBytes(genesisRom()) }
+            val handle = bridge.createSession()
+            assertTrue(handle != 0L)
+            try {
+                assertNotEquals(0, bridge.loadDisc(handle, rom.absolutePath))
+                assertTrue(bridge.nativeLastBootError().orEmpty()
+                    .startsWith("SEGA_32X_BIOS_REQUIRED:"))
+            } finally {
+                bridge.destroySession(handle)
+                assertTrue(bridge.nativeSelectCore(0))
+            }
+        } finally {
+            backups.forEach { (part, bytes) ->
+                val target = File(system, part.fileName)
+                if (bytes != null) target.writeBytes(bytes) else target.delete()
+            }
             CoreRuntime.initialize(context)
         }
     }

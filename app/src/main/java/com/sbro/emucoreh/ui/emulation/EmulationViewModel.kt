@@ -1469,6 +1469,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     statusMessage = null,
                     toastMessage = when {
                         com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
+                            ?.startsWith("SEGA_32X_BIOS_REQUIRED:") == true -> "sega_32x_bios_missing"
+                        com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
                             ?.startsWith("UNSUPPORTED_DS_COLLECTION_ROM:") == true -> "sega_ds_collection_unsupported"
                         com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
                             ?.startsWith("UNSUPPORTED_ALESTE_COLLECTION_ROM:") == true -> "sega_aleste_collection_unsupported"
@@ -1481,7 +1483,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                         else -> "launch_failed"
                     }
                 )
-                delay(if (_uiState.value.toastMessage in setOf("sega_ds_collection_unsupported", "sega_aleste_collection_unsupported"))
+                delay(if (_uiState.value.toastMessage in setOf("sega_ds_collection_unsupported", "sega_aleste_collection_unsupported", "sega_32x_bios_missing"))
                     8000.milliseconds else 2500.milliseconds)
                 _uiState.value = _uiState.value.copy(toastMessage = null)
             }

@@ -1,5 +1,4 @@
 use genesis_config::GenesisRegion;
-use s32x_core::SECURITY_PROGRAM_CARTRIDGE_ADDR;
 use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::io::Read;
@@ -53,10 +52,7 @@ fn supported_archive_extension(extension: &str) -> bool {
 }
 
 fn has_s32x_security_program(bytes: &[u8]) -> bool {
-    let start = SECURITY_PROGRAM_CARTRIDGE_ADDR;
-    let program = s32x_core::security_program();
-    let end = start.saturating_add(program.len());
-    bytes.len() >= end && &bytes[start..end] == program
+    s32x_core::has_security_program(bytes)
 }
 
 fn validate_cartridge(bytes: &[u8]) -> Result<(), String> {

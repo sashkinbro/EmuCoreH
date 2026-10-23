@@ -41,13 +41,14 @@ impl SaveWriter for NullOutput {
 fn check_for_memory_model_violations() {
     const CPUS: [WhichCpu; 2] = [WhichCpu::Master, WhichCpu::Slave];
 
-    let mut emulator = GenesisEmulator::create(
+    let mut emulator = GenesisEmulator::create_with_32x_boot_roms(
         GenesisHardware::SegaCd32X,
         None,
         Some(vec![0xFF; 128 * 1024]),
         None,
         GenesisEmulatorConfig::default(),
         &mut NullOutput,
+        Some(s32x_core::BootRoms::new([0; 256], [0; 2048], [0; 1024])),
     )
     .expect("Failed to create emulator");
 

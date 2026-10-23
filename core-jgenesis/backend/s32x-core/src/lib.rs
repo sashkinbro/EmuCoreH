@@ -6,6 +6,8 @@ mod pwm;
 mod registers;
 mod vdp;
 
+pub use bootrom::BootRoms;
+
 type GenesisVdp = genesis_components::vdp::Vdp;
 
 pub const SH2_CLOCK_MULTIPLIER: u64 = genesis_config::NATIVE_SH2_MULTIPLIER;
@@ -19,8 +21,12 @@ pub const SECURITY_PROGRAM_LEN: usize = 0x400;
 
 #[inline]
 #[must_use]
-pub fn security_program() -> &'static [u8] {
-    &bootrom::SH2_MASTER[0x36C..0x36C + SECURITY_PROGRAM_LEN]
+pub fn has_security_program(cartridge: &[u8]) -> bool {
+    cartridge
+        .get(
+            SECURITY_PROGRAM_CARTRIDGE_ADDR..SECURITY_PROGRAM_CARTRIDGE_ADDR + SECURITY_PROGRAM_LEN,
+        )
+        .is_some_and(|program| bootrom::crc32(program) == 0xf6547f0a)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

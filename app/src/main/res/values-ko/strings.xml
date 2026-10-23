@@ -2261,7 +2261,15 @@
     <string name="sega_bios_installed">BIOS 설치됨</string>
     <string name="sega_bios_invalid">크기가 정확히 128 KiB인 BIOS 파일을 선택하세요.</string>
     <string name="sega_bios_missing">Sega CD BIOS가 없습니다. 설정에서 Sega CD를 선택한 후 디스크 지역에 맞는 BIOS를 가져오세요.</string>
-    <string name="formats_sega_body">메가 드라이브, 32X, 마스터 시스템, 게임 기어 및 SG-1000 ROM과 Sega CD CUE/BIN 및 CHD 디스크를 지원합니다. ZIP은 카트리지 ROM 하나를 지원합니다. Sega CD에는 본인의 BIOS가 필요합니다.</string>
+    <string name="sega_32x_bios_file">%1$s · %2$d바이트 · CRC32 %3$s</string>
+    <string name="sega_32x_bios_missing">32X BIOS 파일이 없거나 유효하지 않습니다. 설정을 열고 Sega 32X를 선택한 뒤 BIOS 파일 세 개를 모두 가져오세요.</string>
+    <string name="sega_32x_bios_invalid">이 파일은 선택한 32X BIOS와 일치하지 않습니다. 파일 크기와 체크섬을 확인하세요.</string>
+    <string name="sega_32x_bios_slave">슬레이브 SH-2 BIOS</string>
+    <string name="sega_32x_bios_master">마스터 SH-2 BIOS</string>
+    <string name="sega_32x_bios_m68k">68000 BIOS</string>
+    <string name="sega_32x_bios_description">32X BIOS 파일 3개를 직접 가져오세요. 세 파일 모두 필요하며 각 파일은 설치 전에 검증됩니다.</string>
+    <string name="sega_32x_bios_title">Sega 32X BIOS</string>
+    <string name="formats_sega_body">Mega Drive, 32X, Master System, Game Gear, SG-1000 ROM, Sega CD CUE/BIN 및 CHD 디스크. ZIP은 카트리지 ROM 하나를 지원합니다. Sega CD와 32X에는 직접 준비한 BIOS 파일이 필요합니다.</string>
     <string name="sega_region">지역</string>
     <string name="sega_timing">영상 타이밍</string>
     <string name="sega_restart_required">게임을 다시 시작하면 적용됩니다.</string>
@@ -2281,7 +2289,7 @@
     <string name="formats_sega_title">Sega</string>
     <string name="sega_ntsc">NTSC</string>
     <string name="sega_pal">PAL</string>
-    <string name="settings_about_jgenesis_source_desc">GNU GPLv3에 따른 Sega 에뮬레이션입니다. 링크는 원본 소스를 열며 EmuCoreH 소스 트리에는 libretro 통합이 포함됩니다. 라이선스와 버전 정보가 함께 제공됩니다. Sega CD BIOS는 사용자가 제공하며 원본 32X 펌웨어는 내장된 상태입니다.</string>
+    <string name="settings_about_jgenesis_source_desc">GNU GPLv3에 따른 Sega 에뮬레이션. 링크는 업스트림 소스를 엽니다. EmuCoreH 소스 트리에는 libretro 통합이 포함되어 있습니다. 라이선스와 버전 메타데이터가 함께 제공됩니다. Sega CD 및 32X BIOS 파일은 사용자가 가져와야 하며 펌웨어는 포함되지 않습니다.</string>
     <string name="settings_about_jgenesis_source_link">GitHub에서 jgenesis 소스 보기</string>
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>

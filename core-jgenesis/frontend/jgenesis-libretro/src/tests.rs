@@ -62,6 +62,22 @@ unsafe extern "C" fn audio(data: *const i16, frames: usize) -> usize {
     frames
 }
 
+fn install_32x_test_bios(directory: &Path) -> bool {
+    const NAMES: [&str; 3] = ["32X_G_BIOS.bin", "32X_M_BIOS.bin", "32X_S_BIOS.bin"];
+    let candidates = [
+        std::env::var_os("JGENESIS_TEST_32X_BIOS_DIR").map(PathBuf::from),
+        Some(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../build/qa-32x-bios")),
+    ];
+    let Some(source) = candidates
+        .into_iter()
+        .flatten()
+        .find(|source| NAMES.iter().all(|name| source.join(name).is_file()))
+    else {
+        return false;
+    };
+    NAMES.iter().all(|name| std::fs::copy(source.join(name), directory.join(name)).is_ok())
+}
+
 fn genesis_rom() -> Vec<u8> {
     let mut rom = vec![0; 32768];
     rom[..4].copy_from_slice(&0x00fffff0u32.to_be_bytes());
@@ -216,6 +232,22 @@ fn exercise_libretro() {
     retro_set_video_refresh(Some(video));
     retro_set_audio_sample_batch(Some(audio));
     retro_init();
+    let missing_bios_rom = directory.join("missing-bios.32x");
+    std::fs::write(&missing_bios_rom, genesis_rom()).unwrap();
+    let missing_path = CString::new(missing_bios_rom.to_str().unwrap()).unwrap();
+    let missing_game = retro_game_info {
+        path: missing_path.as_ptr(),
+        data: std::ptr::null(),
+        size: 0,
+        meta: std::ptr::null(),
+    };
+    assert!(!retro_load_game(&missing_game), "32X must require user-supplied BIOS");
+    assert!(
+        unsafe { CStr::from_ptr(jgenesis_boot_error()) }
+            .to_bytes()
+            .starts_with(b"SEGA_32X_BIOS_REQUIRED:")
+    );
+    let has_32x_bios = install_32x_test_bios(&directory);
     exercise_gg_sms_palette_pause_and_state_identity();
     let mut info: retro_system_info = unsafe { std::mem::zeroed() };
     retro_get_system_info(&mut info);
@@ -230,6 +262,22 @@ fn exercise_libretro() {
     ] {
         let path = directory.join(format!("smoke.{extension}"));
         std::fs::write(&path, bytes).unwrap();
+        if extension == "32x" && !has_32x_bios {
+            let c_path = CString::new(path.to_str().unwrap()).unwrap();
+            let game = retro_game_info {
+                path: c_path.as_ptr(),
+                data: std::ptr::null(),
+                size: 0,
+                meta: std::ptr::null(),
+            };
+            assert!(!retro_load_game(&game), "32X without firmware must not load");
+            assert!(
+                unsafe { CStr::from_ptr(jgenesis_boot_error()) }
+                    .to_bytes()
+                    .starts_with(b"SEGA_32X_BIOS_REQUIRED:")
+            );
+            continue;
+        }
         let c_path = CString::new(path.to_str().unwrap()).unwrap();
         let game = retro_game_info {
             path: c_path.as_ptr(),
@@ -394,13 +442,14 @@ fn optimized_32x_fits_android_sized_stack() {
         .spawn(|| {
             let directory = std::env::temp_dir().join("jgenesis-stack-check");
             let mut writer = FsSaveWriter::new(directory.clone(), "32x".into());
-            let emulator = GenesisEmulator::create(
+            let emulator = GenesisEmulator::create_with_32x_boot_roms(
                 GenesisHardware::Sega32X,
                 Some(genesis_rom()),
                 None,
                 None,
                 GenesisEmulatorConfig::default(),
                 &mut writer,
+                Some(s32x_core::BootRoms::new([0; 256], [0; 2048], [0; 1024])),
             )
             .unwrap();
             let mut core = Core::new(

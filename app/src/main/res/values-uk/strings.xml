@@ -2267,7 +2267,15 @@
     <string name="sega_bios_installed">BIOS встановлено</string>
     <string name="sega_bios_invalid">Виберіть файл BIOS розміром рівно 128 КіБ.</string>
     <string name="sega_bios_missing">Немає BIOS Sega CD. Відкрийте налаштування, виберіть Sega CD та імпортуйте BIOS для регіону диска.</string>
-    <string name="formats_sega_body">ROM для Mega Drive, 32X, Master System, Game Gear і SG-1000; диски Sega CD CUE/BIN та CHD. ZIP підтримує один ROM картриджа. Для Sega CD потрібен ваш BIOS.</string>
+    <string name="sega_32x_bios_file">%1$s · %2$d байтів · CRC32 %3$s</string>
+    <string name="sega_32x_bios_missing">Файли BIOS 32X відсутні або недійсні. Відкрийте налаштування, виберіть Sega 32X та імпортуйте всі три файли BIOS.</string>
+    <string name="sega_32x_bios_invalid">Цей файл не відповідає вибраному BIOS 32X. Перевірте розмір файлу та контрольну суму.</string>
+    <string name="sega_32x_bios_slave">BIOS допоміжного SH-2</string>
+    <string name="sega_32x_bios_master">BIOS основного SH-2</string>
+    <string name="sega_32x_bios_m68k">BIOS 68000</string>
+    <string name="sega_32x_bios_description">Імпортуйте свої три файли BIOS 32X. Усі три обов’язкові, і кожен файл перевіряється перед встановленням.</string>
+    <string name="sega_32x_bios_title">BIOS Sega 32X</string>
+    <string name="formats_sega_body">ROM для Mega Drive, 32X, Master System, Game Gear і SG-1000; диски Sega CD CUE/BIN і CHD. ZIP підтримує один ROM картриджа. Sega CD і 32X потребують власних файлів BIOS.</string>
     <string name="sega_region">Регіон</string>
     <string name="sega_timing">Відеостандарт</string>
     <string name="sega_restart_required">Застосовується після перезапуску гри.</string>
@@ -2287,7 +2295,7 @@
     <string name="formats_sega_title">Sega</string>
     <string name="sega_ntsc">NTSC</string>
     <string name="sega_pal">PAL</string>
-    <string name="settings_about_jgenesis_source_desc">Емуляція Sega за ліцензією GNU GPLv3. Посилання відкриває вихідний проєкт; дерево джерел EmuCoreH містить інтеграцію libretro. Ліцензія та відомості про версію входять до застосунку. BIOS Sega CD надає користувач; вихідна прошивка 32X залишається вбудованою.</string>
+    <string name="settings_about_jgenesis_source_desc">Емуляція Sega за ліцензією GNU GPLv3. Посилання відкриває оригінальний код; дерево джерел EmuCoreH містить інтеграцію libretro. Ліцензія та відомості про версію додаються. Файли BIOS Sega CD і 32X має імпортувати користувач; прошивка не включена.</string>
     <string name="settings_about_jgenesis_source_link">Відкрити вихідний код jgenesis на GitHub</string>
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>

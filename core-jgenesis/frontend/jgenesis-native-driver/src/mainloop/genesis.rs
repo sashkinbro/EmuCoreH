@@ -22,6 +22,7 @@ pub struct GenesisCreateInput {
     cartridge_rom: Option<Vec<u8>>,
     sega_cd_bios_rom: Option<Vec<u8>>,
     disc_path: Option<PathBuf>,
+    boot_roms: Option<s32x_core::BootRoms>,
 }
 
 impl CreatableEmulator for GenesisEmulator {
@@ -83,6 +84,16 @@ impl CreatableEmulator for GenesisEmulator {
                 cartridge_rom: cartridge_input.map(|input| input.input),
                 sega_cd_bios_rom,
                 disc_path,
+                boot_roms: if config.hardware.has_32x() {
+                    let directory =
+                        config.common.rom_file_path.parent().unwrap_or_else(|| Path::new("."));
+                    Some(
+                        s32x_core::BootRoms::load(directory)
+                            .map_err(NativeEmulatorError::Sega32XBios)?,
+                    )
+                } else {
+                    None
+                },
             },
             rom_path,
             save_extension,
@@ -101,13 +112,14 @@ impl CreatableEmulator for GenesisEmulator {
             None => None,
         };
 
-        let mut emulator = GenesisEmulator::create(
+        let mut emulator = GenesisEmulator::create_with_32x_boot_roms(
             config.hardware,
             input.input.cartridge_rom,
             input.input.sega_cd_bios_rom,
             disc,
             config.emulator_config.clone(),
             save_writer,
+            input.input.boot_roms,
         )?;
 
         let default_window_size = if config.hardware.has_32x() {

@@ -2276,7 +2276,15 @@
     <string name="sega_bios_installed">BIOS terpasang</string>
     <string name="sega_bios_invalid">Pilih berkas BIOS berukuran tepat 128 KiB.</string>
     <string name="sega_bios_missing">BIOS Sega CD tidak tersedia. Buka Pengaturan, pilih Sega CD, lalu impor BIOS untuk wilayah cakram.</string>
-    <string name="formats_sega_body">ROM Mega Drive, 32X, Master System, Game Gear dan SG-1000; cakram Sega CD CUE/BIN dan CHD. ZIP mendukung satu ROM kartrid. Sega CD memerlukan BIOS milik Anda.</string>
+    <string name="sega_32x_bios_file">%1$s · %2$d byte · CRC32 %3$s</string>
+    <string name="sega_32x_bios_missing">File BIOS 32X tidak ada atau tidak valid. Buka Pengaturan, pilih Sega 32X, lalu impor ketiga file BIOS.</string>
+    <string name="sega_32x_bios_invalid">File ini tidak cocok dengan BIOS 32X yang dipilih. Periksa ukuran dan checksum file.</string>
+    <string name="sega_32x_bios_slave">BIOS SH-2 sekunder</string>
+    <string name="sega_32x_bios_master">BIOS SH-2 utama</string>
+    <string name="sega_32x_bios_m68k">BIOS 68000</string>
+    <string name="sega_32x_bios_description">Impor tiga file BIOS 32X milik Anda. Ketiganya diperlukan dan setiap file divalidasi sebelum dipasang.</string>
+    <string name="sega_32x_bios_title">BIOS Sega 32X</string>
+    <string name="formats_sega_body">ROM Mega Drive, 32X, Master System, Game Gear, dan SG-1000; disk Sega CD CUE/BIN dan CHD. ZIP mendukung satu ROM kartrid. Sega CD dan 32X memerlukan file BIOS milik Anda sendiri.</string>
     <string name="sega_region">Wilayah</string>
     <string name="sega_timing">Pewaktuan video</string>
     <string name="sega_restart_required">Berlaku setelah memulai ulang gim.</string>
@@ -2296,7 +2304,7 @@
     <string name="formats_sega_title">Sega</string>
     <string name="sega_ntsc">NTSC</string>
     <string name="sega_pal">PAL</string>
-    <string name="settings_about_jgenesis_source_desc">Emulasi Sega dengan lisensi GNU GPLv3. Tautan membuka sumber hulu; pohon sumber EmuCoreH memuat integrasi libretro. Lisensi dan metadata versi disertakan. BIOS Sega CD disediakan pengguna; firmware 32X dari hulu tetap tertanam.</string>
+    <string name="settings_about_jgenesis_source_desc">Emulasi Sega dengan GNU GPLv3. Tautan membuka sumber asli; pohon sumber EmuCoreH berisi integrasi libretro. Lisensi dan metadata versi disertakan. File BIOS Sega CD dan 32X harus diimpor pengguna; tidak ada firmware yang disertakan.</string>
     <string name="settings_about_jgenesis_source_link">Lihat sumber jgenesis di GitHub</string>
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>

@@ -556,13 +556,19 @@ fn load_core(path: &Path) -> Result<Core, String> {
                 GenesisHardware::Standalone
             };
             let config = options::genesis();
-            let mut emulator = GenesisEmulator::create(
+            let boot_roms = if hardware.has_32x() {
+                Some(s32x_core::BootRoms::load(&system_dir)?)
+            } else {
+                None
+            };
+            let mut emulator = GenesisEmulator::create_with_32x_boot_roms(
                 hardware,
                 Some(bytes),
                 None,
                 None,
                 config.clone(),
                 &mut save_writer,
+                boot_roms,
             )
             .map_err(|error| format!("Unable to create Genesis emulator: {error}"))?;
             emulator.update_audio_output_frequency(AUDIO_SAMPLE_RATE);
@@ -620,9 +626,18 @@ fn load_sega_cd(
     let is_32x = segacd_core::is_cd_32x_disc(&mut disc);
     let console = if is_32x { Console::SegaCd32X } else { Console::SegaCd };
     let hardware = if is_32x { GenesisHardware::SegaCd32X } else { GenesisHardware::SegaCd };
-    let mut emulator =
-        GenesisEmulator::create(hardware, None, Some(bios), Some(disc), config, &mut save_writer)
-            .map_err(|error| format!("Unable to create Sega CD emulator: {error}"))?;
+    let boot_roms =
+        if hardware.has_32x() { Some(s32x_core::BootRoms::load(&system_dir)?) } else { None };
+    let mut emulator = GenesisEmulator::create_with_32x_boot_roms(
+        hardware,
+        None,
+        Some(bios),
+        Some(disc),
+        config,
+        &mut save_writer,
+        boot_roms,
+    )
+    .map_err(|error| format!("Unable to create Sega CD emulator: {error}"))?;
     emulator.update_audio_output_frequency(AUDIO_SAMPLE_RATE);
 
     let title = emulator.game_title().unwrap_or_default();

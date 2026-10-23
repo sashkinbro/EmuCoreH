@@ -2277,7 +2277,15 @@
     <string name="sega_bios_installed">BIOS نصب شد</string>
     <string name="sega_bios_invalid">فایل BIOS با اندازهٔ دقیقاً 128 KiB انتخاب کنید.</string>
     <string name="sega_bios_missing">BIOS سگا سی‌دی موجود نیست. تنظیمات را باز کنید، Sega CD را انتخاب و BIOS منطقهٔ دیسک را وارد کنید.</string>
-    <string name="formats_sega_body">رام‌های Mega Drive، 32X، Master System، Game Gear و SG-1000؛ دیسک‌های Sega CD با قالب CUE/BIN و CHD. ZIP از یک رام کارتریج پشتیبانی می‌کند. Sega CD به BIOS شخصی شما نیاز دارد.</string>
+    <string name="sega_32x_bios_file">%1$s · %2$d بایت · CRC32 %3$s</string>
+    <string name="sega_32x_bios_missing">فایل‌های BIOS 32X موجود نیستند یا نامعتبرند. تنظیمات را باز کنید، Sega 32X را انتخاب کنید و هر سه فایل BIOS را وارد کنید.</string>
+    <string name="sega_32x_bios_invalid">این فایل با BIOS 32X انتخاب‌شده مطابقت ندارد. اندازه و چک‌سام فایل را بررسی کنید.</string>
+    <string name="sega_32x_bios_slave">BIOS فرعی SH-2</string>
+    <string name="sega_32x_bios_master">BIOS اصلی SH-2</string>
+    <string name="sega_32x_bios_m68k">BIOS 68000</string>
+    <string name="sega_32x_bios_description">سه فایل BIOS 32X خود را وارد کنید. هر سه الزامی هستند و هر فایل پیش از نصب بررسی می‌شود.</string>
+    <string name="sega_32x_bios_title">BIOS Sega 32X</string>
+    <string name="formats_sega_body">رام‌های Mega Drive، 32X، Master System، Game Gear و SG-1000؛ دیسک‌های Sega CD با CUE/BIN و CHD. ZIP از یک رام کارتریج پشتیبانی می‌کند. Sega CD و 32X به فایل‌های BIOS خودتان نیاز دارند.</string>
     <string name="sega_region">منطقه</string>
     <string name="sega_timing">زمان‌بندی تصویر</string>
     <string name="sega_restart_required">پس از راه‌اندازی دوبارهٔ بازی اعمال می‌شود.</string>
@@ -2297,7 +2305,7 @@
     <string name="formats_sega_title">Sega</string>
     <string name="sega_ntsc">NTSC</string>
     <string name="sega_pal">PAL</string>
-    <string name="settings_about_jgenesis_source_desc">شبیه‌سازی Sega با مجوز GNU GPLv3. پیوند، کد اصلی را باز می‌کند؛ درخت کد EmuCoreH شامل یکپارچه‌سازی libretro است. مجوز و اطلاعات نسخه همراه برنامه است. BIOS سگا سی‌دی را کاربر فراهم می‌کند؛ میان‌افزار اصلی 32X همچنان تعبیه شده است.</string>
+    <string name="settings_about_jgenesis_source_desc">شبیه‌سازی Sega تحت GNU GPLv3. پیوند منبع اصلی را باز می‌کند؛ درخت منبع EmuCoreH شامل یکپارچه‌سازی libretro است. مجوز و فراداده نسخه همراه است. فایل‌های BIOS Sega CD و 32X باید توسط کاربر وارد شوند؛ هیچ firmware همراه نیست.</string>
     <string name="settings_about_jgenesis_source_link">مشاهدهٔ کد jgenesis در GitHub</string>
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>

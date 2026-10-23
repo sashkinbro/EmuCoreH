@@ -7,7 +7,7 @@ use crate::bootrom::M68kVectors;
 use crate::bus::debug::DebugSh2Bus;
 use crate::bus::{Sega32XBus, Sh2Bus};
 use crate::registers::Access;
-use crate::{GenesisVdp, WhichCpu, bootrom};
+use crate::{BootRoms, GenesisVdp, WhichCpu};
 use bincode::{Decode, Encode};
 use genesis_components::cartridge::Cartridge;
 use genesis_components::vdp::BorderSize;
@@ -67,7 +67,9 @@ impl Sega32X {
         timing_mode: TimingMode,
         cartridge: Option<Cartridge>,
         config: &GenesisEmulatorConfig,
+        boot_roms: BootRoms,
     ) -> Self {
+        let m68k_vectors = Box::new(boot_roms.vectors());
         Self {
             sh2_master: Sh2::new("Master".into()),
             sh2_slave: Sh2::new("Slave".into()),
@@ -76,11 +78,27 @@ impl Sega32X {
             master_cycles: 0,
             slave_cycles: 0,
             sh2_clock_multiplier: none_if_default_multiplier(config.sega_32x.sh2_clock_multiplier),
-            bus: Sega32XBus::new(timing_mode, cartridge, &config.sega_32x),
-            m68k_vectors: Box::new(bootrom::new_m68k_vectors()),
+            bus: Sega32XBus::new(timing_mode, cartridge, &config.sega_32x, boot_roms),
+            m68k_vectors,
             timing_mode,
             config: config.clone(),
         }
+    }
+
+    pub fn take_boot_roms(&mut self) -> BootRoms {
+        std::mem::take(&mut self.bus.boot_roms)
+    }
+
+    pub fn take_boot_roms_from(&mut self, other: &mut Self) {
+        let hint = [
+            self.m68k_vectors[0x70],
+            self.m68k_vectors[0x71],
+            self.m68k_vectors[0x72],
+            self.m68k_vectors[0x73],
+        ];
+        self.bus.boot_roms = other.take_boot_roms();
+        *self.m68k_vectors = self.bus.boot_roms.vectors();
+        self.m68k_vectors[0x70..0x74].copy_from_slice(&hint);
     }
 
     #[inline]

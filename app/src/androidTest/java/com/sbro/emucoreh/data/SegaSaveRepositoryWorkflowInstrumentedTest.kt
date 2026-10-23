@@ -17,7 +17,8 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /** Exercises the NativeApp slot API used by quicksave, repository listing and cold reload.
- * Every ROM/firmware byte is self-authored; all writes stay in one temporary QA directory.
+ * ROM fixtures are self-authored. 32X runs only when the device owner already installed firmware;
+ * all test writes stay in one temporary QA directory and installed firmware is never modified.
  */
 class SegaSaveRepositoryWorkflowInstrumentedTest {
     @Test fun allSixSystemsSaveListResolveAndReloadAcrossCoreSwitchAndFreshRepository() {
@@ -47,10 +48,24 @@ class SegaSaveRepositoryWorkflowInstrumentedTest {
             CoreRuntime.initialize(context)
             CoreRuntime.setDataRootOverride(runtime.path)
             CoreRuntime.launchCoreOptions = emptyMap()
-            val bios = File(SegaCdBios.directory(context), "bios_CD_U.bin")
+            val biosDirectory = Sega32XBios.directory(context)
+            val bios = File(biosDirectory, "bios_CD_U.bin")
             bios.parentFile!!.mkdirs()
             bios.writeBytes(genesisRom().copyOf(SegaCdBios.SIZE))
-            val games = EmulationPlatform.entries.filter { it.isSega }.map { platform ->
+            val firmwareSources = listOf(
+                File(app.filesDir, "jgenesis/system"),
+                File(app.filesDir, "qa-32x-bios")
+            )
+            Sega32XBios.Part.entries.forEach { part ->
+                val source = firmwareSources.map { File(it, part.fileName) }
+                    .firstOrNull { it.isFile && it.length() == part.size.toLong() }
+                if (source != null) source.copyTo(File(biosDirectory, part.fileName), overwrite = true)
+            }
+            val has32xBios = Sega32XBios.Part.entries.all { Sega32XBios.isInstalled(context, it) }
+            val platforms = EmulationPlatform.entries.filter {
+                it.isSega && (it != EmulationPlatform.SEGA_32X || has32xBios)
+            }
+            val games = platforms.map { platform ->
                 val source = when (platform) {
                     EmulationPlatform.SEGA_CD -> File(root, "source.cue").apply {
                         File(root, "source.bin").writeBytes(ByteArray(2048 * 16).apply {
@@ -87,11 +102,12 @@ class SegaSaveRepositoryWorkflowInstrumentedTest {
                     assertEquals(setOf(0, 10), repository.listEntries(game.path, game.title, game.serial).map { it.slot }.toSet())
                 }
             }
-            assertEquals("All systems retain independent slot namespaces", 12, repository.listEntries().size)
+            assertEquals("All systems retain independent slot namespaces", platforms.size * 2,
+                repository.listEntries().size)
             assertTrue(CoreRuntime.bridge.nativeSelectCore(0))
             val coldRepository = SaveStateRepository(context, states)
             val coldEntries = coldRepository.enrichGlobalEntries(coldRepository.listEntries(), games)
-            assertEquals(12, coldEntries.size)
+            assertEquals(platforms.size * 2, coldEntries.size)
             assertTrue(coldEntries.all { it.canLoad })
             games.forEach { game ->
                 assertEquals(setOf(0, 10), coldEntries.filter { it.gamePath == game.path }.map { it.slot }.toSet())

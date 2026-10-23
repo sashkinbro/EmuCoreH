@@ -59,7 +59,15 @@ class StringsLocalizationTest {
         "settings_keyboard_mouse_use_global",
         "settings_keyboard_mouse_use_global_desc",
         "settings_keyboard_mouse_source_keyboard",
-        "settings_keyboard_mouse_source_mouse"
+        "settings_keyboard_mouse_source_mouse",
+        "sega_32x_bios_title",
+        "sega_32x_bios_description",
+        "sega_32x_bios_m68k",
+        "sega_32x_bios_master",
+        "sega_32x_bios_slave",
+        "sega_32x_bios_invalid",
+        "sega_32x_bios_missing",
+        "sega_32x_bios_file"
     )
 
     @Test

@@ -2262,7 +2262,15 @@
     <string name="sega_bios_installed">BIOS yüklendi</string>
     <string name="sega_bios_invalid">Tam olarak 128 KiB boyutunda bir BIOS dosyası seçin.</string>
     <string name="sega_bios_missing">Sega CD BIOS eksik. Ayarları açın, Sega CD seçin ve disk bölgesine uygun BIOS dosyasını içe aktarın.</string>
-    <string name="formats_sega_body">Mega Drive, 32X, Master System, Game Gear ve SG-1000 ROM dosyaları; Sega CD CUE/BIN ve CHD diskleri. ZIP tek bir kartuş ROM dosyasını destekler. Sega CD kendi BIOS dosyanızı gerektirir.</string>
+    <string name="sega_32x_bios_file">%1$s · %2$d bayt · CRC32 %3$s</string>
+    <string name="sega_32x_bios_missing">32X BIOS dosyaları eksik veya geçersiz. Ayarları açın, Sega 32X’i seçin ve üç BIOS dosyasını da içe aktarın.</string>
+    <string name="sega_32x_bios_invalid">Bu dosya seçilen 32X BIOS ile eşleşmiyor. Dosya boyutunu ve sağlama toplamını kontrol edin.</string>
+    <string name="sega_32x_bios_slave">İkincil SH-2 BIOS</string>
+    <string name="sega_32x_bios_master">Ana SH-2 BIOS</string>
+    <string name="sega_32x_bios_m68k">68000 BIOS</string>
+    <string name="sega_32x_bios_description">Kendi üç 32X BIOS dosyanızı içe aktarın. Üçü de gereklidir ve her dosya kurulumdan önce doğrulanır.</string>
+    <string name="sega_32x_bios_title">Sega 32X BIOS</string>
+    <string name="formats_sega_body">Mega Drive, 32X, Master System, Game Gear ve SG-1000 ROM’ları; Sega CD CUE/BIN ve CHD diskleri. ZIP bir kartuş ROM’unu destekler. Sega CD ve 32X kendi BIOS dosyalarınızı gerektirir.</string>
     <string name="sega_region">Bölge</string>
     <string name="sega_timing">Video zamanlaması</string>
     <string name="sega_restart_required">Oyunu yeniden başlattıktan sonra uygulanır.</string>
@@ -2282,7 +2290,7 @@
     <string name="formats_sega_title">Sega</string>
     <string name="sega_ntsc">NTSC</string>
     <string name="sega_pal">PAL</string>
-    <string name="settings_about_jgenesis_source_desc">GNU GPLv3 altında Sega emülasyonu. Bağlantı özgün kaynak kodunu açar; EmuCoreH kaynak ağacı libretro entegrasyonunu içerir. Lisans ve sürüm bilgileri paketlenmiştir. Sega CD BIOS dosyasını kullanıcı sağlar; özgün 32X ürün yazılımı gömülü kalır.</string>
+    <string name="settings_about_jgenesis_source_desc">GNU GPLv3 altında Sega emülasyonu. Bağlantı özgün kaynak kodunu açar; EmuCoreH kaynak ağacı libretro entegrasyonunu içerir. Lisans ve sürüm bilgileri dahildir. Sega CD ve 32X BIOS dosyaları kullanıcı tarafından içe aktarılmalıdır; hiçbir aygıt yazılımı dahil değildir.</string>
     <string name="settings_about_jgenesis_source_link">jgenesis kaynak kodunu GitHub üzerinde görüntüle</string>
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>

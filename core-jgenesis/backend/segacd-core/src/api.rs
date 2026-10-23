@@ -30,6 +30,8 @@ const BIOS_LEN: usize = memory::BIOS_LEN;
 
 #[derive(Debug, Error)]
 pub enum SegaCdLoadError {
+    #[error("SEGA_32X_BIOS_REQUIRED: Explicit 32X boot ROMs are required")]
+    Missing32xBootRoms,
     #[error("BIOS is required for Sega CD emulation")]
     MissingBios,
     #[error("BIOS must be {BIOS_LEN} bytes, was {bios_len} bytes")]

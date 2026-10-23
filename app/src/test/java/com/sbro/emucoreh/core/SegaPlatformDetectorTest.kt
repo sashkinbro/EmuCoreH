@@ -35,12 +35,11 @@ class SegaPlatformDetectorTest {
         }
         assertEquals(EmulationPlatform.GENESIS, SegaPlatformDetector.detectHeader("game.bin", bytes))
     }
-    @Test fun thirtyTwoXSecurityProgramRecognizesGenericGenesisHeader() {
-        val bootRom = listOf(File("../core-jgenesis/backend/s32x-core/src/sh2_master_boot_rom.bin"),
-            File("core-jgenesis/backend/s32x-core/src/sh2_master_boot_rom.bin")).first { it.isFile }.readBytes()
+    @Test fun inventedSecurityProgramDoesNotMisclassifyGenericGenesisHeader() {
         val bytes = header(0x100, "SEGA GENESIS")
-        bootRom.copyOfRange(0x36c, 0x76c).copyInto(bytes, 0x400)
-        assertEquals(EmulationPlatform.SEGA_32X, SegaPlatformDetector.detectHeader("game.bin", bytes))
+        repeat(0x400) { bytes[0x400 + it] = (it * 37 + 11).toByte() }
+        assertEquals(EmulationPlatform.GENESIS, SegaPlatformDetector.detectHeader("game.bin", bytes))
+        assertEquals(EmulationPlatform.SEGA_32X, SegaPlatformDetector.detectHeader("game.32x", bytes))
     }
     @Test fun smsHeaderRegionDistinguishesGameGear() {
         val bytes = header(0x7ff0, "TMR SEGA").copyOf(32768)

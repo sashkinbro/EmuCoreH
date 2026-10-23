@@ -375,10 +375,7 @@ fn guess_genesis_console_raw_file(path: &Path) -> io::Result<Console> {
 }
 
 fn guess_genesis_console(header: &[u8]) -> Console {
-    let start = s32x_core::SECURITY_PROGRAM_CARTRIDGE_ADDR;
-    let end = start + s32x_core::SECURITY_PROGRAM_LEN;
-    let contains_s32x_security_program =
-        header.len() >= end && &header[start..end] == s32x_core::security_program();
+    let contains_s32x_security_program = s32x_core::has_security_program(header);
 
     // 'C' in the devices section indicates Sega CD support: https://plutiedev.com/rom-header#devices
     // Exclude J-Cart games (have device string 'OJKRPTBVFCA')

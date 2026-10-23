@@ -91,11 +91,37 @@ impl GenesisEmulator {
     /// Propagates any errors encountered while initializing Sega CD (if Sega CD is enabled).
     pub fn create<S: SaveWriter>(
         hardware: GenesisHardware,
+        cartridge_rom: Option<Vec<u8>>,
+        sega_cd_bios_rom: Option<Vec<u8>>,
+        disc: Option<CdRom>,
+        config: GenesisEmulatorConfig,
+        save_writer: &mut S,
+    ) -> SegaCdLoadResult<Self> {
+        Self::create_with_32x_boot_roms(
+            hardware,
+            cartridge_rom,
+            sega_cd_bios_rom,
+            disc,
+            config,
+            save_writer,
+            None,
+        )
+    }
+
+    /// Create an instance with explicitly supplied 32X firmware (required for 32X/CD32X).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SegaCdLoadError::Missing32xBootRoms`] when 32X hardware is requested without
+    /// firmware, and propagates any errors encountered while initializing Sega CD.
+    pub fn create_with_32x_boot_roms<S: SaveWriter>(
+        hardware: GenesisHardware,
         mut cartridge_rom: Option<Vec<u8>>,
         sega_cd_bios_rom: Option<Vec<u8>>,
         mut disc: Option<CdRom>,
         config: GenesisEmulatorConfig,
         save_writer: &mut S,
+        boot_roms: Option<s32x_core::BootRoms>,
     ) -> SegaCdLoadResult<Self> {
         log::info!("Running with hardware {hardware}");
 
@@ -153,7 +179,12 @@ impl GenesisEmulator {
         };
 
         // If 32X is present, let 32X own the cartridge instead of GenesisBus
-        let sega_32x = s32x_present.then(|| Sega32X::new(timing_mode, cartridge.take(), &config));
+        let sega_32x = if s32x_present {
+            let boot_roms = boot_roms.ok_or(SegaCdLoadError::Missing32xBootRoms)?;
+            Some(Sega32X::new(timing_mode, cartridge.take(), &config, boot_roms))
+        } else {
+            None
+        };
 
         let bus = GenesisBus::new(timing_mode, cartridge, sega_cd, sega_32x, &config);
 
@@ -466,13 +497,15 @@ impl EmulatorTrait for GenesisEmulator {
         let sega_cd_bios =
             sega_cd_bios.map(|bios| bios.into_iter().flat_map(u16::to_be_bytes).collect());
 
-        *self = GenesisEmulator::create(
+        let boot_roms = self.bus.sega_32x.as_mut().map(Sega32X::take_boot_roms);
+        *self = GenesisEmulator::create_with_32x_boot_roms(
             self.hardware,
             cartridge_rom,
             sega_cd_bios,
             disc,
             self.config.clone(),
             save_writer,
+            boot_roms,
         )
         .expect("Hard reset should not error");
     }
@@ -490,6 +523,11 @@ impl EmulatorTrait for GenesisEmulator {
             state_sega_cd.take_bios_and_disc_from(self_sega_cd);
         }
 
+        if let Some(state_32x) = &mut state.bus.sega_32x
+            && let Some(self_32x) = &mut self.bus.sega_32x
+        {
+            state_32x.take_boot_roms_from(self_32x);
+        }
         *self = state;
     }
 

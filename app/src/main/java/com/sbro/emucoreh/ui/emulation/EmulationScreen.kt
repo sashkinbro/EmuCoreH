@@ -1293,6 +1293,7 @@ fun EmulationScreen(
                 "sega_ds_collection_unsupported" -> stringResource(R.string.sega_ds_collection_unsupported)
                 "sega_aleste_collection_unsupported" -> stringResource(R.string.sega_aleste_collection_unsupported)
                 "sega_bios_missing" -> stringResource(R.string.sega_bios_missing)
+                "sega_32x_bios_missing" -> stringResource(R.string.sega_32x_bios_missing)
                 "bios_missing" -> stringResource(R.string.emulation_bios_missing)
                 "launch_failed" -> stringResource(R.string.emulation_launch_failed)
                 "launch_path_error" -> stringResource(R.string.emulation_launch_path_error)

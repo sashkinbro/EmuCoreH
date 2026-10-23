@@ -10,6 +10,7 @@ save flush. All modifications remain in the source tree under the upstream GPLv3
 Cargo.lock records exact third-party dependency versions; their original license
 notices remain in the corresponding dependency sources distributed by Cargo.
 
-No Sega CD BIOS is included. Upstream s32x-core contains 32X boot/security ROM
-data; public distribution requires resolving the firmware policy documented in
-the application license audit. This integration does not claim release clearance.
+No Sega CD or 32X BIOS/firmware is included. The local s32x-core patch removes
+the embedded 32X boot/security ROM data and requires validated user-supplied
+firmware at runtime; the security-program detector still verifies cartridge
+data by CRC32. This integration does not claim release clearance.

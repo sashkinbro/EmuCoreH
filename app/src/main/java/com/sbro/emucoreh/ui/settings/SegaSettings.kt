@@ -73,6 +73,7 @@ internal fun SegaSettingsPanel(platform: EmulationPlatform, installBios: Boolean
             R.string.sega_two_button_controls else R.string.sega_six_button_controls),
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (installBios && platform == EmulationPlatform.SEGA_CD) SegaCdBiosSettings()
+        if (installBios && platform == EmulationPlatform.SEGA_32X) Sega32XBiosSettings()
     }
 }
 

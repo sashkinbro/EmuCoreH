@@ -2261,7 +2261,15 @@
     <string name="sega_bios_installed">BIOS導入済み</string>
     <string name="sega_bios_invalid">サイズが正確に128 KiBのBIOSファイルを選択してください。</string>
     <string name="sega_bios_missing">Sega CD BIOSがありません。設定でSega CDを選択し、ディスクの地域に対応するBIOSを読み込んでください。</string>
-    <string name="formats_sega_body">メガドライブ、32X、マスターシステム、ゲームギア、SG-1000のROM、Sega CDのCUE/BIN・CHDディスクに対応。ZIPにはカートリッジROMを1つ格納できます。Sega CDにはご自身のBIOSが必要です。</string>
+    <string name="sega_32x_bios_file">%1$s · %2$d バイト · CRC32 %3$s</string>
+    <string name="sega_32x_bios_missing">32X BIOSファイルが見つからないか無効です。設定を開いてSega 32Xを選択し、3つのBIOSファイルをすべてインポートしてください。</string>
+    <string name="sega_32x_bios_invalid">このファイルは選択した32X BIOSと一致しません。サイズとチェックサムを確認してください。</string>
+    <string name="sega_32x_bios_slave">スレーブSH-2 BIOS</string>
+    <string name="sega_32x_bios_master">マスターSH-2 BIOS</string>
+    <string name="sega_32x_bios_m68k">68000 BIOS</string>
+    <string name="sega_32x_bios_description">32X BIOSファイルを3つインポートしてください。3つすべてが必要で、各ファイルはインストール前に検証されます。</string>
+    <string name="sega_32x_bios_title">Sega 32X BIOS</string>
+    <string name="formats_sega_body">Mega Drive、32X、Master System、Game Gear、SG-1000のROM。Sega CDのCUE/BINおよびCHDディスク。ZIPはカートリッジROM 1つに対応します。Sega CDと32Xには独自のBIOSファイルが必要です。</string>
     <string name="sega_region">地域</string>
     <string name="sega_timing">映像タイミング</string>
     <string name="sega_restart_required">ゲームの再起動後に反映されます。</string>
@@ -2281,7 +2289,7 @@
     <string name="formats_sega_title">Sega</string>
     <string name="sega_ntsc">NTSC</string>
     <string name="sega_pal">PAL</string>
-    <string name="settings_about_jgenesis_source_desc">GNU GPLv3に基づくSegaエミュレーションです。リンク先は上流のソースで、EmuCoreHのソースツリーにはlibretro連携が含まれます。ライセンスとバージョン情報を同梱しています。Sega CD BIOSはユーザーが用意し、上流の32Xファームウェアは組み込まれたままです。</string>
+    <string name="settings_about_jgenesis_source_desc">SegaエミュレーションはGNU GPLv3に基づきます。リンクはアップストリームのソースを開きます。EmuCoreHのソースツリーにはlibretro統合が含まれます。ライセンスとバージョン情報が同梱されています。Sega CDおよび32XのBIOSファイルはユーザーがインポートする必要があり、ファームウェアは含まれていません。</string>
     <string name="settings_about_jgenesis_source_link">GitHubでjgenesisのソースを表示</string>
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>

@@ -31,7 +31,7 @@ The project is under active development. Use your own legally obtained games. Fl
 
 ## What This Repository Contains
 
-This repository contains the Android application, Kotlin UI, C++ JNI frontend, vendored Flycast and jgenesis sources, and their Android build modules. Games, user save data, account credentials, Dreamcast BIOS dumps, and Sega CD BIOS dumps are not included. Upstream jgenesis includes 32X startup ROM data; see its [Android integration notes](core-jgenesis/README-ANDROID.md).
+This repository contains the Android application, Kotlin UI, C++ JNI frontend, vendored Flycast and jgenesis sources, and their Android build modules. Games, user save data, account credentials, Dreamcast BIOS dumps, and Sega CD / 32X BIOS dumps are not included. 32X startup firmware is not distributed; see the [Android integration notes](core-jgenesis/README-ANDROID.md).
 
 ## Tech Stack
 
@@ -125,7 +125,9 @@ Unknown disc/archive formats retain the existing Flycast route. CUE track files 
 
 Dreamcast can boot through Flycast HLE without an installed BIOS. Arcade ROM sets may require their matching firmware.
 
-Sega CD requires your own **128 KiB BIOS** for the disc region. In Settings, select Sega CD, open Library, and import the BIOS into the matching US, Europe, or Japan slot. The app uses `bios_CD_U.bin`, `bios_CD_E.bin`, and `bios_CD_J.bin` internally. Missing regional firmware produces a BIOS message instead of starting an unrelated system.
+Sega CD requires your own **128 KiB BIOS** for the disc region. In Settings, select Sega CD, open Library, and import the BIOS into the matching US, Europe, or Japan slot. The app uses `bios_CD_U.bin`, `bios_CD_E.bin`, and `bios_CD_J.bin` internally.
+
+Sega 32X requires your own three firmware files: `32X_G_BIOS.bin` (256 bytes), `32X_M_BIOS.bin` (2048 bytes), and `32X_S_BIOS.bin` (1024 bytes). In Settings, select Sega 32X and import each file; exact size and CRC32 role validation is applied before installation. Missing or invalid firmware produces an actionable BIOS message instead of starting an unrelated system.
 
 ### Sega Controls and Settings
 
@@ -135,7 +137,7 @@ Each Sega system has independent default touch and gamepad profiles. The shared 
 
 ## Notes
 
-- Game images, user save data, account credentials, and user-supplied Dreamcast/Sega CD BIOS dumps are not distributed with this project.
+- Game images, user save data, account credentials, and user-supplied Dreamcast, Sega CD, and 32X BIOS dumps are not distributed with this project.
 - Compatibility, performance, and graphics behavior vary by game, device, renderer, and driver stack.
 
 ## Credits and license

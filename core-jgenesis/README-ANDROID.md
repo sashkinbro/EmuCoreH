@@ -6,9 +6,10 @@ Vendored jgenesis v0.14.1, upstream commit
 The original nested Git metadata is preserved locally at
 `../build/jgenesis-upstream-git-20261023`, outside the vendored source directory.
 
-`frontend/jgenesis-libretro` adds a separate libretro cdylib. The only backend
-patches expose Genesis pending battery-save persistence and add the equivalent
-SMS/GG shutdown flush. Existing Flycast sources and build are independent.
+`frontend/jgenesis-libretro` adds a separate libretro cdylib. Backend patches
+expose Genesis pending battery-save persistence, add the equivalent SMS/GG
+shutdown flush, and remove embedded 32X firmware in favor of explicit
+user-supplied boot ROMs. Existing Flycast sources and build are independent.
 
 ## Build
 
@@ -73,10 +74,17 @@ Sega CD BIOS is user supplied: exactly 131072 bytes, named `bios_CD_U.bin`,
 insensitive; additional regional aliases are accepted. A mismatched regional
 BIOS is not substituted silently. Optional SMS/GG BIOS is not used.
 
-Upstream 32X boot/security ROM data remains present. Resolving firmware
-distribution policy and GPL application/source distribution obligations is a
-public-release prerequisite. No public-release or retail-game compatibility
-claim is implied by synthetic smoke tests. Upstream CD 32X emulation is partial.
+32X firmware is user supplied and is never embedded or backed up by the app.
+The system directory must contain `32X_G_BIOS.bin` (256 bytes),
+`32X_M_BIOS.bin` (2048 bytes), and `32X_S_BIOS.bin` (1024 bytes), each with the
+canonical CRC32 for its role. The core requires all three before creating 32X or
+CD 32X hardware and reports `SEGA_32X_BIOS_REQUIRED` with the failing role when
+any file is missing, oversized, truncated, or mismatched. The Android importer
+validates the same size and CRC32 before atomically replacing its private copy.
+No firmware bytes are written into save states, and hard reset / state loading
+retain the active per-instance firmware. No public-release or retail-game
+compatibility claim is implied by synthetic smoke tests. Upstream CD 32X
+emulation is partial.
 
 ## ABI and runtime
 
@@ -132,3 +140,6 @@ lookup, decoded disc classification, atomic save replacement and shutdown RAM
 flush. Retail Sega CD / 32X boot, CDDA/PCM/PWM correctness, disc changes during
 gameplay, regional games and Android performance still require device/content
 validation. No copyrighted retail game or Sega CD BIOS is needed by the suite.
+The 32X boot test also covers the actionable missing-firmware path; when
+`JGENESIS_TEST_32X_BIOS_DIR` (or the local `build/qa-32x-bios` QA directory) is
+present, it additionally boots 32X with user-supplied firmware.

@@ -2270,7 +2270,15 @@
     <string name="sega_bios_installed">تم تثبيت BIOS</string>
     <string name="sega_bios_invalid">اختر ملف BIOS بحجم 128 KiB بالضبط.</string>
     <string name="sega_bios_missing">ملف BIOS لـ Sega CD مفقود. افتح الإعدادات، واختر Sega CD، ثم استورد BIOS لمنطقة القرص.</string>
-    <string name="formats_sega_body">ألعاب Mega Drive و32X وMaster System وGame Gear وSG-1000؛ وأقراص Sega CD بصيغتي CUE/BIN وCHD. يدعم ZIP لعبة خرطوشة واحدة. يتطلب Sega CD ملف BIOS الخاص بك.</string>
+    <string name="sega_32x_bios_file">%1$s · %2$d بايت · CRC32 %3$s</string>
+    <string name="sega_32x_bios_missing">ملفات BIOS الخاصة بـ Sega 32X مفقودة أو غير صالحة. افتح الإعدادات، واختر Sega 32X، ثم استورد ملفات BIOS الثلاثة.</string>
+    <string name="sega_32x_bios_invalid">هذا الملف لا يطابق BIOS Sega 32X المحدد. تحقق من حجم الملف والمجموع الاختباري.</string>
+    <string name="sega_32x_bios_slave">BIOS الثانوي لـ SH-2</string>
+    <string name="sega_32x_bios_master">BIOS الرئيسي لـ SH-2</string>
+    <string name="sega_32x_bios_m68k">BIOS 68000</string>
+    <string name="sega_32x_bios_description">استورد ملفات BIOS الثلاثة الخاصة بـ Sega 32X. جميعها مطلوبة ويتم التحقق من كل ملف قبل التثبيت.</string>
+    <string name="sega_32x_bios_title">BIOS Sega 32X</string>
+    <string name="formats_sega_body">رومات Mega Drive و32X وMaster System وGame Gear وSG-1000؛ أقراص Sega CD بصيغ CUE/BIN وCHD. يدعم ZIP روم خرطوشة واحدة. تتطلب Sega CD و32X ملفات BIOS خاصة بك.</string>
     <string name="sega_region">المنطقة</string>
     <string name="sega_timing">توقيت الفيديو</string>
     <string name="sega_restart_required">يسري بعد إعادة تشغيل اللعبة.</string>
@@ -2290,7 +2298,7 @@
     <string name="formats_sega_title">Sega</string>
     <string name="sega_ntsc">NTSC</string>
     <string name="sega_pal">PAL</string>
-    <string name="settings_about_jgenesis_source_desc">محاكاة Sega بترخيص GNU GPLv3. يفتح الرابط المصدر الأصلي؛ وتتضمن شجرة مصدر EmuCoreH تكامل libretro. يُرفق الترخيص وبيانات الإصدار. يوفر المستخدم BIOS لـ Sega CD؛ وتبقى برمجيات 32X الثابتة الأصلية مضمّنة.</string>
+    <string name="settings_about_jgenesis_source_desc">محاكاة Sega بموجب GNU GPLv3. يفتح الرابط المصدر الأصلي؛ وتحتوي شجرة مصدر EmuCoreH على تكامل libretro. ترافق الترخيص وبيانات الإصدار. يجب على المستخدم استيراد ملفات BIOS الخاصة بـ Sega CD و32X؛ لا يتم تضمين أي برنامج ثابت.</string>
     <string name="settings_about_jgenesis_source_link">عرض مصدر jgenesis على GitHub</string>
     <string name="settings_about_jgenesis_source">jgenesis 0.14.1 (GNU GPLv3)</string>
     <string name="settings_about_jgenesis_source_url">https://github.com/jsgroth/jgenesis/tree/v0.14.1</string>

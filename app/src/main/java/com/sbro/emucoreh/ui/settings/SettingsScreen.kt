@@ -2035,6 +2035,8 @@ private fun SettingsContent(
                         )
                         } else if (platform == EmulationPlatform.SEGA_CD) {
                             SegaCdBiosSettings()
+                        } else if (platform == EmulationPlatform.SEGA_32X) {
+                            Sega32XBiosSettings()
                         }
                     }
 
