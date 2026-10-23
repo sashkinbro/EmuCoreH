@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
+import java.security.MessageDigest
 
 data class BiosInstallResult(
     val dreamcast: Int = 0,
@@ -26,6 +27,30 @@ object BiosImport {
         DreamcastBios.hasAnyBios(flycastSystemDir(context)) ||
             SegaCdBios.Region.entries.any { SegaCdBios.isInstalled(context, it) } ||
             Sega32XBios.Part.entries.any { Sega32XBios.isInstalled(context, it) }
+
+    /** Re-import persisted user selections after upgrades and when dumps are added to a folder. */
+    @Synchronized
+    fun restoreSelections(context: Context, paths: List<String>, force: Boolean = false) {
+        val selections = paths.distinct().filter(String::isNotBlank)
+        if (selections.isEmpty()) return
+        val migration = MessageDigest.getInstance("SHA-256")
+            .digest(("header-import-v1\u0000" + selections.sorted().joinToString("\u0000")).toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        val preferences = context.getSharedPreferences("bios_import_migrations", Context.MODE_PRIVATE)
+        if (!force && preferences.getString("completed", null) == migration) return
+        var accessible = true
+        selections.forEach { path ->
+            val uri = Uri.parse(path)
+            val canRead = runCatching {
+                if (DocumentsContract.isTreeUri(uri)) DocumentFile.fromTreeUri(context, uri)?.canRead() == true
+                else context.contentResolver.openFileDescriptor(uri, "r")?.use { true } == true
+            }.getOrDefault(false)
+            if (canRead) runCatching { installSelection(context, uri) } else accessible = false
+        }
+        // An unavailable provider must be retried; a completed migration must not
+        // recursively copy the same selected firmware on every cold launch.
+        if (accessible) preferences.edit().putString("completed", migration).apply()
+    }
 
     fun installSelection(context: Context, uri: Uri): BiosInstallResult =
         installSelection(
@@ -110,6 +135,10 @@ object BiosImport {
         // Identify them by their unique sizes and verify the CRC before use.
         if (Sega32XBios.installDetectedTo(context, uri, size, File(segaSystemDir)) != null) {
             counts.sega32x++
+            return
+        }
+        if (SegaCdBios.installDetectedTo(context, uri, size, File(segaSystemDir)) != null) {
+            counts.segaCd++
             return
         }
         if (DreamcastBios.supportedBiosTargetName(name, size) == null) return

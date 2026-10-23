@@ -20,7 +20,8 @@ smsgg-config = { workspace = true }
 smsgg-core = { workspace = true }
 
 bincode = { workspace = true }
-log = { workspace = true }
+# Keep instruction-level trace/debug checks out of the Android release hot paths.
+log = { workspace = true, features = ["release_max_level_info"] }
 zip = { workspace = true }
 
 [lints]

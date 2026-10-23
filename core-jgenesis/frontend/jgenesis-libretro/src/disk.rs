@@ -202,21 +202,39 @@ pub fn probe(path: &Path) -> i32 {
             std::fs::File::open(path).ok()?.read_exact(&mut magic).ok()?;
             (magic == *b"MComprHD").then_some(CdRomFileFormat::Chd)
         })?;
-        let mut disc = CdRom::open(path, format).ok()?;
-        if disc.cue().track(1).track_type != cdrom::cue::TrackType::Data {
-            return None;
-        }
-        let mut sector = [0; cdrom::BYTES_PER_SECTOR as usize];
-        disc.read_sector(1, CdTime::SECTOR_0_START, &mut sector).ok()?;
-        let header = &sector[16..32];
-        if !header.starts_with(b"SEGADISCSYSTEM") && !header.starts_with(b"SEGABOOT") {
-            return None;
-        }
-        Some(if segacd_core::is_cd_32x_disc(&mut disc) { 2 } else { 1 })
+        classify_disc(CdRom::open(path, format).ok()?)
     })
     .ok()
     .flatten()
     .unwrap_or(0)
+}
+
+fn classify_disc(mut disc: CdRom) -> Option<i32> {
+    if disc.cue().track(1).track_type != cdrom::cue::TrackType::Data { return None; }
+    let mut sector = [0; cdrom::BYTES_PER_SECTOR as usize];
+    disc.read_sector(1, CdTime::SECTOR_0_START, &mut sector).ok()?;
+    let header = &sector[16..32];
+    if !header.starts_with(b"SEGADISCSYSTEM") && !header.starts_with(b"SEGABOOT") { return None; }
+    Some(if segacd_core::is_cd_32x_disc(&mut disc) { 2 } else { 1 })
+}
+
+/// Borrow the provider grant by duplicating the descriptor, never reopening its path.
+#[unsafe(no_mangle)]
+pub extern "C" fn jgenesis_probe_disc_fd(fd: i32) -> i32 {
+    #[cfg(unix)]
+    {
+        use std::os::fd::BorrowedFd;
+        use std::io::{Seek, SeekFrom};
+        if fd < 0 { return 0; }
+        return std::panic::catch_unwind(|| {
+            let owned = unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned().ok()?;
+            let mut file = std::fs::File::from(owned);
+            file.seek(SeekFrom::Start(0)).ok()?;
+            classify_disc(CdRom::open_chd_file(file).ok()?)
+        }).ok().flatten().unwrap_or(0);
+    }
+    #[cfg(not(unix))]
+    { let _ = fd; 0 }
 }
 
 /// Read-only content classification; does not initialize or modify the active core.

@@ -6,6 +6,7 @@
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="file" path="jgenesis/system/" />
+        <exclude domain="sharedpref" path="bios_import_migrations.xml" />
         <!-- A loopback proxy is device-local transient state and must never migrate. -->
         <exclude domain="sharedpref" path="retroachievements_host_override.xml" />
         <!-- TODO: Use <include> and <exclude> to control what is backed up.
@@ -15,6 +16,7 @@
     </cloud-backup>
     <device-transfer>
         <exclude domain="file" path="jgenesis/system/" />
+        <exclude domain="sharedpref" path="bios_import_migrations.xml" />
         <exclude domain="sharedpref" path="retroachievements_host_override.xml" />
     </device-transfer>
 </data-extraction-rules>

@@ -122,6 +122,12 @@ impl CdRom {
             path: chd_path.display().to_string(),
             source,
         })?;
+        Self::open_chd_file(file)
+    }
+
+    /// Open an already-authorized file (for example an Android SAF descriptor).
+    /// Reopening its /proc path can lose the provider's scoped-storage grant.
+    pub fn open_chd_file(file: File) -> CdRomResult<Self> {
         let (chd_file, cue_sheet) = ChdFile::open(BufReader::new(file))?;
 
         Ok(Self { cue_sheet, reader: CdRomReader::ChdFs(chd_file) })

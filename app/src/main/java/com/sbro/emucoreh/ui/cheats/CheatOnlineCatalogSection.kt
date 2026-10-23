@@ -93,7 +93,8 @@ internal fun selectRemoteCheatPacks(
     index: IndexedRemoteCheatCatalog,
     serial: String?,
     crc: String?,
-    gameTitle: String?
+    gameTitle: String?,
+    platform: String = "FLYCAST"
 ): RemoteCheatSelection {
     val normalizedSerial = serial?.trim()?.uppercase(Locale.US)?.takeIf(String::isNotBlank)
     val normalizedCrc = crc?.trim()?.uppercase(Locale.US)?.takeIf(String::isNotBlank)
@@ -110,15 +111,22 @@ internal fun selectRemoteCheatPacks(
             }
     }
     if (titleKey.isNotBlank()) {
-        matching += index.byTitle[titleKey].orEmpty().filter { it.serials.isEmpty() }
+        matching += index.byTitle[titleKey].orEmpty().filter {
+            it.serials.isEmpty() && (platform == "FLYCAST" ||
+                it.title.segaCheatRevisionKey() == gameTitle.orEmpty().segaCheatRevisionKey())
+        }
     }
     val titlePacks = if (titleKey.isNotBlank()) index.byTitle[titleKey].orEmpty() else emptyList()
     val ordered = compareBy<RemoteCheatPack>({ it.title.lowercase(Locale.US) }, { it.id })
     return RemoteCheatSelection(
-        matchingPacks = matching.sortedWith(ordered),
-        otherVersionPacks = titlePacks.filterNot(matching::contains).sortedWith(ordered)
+        matchingPacks = matching.filter { it.platform == platform }.sortedWith(ordered),
+        otherVersionPacks = titlePacks.filter { it.platform == platform }.filterNot(matching::contains).sortedWith(ordered)
     )
 }
+
+/** Region/revision markers matter for Sega codes; never auto-install a different revision. */
+private fun String.segaCheatRevisionKey(): String = lowercase(Locale.ROOT)
+    .replace('_', ' ').replace(Regex("[^a-z0-9]"), "")
 
 @Composable
 internal fun CheatOnlineCatalogSection(
@@ -196,7 +204,10 @@ internal fun CheatOnlineCatalogSection(
         catalogIndex = built
         indexedPacks = packs
     }
-    val selection = remember(catalogIndex, serial, crc, selectedGame?.title) {
+    val cheatPlatform = com.sbro.emucoreh.core.EmulationPlatform.fromName(selectedGame?.platform)
+        ?: selectedGame?.let { com.sbro.emucoreh.core.SegaPlatformDetector.detectName(it.fileName) }
+    val catalogPlatform = cheatPlatform?.takeIf { it.isSega }?.name ?: "FLYCAST"
+    val selection = remember(catalogIndex, serial, crc, selectedGame?.title, catalogPlatform) {
         val index = catalogIndex
         if (index == null) {
             RemoteCheatSelection(emptyList(), emptyList())
@@ -205,7 +216,9 @@ internal fun CheatOnlineCatalogSection(
                 index = index,
                 serial = serial,
                 crc = crc,
-                gameTitle = selectedGame?.title
+                gameTitle = if (catalogPlatform == "FLYCAST") selectedGame?.title
+                    else selectedGame?.fileName?.substringBeforeLast('.'),
+                platform = catalogPlatform
             )
         }
     }

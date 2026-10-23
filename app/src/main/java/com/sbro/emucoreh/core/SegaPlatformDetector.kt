@@ -51,11 +51,17 @@ object SegaPlatformDetector {
         if (ext in setOf("gdi", "cdi", "iso", "7z", "dat", "lst")) return EmulationPlatform.DREAMCAST
         if (ext == "chd") {
             DocumentPathResolver.resolveFilePath(context, path)?.let { direct ->
-                if (!direct.startsWith("content://") && File(direct).isFile) return detectFile(File(direct))
+                val file = File(direct)
+                // Scoped storage may expose file metadata while denying direct
+                // reads. A SAF grant still authorizes the provider descriptor.
+                if (!direct.startsWith("content://") && file.isFile && file.canRead()) {
+                    val detected = detectFile(file)
+                    if (detected.isSega) return detected
+                }
             }
             val probe = runCatching {
                 context.contentResolver.openFileDescriptor(Uri.parse(path), "r")?.use {
-                    NativeCoreBridge().probeSegaDisc("/proc/self/fd/${it.fd}")
+                    NativeCoreBridge().probeSegaDiscDescriptor(it.fd)
                 } ?: 0
             }.getOrDefault(0)
             if (probe > 0) return EmulationPlatform.SEGA_CD

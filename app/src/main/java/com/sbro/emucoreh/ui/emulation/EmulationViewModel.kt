@@ -1101,6 +1101,19 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 configureTouchPlatform(if (bootToBios || path.isNullOrBlank()) EmulationPlatform.DREAMCAST
                     else com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path))
                 val config = loadLaunchConfig()
+                if (currentTouchPlatform == EmulationPlatform.SEGA_CD ||
+                    currentTouchPlatform == EmulationPlatform.SEGA_32X) {
+                    com.sbro.emucoreh.core.BiosImport.restoreSelections(
+                        getApplication(), preferences.biosPaths.first(),
+                        force = if (currentTouchPlatform == EmulationPlatform.SEGA_32X)
+                            com.sbro.emucoreh.core.Sega32XBios.Part.entries.any {
+                                !com.sbro.emucoreh.core.Sega32XBios.isInstalled(getApplication(), it)
+                            }
+                        else com.sbro.emucoreh.core.SegaCdBios.Region.entries.none {
+                            com.sbro.emucoreh.core.SegaCdBios.isInstalled(getApplication(), it)
+                        }
+                    )
+                }
                 val renderer = rendererOverride ?: config.renderer
 
                 // Flycast boots without a firmware dump when no BIOS is
@@ -1217,9 +1230,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                             ?: safePath.takeIf { it.isNotBlank() }?.let(perGameSettingsRepository::get)
                         )?.coreOptions.orEmpty()
                         .filterKeys { !FlycastCoreOptions.isManagedKey(it) }
-                    if (!com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), safePath).isSega) {
-                        refreshCurrentGameCheats(metadata)
-                    }
+                    refreshCurrentGameCheats(metadata)
                     _uiState.value = _uiState.value.copy(
                         currentGameTitle = currentGameTitle,
                         currentGameSubtitle = currentGameSubtitle(),
@@ -2321,8 +2332,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch(Dispatchers.IO) {
             val path = currentGamePath
             val metadata = path?.takeIf { it.isNotBlank() }?.let { EmulatorBridge.getGameMetadata(it) }
-            val learned = learnedSerialForCurrentGame()
-            val serial = currentGameSerial.takeIf { it.isNotBlank() }
+            val learned = currentSegaCheatKey() ?: learnedSerialForCurrentGame()
+            val serial = currentSegaCheatKey() ?: currentGameSerial.takeIf { it.isNotBlank() }
                 ?: learned
                 ?: metadata?.serial?.takeIf { it.isNotBlank() }
                 .orEmpty()
@@ -3075,8 +3086,9 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     private fun refreshCurrentGameCheats(
         metadata: com.sbro.emucoreh.core.GameMetadata
     ) {
-        val learned = learnedSerialForCurrentGame()
-        val serial = metadata.serial?.takeIf { it.isNotBlank() }
+        val segaKey = currentSegaCheatKey()
+        val learned = segaKey ?: learnedSerialForCurrentGame()
+        val serial = segaKey ?: metadata.serial?.takeIf { it.isNotBlank() }
             ?: learned
             ?: currentGameSerial.takeIf { it.isNotBlank() }
             .orEmpty()
@@ -3127,10 +3139,15 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         NativeApp.setPadAnalogMode(1, true)
     }
 
+    private fun currentSegaCheatKey(): String? {
+        val path = currentGamePath?.takeIf(String::isNotBlank) ?: return null
+        val platform = com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path)
+        return if (platform.isSega) com.sbro.emucoreh.data.SegaCheatIdentity.key(path, platform.name) else null
+    }
+
     private fun syncCheatsForCurrentGame(gameKeyOverride: String? = null) {
-        if (com.sbro.emucoreh.core.CoreRuntime.platform.isSega) return
         val state = _uiState.value
-        val serial = currentGameSerial.takeIf { it.isNotBlank() }
+        val serial = currentSegaCheatKey() ?: currentGameSerial.takeIf { it.isNotBlank() }
             ?: learnedSerialForCurrentGame()
         val crc = currentGameCrc.takeIf { it.isNotBlank() }
         val gameKey = gameKeyOverride

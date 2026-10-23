@@ -27,6 +27,8 @@ class NativeCoreBridge {
     external fun nativeSelectCore(coreId: Int): Boolean
     /** Read-only CHD/CUE identification, independent of the active session. */
     external fun probeSegaDisc(path: String): Int
+    /** Duplicates a borrowed SAF descriptor; the caller retains ownership. */
+    external fun probeSegaDiscDescriptor(descriptor: Int): Int
     external fun createSession(): Long
     external fun destroySession(handle: Long)
     external fun nativeSetOption(key: String, value: String)

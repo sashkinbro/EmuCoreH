@@ -1380,6 +1380,15 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeSelectCore(JNIEnv*, jobject, 
 }
 
 JNIEXPORT jint JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_probeSegaDiscDescriptor(JNIEnv*, jobject, jint descriptor) {
+    if (descriptor < 0) return 0;
+    void* handle = RetainCoreLibrary(1);
+    if (handle == nullptr) return 0;
+    auto probe = reinterpret_cast<int (*)(int)>(dlsym(handle, "jgenesis_probe_disc_fd"));
+    return probe != nullptr ? probe(descriptor) : 0;
+}
+
+JNIEXPORT jint JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_probeSegaDisc(JNIEnv* env, jobject, jstring path) {
     const std::string file = ToString(env, path);
     if (file.empty()) return 0;
@@ -1864,9 +1873,12 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_loadCheats(JNIEnv* env, jobject, js
             continue;
         }
         if (trimmed.rfind("Author", 0) == 0 && trimmed.find('=') != std::string::npos) continue;
-        const std::string normalized = NormalizeCheatCodeLine(trimmed);
+        // Sega device codes contain meaningful hyphens, colons and non-hex letters.
+        const std::string normalized = g_core_id.load() == 1
+            ? trimmed.substr(0, trimmed.find("//"))
+            : NormalizeCheatCodeLine(trimmed);
         if (normalized.empty()) continue;
-        if (!codes.empty()) codes += ' ';
+        if (!codes.empty()) codes += g_core_id.load() == 1 ? '+' : ' ';
         codes += normalized;
     }
     if (!codes.empty()) {

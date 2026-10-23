@@ -17,8 +17,8 @@ data class GameLibraryCacheSnapshot(
 class GameLibraryCacheRepository(context: Context) {
 
     companion object {
-        // v8: explicit console identity for Sega content and ambiguous archives/discs.
-        private const val CACHE_SCHEMA_VERSION = 8
+        // v9: repair disc identities cached before Sega CD header probing.
+        private const val CACHE_SCHEMA_VERSION = 9
 
         fun libraryKey(paths: List<String>): String =
             paths.map(String::trim).filter(String::isNotBlank).distinct().joinToString("\u001F")

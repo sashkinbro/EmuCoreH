@@ -80,6 +80,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             launch {
                 preferences.biosPaths.distinctUntilChanged().collect { paths ->
                     val biosValid = withContext(Dispatchers.IO) {
+                        BiosImport.restoreSelections(getApplication(), paths)
                         BiosImport.hasAnyBios(getApplication())
                     }
                     updateState(

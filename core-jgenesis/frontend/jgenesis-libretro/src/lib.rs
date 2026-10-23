@@ -1,3 +1,4 @@
+mod cheats;
 mod content;
 mod disk;
 mod frontend;
@@ -166,6 +167,7 @@ struct Core {
     disc_ejected: bool,
     disc_paths: Vec<Option<PathBuf>>,
     disc_index: u32,
+    cheats: std::collections::BTreeMap<u32, String>,
 }
 
 enum Inputs {
@@ -246,7 +248,30 @@ impl Core {
             disc_ejected: false,
             disc_paths,
             disc_index: 0,
+            cheats: Default::default(),
         }
+    }
+
+    fn apply_cheats(&mut self) {
+        match &mut self.emulator {
+            Emulator::Genesis(emulator) => {
+                let mut config = options::genesis();
+                config.cheat_codes = cheats::genesis_codes(self.cheats.values());
+                emulator.reload_config(&config);
+            }
+            Emulator::SmsGg(emulator) => {
+                let mut config = options::smsgg(self.console);
+                config.cheat_codes = cheats::smsgg_codes(self.cheats.values());
+                emulator.reload_config(&config);
+            }
+        }
+        self.state_cache.clear();
+    }
+
+    fn set_cheat(&mut self, index: u32, enabled: bool, code: &str) {
+        self.cheats.remove(&index);
+        if enabled { self.cheats.insert(index, code.to_owned()); }
+        self.apply_cheats();
     }
 
     fn run_frame(&mut self, inputs: Inputs) -> Result<(), String> {
@@ -329,7 +354,7 @@ impl Core {
                 Ok(())
             }
         }?;
-        self.state_cache.clear();
+        self.apply_cheats();
         Ok(())
     }
 }
@@ -821,9 +846,6 @@ pub extern "C" fn retro_reset() {
 #[unsafe(no_mangle)]
 pub extern "C" fn retro_run() {
     let options_changed = options::changed();
-    let new_genesis_config = options_changed.then(options::genesis);
-    let console = lock(core_slot()).as_ref().map(|core| core.console);
-    let new_smsgg_config = if options_changed { console.map(options::smsgg) } else { None };
     let environment = environment();
     let (frontend, video, audio_batch, audio_sample, input_poll, input_state) = {
         let guard = lock(environment);
@@ -848,10 +870,7 @@ pub extern "C" fn retro_run() {
     };
 
     if options_changed {
-        match &mut core.emulator {
-            Emulator::Genesis(value) => value.reload_config(new_genesis_config.as_ref().unwrap()),
-            Emulator::SmsGg(value) => value.reload_config(new_smsgg_config.as_ref().unwrap()),
-        }
+        core.apply_cheats();
     }
 
     let inputs = match &core.emulator {
@@ -989,10 +1008,19 @@ pub extern "C" fn retro_unserialize(data: *const c_void, size: usize) -> bool {
 pub extern "C" fn retro_set_controller_port_device(_port: u32, _device: u32) {}
 
 #[unsafe(no_mangle)]
-pub extern "C" fn retro_cheat_reset() {}
+pub extern "C" fn retro_cheat_reset() {
+    if let Some(core) = lock(core_slot()).as_mut() {
+        core.cheats.clear();
+        core.apply_cheats();
+    }
+}
 
 #[unsafe(no_mangle)]
-pub extern "C" fn retro_cheat_set(_index: u32, _enabled: bool, _code: *const c_char) {}
+pub unsafe extern "C" fn retro_cheat_set(index: u32, enabled: bool, code: *const c_char) {
+    if code.is_null() { return; }
+    let code = unsafe { CStr::from_ptr(code) }.to_string_lossy();
+    if let Some(core) = lock(core_slot()).as_mut() { core.set_cheat(index, enabled, &code); }
+}
 
 #[unsafe(no_mangle)]
 pub extern "C" fn retro_get_memory_data(_id: u32) -> *mut c_void {

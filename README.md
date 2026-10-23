@@ -26,6 +26,7 @@ The project is under active development. Use your own legally obtained games. Fl
 - Save states with core/platform validation, Sega battery saves, and Dreamcast VMU management
 - Local and optional Drive backups, including Sega battery saves
 - Flycast cheats, texture replacements, and RetroAchievements for compatible games
+- Sega Game Genie / Action Replay cheats with platform- and revision-specific catalog packs
 - Unsupported options are hidden for Sega games; optional Discord integration
 - Localized interface in 18 languages for phones, tablets, and Android TV
 
@@ -126,6 +127,8 @@ Unknown disc/archive formats retain the existing Flycast route. CUE track files 
 Dreamcast can boot through Flycast HLE without an installed BIOS. Arcade ROM sets may require their matching firmware.
 
 All BIOS files are imported through one **BIOS Folder** card in onboarding or Settings → Library. Select any folder containing your files; every valid BIOS in that folder is installed together. Tap the card again to add BIOS files from another folder, and remove folders from the list without touching the installed copies. The app keeps multiple BIOS source folders for users whose dumps are split across different locations.
+
+Sega CD dumps with descriptive filenames are recognized by their console boot header and region, including word-swapped dumps. Previously selected folders are migrated in the background once; normal startup shows the cached library without waiting for recursive BIOS scans. Sega CD discs are identified through the authorized SAF descriptor on devices that block direct filesystem access.
 
 - Dreamcast: `dc_boot.bin` (2 MiB) or `dc_bios.bin`, plus `dc_flash.bin` (128 KiB)
 - Arcade: `naomi.zip`, `naomi2.zip`, `awbios.zip`, and other supported MAME BIOS sets

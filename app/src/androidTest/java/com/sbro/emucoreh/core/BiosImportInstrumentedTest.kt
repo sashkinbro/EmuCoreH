@@ -13,6 +13,31 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BiosImportInstrumentedTest {
+    @Test fun descriptiveSegaCdNamesAreImportedByTheirActualRegion() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val root = File(context.cacheDir, "bios-import-descriptive-qa").apply { mkdirs() }
+        try {
+            val source = File(root, "source").apply { mkdirs() }
+            val destination = File(root, "system")
+            listOf('U' to "Sega-CD Model 2 BIOS V2.11 (U) [b1].bin",
+                'E' to "Mega-CD Model 2 BIOS V2.00 (E) (Mar 1993) [b1].bin").forEach { (region, name) ->
+                File(source, name).writeBytes(ByteArray(SegaCdBios.SIZE).apply {
+                    "SEGA MEGA DRIVE ".toByteArray().copyInto(this, 0x100)
+                    "CD2 BOOT ROM".toByteArray().copyInto(this, 0x120)
+                    this[0x1f0] = region.code.toByte()
+                })
+            }
+            // A Dreamcast flash file has the same size and must not be mistaken for CD firmware.
+            File(source, "dc_flash.bin").writeBytes(ByteArray(SegaCdBios.SIZE))
+            val result = BiosImport.installFromDocument(context, DocumentFile.fromFile(source),
+                File(root, "flycast").absolutePath, destination.absolutePath)
+            assertEquals(2, result.segaCd)
+            assertEquals(1, result.dreamcast)
+            assertEquals(SegaCdBios.Region.US, SegaCdBios.detectRegion(File(destination, "bios_CD_U.bin").readBytes()))
+            assertEquals(SegaCdBios.Region.EU, SegaCdBios.detectRegion(File(destination, "bios_CD_E.bin").readBytes()))
+        } finally { root.deleteRecursively() }
+    }
+
     @Test fun oneFolderImportsDreamcastArcadeSegaCdAnd32X() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val root = File(context.cacheDir, "bios-import-qa").apply {

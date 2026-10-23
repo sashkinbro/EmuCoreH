@@ -364,17 +364,10 @@ class GameRepository {
                         items += cachedGame
                         continue
                     }
-                    // CUE/M3U entries only describe tracks. Reading the
-                    // referenced data track here can stall for many seconds on
-                    // large SAF images. The launch path still performs the
-                    // accurate Sega CD detection; the library listing derives
-                    // Dreamcast/Sega identity from the extension and cached
-                    // metadata instead.
-                    val platform = if (name.endsWith(".cue", true) || name.endsWith(".m3u", true)) {
-                        SegaPlatformDetector.detectName(name)
-                    } else {
-                        SegaPlatformDetector.detect(context, uriPath)
-                    }
+                    // Disc extensions are shared with Dreamcast. Probe the bounded
+                    // header/descriptor before caching, otherwise Sega CD disappears
+                    // from platform filters until the user happens to launch a game.
+                    val platform = SegaPlatformDetector.detect(context, uriPath)
                     if (name.endsWith(".bin", true) && !isStandaloneSegaBin(name, platform, name.lowercase(Locale.ROOT) in cueTracks.value)) continue
                     if (!isLibraryContent(name, arcadeCatalog, platform)) continue
                     val sourceMetadata = EmulatorBridge.getGameMetadata(

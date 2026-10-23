@@ -55,7 +55,8 @@ data class RemoteCheatPack(
     val sourceUrl: String,
     val sourceName: String,
     val license: String,
-    val blockCount: Int
+    val blockCount: Int,
+    val platform: String = "FLYCAST"
 )
 
 data class RemoteCatalogResult<T>(
@@ -141,7 +142,7 @@ class RemoteContentCatalogRepository(context: Context) {
                 }
                 candidate.startsWith("patch=", ignoreCase = true) ||
                     candidate.startsWith("dpatch=", ignoreCase = true) ||
-                    RAW_CHEAT_CODE_REGEX.matchEntire(candidate) != null ||
+                    CheatCodeSyntax.isSupportedLine(candidate) ||
                     LIBRETRO_CHEAT_CODE_REGEX.containsMatchIn(candidate)
             }
         ) { "Downloaded file does not contain supported cheat codes" }
@@ -279,7 +280,8 @@ class RemoteContentCatalogRepository(context: Context) {
                     sourceUrl = item.requiredString("sourceUrl").requireHttps(),
                     sourceName = item.requiredString("sourceName"),
                     license = item.string("license"),
-                    blockCount = item.int("blockCount")
+                    blockCount = item.int("blockCount"),
+                    platform = item.string("platform").ifBlank { "FLYCAST" }.uppercase(Locale.US)
                 ).also { pack ->
                     require(pack.crc.isEmpty() || pack.crc.matches(Regex("[0-9A-F]{8}")))
                     require(pack.authors.isNotEmpty())

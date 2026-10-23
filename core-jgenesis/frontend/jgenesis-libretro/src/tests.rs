@@ -497,3 +497,90 @@ fn battery_ram_is_flushed_when_session_ends_before_periodic_save() {
     assert_eq!(std::fs::read(directory.join("sms.sav")).unwrap()[0], 0x5a);
     std::fs::remove_dir_all(directory).unwrap();
 }
+
+// Programs below are authored here: they write RAM, then continuously read it
+// into the displayed backdrop. Pixel changes prove CPU bus reads see the cheat.
+#[test]
+fn cheats_execute_on_genesis_ram_rom_and_survive_state_and_option_reload() {
+    std::thread::Builder::new().stack_size(32 * 1024 * 1024)
+        .spawn(exercise_genesis_cheats).unwrap().join().unwrap();
+}
+
+fn exercise_genesis_cheats() {
+    for (hardware, console) in [(GenesisHardware::Standalone, Console::Genesis),
+        (GenesisHardware::SegaCd, Console::SegaCd), (GenesisHardware::Sega32X, Console::Sega32X)] {
+    let directory = std::env::temp_dir().join(format!("jgenesis-md-cheats-{:?}-{}", console, std::process::id()));
+    let mut rom = genesis_rom();
+    let program: &[u8] = &[
+        0x33,0xfc,0x00,0x0e,0x00,0xff,0x00,0x00, // RAM = red
+        0x33,0xfc,0x81,0x44,0x00,0xc0,0x00,0x04, // display on
+        0x23,0xfc,0xc0,0x00,0x00,0x00,0x00,0xc0,0x00,0x04, // CRAM address
+        0x33,0xf9,0x00,0xff,0x00,0x00,0x00,0xc0,0x00,0x00, // RAM -> CRAM
+        0x60,0xea, // repeat CRAM writes
+    ];
+    rom[0x200..0x200+program.len()].copy_from_slice(program);
+    let mut writer = FsSaveWriter::new(directory.clone(), "md".into());
+    let bios = hardware.has_sega_cd().then(|| vec![0; 128 * 1024]);
+    let boot_roms = hardware.has_32x().then(|| s32x_core::BootRoms::new([0; 256], [0; 2048], [0; 1024]));
+    let emulator = GenesisEmulator::create_with_32x_boot_roms(hardware, Some(rom), bios, None,
+        GenesisEmulatorConfig::default(), &mut writer, boot_roms).unwrap();
+    let mut core = Core::new(Emulator::Genesis(emulator), writer, console, directory.join("test.md"));
+    let render = |core: &mut Core| {
+        for _ in 0..2 { core.run_frame(Inputs::Genesis(GenesisInputs::default())).unwrap(); }
+        core.frame.pixels.clone()
+    };
+    let baseline = render(&mut core);
+    core.set_cheat(0, true, "FF0000:00E0");
+    let cheated = render(&mut core);
+    assert_ne!(baseline, cheated, "68k RAM override changes rendered color");
+    core.ensure_state_cache().unwrap();
+    let state = core.state_cache.clone();
+    core.set_cheat(0, false, "");
+    assert_eq!(render(&mut core), baseline);
+    core.load_state(&state).unwrap();
+    assert_eq!(render(&mut core), baseline, "loaded state cannot re-enable an old cheat");
+    core.set_cheat(1, true, "6ABA-AAAC"); // patch immediate RAM initialization in ROM
+    core.hard_reset();
+    assert_eq!(render(&mut core), cheated, "ROM override is executed after reset");
+    core.set_cheat(1, false, "");
+    core.hard_reset();
+    assert_eq!(render(&mut core), baseline);
+    drop(core);
+    std::fs::remove_dir_all(directory).unwrap();
+    }
+}
+
+#[test]
+fn cheats_execute_on_sms_gamegear_and_sg1000_ram_and_disable_cleanly() {
+    for (console, hardware) in [(Console::MasterSystem, SmsGgHardware::MasterSystem),
+        (Console::GameGear, SmsGgHardware::GameGear), (Console::Sg1000, SmsGgHardware::Sg1000)] {
+        let directory = std::env::temp_dir().join(format!("jgenesis-8bit-cheats-{:?}-{}", console, std::process::id()));
+        let mut rom = smsgg_rom();
+        let program = [0xf3,0x3e,0x02,0x32,0x00,0xc0, // RAM = color 2
+            0x3e,0x00,0xd3,0xbf,0x3e,0x80,0xd3,0xbf, // TMS mode
+            0x3e,0x40,0xd3,0xbf,0x3e,0x81,0xd3,0xbf, // display on
+            0x3a,0x00,0xc0,0xd3,0xbf,0x3e,0x87,0xd3,0xbf,0xc3,0x16,0x00];
+        rom[..program.len()].copy_from_slice(&program);
+        let mut writer = FsSaveWriter::new(directory.clone(), "8bit".into());
+        let emulator = SmsGgEmulator::create(Some(rom), None, hardware, smsgg_config(), &mut writer);
+        let mut core = Core::new(Emulator::SmsGg(emulator), writer, console, directory.join("test.sms"));
+        let render = |core: &mut Core| {
+            for _ in 0..2 { core.run_frame(Inputs::SmsGg(SmsGgInputs::default())).unwrap(); }
+            core.frame.pixels.clone()
+        };
+        let baseline = render(&mut core);
+        core.set_cheat(0, true, "00C00004");
+        let cheated = render(&mut core);
+        assert!(baseline != cheated, "{:?} RAM override changes display", console);
+        core.apply_cheats(); // same path as frontend option reload
+        assert_eq!(render(&mut core), cheated);
+        core.set_cheat(0, false, "");
+        assert_eq!(render(&mut core), baseline);
+        core.set_cheat(1, true, "040-003"); // Game Genie for same C000 byte
+        assert_eq!(render(&mut core), cheated, "Game Genie reaches the CPU bus");
+        core.set_cheat(1, false, "");
+        assert_eq!(render(&mut core), baseline);
+        drop(core);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+}

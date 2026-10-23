@@ -148,6 +148,7 @@ import androidx.compose.ui.semantics.semantics
 import com.sbro.emucoreh.data.HomeBackgroundRepository
 import com.sbro.emucoreh.data.HomeBackgroundType
 import com.sbro.emucoreh.ui.common.GameCoverArt
+import com.sbro.emucoreh.ui.common.premiumFilterChipColors
 import com.sbro.emucoreh.ui.common.isGenerated3dCover
 import com.sbro.emucoreh.ui.common.GameDiscCountBadge
 import com.sbro.emucoreh.ui.common.GameCoverAspectRatio
@@ -501,8 +502,8 @@ fun HomeScreen(
                                 top = topInset,
                                 bottom = 76.dp + bottomInset
                             ),
-                            horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 3.dp),
-                            verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 3.dp)
+                            horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 8.dp)
                         ) {
                             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                 HomeHeader(
@@ -527,10 +528,12 @@ fun HomeScreen(
                             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = horizontalInset),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    FilterChip(selected = uiState.platformFilter == null, onClick = { viewModel.updatePlatformFilter(null) },
+                                    FilterChip(selected = uiState.platformFilters.isEmpty(), onClick = { viewModel.updatePlatformFilter(null) },
+                                        colors = premiumFilterChipColors(),
                                         label = { Text(stringResource(R.string.achievement_filter_all)) })
                                     uiState.availablePlatforms.forEach { platform ->
-                                        FilterChip(selected = uiState.platformFilter == platform, onClick = { viewModel.updatePlatformFilter(platform) },
+                                        FilterChip(selected = platform in uiState.platformFilters, onClick = { viewModel.updatePlatformFilter(platform) },
+                                            colors = premiumFilterChipColors(),
                                             label = { Text(stringResource(libraryPlatformLabelRes(platform))) })
                                     }
                                 }
@@ -625,7 +628,7 @@ fun HomeScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(horizontal = horizontalInset),
-                                        verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 3.dp)
+                                        verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 8.dp)
                                     ) {
                                         uiState.librarySections.forEach { section ->
                                             section.platform?.let { platform ->
@@ -636,7 +639,7 @@ fun HomeScreen(
                                             section.games.chunked(sectionColumns).forEach { rowGames ->
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 3.dp)
+                                                    horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 8.dp)
                                                 ) {
                                                     rowGames.forEach { game ->
                                                         val showCoverPlaceholder = uiState.isCoverArtDisabled &&

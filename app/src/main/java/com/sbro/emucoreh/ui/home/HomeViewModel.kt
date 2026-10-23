@@ -3,6 +3,7 @@ package com.sbro.emucoreh.ui.home
 import android.app.Activity
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sbro.emucoreh.R
@@ -47,6 +48,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
@@ -81,7 +83,7 @@ data class HomeUiState(
     val homeBackgroundDim: Int = AppPreferences.DEFAULT_HOME_BACKGROUND_DIM,
     val searchQuery: String = "",
     val sortOption: HomeSortOption = HomeSortOption.PLATFORM,
-    val platformFilter: LibraryPlatform? = null,
+    val platformFilters: Set<LibraryPlatform> = emptySet(),
     val availablePlatforms: List<LibraryPlatform> = emptyList(),
     val libraryViewMode: HomeLibraryViewMode = HomeLibraryViewMode.GRID,
     val lastStandardLibraryViewMode: HomeLibraryViewMode = HomeLibraryViewMode.GRID,
@@ -105,6 +107,8 @@ private data class DeferredLibraryScan(
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val startupStartedNanos = System.nanoTime()
 
     companion object {
         private const val AUTO_REFRESH_INTERVAL_MS = 15 * 60 * 1000L
@@ -221,8 +225,30 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             preferences.gamePaths.distinctUntilChanged().collect { paths ->
                 val context = getApplication<Application>()
+                val selectedPaths = paths.map(String::trim).filter(String::isNotBlank).distinct()
+                val selectedKey = libraryKey(selectedPaths)
+                val startupCache = withContext(Dispatchers.IO) {
+                    val readGrants = context.contentResolver.persistedUriPermissions
+                        .filter { it.isReadPermission }.mapTo(mutableSetOf()) { it.uri.toString() }
+                    if (canPublishHomeLibraryCache(selectedPaths, readGrants)) {
+                        libraryCacheRepository.loadSnapshot(selectedKey, preferEnglishGameTitles)
+                    } else null
+                }
+                if (startupCache != null && startupCache.games.isNotEmpty()) {
+                    currentLibraryPaths = selectedPaths
+                    currentLibraryRoot = selectedKey
+                    allGames = startupCache.games
+                    libraryInitialized = true
+                    _uiState.value = _uiState.value.copy(
+                        gameFolderSet = true, isLoading = false, isRefreshing = false
+                    )
+                    publishVisibleGames()
+                    updateBootstrapState()
+                    logStartupMilestone("cached_library games=${startupCache.games.size}")
+                }
+                // Provider traversal validates the roots after an eligible disk cache is already visible.
                 val effectivePaths = withContext(Dispatchers.IO) {
-                    paths.filter { SetupValidator.hasCoreReadableGameFile(context, it) }
+                    selectedPaths.filter { SetupValidator.hasCoreReadableGameFile(context, it) }
                 }
                 val libraryKey = libraryKey(effectivePaths)
                 if (currentLibraryRoot != libraryKey) {
@@ -231,7 +257,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 currentLibraryPaths = effectivePaths
                 currentLibraryRoot = libraryKey
                 if (effectivePaths.isNotEmpty()) {
-                    val cacheSnapshot = resolveCacheSnapshot(libraryKey)
+                    val cacheSnapshot = withContext(Dispatchers.IO) { resolveCacheSnapshot(libraryKey) }
                     val hasCachedGames = cacheSnapshot.games.isNotEmpty()
                     if (hasCachedGames) {
                         allGames = cacheSnapshot.games
@@ -253,7 +279,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                             isRefreshing = false
                         )
                     }
-                    requestLibraryScan(effectivePaths, isInitialLoad = true)
+                    // Publishing a disk cache must not turn an expired snapshot into a fresh
+                    // in-memory snapshot and suppress the eventual metadata refresh.
+                    val allowCachedScanSkip = startupCache == null || shouldSkipAutoRescan(true, startupCache)
+                    requestLibraryScan(effectivePaths, isInitialLoad = allowCachedScanSkip)
                 } else {
                     allGames = emptyList()
                     currentLibraryRoot = null
@@ -270,17 +299,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
-            preferences.biosPath.distinctUntilChanged().collect { path ->
-                val bios = withContext(Dispatchers.IO) {
-                    val hasBios = BiosImport.hasAnyBios(getApplication())
-                    (hasBios || path != null) to hasBios
+            preferences.biosPaths.distinctUntilChanged().collectLatest { paths ->
+                val installedBios = withContext(Dispatchers.IO) {
+                    BiosImport.hasAnyBios(getApplication())
                 }
                 _uiState.value = _uiState.value.copy(
-                    biosConfigured = bios.first,
-                    biosValid = bios.second
+                    biosConfigured = installedBios || paths.isNotEmpty(),
+                    biosValid = installedBios
                 )
                 biosInitialized = true
                 updateBootstrapState()
+                logStartupMilestone("installed_bios_ready valid=$installedBios")
+                // Import/migration can traverse slow SAF providers; it must not hold the home loader.
+                val restoredBios = withContext(Dispatchers.IO) {
+                    BiosImport.restoreSelections(getApplication(), paths)
+                    BiosImport.hasAnyBios(getApplication())
+                }
+                _uiState.value = _uiState.value.copy(
+                    biosConfigured = restoredBios || paths.isNotEmpty(), biosValid = restoredBios
+                )
             }
         }
         viewModelScope.launch {
@@ -483,7 +520,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updatePlatformFilter(platform: LibraryPlatform?) {
-        _uiState.value = _uiState.value.copy(platformFilter = platform)
+        _uiState.value = _uiState.value.copy(
+            platformFilters = toggleHomePlatformFilter(_uiState.value.platformFilters, platform)
+        )
         publishVisibleGames()
     }
 
@@ -741,11 +780,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             BiosValidator.isLikelyBiosLibraryEntry(game.fileName, game.title, game.serial)
         }.mapTo(mutableSetOf()) { LibraryPlatformResolver.resolve(it, arcadeCatalog::find) }
         val availablePlatforms = LibraryPlatform.entries.filter { it in presentPlatforms }
-        val state = if (storedState.platformFilter != null && storedState.platformFilter !in presentPlatforms)
-            storedState.copy(platformFilter = null) else storedState
+        val state = storedState.copy(
+            platformFilters = pruneHomePlatformFilters(storedState.platformFilters, presentPlatforms)
+        )
         val query = normalizeSearchToken(state.searchQuery)
         val platformGames = allGames.filter { game ->
-            state.platformFilter == null || LibraryPlatformResolver.resolve(game, arcadeCatalog::find) == state.platformFilter
+            state.platformFilters.isEmpty() || matchesHomePlatformFilters(
+                state.platformFilters, LibraryPlatformResolver.resolve(game, arcadeCatalog::find)
+            )
         }
         val filtered = platformGames.filter { game ->
             !BiosValidator.isLikelyBiosLibraryEntry(
@@ -775,16 +817,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = _uiState.value.copy(
             games = sections.flatMap { it.games },
             availablePlatforms = availablePlatforms,
-            platformFilter = state.platformFilter,
+            platformFilters = state.platformFilters,
             librarySections = sections,
             recentGames = recentGames
         )
     }
 
     private fun updateBootstrapState() {
+        val wasBootstrapping = _uiState.value.isBootstrapping
         _uiState.value = _uiState.value.copy(
             isBootstrapping = !(biosInitialized && libraryInitialized)
         )
+        if (wasBootstrapping && !_uiState.value.isBootstrapping) logStartupMilestone("ready")
+    }
+
+    private fun logStartupMilestone(milestone: String) {
+        val elapsedMs = (System.nanoTime() - startupStartedNanos) / 1_000_000L
+        Log.i("HomeStartup", "$milestone elapsedMs=$elapsedMs")
     }
 
     private fun syncMissingCovers() {

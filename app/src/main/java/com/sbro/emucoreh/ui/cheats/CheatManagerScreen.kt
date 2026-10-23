@@ -143,7 +143,7 @@ fun CheatManagerScreen(onBackClick: () -> Unit) {
     }
 
     LaunchedEffect(Unit) {
-        games = withContext(Dispatchers.IO) { libraryRepository.loadGames() }
+        games = withContext(Dispatchers.IO) { libraryRepository.loadGames(includeSega = true) }
         selectedPath = games.firstOrNull()?.path
         // The identity effect below only starts after this composition, so mark
         // the resolution as in progress now. Otherwise the catalog section can

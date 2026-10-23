@@ -245,6 +245,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             preferences.biosPaths.distinctUntilChanged().collect { paths ->
                 val biosValid = withContext(Dispatchers.IO) {
+                    BiosImport.restoreSelections(getApplication(), paths)
                     BiosImport.hasAnyBios(getApplication())
                 }
                 _uiState.value = _uiState.value.copy(

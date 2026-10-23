@@ -21,19 +21,23 @@ class ContentLibraryRepository(context: Context) {
     private val cache = GameLibraryCacheRepository(appContext)
     private val arcadeCatalog by lazy { ArcadeCatalogRepository(appContext) }
 
-    suspend fun loadGames(): List<GameItem> {
+    suspend fun loadGames(includeSega: Boolean = false): List<GameItem> {
         val paths = preferences.gamePaths.first()
         if (paths.isEmpty()) return emptyList()
         val preferEnglish = preferences.preferEnglishGameTitles.first()
         return cache.loadSnapshot(GameLibraryCacheRepository.libraryKey(paths), preferEnglish)
             .games
-            .filterNot { it.isSegaLibraryEntry() }
-            .filter { !it.serial.isNullOrBlank() || arcadeCatalog.isKnownRomset(it.fileName) }
+            .filter { includeSega || !it.isSegaLibraryEntry() }
+            .filter { (includeSega && it.isSegaLibraryEntry()) || !it.serial.isNullOrBlank() || arcadeCatalog.isKnownRomset(it.fileName) }
             .sortedBy { it.title.lowercase(Locale.getDefault()) }
     }
 
     fun resolveIdentity(game: GameItem): SelectedGameIdentity {
-        if (game.isSegaLibraryEntry()) return SelectedGameIdentity(serial = null, crc = null)
+        if (game.isSegaLibraryEntry()) return SelectedGameIdentity(
+            serial = SegaCheatIdentity.key(game.path, game.platform ?: SegaPlatformDetector.detectName(game.fileName).name),
+            crc = null,
+            rawSerial = game.serial
+        )
         val metadata = runCatching { EmulatorBridge.getGameMetadata(game.path) }.getOrNull()
         val rawSerial = metadata?.serial?.trim()?.takeIf { it.isNotBlank() }
             ?: game.serial?.trim()?.takeIf { it.isNotBlank() }

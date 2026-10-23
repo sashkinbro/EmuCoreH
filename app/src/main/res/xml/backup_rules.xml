@@ -8,6 +8,7 @@
 <full-backup-content>
     <!-- Firmware is supplied by the user on each device, never backed up. -->
     <exclude domain="file" path="jgenesis/system/" />
+    <exclude domain="sharedpref" path="bios_import_migrations.xml" />
     <!-- A loopback proxy is device-local transient state and must never migrate. -->
     <exclude domain="sharedpref" path="retroachievements_host_override.xml" />
     <!--

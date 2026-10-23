@@ -3347,13 +3347,13 @@ private fun EmulationSidebarMenu(
     // Cheats can be toggled or installed from the cheat manager; re-read the
     // installed list every time the tab is opened so both stay in sync.
     LaunchedEffect(selectedMenuTab, uiState.showMenu) {
-        if (!platform.isSega && uiState.showMenu && selectedMenuTab == EmulationMenuTab.Cheats) onRefreshCheats()
+        if (uiState.showMenu && selectedMenuTab == EmulationMenuTab.Cheats) onRefreshCheats()
     }
     val menuTabs = remember(uiState.gameMenuTabOrder, uiState.hiddenGameMenuTabs, platform) {
         uiState.gameMenuTabOrder
             .filterNot(uiState.hiddenGameMenuTabs::contains)
             .map(GameMenuTabId::toEmulationMenuTab)
-            .filter { !platform.isSega || it !in setOf(EmulationMenuTab.Cheats, EmulationMenuTab.Achievements) }
+            .filter { !platform.isSega || it != EmulationMenuTab.Achievements }
             .ifEmpty { listOf(EmulationMenuTab.Session) }
     }
     LaunchedEffect(menuTabs, selectedMenuTab) {

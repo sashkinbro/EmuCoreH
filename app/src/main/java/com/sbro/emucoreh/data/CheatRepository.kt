@@ -463,7 +463,7 @@ class CheatRepository(private val context: Context) {
             val line = rawLine.substringBefore("//").substringBefore("#").trim()
             if (line.isEmpty()) return@forEach
             if (line.startsWith("//") || line.startsWith("#") || line.startsWith(";")) return@forEach
-            if (RAW_CODE_REGEX.matchEntire(line) == null) return null
+            if (!CheatCodeSyntax.isSupportedLine(line)) return null
             codeLines += line.uppercase(Locale.US)
         }
         return codeLines.ifEmpty { null }
@@ -545,7 +545,7 @@ class CheatRepository(private val context: Context) {
                 val trimmed = line.trimStart()
                 trimmed.startsWith("patch=", ignoreCase = true) ||
                     trimmed.startsWith("dpatch=", ignoreCase = true) ||
-                    RAW_CODE_REGEX.matchEntire(trimmed) != null
+                    CheatCodeSyntax.isSupportedLine(trimmed)
             }
             if (usefulLines.isEmpty()) {
                 currentLines = mutableListOf()
@@ -587,18 +587,9 @@ class CheatRepository(private val context: Context) {
             val isPatchLine = trimmed.startsWith("patch=", ignoreCase = true) ||
                 trimmed.startsWith("dpatch=", ignoreCase = true)
             val codeCandidate = trimmed.substringBefore("//").substringBefore("#").trim()
-            val isRawCode = RAW_CODE_REGEX.matchEntire(codeCandidate) != null
-            val libretroCodes = libretroCode
-                ?.groupValues
-                ?.get(1)
-                ?.split('+')
-                ?.map(String::trim)
-                ?.filter(String::isNotEmpty)
-                .orEmpty()
-                .chunked(2)
-                .filter { it.size == 2 }
-                .map { "${it[0]} ${it[1]}" }
-                .filter { RAW_CODE_REGEX.matchEntire(it) != null }
+            val isRawCode = CheatCodeSyntax.isSupportedLine(codeCandidate)
+            val libretroCodes = libretroCode?.groupValues?.get(1)
+                ?.let(CheatCodeSyntax::splitLibretroCodes).orEmpty()
             when {
                 libretroCode != null -> {
                     if (libretroCodes.isNotEmpty()) currentLines += libretroCodes
@@ -629,7 +620,7 @@ class CheatRepository(private val context: Context) {
                     line.trim().takeIf { value ->
                         value.startsWith("patch=", ignoreCase = true) ||
                             value.startsWith("dpatch=", ignoreCase = true) ||
-                            RAW_CODE_REGEX.matchEntire(value) != null
+                            CheatCodeSyntax.isSupportedLine(value)
                     }
                 }
                 .mapIndexed { idx, line ->
