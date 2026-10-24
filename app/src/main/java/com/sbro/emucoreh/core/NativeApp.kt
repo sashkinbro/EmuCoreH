@@ -241,8 +241,9 @@ object NativeApp {
             return
         }
         // Fast forward only: holding Start (or the dedicated button) speeds the
-        // emulation up. The core has no rewind support, so it is not exposed.
-        if (index == PAD_START || index == PAD_FAST_FORWARD) {
+        // emulation up. Model 3 racing games use Start as a normal coin/start
+        // button, so it must not go through tap-vs-hold detection there.
+        if ((index == PAD_START && !CoreRuntime.platform.isModel3) || index == PAD_FAST_FORWARD) {
             updateSpecialButton(padIndex, index, normalizedSource, pressed) { isPressed ->
                 handleTimeControlHold(padIndex, index, isPressed)
             }

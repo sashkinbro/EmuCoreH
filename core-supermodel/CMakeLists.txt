@@ -13,11 +13,15 @@ foreach(name IN LISTS NEW3D_NAMES)
   list(APPEND CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Src/Graphics/New3D/${name}.cpp")
 endforeach()
 add_library(supermodel_libretro SHARED ${CORE_SOURCES}
+  Src/Network/StandaloneNetBoard.cpp
   libretro/libretro.cpp libretro/platform.cpp libretro/gles_presenter.cpp
   libretro/render2d_android.cpp
   libretro/generated/m68kops.c libretro/generated/m68kopac.c libretro/generated/m68kopdm.c libretro/generated/m68kopnz.c)
 target_include_directories(supermodel_libretro PRIVATE Src Src/CPU/68K/Musashi libretro libretro/generated)
-target_compile_definitions(supermodel_libretro PRIVATE ANDROID __ANDROID__ EMUCOREH_LIBRETRO=1)
+# Model 3 games with a network board (Daytona USA 2, Scud Race, Sega Rally 2,
+# ...) refuse to boot when the board is absent. Android uses the standalone
+# one-cabinet implementation: no SDL_net, real socket or second instance.
+target_compile_definitions(supermodel_libretro PRIVATE ANDROID __ANDROID__ EMUCOREH_LIBRETRO=1 NET_BOARD=1 NET_BOARD_STANDALONE=1)
 target_compile_options(supermodel_libretro PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden -O3)
 target_link_options(supermodel_libretro PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384" "-Wl,--no-undefined" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libretro/exports.map")
 target_link_libraries(supermodel_libretro PRIVATE log android z EGL GLESv3)

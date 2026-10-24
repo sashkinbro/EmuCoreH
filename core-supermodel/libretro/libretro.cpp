@@ -81,7 +81,9 @@ struct Host {
     config.Set("AndroidForceNew3D",true);config.Set("AndroidTileBlit",true);config.Set("AndroidSimpleShader",false);
     config.Set("AndroidClampRamVerts",true);config.Set("QuadRendering",false);config.Set("FlipStereo",false);
     config.Set("PowerPCFrequency","50");config.Set("InputSystem","libretro");
-    config.Set("Outputs","none");config.Set("ForceFeedback",false);config.Set("Network",false);config.Set("SimulateNet",false);
+    // The standalone Model 3 netboard is a one-cabinet simulation; enable it
+    // so games that require a network board pass their boot self-test.
+    config.Set("Outputs","none");config.Set("ForceFeedback",false);config.Set("Network",false);config.Set("SimulateNet",true);
     config.Set("XResolution","496");config.Set("YResolution","384");config.Set("Throttle",false);
     config.Set("RefreshRate","60.0");config.Set("Crosshairs",0);
     render2d.Init(0,0,width,height,width,height);

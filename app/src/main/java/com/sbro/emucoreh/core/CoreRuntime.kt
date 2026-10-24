@@ -1080,7 +1080,10 @@ internal object CoreRuntime {
                             val pressedEdges = pendingPadPressEdges.getAndSet(port, 0)
                             if (pressedEdges != 0) {
                                 padEdgeHoldMask[port] = padEdgeHoldMask[port] or pressedEdges
-                                padEdgeHoldFrames[port] = 3
+                                // Model 3 polls every 60 Hz frame; one frame is
+                                // enough to deliver a tap and avoids holding a
+                                // released pedal/button for ~50 ms.
+                                padEdgeHoldFrames[port] = if (platform.isModel3) 1 else 3
                             }
                             val buttons = desiredPadButtons.get(port) and padEdgeHoldMask[port].inv()
                             bridge.setPadButtons(session, port, buttons)

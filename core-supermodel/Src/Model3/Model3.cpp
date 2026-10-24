@@ -224,8 +224,12 @@
 #include "Game.h"
 #include "ROMSet.h"
 #ifdef NET_BOARD
+#ifdef NET_BOARD_STANDALONE
+#include "Network/StandaloneNetBoard.h"
+#else
 #include "Network/NetBoard.h"
 #include "Network/SimNetBoard.h"
+#endif // NET_BOARD_STANDALONE
 #endif // NET_BOARD
 #include "OSD/Audio.h"
 #include "OSD/Video.h"
@@ -1027,8 +1031,7 @@ UINT8 CModel3::Read8(UINT32 addr)
     case 1: // ioreg 32bits access in 16bits environment
       if (addr > 0xc00101ff)
       {
-        printf("R8 ATTENTION OUT OF RANGE\n");
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Info", "Out of Range", NULL);
+        ErrorLog("Network board R8 read out of range at %08X", addr);
       }
       return (UINT8)NetBoard->ReadIORegister((addr & 0x1FF) / 2);
 
@@ -1037,8 +1040,7 @@ UINT8 CModel3::Read8(UINT32 addr)
       return netRAM[((addr & 0x1FFFF) / 2)];
 
     default:
-      printf("R8 ATTENTION OUT OF RANGE\n");
-      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Info", "Out of Range", NULL);
+      ErrorLog("Network board R8 read out of range at %08X", addr);
       break;
     }
   }
@@ -1162,8 +1164,7 @@ UINT16 CModel3::Read16(UINT32 addr)
   // Unknown
   default:
 #ifdef NET_BOARD
-    printf("CMODEL3 : unknown R16 : %x (%x)\n", addr, addr >> 24);
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Info", "CMODEL3 : Unknown R16", NULL);
+    ErrorLog("Model 3 unknown R16 read at %08X (%02X)", addr, addr >> 24);
 #endif
     break;
   }
@@ -3226,10 +3227,14 @@ bool CModel3::Init(void)
   PCIBus.AttachDevice(16,this);
 
 #ifdef NET_BOARD
+#ifdef NET_BOARD_STANDALONE
+  NetBoard = new CStandaloneNetBoard();
+#else
   if (m_config["SimulateNet"].ValueAs<bool>())
       NetBoard = new CSimNetBoard(m_config);
   else
       NetBoard = new CNetBoard(m_config);
+#endif // NET_BOARD_STANDALONE
 #endif // NET_BOARD
 
   DebugLog("Initialized Model 3 (allocated %1.1f MB)\n", memSizeMB);
@@ -3352,6 +3357,14 @@ CModel3::~CModel3(void)
 
   // Stop all threads
   StopThreads();
+
+#ifdef NET_BOARD
+  if (NetBoard != NULL)
+  {
+    delete NetBoard;
+    NetBoard = NULL;
+  }
+#endif
 
   // Free memory
   if (memoryPool != NULL)
