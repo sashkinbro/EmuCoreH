@@ -2312,4 +2312,8 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_about_model3_upstream_link">Supermodel 上游代码仓库</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
     <string name="model3_cabinet_setup_help">部分游戏首次启动时需要设置机台。如果Daytona USA 2出现网络板错误，请打开TEST → GAME ASSIGNMENTS → LINK ID并选择SINGLE（独立运行）。按照游戏内的TEST/SERVICE提示操作，然后正常退出以保存设置。 包括Virtual On 2在内的部分游戏在启动时的硬件自检期间，会显示超过一分钟的黑屏。请等待游戏完成启动。 如果Star Wars Trilogy启动时出现力反馈操纵杆错误，请设置TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLE，然后正常退出并重新启动游戏。</string>
+    <string name="settings_shader_presets_manage">管理预设</string>
+    <string name="settings_shader_presets_remove_title">移除所选预设？</string>
+    <string name="settings_shader_presets_remove_body">已选预设：%1$d。是否从列表中移除？</string>
+    <string name="settings_shader_presets_remove_failed">无法移除所选预设。</string>
 </resources>

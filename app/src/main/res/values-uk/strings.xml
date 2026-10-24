@@ -2316,4 +2316,8 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_model3_upstream_link">Основний репозиторій Supermodel</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
     <string name="model3_cabinet_setup_help">Деякі ігри під час першого запуску потребують налаштування автомата. У разі помилки мережевої плати в Daytona USA 2 відкрийте TEST → GAME ASSIGNMENTS → LINK ID і виберіть SINGLE (окремий автомат). Дотримуйтеся підказок TEST/SERVICE у грі, а потім вийдіть звичайним способом, щоб зберегти налаштування. Деякі ігри, зокрема Virtual On 2, показують чорний екран понад хвилину під час початкової перевірки обладнання. Зачекайте, доки гра завершить завантаження. У разі помилки важеля зі зворотним зв’язком під час запуску Star Wars Trilogy виберіть TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLE, потім вийдіть звичайним способом і перезапустіть гру.</string>
+    <string name="settings_shader_presets_manage">Керувати пресетами</string>
+    <string name="settings_shader_presets_remove_title">Прибрати вибрані пресети?</string>
+    <string name="settings_shader_presets_remove_body">Вибрано пресетів: %1$d. Прибрати їх зі списку?</string>
+    <string name="settings_shader_presets_remove_failed">Не вдалося прибрати вибрані пресети.</string>
 </resources>

@@ -2311,4 +2311,8 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_model3_upstream_link">Repository originale di Supermodel</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
     <string name="model3_cabinet_setup_help">Alcuni giochi richiedono la configurazione del cabinato al primo avvio. Per gli errori della scheda di rete in Daytona USA 2, apri TEST → GAME ASSIGNMENTS → LINK ID e scegli SINGLE (autonomo). Segui le indicazioni TEST/SERVICE del gioco, poi esci normalmente per salvare. Alcuni giochi, tra cui Virtual On 2, mostrano una schermata nera per oltre un minuto durante i controlli hardware iniziali. Attendi che il gioco completi l’avvio. In caso di errori della leva con ritorno di forza all’avvio di Star Wars Trilogy, seleziona TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLE, poi esci normalmente e riavvia il gioco.</string>
+    <string name="settings_shader_presets_manage">Gestisci preimpostazioni</string>
+    <string name="settings_shader_presets_remove_title">Rimuovere le preimpostazioni selezionate?</string>
+    <string name="settings_shader_presets_remove_body">Preimpostazioni selezionate: %1$d. Rimuoverle dall’elenco?</string>
+    <string name="settings_shader_presets_remove_failed">Impossibile rimuovere le preimpostazioni selezionate.</string>
 </resources>

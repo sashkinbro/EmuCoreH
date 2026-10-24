@@ -2326,4 +2326,8 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_about_model3_upstream_link">مخزن اصلی Supermodel</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
     <string name="model3_cabinet_setup_help">بعضی بازی‌ها در اولین اجرا به تنظیم کابینت آرکید نیاز دارند. برای خطای برد شبکه در Daytona USA 2، مسیر TEST → GAME ASSIGNMENTS → LINK ID را باز کنید و SINGLE (مستقل) را انتخاب کنید. راهنمای TEST/SERVICE داخل بازی را دنبال کنید و برای ذخیره، به‌صورت معمول خارج شوید. بعضی بازی‌ها، از جمله Virtual On 2، هنگام بررسی‌های اولیهٔ سخت‌افزار بیش از یک دقیقه صفحهٔ سیاه نشان می‌دهند. صبر کنید تا راه‌اندازی بازی کامل شود. برای خطاهای اهرم بازخورد هنگام راه‌اندازی Star Wars Trilogy، گزینهٔ TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLE را تنظیم کنید، سپس به‌صورت معمول خارج شوید و بازی را دوباره راه‌اندازی کنید.</string>
+    <string name="settings_shader_presets_manage">مدیریت پیش‌تنظیم‌ها</string>
+    <string name="settings_shader_presets_remove_title">پیش‌تنظیم‌های انتخاب‌شده حذف شوند؟</string>
+    <string name="settings_shader_presets_remove_body">پیش‌تنظیم‌های انتخاب‌شده: %1$d. از فهرست حذف شوند؟</string>
+    <string name="settings_shader_presets_remove_failed">پیش‌تنظیم‌های انتخاب‌شده حذف نشدند.</string>
 </resources>

@@ -2310,4 +2310,8 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_about_model3_upstream_link">Supermodel の上流リポジトリ</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
     <string name="model3_cabinet_setup_help">一部のゲームは初回起動時に筐体設定が必要です。Daytona USA 2でネットワークボードのエラーが出た場合は、TEST → GAME ASSIGNMENTS → LINK IDを開き、SINGLE（単独稼働）を選んでください。ゲーム内のTEST/SERVICEの案内に従い、通常の手順で終了すると設定が保存されます。 Virtual On 2などの一部のゲームでは、起動時のハードウェアチェック中に1分以上黒い画面が表示されます。ゲームの起動が完了するまでお待ちください。 Star Wars Trilogyの起動時にフォースフィードバックレバーのエラーが出る場合は、TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLEに設定し、通常の手順で終了してからゲームを再起動してください。</string>
+    <string name="settings_shader_presets_manage">プリセットを管理</string>
+    <string name="settings_shader_presets_remove_title">選択したプリセットを削除しますか？</string>
+    <string name="settings_shader_presets_remove_body">選択したプリセット：%1$d件。リストから削除しますか？</string>
+    <string name="settings_shader_presets_remove_failed">選択したプリセットを削除できませんでした。</string>
 </resources>

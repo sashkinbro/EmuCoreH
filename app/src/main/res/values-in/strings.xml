@@ -2325,4 +2325,8 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_model3_upstream_link">Repositori hulu Supermodel</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
     <string name="model3_cabinet_setup_help">Beberapa game memerlukan pengaturan kabinet saat pertama dijalankan. Jika Daytona USA 2 menampilkan kesalahan papan jaringan, buka TEST → GAME ASSIGNMENTS → LINK ID dan pilih SINGLE (mandiri). Ikuti petunjuk TEST/SERVICE di game, lalu keluar secara normal untuk menyimpan. Beberapa game, termasuk Virtual On 2, menampilkan layar hitam selama lebih dari satu menit saat pemeriksaan awal perangkat keras. Tunggu hingga game selesai melakukan booting. Jika Star Wars Trilogy menampilkan kesalahan tuas umpan balik saat dimulai, atur TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLE, lalu keluar secara normal dan mulai ulang game.</string>
+    <string name="settings_shader_presets_manage">Kelola preset</string>
+    <string name="settings_shader_presets_remove_title">Hapus preset yang dipilih?</string>
+    <string name="settings_shader_presets_remove_body">Preset yang dipilih: %1$d. Hapus dari daftar?</string>
+    <string name="settings_shader_presets_remove_failed">Tidak dapat menghapus preset yang dipilih.</string>
 </resources>

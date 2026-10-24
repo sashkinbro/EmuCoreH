@@ -2313,4 +2313,8 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_about_model3_upstream_link">Supermodel-Ursprungsrepository</string>
     <string name="settings_about_model3_upstream_url">https://github.com/trzy/Supermodel</string>
     <string name="model3_cabinet_setup_help">Manche Spiele benötigen beim ersten Start eine Automatenkonfiguration. Öffne bei Netzwerkplatinenfehlern in Daytona USA 2 TEST → GAME ASSIGNMENTS → LINK ID und wähle SINGLE (Einzelbetrieb). Befolge die TEST/SERVICE-Hinweise im Spiel und beende es regulär, um die Einstellungen zu speichern. Einige Spiele, darunter Virtual On 2, zeigen während der anfänglichen Hardwareprüfungen über eine Minute lang einen schwarzen Bildschirm. Warte, bis das Spiel vollständig gestartet ist. Wähle bei Startfehlern des Force-Feedback-Hebels in Star Wars Trilogy TEST → GAME ASSIGNMENTS → FEEDBACK LEVER → DISABLE, verlasse das Menü regulär und starte das Spiel neu.</string>
+    <string name="settings_shader_presets_manage">Voreinstellungen verwalten</string>
+    <string name="settings_shader_presets_remove_title">Ausgewählte Voreinstellungen entfernen?</string>
+    <string name="settings_shader_presets_remove_body">Ausgewählte Voreinstellungen: %1$d. Aus der Liste entfernen?</string>
+    <string name="settings_shader_presets_remove_failed">Die ausgewählten Voreinstellungen konnten nicht entfernt werden.</string>
 </resources>
