@@ -213,6 +213,7 @@ import com.sbro.emucoreh.ui.common.VectorOverlayButton
 import com.sbro.emucoreh.ui.common.buildOverlayCanvasLayout
 import com.sbro.emucoreh.ui.common.gamepadActionLabel
 import com.sbro.emucoreh.ui.common.gamepadActionSupported
+import com.sbro.emucoreh.ui.common.orderedForArcadeDisplay
 import com.sbro.emucoreh.ui.common.gamepadFocusableCard
 import com.sbro.emucoreh.ui.common.premiumFilterChipColors
 import com.sbro.emucoreh.ui.common.fullBleedScrollViewport
@@ -2043,6 +2044,9 @@ fun EmulationScreen(
                 gamepadBindingsByPad
             }
         val selectedBindings = activeGamepadBindingsByPad[selectedGamepadPadIndex].orEmpty()
+        val visibleGamepadActions = remember(gamepadActions, arcadeInputMode) {
+            if (arcadeInputMode > 0) gamepadActions.orderedForArcadeDisplay() else gamepadActions
+        }
         SettingsStyledDialog(
             title = stringResource(R.string.settings_gamepad_mapping_title),
             eyebrow = stringResource(R.string.app_name),
@@ -2103,7 +2107,7 @@ fun EmulationScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                gamepadActions.filter { gamepadActionSupported(it.id, platform) }.forEach { action ->
+                visibleGamepadActions.filter { gamepadActionSupported(it.id, platform) }.forEach { action ->
                     val assignedKeyCode = GamepadManager.resolveBindingForAction(
                         actionId = action.id,
                         customBindings = selectedBindings

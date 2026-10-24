@@ -231,6 +231,7 @@ import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import com.sbro.emucoreh.ui.common.calculateSideArtworkPreviewLayout
 import com.sbro.emucoreh.ui.common.gamepadActionLabel
 import com.sbro.emucoreh.ui.common.gamepadFocusableCard
+import com.sbro.emucoreh.ui.common.orderedForArcadeDisplay
 import com.sbro.emucoreh.ui.common.premiumFilterChipColors
 import com.sbro.emucoreh.ui.common.navigationBarsHorizontalPaddingValues
 import com.sbro.emucoreh.ui.common.rememberDebouncedClick
@@ -1841,6 +1842,10 @@ private fun SettingsContent(
                     if (platform.usesPlatformTouchLayouts) SegaGlobalGamepadSettings(platform)
                     else SettingsSection(title = stringResource(R.string.settings_gamepad_mapping_title)) {
                         val arcadeProfileSelected = selectedGamepadProfile == 1
+                        val visibleGamepadActions = remember(arcadeProfileSelected, gamepadActions) {
+                            if (arcadeProfileSelected) gamepadActions.orderedForArcadeDisplay()
+                            else gamepadActions
+                        }
                         val selectedBindings = (
                             if (arcadeProfileSelected) uiState.gamepadArcadeBindingsByPad
                             else uiState.gamepadBindingsByPad
@@ -1916,7 +1921,7 @@ private fun SettingsContent(
                                 gamepadPlayerLabel(selectedGamepadPadIndex)
                             )
                         )
-                        for (action in gamepadActions) {
+                        for (action in visibleGamepadActions) {
                             val assignedKeyCode = GamepadManager.resolveBindingForAction(
                                 actionId = action.id,
                                 customBindings = selectedBindings

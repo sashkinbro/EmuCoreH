@@ -98,6 +98,36 @@ class GameLibraryCacheRepository(context: Context) {
         }
     }
 
+    /**
+     * Returns the artwork already resolved for this exact library path, so the
+     * in-game menu shows the same cover as the library even when the running
+     * core reports a different display title than the cached catalog title.
+     */
+    fun findGameCoverPath(path: String): String? {
+        if (path.isBlank() || !cacheFile.exists()) return null
+        synchronized(lock) {
+            return runCatching {
+                val rootObject = JSONObject(cacheFile.readText())
+                if (rootObject.optInt("schema_version", 0) !in 8..CACHE_SCHEMA_VERSION) return null
+                val libraries = rootObject.optJSONArray("libraries") ?: return null
+                for (libraryIndex in 0 until libraries.length()) {
+                    val games = libraries.optJSONObject(libraryIndex)?.optJSONArray("games") ?: continue
+                    for (gameIndex in 0 until games.length()) {
+                        val game = games.optJSONObject(gameIndex) ?: continue
+                        if (game.optString("path") != path) continue
+                        return game.optString("cover_art_path").takeIf { coverPath ->
+                            coverPath.isNotBlank() && (
+                                coverPath.startsWith("content://") || coverPath.startsWith("http://") ||
+                                    coverPath.startsWith("https://") || File(coverPath).isFile
+                                )
+                        }
+                    }
+                }
+                null
+            }.getOrNull()
+        }
+    }
+
     fun save(rootPath: String, games: List<GameItem>, preferEnglishTitles: Boolean = false) {
         synchronized(lock) {
             runCatching {

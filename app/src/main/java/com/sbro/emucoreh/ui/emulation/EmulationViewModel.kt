@@ -43,6 +43,7 @@ import com.sbro.emucoreh.data.LearnedSerialRepository
 import com.sbro.emucoreh.data.DisplayCrop
 import com.sbro.emucoreh.data.OverlayControlLayout
 import com.sbro.emucoreh.data.CheatRepository
+import com.sbro.emucoreh.data.GameLibraryCacheRepository
 import com.sbro.emucoreh.data.GameRepository
 import com.sbro.emucoreh.data.PlayerPlayTimeDelta
 import com.sbro.emucoreh.data.PlayerProfileRepository
@@ -342,6 +343,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     private val cheatRepository = CheatRepository(application)
     private val perGameSettingsRepository = PerGameSettingsRepository(application)
     private val gameRepository = GameRepository()
+    private val libraryCacheRepository = GameLibraryCacheRepository(getApplication())
     private val saveStateRepository = SaveStateRepository(application)
     private val playerProfileRepository = PlayerProfileRepository(application)
     private val playTimeSyncCacheRepository = PlayTimeSyncCacheRepository(application)
@@ -1222,7 +1224,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                         context = getApplication(),
                         serial = currentGameSerial.takeIf { it.isNotBlank() },
                         title = currentGameTitle
-                    )
+                    ) ?: libraryCacheRepository.findGameCoverPath(safePath)
                     currentGameCrc = metadata.serialWithCrc.extractCrc().orEmpty()
                     currentGameSource = when {
                         safePath.startsWith("content://") -> "content_uri"

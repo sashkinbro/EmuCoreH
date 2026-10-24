@@ -48,6 +48,28 @@ fun gamepadActionLabelRes(actionId: String): Int = when (actionId) {
     else -> R.string.settings_gamepad_section
 }
 
+/**
+ * Flycast numbers arcade buttons 1..8 while the action ids keep their legacy
+ * PlayStation values. The core maps these ids to Naomi/Atomiswave buttons, so
+ * the number is also the order in which the controls should be listed.
+ */
+fun arcadeButtonNumber(actionId: String): Int? = when (actionId) {
+    "cross" -> 1
+    "circle" -> 2
+    "square" -> 3
+    "triangle" -> 4
+    "r1" -> 5
+    "l1" -> 6
+    "r2" -> 7
+    "l2" -> 8
+    else -> null
+}
+
+/** Lists numbered arcade buttons in order without disturbing other actions. */
+internal fun List<GamepadManager.MappableButtonAction>.orderedForArcadeDisplay():
+    List<GamepadManager.MappableButtonAction> =
+    sortedBy { arcadeButtonNumber(it.id) ?: Int.MAX_VALUE }
+
 @Composable
 fun gamepadActionLabel(actionId: String, arcade: Boolean = false, platform: EmulationPlatform = EmulationPlatform.DREAMCAST): String {
     if (platform.isModel3) return when (actionId) {
@@ -74,20 +96,7 @@ fun gamepadActionLabel(actionId: String, arcade: Boolean = false, platform: Emul
         }
     }
     if (arcade) {
-        // Flycast numbers the arcade buttons 1..8; the ids keep their legacy
-        // PlayStation values, the core maps them to Naomi/Atomiswave buttons.
-        val arcadeButton = when (actionId) {
-            "cross" -> 1
-            "circle" -> 2
-            "square" -> 3
-            "triangle" -> 4
-            "r1" -> 5
-            "l1" -> 6
-            "r2" -> 7
-            "l2" -> 8
-            else -> 0
-        }
-        if (arcadeButton > 0) {
+        arcadeButtonNumber(actionId)?.let { arcadeButton ->
             return stringResource(R.string.settings_gamepad_action_arcade_button, arcadeButton)
         }
     }

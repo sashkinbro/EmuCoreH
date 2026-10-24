@@ -21,6 +21,7 @@ import com.sbro.emucoreh.data.HomeBackgroundRepository
 import com.sbro.emucoreh.data.HomeBackgroundPreset
 import com.sbro.emucoreh.data.HomeBackgroundType
 import com.sbro.emucoreh.data.CoverArtRepository
+import com.sbro.emucoreh.data.CoverDisplaySettings
 import com.sbro.emucoreh.data.boxart.BoxartRetryPolicy
 import com.sbro.emucoreh.data.boxart.syncInitialCovers
 import com.sbro.emucoreh.data.CoreMaintenanceRepository
@@ -122,6 +123,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val homeBackgroundRepository = HomeBackgroundRepository(application)
     private val proPurchaseManager = ProPurchaseManager.getInstance(application)
     private var allGames: List<GameItem> = emptyList()
+    private var coverResolutionGames: List<GameItem>? = null
+    private var coverResolutionSettings: CoverDisplaySettings? = null
     private var recentEntries: List<RecentGameEntry> = emptyList()
     private var coverSyncJob: Job? = null
     private var coverRetryJob: Job? = null
@@ -764,23 +767,41 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun publishVisibleGames() {
         val covers = CoverArtRepository(getApplication())
-        allGames = allGames.map { original ->
-            val game = if (covers.isMismatchedManagedCover(original.coverArtPath, original.platform))
-                original.copy(coverArtPath = null) else original
-            val selected = covers.displayCoverPath(game.serial, game.title, game.coverArtPath, platform = game.platform)
-            when {
-                selected == game.coverArtPath -> game
-                selected != null -> game.copy(coverArtPath = selected)
-                // Resolution failed: keep the previous path. The background
-                // cover sync repairs missing files, so a transient miss must
-                // not erase the artwork from every screen.
-                else -> game
+        val coverSettings = covers.displayCoverSettings()
+        // Cover lookup touches the filesystem and preferences. Filter, sort and
+        // search republish the same list, so resolve each list only once.
+        if (coverResolutionGames !== allGames || coverResolutionSettings != coverSettings) {
+            allGames = allGames.map { original ->
+                val game = if (covers.isMismatchedManagedCover(original.coverArtPath, original.platform))
+                    original.copy(coverArtPath = null) else original
+                val selected = covers.displayCoverPath(
+                    game.serial,
+                    game.title,
+                    game.coverArtPath,
+                    platform = game.platform,
+                    settings = coverSettings
+                )
+                when {
+                    selected == game.coverArtPath -> game
+                    selected != null -> game.copy(coverArtPath = selected)
+                    // Resolution failed: keep the previous path. The background
+                    // cover sync repairs missing files, so a transient miss must
+                    // not erase the artwork from every screen.
+                    else -> game
+                }
             }
+            coverResolutionGames = allGames
+            coverResolutionSettings = coverSettings
         }
         val storedState = _uiState.value
+        // The same game is resolved for availability, filtering and sorting.
+        val platformByPath = HashMap<String, LibraryPlatform>(allGames.size)
+        fun platformOf(game: GameItem): LibraryPlatform = platformByPath.getOrPut(game.path) {
+            LibraryPlatformResolver.resolve(game, arcadeCatalog::find)
+        }
         val presentPlatforms = allGames.filterNot { game ->
             BiosValidator.isLikelyBiosLibraryEntry(game.fileName, game.title, game.serial)
-        }.mapTo(mutableSetOf()) { LibraryPlatformResolver.resolve(it, arcadeCatalog::find) }
+        }.mapTo(mutableSetOf()) { platformOf(it) }
         val availablePlatforms = LibraryPlatform.entries.filter { it in presentPlatforms }
         val state = storedState.copy(
             platformFilters = pruneHomePlatformFilters(storedState.platformFilters, presentPlatforms)
@@ -788,7 +809,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val query = normalizeSearchToken(state.searchQuery)
         val platformGames = allGames.filter { game ->
             state.platformFilters.isEmpty() || matchesHomePlatformFilters(
-                state.platformFilters, LibraryPlatformResolver.resolve(game, arcadeCatalog::find)
+                state.platformFilters, platformOf(game)
             )
         }
         val filtered = platformGames.filter { game ->
@@ -805,9 +826,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     normalizeSearchToken(disc.serial).contains(query) }
             )
         }
-        val sections = buildHomeLibrarySections(filtered, state.sortOption) { game ->
-            LibraryPlatformResolver.resolve(game, arcadeCatalog::find)
-        }
+        val sections = buildHomeLibrarySections(filtered, state.sortOption, ::platformOf)
         val recentGames = recentLibraryGroups(platformGames, recentEntries.map { it.path }).filter { game ->
             query.isBlank() ||
                 normalizeSearchToken(game.title).contains(query) ||

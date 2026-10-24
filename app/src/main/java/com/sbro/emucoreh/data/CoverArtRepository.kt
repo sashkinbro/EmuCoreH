@@ -41,6 +41,13 @@ data class CoverCacheClearResult(
         get() = failedFiles == 0
 }
 
+/** Preferences that affect which cached cover file is selected. */
+data class CoverDisplaySettings(
+    val enabled: Boolean,
+    val style: Int,
+    val isLight: Boolean
+)
+
 /**
  * Box art retrieval using Flycast's offline scraper and the EmuCoreH catalog:
  *  1. cached artwork, then EmuCoreH-Covers by known product code and title,
@@ -197,10 +204,34 @@ class CoverArtRepository(context: Context) {
      * that was already resolved: the caller keeps showing the previous cover
      * while the background sync re-downloads it.
      */
-    fun displayCoverPath(serial: String?, title: String?, candidate: String?, platform: String? = null): String? {
+    fun displayCoverSettings(): CoverDisplaySettings {
+        val prefs = AppPreferences(context)
+        return CoverDisplaySettings(
+            enabled = prefs.getFetchBoxartSync(),
+            style = prefs.getCoverArtStyleSync(),
+            isLight = prefs.isThemeLightSync()
+        )
+    }
+
+    fun displayCoverPath(serial: String?, title: String?, candidate: String?, platform: String? = null): String? =
+        displayCoverPath(serial, title, candidate, platform, displayCoverSettings())
+
+    /** Batch callers can read the display settings once instead of for every game. */
+    fun displayCoverPath(
+        serial: String?,
+        title: String?,
+        candidate: String?,
+        platform: String?,
+        settings: CoverDisplaySettings
+    ): String? {
         if (candidate != null && !isManagedCoverCachePath(candidate)) return candidate
-        return findCachedCoverPath(serial, title = title, platform = platform)
-            ?: candidate.takeUnless { isMismatchedManagedCover(it, platform) }
+        return findCachedCoverPath(
+            serial = serial,
+            title = title,
+            ignoreDisabled = false,
+            platform = platform,
+            settings = settings
+        ) ?: candidate.takeUnless { isMismatchedManagedCover(it, platform) }
     }
 
     fun findCachedCoverPath(
@@ -208,8 +239,22 @@ class CoverArtRepository(context: Context) {
         title: String? = null,
         ignoreDisabled: Boolean = false,
         platform: String? = null
+    ): String? = findCachedCoverPath(
+        serial = serial,
+        title = title,
+        ignoreDisabled = ignoreDisabled,
+        platform = platform,
+        settings = displayCoverSettings()
+    )
+
+    private fun findCachedCoverPath(
+        serial: String?,
+        title: String?,
+        ignoreDisabled: Boolean,
+        platform: String?,
+        settings: CoverDisplaySettings
     ): String? {
-        if (!ignoreDisabled && !isFetchBoxartEnabled()) {
+        if (!ignoreDisabled && !settings.enabled) {
             return null
         }
         val coverKeys = coverKeys(serial, title, platform)
@@ -217,10 +262,7 @@ class CoverArtRepository(context: Context) {
             Log.d(TAG, "No serial or title provided")
             return null
         }
-        val prefs = AppPreferences(context)
-        val style = prefs.getCoverArtStyleSync()
-        val isLight = prefs.isThemeLightSync()
-        cache.find(coverKeys, style, isLight)?.let { found ->
+        cache.find(coverKeys, settings.style, settings.isLight)?.let { found ->
             return found.absolutePath
         }
         Log.d(TAG, "Cached cover for ${coverKeys.joinToString()}: NOT FOUND")
