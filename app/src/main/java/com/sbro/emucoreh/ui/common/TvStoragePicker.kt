@@ -111,7 +111,7 @@ fun TvStoragePickerHost(
         }
         if (launchResult == null || launchResult.isFailure) {
             launchResult?.exceptionOrNull()?.let { error ->
-                Log.w("TvStoragePicker", "Unable to launch storage picker: $intent", error)
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w("TvStoragePicker", "Unable to launch storage picker: $intent", error)
             }
             showFileManagerPrompt = true
         }

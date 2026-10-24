@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 #include "GLSLShader.h"
 #include <cstdio>
 
@@ -101,6 +102,8 @@ void GLSLShader::Reset()
 
 void GLSLShader::PrintShaderInfoLog(GLuint obj) 
 {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
+
 	int infologLength = 0;
 	int charsWritten = 0;
 
@@ -109,13 +112,17 @@ void GLSLShader::PrintShaderInfoLog(GLuint obj)
 	if (infologLength > 0) {
 		char* infoLog = new char[infologLength];
 		glGetShaderInfoLog(obj, infologLength, &charsWritten, infoLog);
-		printf("%s\n", infoLog);
+		MODEL3_DIAGNOSTIC_PRINTF("%s\n", infoLog);
 		delete[] infoLog;
 	}
+
+#endif
 }
 
 void GLSLShader::PrintProgramInfoLog(GLuint obj) 
 {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
+
 	int infologLength = 0;
 	int charsWritten = 0;
 
@@ -124,9 +131,11 @@ void GLSLShader::PrintProgramInfoLog(GLuint obj)
 	if (infologLength > 0) {
 		char* infoLog = new char[infologLength];
 		glGetProgramInfoLog(obj, infologLength, &charsWritten, infoLog);
-		printf("%s\n", infoLog);
+		MODEL3_DIAGNOSTIC_PRINTF("%s\n", infoLog);
 		delete[] infoLog;
 	}
+
+#endif
 }
 
 int GLSLShader::GetUniformLocation(const char* str)

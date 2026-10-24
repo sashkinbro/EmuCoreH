@@ -123,7 +123,7 @@ internal object CoreRuntime {
         frameTasks.add(task)
         return try {
             if (!task.completed.await(30, TimeUnit.SECONDS)) {
-                Log.w(TAG, "Timed out waiting for the frame worker to run a state operation")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Timed out waiting for the frame worker to run a state operation")
                 false
             } else {
                 task.result
@@ -140,7 +140,7 @@ internal object CoreRuntime {
             task.result = try {
                 task.block()
             } catch (error: Throwable) {
-                Log.e(TAG, "Frame-thread state operation failed", error)
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Frame-thread state operation failed", error)
                 false
             }
             task.completed.countDown()
@@ -159,7 +159,7 @@ internal object CoreRuntime {
         runCatching {
             bridge.nativeInit(systemDirectory, saveDirectory, coreAssetsDirectory)
             bridge.apiVersion()
-        }.onFailure { Log.e(TAG, "Unable to initialise libretro frontend", it) }
+        }.onFailure { CrashLogger.logError(TAG, "Unable to initialise libretro frontend", it) }
         CrashLogger.installNativeCrashReporter()
     }
 
@@ -226,14 +226,14 @@ internal object CoreRuntime {
                 session != 0L && bridge.saveState(session, statePath) == 0
             }
         }
-        Log.i(TAG, "Renderer restart renderer=" +
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "Renderer restart renderer=" +
             RendererDefaults.coreRendererName(RendererDefaults.toCoreRenderer(normalized)) +
             " stateSaved=$stateSaved")
         shutdownSession()
         requestedRenderer = normalized
         var started = startSession(gamePath, biosOnly)
         if (!started && normalized != previousRenderer) {
-            Log.w(TAG, "Renderer restart failed; reverting to " +
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Renderer restart failed; reverting to " +
                 RendererDefaults.coreRendererName(RendererDefaults.toCoreRenderer(previousRenderer)))
             requestedRenderer = previousRenderer
             started = startSession(gamePath, biosOnly)
@@ -246,7 +246,7 @@ internal object CoreRuntime {
                     }
                 }
                 if (!restored) {
-                    Log.w(TAG, "Renderer switch state restore rejected; continuing from boot")
+                    if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Renderer switch state restore rejected; continuing from boot")
                 }
             }
         } finally {
@@ -259,7 +259,7 @@ internal object CoreRuntime {
     private fun startSession(gamePath: String, biosOnly: Boolean): Boolean {
         val startupStartedAtNanos = System.nanoTime()
         if (!biosOnly && !isSupportedDiscPath(gamePath)) {
-            Log.e(TAG, "Unsupported disc image: $gamePath")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unsupported disc image: $gamePath")
             return false
         }
         val app = context ?: return false
@@ -298,7 +298,7 @@ internal object CoreRuntime {
         } else File(root, "save")).apply { mkdirs() }.absolutePath
         coreAssetsDirectory = File(root, "assets").apply { mkdirs() }.absolutePath
         if (!bridge.nativeSelectCore(platform.coreId)) {
-            Log.e(TAG, "Unable to select core for $platform")
+            CrashLogger.logError(TAG, "Unable to select core for $platform")
             return false
         }
         bridge.nativeInit(systemDirectory, saveDirectory, coreAssetsDirectory)
@@ -315,11 +315,14 @@ internal object CoreRuntime {
                 break
             }
             if (candidate != candidates.last()) {
-                Log.w(TAG, "${RendererDefaults.coreRendererName(candidate)} renderer unavailable; " +
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "${RendererDefaults.coreRendererName(candidate)} renderer unavailable; " +
                     "falling back to ${RendererDefaults.coreRendererName(candidates.last())}")
             }
         }
-        if (!created) return false
+        if (!created) {
+            CrashLogger.logError(TAG, "Unable to start $platform: all renderer candidates failed")
+            return false
+        }
 
         // A freshly booted session may use its own renderer fallback budget.
         rendererFallbackAttempted = false
@@ -359,12 +362,12 @@ internal object CoreRuntime {
                     android.os.Process.THREAD_PRIORITY_URGENT_DISPLAY)
                 runLoop(output)
             }
-            Log.i(TAG, String.format(Locale.US, "Startup setup %.1f ms",
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, String.format(Locale.US, "Startup setup %.1f ms",
                 (System.nanoTime() - startupStartedAtNanos) / 1_000_000.0))
             started = true
             return true
         } catch (error: Exception) {
-            Log.e(TAG, "Failed to start frame/audio runtime", error)
+            CrashLogger.logError(TAG, "Failed to start frame/audio runtime", error)
             return false
         } finally {
             if (!started) shutdownSession()
@@ -405,7 +408,7 @@ internal object CoreRuntime {
         // Attach the surface before loading content: SET_HW_RENDER fires inside
         // retro_load_game and needs a window to build the render context.
         if (bridge.setSurface(handle, surface, coreRenderer) != 0) {
-            Log.e(TAG, "Failed to initialize ${RendererDefaults.coreRendererName(coreRenderer)} renderer")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Failed to initialize ${RendererDefaults.coreRendererName(coreRenderer)} renderer")
             bridge.destroySession(handle)
             return@withLock false
         }
@@ -527,14 +530,14 @@ internal object CoreRuntime {
 
     private fun pushShaderEffect() {
         runCatching { bridge.nativeSetShaderEffect(currentShaderEffect()) }
-            .onFailure { Log.w(TAG, "Unable to apply shader effect", it) }
+            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to apply shader effect", it) }
     }
 
     private fun pushShaderPreset() {
         val enabled = settings["EmuCoreH/Runtime:ShaderChainEnabled"]?.toBooleanStrictOrNull() == true
         val preset = settings["EmuCoreH/Runtime:ShaderChainPreset"].orEmpty()
         runCatching { bridge.nativeSetShaderPreset(if (enabled) preset else "", enabled) }
-            .onFailure { Log.w(TAG, "Unable to apply shader preset", it) }
+            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to apply shader preset", it) }
     }
 
     // Host intent must reach startup even while the VM is copying SAF content or
@@ -740,7 +743,7 @@ internal object CoreRuntime {
         dataRootOverride = path?.takeIf(String::isNotBlank)
         if (platform.coreId != 0) return
         runCatching { bridge.setDataRootOverride(dataRootOverride) }
-            .onFailure { Log.w(TAG, "Unable to set the Flycast data root", it) }
+            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to set the Flycast data root", it) }
     }
 
     fun setPadButtons(port: Int, buttons: Int): Boolean {
@@ -839,7 +842,7 @@ internal object CoreRuntime {
         surfaceHeight = height
         sessionLock.withLock {
             if (session != 0L && bridge.setSurface(session, value, activeCoreRenderer) != 0)
-                Log.e(TAG, "Failed to attach ${RendererDefaults.coreRendererName(activeCoreRenderer)} presentation surface")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Failed to attach ${RendererDefaults.coreRendererName(activeCoreRenderer)} presentation surface")
         }
     }
 
@@ -851,7 +854,7 @@ internal object CoreRuntime {
     fun detachSurface() {
         sessionLock.withLock {
             if (session != 0L && bridge.setSurface(session, null, activeCoreRenderer) != 0)
-                Log.w(TAG, "Failed to detach presentation surface")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Failed to detach presentation surface")
         }
         surface = null
         surfaceWidth = 0
@@ -995,7 +998,7 @@ internal object CoreRuntime {
                     // relaunch so the renderer preference and UI stay in
                     // sync; anything else is a terminal failure.
                     if (requestRendererFallback()) {
-                        Log.w(TAG, "Hardware context failed; requesting OpenGL fallback")
+                        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Hardware context failed; requesting OpenGL fallback")
                         break
                     }
                     reportFailure(
@@ -1119,9 +1122,9 @@ internal object CoreRuntime {
                             }
                         if (!renderedFirstFrame) {
                             renderedFirstFrame = true
-                            val startedAt = sessionStartedAtNanos
+                            val startedAt = if (com.sbro.emucoreh.BuildConfig.DEBUG) sessionStartedAtNanos else 0L
                             if (startedAt != 0L) {
-                                Log.i(TAG, String.format(Locale.US,
+                                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, String.format(Locale.US,
                                     "First emulated frame after %.1f ms (core %.1f ms)",
                                     (System.nanoTime() - startedAt) / 1_000_000.0,
                                     elapsed / 1_000_000.0))
@@ -1178,7 +1181,7 @@ internal object CoreRuntime {
                     publishPerformanceMetrics(fps, metricsFrames, metricsFrameTotalNanos,
                         timingClock.sample(audioStats, sampleNanos), audioStats, cpuLoad)
                     if (com.sbro.emucoreh.BuildConfig.DEBUG) {
-                        Log.d(TAG, "pacing fps=%.1f core=%.1fms queue=%d high=%d silence=%d maxInterval=%.1fms maxCore=%.1fms".format(
+                        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "pacing fps=%.1f core=%.1fms queue=%d high=%d silence=%d maxInterval=%.1fms maxCore=%.1fms".format(
                             Locale.US, fps, metricsFrameTotalNanos / metricsFrames / 1_000_000.0,
                             output.bufferedFrames(), output.pacingHighWaterFrames(), output.stats()?.getOrNull(7) ?: 0L,
                             metricsMaxIntervalNanos / 1_000_000.0, metricsMaxCoreNanos / 1_000_000.0))
@@ -1195,20 +1198,20 @@ internal object CoreRuntime {
             if (running) reportFailure("Emulation worker was interrupted unexpectedly")
             Thread.currentThread().interrupt()
         } catch (error: Throwable) {
-            Log.e(TAG, "Emulation frame loop stopped", error)
-            reportFailure("Emulation frame loop stopped: ${error.javaClass.simpleName}: ${error.message.orEmpty()}")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Emulation frame loop stopped", error)
+            reportFailure("Emulation frame loop stopped: ${error.javaClass.simpleName}: ${error.message.orEmpty()}", error)
         } finally {
             running = false
             // A failed worker retains its session for orderly UI cleanup, but
             // must not retain a playing stream after it stops producing audio.
             runCatching { output.pause() }
-                .onFailure { Log.w(TAG, "Unable to pause stopped worker audio", it) }
+                .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to pause stopped worker audio", it) }
             drainFrameTasks()
         }
     }
 
-    private fun reportFailure(detail: String) {
-        if (_failure.compareAndSet(null, RuntimeFailure(detail))) Log.e(TAG, detail)
+    private fun reportFailure(detail: String, throwable: Throwable? = null) {
+        if (_failure.compareAndSet(null, RuntimeFailure(detail))) CrashLogger.logError(TAG, detail, throwable)
     }
 
     private fun loadDisc(handle: Long, gamePath: String): Int {
@@ -1218,10 +1221,10 @@ internal object CoreRuntime {
         // streamed in place and nothing is copied into app storage.
         val path = if (platform.isModel3) {
             runCatching { Model3ContentPreparer.prepare(app, gamePath) }
-                .onFailure { Log.e(TAG, "Unable to prepare Model 3 content", it) }.getOrNull() ?: return -1
+                .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Model 3 content", it) }.getOrNull() ?: return -1
         } else if (platform.isSega) {
             runCatching { JGenesisContentPreparer.prepare(app, gamePath) }
-                .onFailure { Log.e(TAG, "Unable to prepare Sega content", it) }.getOrNull() ?: return -1
+                .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Sega content", it) }.getOrNull() ?: return -1
         } else if (gamePath.startsWith("content://")) {
             SafStorageBridge.prepare(app, gamePath) ?: return -1
         } else gamePath

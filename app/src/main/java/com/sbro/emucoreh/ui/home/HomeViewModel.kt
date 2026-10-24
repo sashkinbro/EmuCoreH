@@ -854,7 +854,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun logStartupMilestone(milestone: String) {
         val elapsedMs = (System.nanoTime() - startupStartedNanos) / 1_000_000L
-        Log.i("HomeStartup", "$milestone elapsedMs=$elapsedMs")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i("HomeStartup", "$milestone elapsedMs=$elapsedMs")
     }
 
     private fun syncMissingCovers() {

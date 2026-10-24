@@ -173,20 +173,20 @@ fn exercise_gg_sms_palette_pause_and_state_identity() {
         core.run_frame(Inputs::SmsGg(SmsGgInputs::default())).unwrap();
     }
     assert_eq!((core.frame.width, core.frame.height), (256, 192));
-    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0xff0000));
+    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0xffff0000));
     assert!(core.audio.samples.iter().any(|sample| *sample != 0));
     let mut inputs = SmsGgInputs::default();
     inputs.set_field(SmsGgButton::Pause, Player::One, true);
     for _ in 0..3 {
         core.run_frame(Inputs::SmsGg(inputs)).unwrap();
     }
-    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0x00ff00));
+    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0xff00ff00));
     core.ensure_state_cache().unwrap();
     let state = core.state_cache.clone();
     assert_eq!(state[8], Console::GameGear as u8);
     core.load_state(&state).unwrap();
     core.run_frame(Inputs::SmsGg(SmsGgInputs::default())).unwrap();
-    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0x00ff00));
+    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0xff00ff00));
     // The exposed GG crop option must never crop a cartridge that physically uses SMS mode.
     for full_resolution in [false, true] {
         let mut config = options::smsgg(Console::GameGear);
@@ -207,7 +207,7 @@ fn exercise_gg_sms_palette_pause_and_state_identity() {
     native_gg.ensure_state_cache().unwrap();
     assert!(core.load_state(&native_gg.state_cache).is_err());
     core.run_frame(Inputs::SmsGg(SmsGgInputs::default())).unwrap();
-    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0x00ff00));
+    assert!(core.frame.pixels.iter().all(|pixel| *pixel == 0xff00ff00));
     drop(native_gg);
     drop(core);
     std::fs::remove_dir_all(directory).unwrap();

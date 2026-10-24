@@ -47,3 +47,9 @@ add_test(NAME mpeg_state COMMAND mpeg_state_test ${CMAKE_CURRENT_SOURCE_DIR}/fix
 add_executable(audio_state_safety_test audio_state_safety_test.cpp)
 target_include_directories(audio_state_safety_test PRIVATE ..)
 add_test(NAME audio_state_safety COMMAND audio_state_safety_test)
+
+add_executable(release_logging_test release_logging_test.cpp ../platform.cpp)
+target_include_directories(release_logging_test PRIVATE .. ../../Src)
+target_compile_definitions(release_logging_test PRIVATE MODEL3_RELEASE_SILENT_LOGS=1)
+target_link_libraries(release_logging_test PRIVATE Threads::Threads)
+add_test(NAME release_logging COMMAND release_logging_test)

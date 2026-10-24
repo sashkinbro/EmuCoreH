@@ -151,7 +151,7 @@ class GameRepository {
             ).distinctBy { libraryIdentity(it.path) }
             groupDocumentDiscs(scanned, locations, context).sortedBy { it.title.lowercase() }
         }.onFailure { error ->
-            Log.w(TAG, "Unable to scan document tree: $uri", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to scan document tree: $uri", error)
         }.getOrDefault(emptyList())
     }
 
@@ -164,7 +164,7 @@ class GameRepository {
         val platform = SegaPlatformDetector.detect(context, path).takeIf { it.coreId != 0 }?.name
         val candidate = if (path.startsWith("content://")) {
             runCatching { findDocumentCover(path, context, serial, title, platform) }
-                .onFailure { error -> Log.w(TAG, "Unable to find cover for document URI: $path", error) }
+                .onFailure { error -> if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to find cover for document URI: $path", error) }
                 .getOrNull()
         } else {
             findLocalCover(path, context, serial, title, platform)
@@ -609,7 +609,7 @@ class GameRepository {
                 if (!known) {
                     // Diagnostic for arcade reports: logcat shows which
                     // archives the Flycast game table does not recognise.
-                    Log.d(TAG, "Skipping unrecognised archive: $name")
+                    if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Skipping unrecognised archive: $name")
                 }
                 known
             }

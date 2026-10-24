@@ -54,7 +54,7 @@ object NativeApp {
     init {
         loadedCoreLibraryName = "emucoreh_jni"
         hasNativeCore = runCatching { CoreRuntime.bridge.apiVersion() }
-            .onFailure { Log.e(TAG, "Unable to load $loadedCoreLibraryName", it) }
+            .onFailure { CrashLogger.logError(TAG, "Unable to load $loadedCoreLibraryName", it) }
             .isSuccess
         hasNativeTools = false
     }
@@ -129,7 +129,7 @@ object NativeApp {
                 CoreRuntime.bridge.getDiscMetadata(path)
             }
         }.onFailure { error ->
-            Log.w(TAG, "Unable to read disc metadata: $path", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to read disc metadata: $path", error)
         }.getOrNull()
         val fields = rawMetadata?.split('\n', limit = 3).orEmpty()
         val serial = fields.getOrNull(1).orEmpty().trim()
@@ -537,23 +537,23 @@ object NativeApp {
 
     @JvmStatic
     fun setCrashContextString(key: String, value: String?) {
-        CrashLogger.logContext(key, value)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logContext(key, value)
     }
 
     @JvmStatic
     fun setCrashContextInt(key: String, value: Int) {
-        CrashLogger.logContext(key, value)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logContext(key, value)
     }
 
     @JvmStatic
     fun setCrashContextBool(key: String, value: Boolean) {
-        CrashLogger.logContext(key, value)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logContext(key, value)
     }
 
     @JvmStatic
     fun logCrashBreadcrumb(message: String) {
-        Log.i(TAG, message)
-        CrashLogger.logInfo("Native", message)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, message)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logInfo("Native", message)
     }
 
     @JvmStatic
@@ -580,7 +580,7 @@ object NativeApp {
             if (prepareNativeDataRoot(dir)) {
                 return dir.absolutePath
             }
-            Log.w(TAG, "Configured data root is not writable, falling back to app internal files: $override")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Configured data root is not writable, falling back to app internal files: $override")
         }
 
         val external = context.getExternalFilesDir(null)
@@ -616,7 +616,7 @@ object NativeApp {
             probe.delete()
             true
         }.getOrElse { error ->
-            Log.w(TAG, "Native data root is not writable: ${root.absolutePath}", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Native data root is not writable: ${root.absolutePath}", error)
             false
         }
     }

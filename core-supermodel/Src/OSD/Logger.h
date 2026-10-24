@@ -294,4 +294,14 @@ extern std::shared_ptr<CLogger> GetLogger(void);
 std::shared_ptr<CLogger> CreateLogger(const Util::Config::Node &config);
 
 
+// The Android adapter reports terminal load/runtime failures through FatalLog.
+// Ordinary diagnostics retain their return value without evaluating arguments.
+extern void FatalLog(const char *message);
+extern void ResetFatalLog();
+#if defined(MODEL3_RELEASE_SILENT_LOGS) && !defined(MODEL3_LOGGER_IMPLEMENTATION)
+#define DebugLog(...) ((void)0)
+#define InfoLog(...) ((void)0)
+#define ErrorLog(...) (true)
+#endif
+
 #endif	// INCLUDED_LOGGER_H

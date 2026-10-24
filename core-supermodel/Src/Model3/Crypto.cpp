@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 /**
  ** Supermodel
  ** A Sega Model 3 Arcade Emulator.

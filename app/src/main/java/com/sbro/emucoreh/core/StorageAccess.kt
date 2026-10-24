@@ -32,7 +32,7 @@ object StorageAccess {
         runCatching {
             context.contentResolver.releasePersistableUriPermission(uri, flags)
         }.onFailure { error ->
-            Log.w(TAG, "Unable to release persisted URI permission for $uri", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to release persisted URI permission for $uri", error)
         }
     }
 
@@ -52,7 +52,7 @@ object StorageAccess {
             runCatching {
                 resolver.takePersistableUriPermission(uri, flags)
             }.onFailure { error ->
-                Log.w(TAG, "Persistable URI permission failed for $uri flags=$flags", error)
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Persistable URI permission failed for $uri flags=$flags", error)
             }
             if (hasPersistedPermission(
                     context = context,
@@ -85,6 +85,6 @@ object StorageAccess {
                 (!requireWrite || permission.isWritePermission)
         }
     }.onFailure { error ->
-        Log.w(TAG, "Unable to inspect persisted URI permissions for $uri", error)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to inspect persisted URI permissions for $uri", error)
     }.getOrDefault(false)
 }

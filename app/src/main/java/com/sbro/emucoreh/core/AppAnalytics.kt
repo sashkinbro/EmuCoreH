@@ -48,7 +48,7 @@ object AppAnalytics {
             firebaseAnalytics = analytics
             ready.set(true)
         }.onFailure { error ->
-            Log.w(TAG, "Firebase Analytics initialization failed", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Firebase Analytics initialization failed", error)
         }
     }
 
@@ -64,7 +64,7 @@ object AppAnalytics {
         runCatching {
             analytics.logEvent(name, Bundle().apply(buildParams))
         }.onFailure { error ->
-            Log.w(TAG, "Failed to log analytics event: $name", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Failed to log analytics event: $name", error)
         }
     }
 }

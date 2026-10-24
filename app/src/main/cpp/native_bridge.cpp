@@ -67,15 +67,10 @@ extern "C" void EmuCoreHAchievementsShutdown();
 
 #define LOG_TAG "EmuCoreH"
 #define CORE_LOG_TAG "EmuCoreH-Core"
-#ifdef NDEBUG
-#define LOGI(...) ((void)0)
-#define LOGW(...) ((void)0)
-#define LOGE(...) ((void)0)
-#else
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-#endif
+#include "release_logging.h"
+#define LOGI(...) EMUCOREH_LOG_INFO(LOG_TAG, __VA_ARGS__)
+#define LOGW(...) EMUCOREH_LOG_WARN(LOG_TAG, __VA_ARGS__)
+#define LOGE(...) EMUCOREH_LOG_ERROR(LOG_TAG, __VA_ARGS__)
 
 namespace core_renderer {
 constexpr int kVulkan = 1;
@@ -630,6 +625,10 @@ bool EnvironmentCallback(unsigned cmd, void* data) {
 
 void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
     if (fmt == nullptr) return;
+#ifdef NDEBUG
+    // INFO is reserved for functional game-ID events from the bundled core.
+    if (level != RETRO_LOG_INFO && level != RETRO_LOG_ERROR) return;
+#endif
     char message[1024];
     va_list args;
     va_start(args, fmt);
@@ -658,7 +657,9 @@ void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
     }
 
 #ifdef NDEBUG
-    (void)level;
+    // Each bundled core deduplicates failures at their source. Do not put a
+    // process-wide one-shot gate here: it would hide unrelated later failures.
+    if (level == RETRO_LOG_ERROR) __android_log_write(ANDROID_LOG_ERROR, CORE_LOG_TAG, message);
 #else
     // Flycast runs its LogManager at debug verbosity and traces every MMIO
     // access and dynarec bookkeeping entry. Forwarding that to logcat floods

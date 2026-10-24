@@ -663,7 +663,7 @@ void naomi_cart_LoadRom(const std::string& path, const std::string& fileName, Lo
 		}
 		if (!gameId.empty())
 			settings.content.gameId = gameId;
-		NOTICE_LOG(NAOMI, "NAOMI GAME ID [%s] region %x players %x vertical %x", settings.content.gameId.c_str(), (u8)bootId.country, bootId.cabinet, bootId.vertical);
+		GAME_ID_LOG(NAOMI, "NAOMI GAME ID [%s] region %x players %x vertical %x", settings.content.gameId.c_str(), (u8)bootId.country, bootId.cabinet, bootId.vertical);
 
 		if (gameId == "INITIAL D"
 				|| gameId == "INITIAL D Ver.2"
@@ -758,7 +758,7 @@ void naomi_cart_LoadRom(const std::string& path, const std::string& fileName, Lo
 	}
 	else
 	{
-		NOTICE_LOG(NAOMI, "NAOMI GAME ID [%s]", settings.content.gameId.c_str());
+		GAME_ID_LOG(NAOMI, "NAOMI GAME ID [%s]", settings.content.gameId.c_str());
 	}
 }
 

@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 /**
  ** Supermodel
  ** A Sega Model 3 Arcade Emulator.
@@ -434,7 +435,7 @@ void CDSB1::SendCommand(UINT8 data)
 	// Have we caught up to the read pointer?
 #ifdef DEBUG
 	if (fifoIdxW == fifoIdxR)
-		printf("DSB1 FIFO overflow!\n");
+		MODEL3_DIAGNOSTIC_PRINTF("DSB1 FIFO overflow!\n");
 #endif
 }
 
@@ -1017,7 +1018,7 @@ void CDSB2::SendCommand(UINT8 data)
 	// Have we caught up to the read pointer?
 #ifdef DEBUG
 	if (fifoIdxW == fifoIdxR)
-		printf("DSB2 FIFO overflow!\n");
+		MODEL3_DIAGNOSTIC_PRINTF("DSB2 FIFO overflow!\n");
 #endif
 }
 

@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 #include "Util/NewConfig.h"
 #include "OSD/Logger.h"
 #include "Pkgs/tinyxml2.h"
@@ -259,7 +260,7 @@ namespace Util
         if (it->HasChildren())
           WriteSection(file, *it);
       }
-      printf("Configuration successfully saved to '%s'.\n", filename.c_str());
+      MODEL3_DIAGNOSTIC_PRINTF("Configuration successfully saved to '%s'.\n", filename.c_str());
       InfoLog("Configuration successfully saved to '%s'.", filename.c_str());
     }
   }

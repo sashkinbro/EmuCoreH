@@ -64,6 +64,20 @@ __attribute__((format(printf, 5, 6)))
 #endif  // loglevel
 #endif  // logging
 
+// Game IDs are functional metadata consumed by the libretro frontend, not
+// ordinary diagnostics. Keep that dedicated channel when release logs are off.
+#if defined(LIBRETRO) && defined(NDEBUG)
+#include <atomic>
+#define GAME_ID_LOG(t, ...) GenericLog(LogTypes::LNOTICE, LogTypes::t, __FILE__, __LINE__, __VA_ARGS__)
+#define GENERIC_LOG(t, v, ...) do { \
+    if constexpr ((v) == LogTypes::LERROR) { \
+        static std::atomic_flag reported = ATOMIC_FLAG_INIT; \
+        if (!reported.test_and_set(std::memory_order_relaxed)) \
+            GenericLog(v, t, __FILE__, __LINE__, __VA_ARGS__); \
+    } \
+} while (0)
+#else
+#define GAME_ID_LOG(t, ...) NOTICE_LOG(t, __VA_ARGS__)
 // Let the compiler optimize this out
 #define GENERIC_LOG(t, v, ...)                                                                     \
 		do                                                                                               \
@@ -71,6 +85,8 @@ __attribute__((format(printf, 5, 6)))
 			if (v <= MAX_LOGLEVEL)                                                                         \
 			GenericLog(v, t, __FILE__, __LINE__, __VA_ARGS__);                                           \
 		} while (0)
+
+#endif
 
 #define ERROR_LOG(t, ...)                                                                          \
 		do                                                                                               \

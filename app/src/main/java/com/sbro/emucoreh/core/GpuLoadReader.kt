@@ -54,7 +54,7 @@ internal object GpuLoadReader {
         }
 
         if (!warnedUnavailable) {
-            Log.i(TAG, "GPU load is not exposed by this device")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "GPU load is not exposed by this device")
             warnedUnavailable = true
         }
         lastValue = null

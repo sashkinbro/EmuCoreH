@@ -91,7 +91,7 @@ struct Host {
 };
 std::unique_ptr<Host> host;
 std::vector<retro_input_descriptor> descriptors;
-bool fail(const std::string& reason){error=reason;if(logger)logger(RETRO_LOG_ERROR,"Model3: %s\n",reason.c_str());return false;}
+bool fail(const std::string& reason){error=reason;FatalLog(reason.c_str());return false;}
 void fatal_runtime(const char* reason){fail(reason);if(environment)environment(RETRO_ENVIRONMENT_SHUTDOWN,nullptr);}
 void tile_blit(const uint32_t* pixels,int w,int h,bool blend){if(host&&host->gl_ready&&pixels){host->presenter.UpdateFrameARGB(pixels,w,h);host->presenter.Render(blend);}}
 void destroy_graphics(){
@@ -252,12 +252,12 @@ RETRO_API void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb){batch
 RETRO_API void retro_set_input_poll(retro_input_poll_t cb){input_poll=cb;}
 RETRO_API void retro_set_input_state(retro_input_state_t cb){input_state=cb;}
 RETRO_API void retro_set_controller_port_device(unsigned p,unsigned device){if(p<2)controller_types[p]=device;}
-RETRO_API void retro_init(){error.clear();if(environment){retro_log_callback cb{};if(environment(RETRO_ENVIRONMENT_GET_LOG_INTERFACE,&cb))logger=cb.log;}}
+RETRO_API void retro_init(){ResetFatalLog();error.clear();if(environment){retro_log_callback cb{};if(environment(RETRO_ENVIRONMENT_GET_LOG_INTERFACE,&cb))logger=cb.log;}}
 RETRO_API void retro_deinit(){unload();runtime_guard.Reset();logger=nullptr;context_alive=false;hw={};}
 RETRO_API void retro_get_system_info(retro_system_info* info){if(info)*info={"Supermodel (Super3)","c410f82-emucoreh1","zip",true,true};}
 RETRO_API void retro_get_system_av_info(retro_system_av_info* info){if(info)*info={{width,height,width,height,4.f/3.f},{60.0,44100.0}};}
 RETRO_API bool retro_load_game(const retro_game_info* game_info){
-  unload();runtime_guard.Reset();error.clear();
+  unload();ResetFatalLog();runtime_guard.Reset();error.clear();
   if(!environment||!game_info||!game_info->path)return fail("A full-path Model 3 ZIP ROM set is required");
   try{
     if(!fs::is_regular_file(game_info->path))return fail("Model 3 ZIP file is missing");

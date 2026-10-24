@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 /**
  ** Supermodel
  ** A Sega Model 3 Arcade Emulator.
@@ -1053,7 +1054,7 @@ UINT8 CModel3::Read8(UINT32 addr)
   // Unknown
   default:
 #ifdef NET_BOARD
-    printf("CMODEL3 : unknown R8 : %x\n", addr >> 24);
+    MODEL3_DIAGNOSTIC_PRINTF("CMODEL3 : unknown R8 : %x\n", addr >> 24);
 #endif
     break;
   }
@@ -1156,7 +1157,7 @@ UINT16 CModel3::Read16(UINT32 addr)
       result = NetBoard->ReadCommRAM16((addr & 0xFFFF) ^ 2);
       return FLIPENDIAN16(result); // result
     default:
-      printf("CMODEL3 : unknown R16 : %x (C0)\n", addr);
+      MODEL3_DIAGNOSTIC_PRINTF("CMODEL3 : unknown R16 : %x (C0)\n", addr);
       break;
     }
   }
@@ -1323,7 +1324,7 @@ UINT32 CModel3::Read32(UINT32 addr)
       case 1: // ioreg 32bits access to 16bits range
         if (addr > 0xc00101ff)
         {
-          printf("R32 ATTENTION OUT OF RANGE\n");
+          MODEL3_DIAGNOSTIC_PRINTF("R32 ATTENTION OUT OF RANGE\n");
         }
 
         result = NetBoard->ReadIORegister((addr & 0x1FF) / 2);
@@ -1335,7 +1336,7 @@ UINT32 CModel3::Read32(UINT32 addr)
         return FLIPENDIAN32(result); // result
 
       default:
-        printf("R32 ATTENTION OUT OF RANGE\n");
+        MODEL3_DIAGNOSTIC_PRINTF("R32 ATTENTION OUT OF RANGE\n");
         break;
       }
 
@@ -1353,7 +1354,7 @@ UINT32 CModel3::Read32(UINT32 addr)
   // Unknown
   default:
 #ifdef NET_BOARD
-    printf("CMODEL3 : unknown R32 : %x\n", addr >> 24);
+    MODEL3_DIAGNOSTIC_PRINTF("CMODEL3 : unknown R32 : %x\n", addr >> 24);
 #endif
     break;
   }
@@ -1486,7 +1487,7 @@ void CModel3::Write8(UINT32 addr, UINT8 data)
       case 1: // ioreg 32bits access to 16bits range
         if (addr > 0xc00101ff)
         {
-          printf("W8 ATTENTION OUT OF RANGE\n");
+          MODEL3_DIAGNOSTIC_PRINTF("W8 ATTENTION OUT OF RANGE\n");
         }
 
         NetBoard->WriteIORegister((addr & 0x1FF) / 2, data);
@@ -1498,7 +1499,7 @@ void CModel3::Write8(UINT32 addr, UINT8 data)
         break;
 
       default:
-        printf("W8 ATTENTION OUT OF RANGE\n");
+        MODEL3_DIAGNOSTIC_PRINTF("W8 ATTENTION OUT OF RANGE\n");
         break;
       }
 
@@ -1814,7 +1815,7 @@ void CModel3::Write32(UINT32 addr, UINT32 data)
       case 1: // ioreg 32bits access to 16bits range
         if (addr > 0xc00101ff)
         {
-          printf("W32 ATTENTION OUT OF RANGE\n");
+          MODEL3_DIAGNOSTIC_PRINTF("W32 ATTENTION OUT OF RANGE\n");
         }
 
         NetBoard->WriteIORegister((addr & 0x1FF) / 2, FLIPENDIAN16(data >> 16));
@@ -1826,7 +1827,7 @@ void CModel3::Write32(UINT32 addr, UINT32 data)
         break;
 
       default:
-        printf("W32 ATTENTION OUT OF RANGE\n");
+        MODEL3_DIAGNOSTIC_PRINTF("W32 ATTENTION OUT OF RANGE\n");
         break;
       }
 
@@ -1846,7 +1847,7 @@ void CModel3::Write32(UINT32 addr, UINT32 data)
   default:
   Unknown32:
 #ifdef NET_BOARD
-      if (m_runNetBoard) printf("CMODEL3 : unknown W32 : %x (%x) data=%d\n", addr,addr >> 24,data);
+      if (m_runNetBoard) MODEL3_DIAGNOSTIC_PRINTF("CMODEL3 : unknown W32 : %x (%x) data=%d\n", addr,addr >> 24,data);
 #endif
     //printf("PC=%08X\twrite32: %08X=%08X\n", ppc_get_pc(), addr, data);
     DebugLog("PC=%08X\twrite32: %08X=%08X\n", ppc_get_pc(), addr, data);
@@ -2492,7 +2493,7 @@ void CModel3::DeleteThreadObjects(void)
 
 void CModel3::DumpTimings(void)
 {
-  printf("PPC:%3ums%c render:%3ums%c sync:%4uK%c%3ums%c snd:%3ums%c drv:%3ums%c frame:%3ums%c\n",
+  MODEL3_DIAGNOSTIC_PRINTF("PPC:%3ums%c render:%3ums%c sync:%4uK%c%3ums%c snd:%3ums%c drv:%3ums%c frame:%3ums%c\n",
     timings.ppcTicks, (timings.ppcTicks > timings.renderTicks ? '!' : ','),
     timings.renderTicks, (timings.renderTicks > timings.ppcTicks ? '!' : ','),
     timings.syncSize / 1024, (timings.syncSize / 1024 > 128 ? '!' : ','),
@@ -3073,6 +3074,7 @@ bool CModel3::LoadGame(const Game &game, const ROMSet &rom_set)
   // Security board encryption device
   m_cryptoDevice.Init(game.encryption_key, std::bind(&CModel3::ReadSecurityRAM, this, std::placeholders::_1));
 
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
   // Print game information
   std::set<std::string> extra_hw;
   std::string engine_type = (m_config["New3DEngine"].ValueAs<bool>() ? "New" : "Legacy");
@@ -3102,6 +3104,8 @@ bool CModel3::LoadGame(const Game &game, const ROMSet &rom_set)
   if (!extra_hw.empty())
     std::cout << "    Extra Hardware: " << Util::Format(", ").Join(extra_hw) << std::endl;
   std::cout << std::endl;
+
+#endif
 
   m_game = game;
 #ifdef NET_BOARD
@@ -3338,10 +3342,10 @@ static void Dump(const char *file, uint8_t *buf, size_t size, bool reverse32, bo
       Util::FlipEndian16(buf, size);
     fwrite(buf, sizeof(UINT8), size, fp);
     fclose(fp);
-    printf("dumped %s\n", file);
+    MODEL3_DIAGNOSTIC_PRINTF("dumped %s\n", file);
   }
   else
-    printf("unable to dump %s\n", file);
+    MODEL3_DIAGNOSTIC_PRINTF("unable to dump %s\n", file);
 }
 #endif
 

@@ -1026,12 +1026,12 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         bootToBios: Boolean = false,
         rendererOverride: Int? = null
     ) {
-        Log.i(
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(
             TAG,
             "startEmulation requested path=$path bootBios=$bootToBios"
         )
         if (_uiState.value.isStarting) {
-            Log.w(TAG, "startEmulation skipped because another start is in progress")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "startEmulation skipped because another start is in progress")
             return
         }
         val normalizedSlotToLoad = slotToLoad?.let { normalizeSaveSlot(it) }
@@ -1164,13 +1164,13 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     path.isNullOrBlank() -> null
                     else -> if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isModel3) {
                         runCatching { com.sbro.emucoreh.core.Model3ContentPreparer.prepare(getApplication(), path) }
-                            .onFailure { Log.e(TAG, "Unable to prepare Model 3 content", it) }.getOrNull()
+                            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Model 3 content", it) }.getOrNull()
                     } else if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isSega) {
                         // The previous session (including a failed one) has been unloaded above.
                         // Copy SAF content before taking CoreRuntime's lifecycle lock, so a
                         // background/surface-destroy callback cannot block on a large disc copy.
                         runCatching { com.sbro.emucoreh.core.JGenesisContentPreparer.prepare(getApplication(), path) }
-                            .onFailure { Log.e(TAG, "Unable to prepare Sega launch content", it) }.getOrNull()
+                            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Sega launch content", it) }.getOrNull()
                     } else DocumentPathResolver.prepareGameLaunchPath(getApplication(), path)
                 }
 
@@ -1186,7 +1186,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 }
 
                 finalLaunchPath = launchPath
-                Log.i(TAG, "Prepared launch path=$launchPath originalPath=$path bootBios=$bootToBios")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "Prepared launch path=$launchPath originalPath=$path bootBios=$bootToBios")
                 if (bootToBios) {
                     currentGameTitle = BIOS_SESSION_TITLE
                     currentGamePath = null
@@ -1438,10 +1438,10 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     allowBiosBoot = bootToBios
                 )
             } catch (error: Exception) {
-                Log.e(TAG, "EmulatorBridge.startEmulation failed", error)
+                com.sbro.emucoreh.core.CrashLogger.logError(TAG, "EmulatorBridge.startEmulation failed", error)
                 false
             }
-            Log.i(TAG, "EmulatorBridge.startEmulation returned $started path=$pathToLaunch")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "EmulatorBridge.startEmulation returned $started path=$pathToLaunch")
             if (started) {
                 // A background callback can arrive before the native VM exists.
                 // Reconcile its retained intent after startup, without resuming a
@@ -1515,6 +1515,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun toggleJitProfiler() {
+        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         val state = _uiState.value
         val nextState = !state.isJitProfilerActive
         _uiState.value = state.copy(isJitProfilerActive = nextState)
@@ -1530,6 +1531,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun toggleHangTrace() {
+        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         val state = _uiState.value
         val nextState = !state.isHangTraceActive
         _uiState.value = state.copy(isHangTraceActive = nextState)
@@ -2212,7 +2214,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         if (isShuttingDown || cancelPendingStart) return
         val path = currentGamePath
         val bootToBios = path == null
-        NativeApp.logCrashBreadcrumb(
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb(
             "renderer fallback engaged -> " +
                 "${RendererDefaults.coreRendererName(RendererDefaults.toCoreRenderer(requested))}($requested)"
         )
@@ -3585,36 +3587,36 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         launchPath: String? = null
     ) {
         val state = _uiState.value
-        NativeApp.setCrashContextString("emu_launch_state", launchState ?: when {
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_launch_state", launchState ?: when {
             state.isStarting -> "starting"
             state.isPaused -> "paused"
             state.isRunning -> "running"
             else -> "idle"
         })
-        NativeApp.setCrashContextString("emu_game_title", currentGameTitle)
-        NativeApp.setCrashContextString("emu_game_serial", currentGameSerial)
-        NativeApp.setCrashContextString("emu_game_source", currentGameSource)
-        NativeApp.setCrashContextString("emu_game_path_hint", launchPath?.let { File(it).name }.orEmpty())
-        NativeApp.setCrashContextInt("emu_renderer", state.renderer)
-        NativeApp.setCrashContextString("emu_renderer_name", when (state.renderer) {
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_game_title", currentGameTitle)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_game_serial", currentGameSerial)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_game_source", currentGameSource)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_game_path_hint", launchPath?.let { File(it).name }.orEmpty())
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextInt("emu_renderer", state.renderer)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_renderer_name", when (state.renderer) {
             12 -> "OpenGL"
             13 -> "Software"
             14 -> "Vulkan"
             else -> "Unknown(${state.renderer})"
         })
-        NativeApp.setCrashContextString("emu_upscale", state.upscale.toString())
-        NativeApp.setCrashContextInt("emu_aspect_ratio", state.aspectRatio)
-        NativeApp.setCrashContextInt("emu_local_multiplayer_mode", state.localMultiplayerMode)
-        NativeApp.setCrashContextInt("emu_crop_left", state.displayCrop.left)
-        NativeApp.setCrashContextInt("emu_crop_top", state.displayCrop.top)
-        NativeApp.setCrashContextInt("emu_crop_right", state.displayCrop.right)
-        NativeApp.setCrashContextInt("emu_crop_bottom", state.displayCrop.bottom)
-        NativeApp.setCrashContextBool("emu_frame_limit_enabled", state.frameLimitEnabled)
-        NativeApp.setCrashContextInt("emu_target_fps", state.targetFps)
-        NativeApp.setCrashContextString("emu_device_model", Build.MODEL.orEmpty())
-        NativeApp.setCrashContextString("emu_soc_model", if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Build.SOC_MODEL else "")
-        NativeApp.setCrashContextBool("emu_running", state.isRunning)
-        NativeApp.setCrashContextBool("emu_paused", state.isPaused)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_upscale", state.upscale.toString())
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextInt("emu_aspect_ratio", state.aspectRatio)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextInt("emu_local_multiplayer_mode", state.localMultiplayerMode)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextInt("emu_crop_left", state.displayCrop.left)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextInt("emu_crop_top", state.displayCrop.top)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextInt("emu_crop_right", state.displayCrop.right)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextInt("emu_crop_bottom", state.displayCrop.bottom)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextBool("emu_frame_limit_enabled", state.frameLimitEnabled)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextInt("emu_target_fps", state.targetFps)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_device_model", Build.MODEL.orEmpty())
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_soc_model", if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Build.SOC_MODEL else "")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextBool("emu_running", state.isRunning)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextBool("emu_paused", state.isPaused)
     }
 
     private fun clearCrashContext() {
@@ -3634,13 +3636,13 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             gameSettingsProfileActive = false
         )
         currentGameSource = ""
-        NativeApp.setCrashContextString("emu_launch_state", "idle")
-        NativeApp.setCrashContextString("emu_game_title", "")
-        NativeApp.setCrashContextString("emu_game_serial", "")
-        NativeApp.setCrashContextString("emu_game_source", "")
-        NativeApp.setCrashContextString("emu_game_path_hint", "")
-        NativeApp.setCrashContextBool("emu_running", false)
-        NativeApp.setCrashContextBool("emu_paused", false)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_launch_state", "idle")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_game_title", "")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_game_serial", "")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_game_source", "")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_game_path_hint", "")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextBool("emu_running", false)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextBool("emu_paused", false)
     }
 
     fun onPadInput(padIndex: Int, keyCode: Int, range: Int = 0, pressed: Boolean) {

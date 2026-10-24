@@ -1486,7 +1486,7 @@ object GamepadManager {
             return
         }
         lastMissingVibratorLogElapsedMs = now
-        Log.w(TAG, "No vibration target available for pad $padIndex")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "No vibration target available for pad $padIndex")
     }
 
     /**

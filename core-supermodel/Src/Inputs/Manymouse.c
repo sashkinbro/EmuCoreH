@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 /*
  * ManyMouse foundation code; apps talks to this and it talks to the lowlevel
  *  code for various platforms.
@@ -69,7 +70,7 @@ int ManyMouse_Init(const int onlyAbs)
         } /* if */
     } /* for */
 
-    printf("Initialized ManyMouse using %s backend\n", driver == NULL ? "no" : ManyMouse_DriverName());
+    MODEL3_DIAGNOSTIC_PRINTF("Initialized ManyMouse using %s backend\n", driver == NULL ? "no" : ManyMouse_DriverName());
 
     return retval;
 } /* ManyMouse_Init */

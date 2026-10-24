@@ -149,7 +149,7 @@ object DiscordIntegration {
                 return
             }
             val savedToken = tokenStore.load()
-            Log.i(TAG, "Discord helper connected (saved token=${savedToken.isNotBlank()})")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "Discord helper connected (saved token=${savedToken.isNotBlank()})")
             mutableState.value = current.copy(
                 status = if (savedToken.isBlank()) {
                     DiscordConnectionStatus.Disconnected
@@ -372,7 +372,7 @@ object DiscordIntegration {
                 replyTo = incoming
             })
         }.onFailure {
-            Log.w(TAG, "Discord IPC send($what) failed", it)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Discord IPC send($what) failed", it)
             helper = null
             rebindHelper()
         }

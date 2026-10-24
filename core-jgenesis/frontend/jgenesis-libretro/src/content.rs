@@ -17,6 +17,7 @@ pub enum Console {
 }
 
 impl Console {
+    #[cfg(debug_assertions)]
     pub fn label(self) -> &'static str {
         match self {
             Self::Genesis => "Genesis",

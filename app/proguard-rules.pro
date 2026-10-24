@@ -74,8 +74,8 @@
     public static ** INSTANCE;
 }
 
-# The release APK does not emit application logcat diagnostics. R8 also drops
-# message construction for these calls when its result has no other consumer.
+# Routine diagnostics are DEBUG-guarded at their call sites. Keep this fallback
+# for library calls, but preserve println used only by the fatal crash reporter.
 -assumenosideeffects class android.util.Log {
     public static int v(...);
     public static int d(...);
@@ -83,5 +83,4 @@
     public static int w(...);
     public static int e(...);
     public static int wtf(...);
-    public static int println(...);
 }

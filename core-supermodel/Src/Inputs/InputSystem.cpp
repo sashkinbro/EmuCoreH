@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 /**
  ** Supermodel
  ** A Sega Model 3 Arcade Emulator.
@@ -437,7 +438,7 @@ CInputSystem::~CInputSystem()
 
 #ifdef DEBUG
   if (totalSrcsAcquired != totalSrcsReleased)
-    printf("WARNING - number of input source acquisitions (%u) does not equal number of releases (%u)\n", totalSrcsAcquired, totalSrcsReleased);
+    MODEL3_DIAGNOSTIC_PRINTF("WARNING - number of input source acquisitions (%u) does not equal number of releases (%u)\n", totalSrcsAcquired, totalSrcsReleased);
 #endif
 }
 
@@ -1070,8 +1071,8 @@ CInputSource *CInputSystem::ParseSingleSource(string str)
 
 void CInputSystem::PrintKeySettings(int kbdNum, KeySettings *settings)
 {
-  printf(" Sensitivity = %u %%\n", settings->sensitivity);
-  printf(" Decay Speed = %u %%\n", settings->decaySpeed);
+  MODEL3_DIAGNOSTIC_PRINTF(" Sensitivity = %u %%\n", settings->sensitivity);
+  MODEL3_DIAGNOSTIC_PRINTF(" Decay Speed = %u %%\n", settings->decaySpeed);
 }
 
 KeySettings *CInputSystem::LoadKeySettings(const Util::Config::Node &config, int kbdNum)
@@ -1122,7 +1123,7 @@ void CInputSystem::StoreKeySettings(Util::Config::Node *config, KeySettings *set
 void CInputSystem::PrintMouseSettings(int mseNum, MouseSettings *settings)
 {
   for (int axisNum = 0; axisNum < NUM_MOUSE_AXES; axisNum++)
-    printf(" %-7s Dead Zone = %u %%\n", s_axisNames[axisNum], settings->deadZones[axisNum]);
+    MODEL3_DIAGNOSTIC_PRINTF(" %-7s Dead Zone = %u %%\n", s_axisNames[axisNum], settings->deadZones[axisNum]);
 }
 
 MouseSettings *CInputSystem::LoadMouseSettings(const Util::Config::Node &config, int mseNum)
@@ -1177,11 +1178,11 @@ void CInputSystem::PrintJoySettings(int joyNum, JoySettings *settings)
     if (joyDetails && !joyDetails->hasAxis[axisNum])
       continue;
     const char *axisName = s_axisNames[axisNum];
-    printf(" %-7s Min Value        = %d\n", axisName, settings->axisMinVals[axisNum]);
-    printf(" %-7s Center/Off Value = %d\n", axisName, settings->axisOffVals[axisNum]);
-    printf(" %-7s Max Value        = %d\n", axisName, settings->axisMaxVals[axisNum]);
-    printf(" %-7s Dead Zone        = %u %%\n", axisName, settings->deadZones[axisNum]);
-    printf(" %-7s Saturation       = %u %%\n", axisName, settings->saturations[axisNum]);
+    MODEL3_DIAGNOSTIC_PRINTF(" %-7s Min Value        = %d\n", axisName, settings->axisMinVals[axisNum]);
+    MODEL3_DIAGNOSTIC_PRINTF(" %-7s Center/Off Value = %d\n", axisName, settings->axisOffVals[axisNum]);
+    MODEL3_DIAGNOSTIC_PRINTF(" %-7s Max Value        = %d\n", axisName, settings->axisMaxVals[axisNum]);
+    MODEL3_DIAGNOSTIC_PRINTF(" %-7s Dead Zone        = %u %%\n", axisName, settings->deadZones[axisNum]);
+    MODEL3_DIAGNOSTIC_PRINTF(" %-7s Saturation       = %u %%\n", axisName, settings->saturations[axisNum]);
   }
 }
 
@@ -1604,23 +1605,23 @@ void CInputSystem::ClearSettings()
 
 void CInputSystem::PrintSettings()
 {
-  puts("Input System Settings");
-  puts("---------------------");
-  puts("");
+  MODEL3_DIAGNOSTIC_PUTS("Input System Settings");
+  MODEL3_DIAGNOSTIC_PUTS("---------------------");
+  MODEL3_DIAGNOSTIC_PUTS("");
 
-  printf("Input System: %s\n", name);
+  MODEL3_DIAGNOSTIC_PRINTF("Input System: %s\n", name);
 
-  puts("");
+  MODEL3_DIAGNOSTIC_PUTS("");
 
   PrintDevices();
 
-  puts("");
+  MODEL3_DIAGNOSTIC_PUTS("");
 
   // Print all key settings for attached keyboards
   KeySettings *keySettings;
   if (m_numKbds == ANY_KEYBOARD)
   {
-    puts("Common Keyboard Settings:");
+    MODEL3_DIAGNOSTIC_PUTS("Common Keyboard Settings:");
     keySettings = GetKeySettings(ANY_KEYBOARD, true);
     PrintKeySettings(ANY_KEYBOARD, keySettings);
   }
@@ -1628,7 +1629,7 @@ void CInputSystem::PrintSettings()
   {
     for (int kbdNum = 0; kbdNum < m_numKbds; kbdNum++)
     {
-      printf("Keyboard %d Settings:\n", kbdNum + 1);
+      MODEL3_DIAGNOSTIC_PRINTF("Keyboard %d Settings:\n", kbdNum + 1);
       keySettings = GetKeySettings(kbdNum, true);
       PrintKeySettings(kbdNum, keySettings);
     }
@@ -1638,7 +1639,7 @@ void CInputSystem::PrintSettings()
   MouseSettings *mseSettings;
   if (m_numMice == ANY_MOUSE)
   {
-    puts("Common Mouse Settings:");
+    MODEL3_DIAGNOSTIC_PUTS("Common Mouse Settings:");
     mseSettings = GetMouseSettings(ANY_MOUSE, true);
     PrintMouseSettings(ANY_MOUSE, mseSettings);
   }
@@ -1646,7 +1647,7 @@ void CInputSystem::PrintSettings()
   {
     for (int mseNum = 0; mseNum < m_numMice; mseNum++)
     {
-      printf("Mouse %d Settings:\n", mseNum + 1);
+      MODEL3_DIAGNOSTIC_PRINTF("Mouse %d Settings:\n", mseNum + 1);
       mseSettings = GetMouseSettings(mseNum, true);
       PrintMouseSettings(mseNum, mseSettings);
     }
@@ -1656,7 +1657,7 @@ void CInputSystem::PrintSettings()
   JoySettings *joySettings;
   if (m_numJoys == ANY_JOYSTICK)
   {
-    puts("Common Joystick Settings:");
+    MODEL3_DIAGNOSTIC_PUTS("Common Joystick Settings:");
     joySettings = GetJoySettings(ANY_JOYSTICK, true);
     PrintJoySettings(ANY_JOYSTICK, joySettings);
   }
@@ -1664,13 +1665,13 @@ void CInputSystem::PrintSettings()
   {
     for (int joyNum = 0; joyNum < m_numJoys; joyNum++)
     {
-      printf("Joystick %d Settings:\n", joyNum + 1);
+      MODEL3_DIAGNOSTIC_PRINTF("Joystick %d Settings:\n", joyNum + 1);
       joySettings = GetJoySettings(joyNum, true);
       PrintJoySettings(joyNum, joySettings);
     }
   }
 
-  puts("");
+  MODEL3_DIAGNOSTIC_PUTS("");
 }
 
 void CInputSystem::LoadFromConfig(const Util::Config::Node &config)
@@ -1841,7 +1842,7 @@ bool CInputSystem::DetectJoystickAxis(unsigned joyNum, unsigned &axisNum, const 
   const JoyDetails *joyDetails = GetJoyDetails(joyNum);
   if (joyDetails == NULL)
   {
-    puts("No such joystick!");
+    MODEL3_DIAGNOSTIC_PUTS("No such joystick!");
     return false;
   }
 
@@ -1857,7 +1858,7 @@ bool CInputSystem::DetectJoystickAxis(unsigned joyNum, unsigned &axisNum, const 
   if (output)
     output->Acquire();
 
-  printf("Move axis around and then press Return (or press Esc to cancel): ");
+  MODEL3_DIAGNOSTIC_PRINTF("Move axis around and then press Return (or press Esc to cancel): ");
   fflush(stdout); // required on terminals that use buffering
 
   unsigned maxRange;
@@ -1918,16 +1919,16 @@ bool CInputSystem::DetectJoystickAxis(unsigned joyNum, unsigned &axisNum, const 
     if (output && output->IsActive())
     {
       if (firstOut)
-        puts("");
-      printf(" [");
+        MODEL3_DIAGNOSTIC_PUTS("");
+      MODEL3_DIAGNOSTIC_PRINTF(" [");
       for (unsigned loopAxisNum = 0; loopAxisNum < NUM_JOY_AXES; loopAxisNum++)
       {
         int joyVal = GetJoyAxisValue(joyNum, loopAxisNum);
         if (loopAxisNum > 0)
-          printf(", ");
-        printf("%s: %d", s_axisIds[loopAxisNum], joyVal);
+          MODEL3_DIAGNOSTIC_PRINTF(", ");
+        MODEL3_DIAGNOSTIC_PRINTF("%s: %d", s_axisIds[loopAxisNum], joyVal);
       }
-      puts("]");
+      MODEL3_DIAGNOSTIC_PUTS("]");
       firstOut = false;
     }
 
@@ -1950,16 +1951,16 @@ bool CInputSystem::DetectJoystickAxis(unsigned joyNum, unsigned &axisNum, const 
   }
 
   if (maxRange > 3000)
-    printf("Detected %s\n", joyDetails->axisName[axisNum]);
+    MODEL3_DIAGNOSTIC_PRINTF("Detected %s\n", joyDetails->axisName[axisNum]);
   else
   {
     cancelled = true;
-    puts("Not Detected");
+    MODEL3_DIAGNOSTIC_PUTS("Not Detected");
   }
   goto Finish;  
   
 Cancelled:
-  puts("[Cancelled]");
+  MODEL3_DIAGNOSTIC_PUTS("[Cancelled]");
   cancelled = true;
 
 Finish:
@@ -1977,7 +1978,7 @@ bool CInputSystem::CalibrateJoystickAxis(unsigned joyNum, unsigned axisNum, cons
   const JoyDetails *joyDetails = GetJoyDetails(joyNum);
   if (joyDetails == NULL || axisNum >= NUM_JOY_AXES || !joyDetails->hasAxis[axisNum])
   {
-    puts("No such axis or joystick!");
+    MODEL3_DIAGNOSTIC_PUTS("No such axis or joystick!");
     return false;
   }
 
@@ -1991,7 +1992,7 @@ bool CInputSystem::CalibrateJoystickAxis(unsigned joyNum, unsigned axisNum, cons
     output->Acquire();
 
 Repeat:
-  printf("Calibrating %s of joystick '%s'.\n\n", joyDetails->axisName[axisNum], joyDetails->name);
+  MODEL3_DIAGNOSTIC_PRINTF("Calibrating %s of joystick '%s'.\n\n", joyDetails->axisName[axisNum], joyDetails->name);
   
   unsigned totalRange;
   unsigned posDeadZone;
@@ -2011,43 +2012,43 @@ Repeat:
     switch (step)
     {
       case 0: 
-        puts("Step 1:");
-        puts(" Move axis now to its furthest positive/'on' position and hold, ie:");
+        MODEL3_DIAGNOSTIC_PUTS("Step 1:");
+        MODEL3_DIAGNOSTIC_PUTS(" Move axis now to its furthest positive/'on' position and hold, ie:");
         if (axisNum == AXIS_X || axisNum == AXIS_RX || axisNum == AXIS_Z || axisNum == AXIS_RZ)
-          puts(" - for a horizontal joystick axis, push it all the way to the right.");
+          MODEL3_DIAGNOSTIC_PUTS(" - for a horizontal joystick axis, push it all the way to the right.");
         if (axisNum == AXIS_Y || axisNum == AXIS_RY || axisNum == AXIS_Z || axisNum == AXIS_RZ)
-          puts(" - for a vertical joystick axis, push it all the way downwards.");
+          MODEL3_DIAGNOSTIC_PUTS(" - for a vertical joystick axis, push it all the way downwards.");
         if (axisNum == AXIS_S1 || axisNum == AXIS_S2)
-          puts(" - for a joystick slider, push it all the way to its extreme.");
-        puts(" - for a steering wheel, turn it all the way to the right.");
-        puts(" - for a pedal, press it all the way to the floor.");
+          MODEL3_DIAGNOSTIC_PUTS(" - for a joystick slider, push it all the way to its extreme.");
+        MODEL3_DIAGNOSTIC_PUTS(" - for a steering wheel, turn it all the way to the right.");
+        MODEL3_DIAGNOSTIC_PUTS(" - for a pedal, press it all the way to the floor.");
         break;
       case 1: 
-        puts("Step 2:");
-        puts(" Move axis the other way to its furthest negative position and hold, ie:");
+        MODEL3_DIAGNOSTIC_PUTS("Step 2:");
+        MODEL3_DIAGNOSTIC_PUTS(" Move axis the other way to its furthest negative position and hold, ie:");
         if (axisNum == AXIS_X || axisNum == AXIS_RX || axisNum == AXIS_Z || axisNum == AXIS_RZ)
-          puts(" - for a horizontal joystick axis, push it all the way to the left.");
+          MODEL3_DIAGNOSTIC_PUTS(" - for a horizontal joystick axis, push it all the way to the left.");
         if (axisNum == AXIS_Y || axisNum == AXIS_RY || axisNum == AXIS_Z || axisNum == AXIS_RZ)
-          puts(" - for a vertical joystick axis, push it all the way updwards.");
+          MODEL3_DIAGNOSTIC_PUTS(" - for a vertical joystick axis, push it all the way updwards.");
         if (axisNum == AXIS_S1 || axisNum == AXIS_S2)
-          puts(" - for a joystick slider, return it to its off position.");
-        puts(" - for a steering wheel, turn it all the way to the left.");
-        puts(" - for a pedal, let go of the pedal completely.  If there is another pedal");
-        puts("   that shares the same axis then press that one all the way to the floor.");
+          MODEL3_DIAGNOSTIC_PUTS(" - for a joystick slider, return it to its off position.");
+        MODEL3_DIAGNOSTIC_PUTS(" - for a steering wheel, turn it all the way to the left.");
+        MODEL3_DIAGNOSTIC_PUTS(" - for a pedal, let go of the pedal completely.  If there is another pedal");
+        MODEL3_DIAGNOSTIC_PUTS("   that shares the same axis then press that one all the way to the floor.");
         break;
       case 2: 
-        puts("Step 3:");
-        puts(" Return axis to its central/'off' position and hold, ie:");
+        MODEL3_DIAGNOSTIC_PUTS("Step 3:");
+        MODEL3_DIAGNOSTIC_PUTS(" Return axis to its central/'off' position and hold, ie:");
         if (axisNum == AXIS_X || axisNum == AXIS_RX || axisNum == AXIS_Y || axisNum == AXIS_RY || axisNum == AXIS_Z || axisNum == AXIS_RZ)
-           puts(" - for a joystick axis, let it return to the middle.");
+           MODEL3_DIAGNOSTIC_PUTS(" - for a joystick axis, let it return to the middle.");
         else if (axisNum == AXIS_S1 || axisNum == AXIS_S2)
-          puts(" - for a joystick slider, keep it at its off position.");
-        puts(" - for a steering weel, turn it back to the center.");
-        puts(" - for a pedal, let go of pedal completely.  Likewise for any other pedal");
-        puts("   that shares the same axis.");
+          MODEL3_DIAGNOSTIC_PUTS(" - for a joystick slider, keep it at its off position.");
+        MODEL3_DIAGNOSTIC_PUTS(" - for a steering weel, turn it back to the center.");
+        MODEL3_DIAGNOSTIC_PUTS(" - for a pedal, let go of pedal completely.  Likewise for any other pedal");
+        MODEL3_DIAGNOSTIC_PUTS("   that shares the same axis.");
         break;
     }
-    printf("\nPress Return when done (or press Esc to cancel): ");
+    MODEL3_DIAGNOSTIC_PRINTF("\nPress Return when done (or press Esc to cancel): ");
     fflush(stdout); // required on terminals that use buffering
 
     // Loop until user confirms or aborts
@@ -2059,7 +2060,7 @@ Repeat:
         break;
     }
 
-    printf("Calibrating... ");
+    MODEL3_DIAGNOSTIC_PRINTF("Calibrating... ");
     fflush(stdout); // required on terminals that use buffering
 
     // Loop until at least three seconds have elapsed or user aborts
@@ -2093,8 +2094,8 @@ Repeat:
       if (output && output->IsActive())
       {
         if (firstOut)
-          puts("");
-        printf(" [value: %d, min: %d, max: %d]\n", joyVal, minVal, maxVal);
+          MODEL3_DIAGNOSTIC_PUTS("");
+        MODEL3_DIAGNOSTIC_PRINTF(" [value: %d, min: %d, max: %d]\n", joyVal, minVal, maxVal);
         firstOut = false;
       }
 
@@ -2102,7 +2103,7 @@ Repeat:
       CThread::Sleep(1000/60);
     }
 
-    printf("Done\n\n");
+    MODEL3_DIAGNOSTIC_PRINTF("Done\n\n");
 
     switch (step)
     {
@@ -2146,12 +2147,12 @@ Repeat:
       joySettings->joyNum = joyNum;
     }
 
-    printf("Calibrated Axis Settings:\n\n");
-    printf(" Min Value        = %d\n", negVal);
-    printf(" Center/Off Value = %d\n", offVal);
-    printf(" Max Value        = %d\n", posVal);
-    printf(" Dead Zone        = %u %%\n", deadZone);
-    printf("\nAccept these settings: y/n? ");
+    MODEL3_DIAGNOSTIC_PRINTF("Calibrated Axis Settings:\n\n");
+    MODEL3_DIAGNOSTIC_PRINTF(" Min Value        = %d\n", negVal);
+    MODEL3_DIAGNOSTIC_PRINTF(" Center/Off Value = %d\n", offVal);
+    MODEL3_DIAGNOSTIC_PRINTF(" Max Value        = %d\n", posVal);
+    MODEL3_DIAGNOSTIC_PRINTF(" Dead Zone        = %u %%\n", deadZone);
+    MODEL3_DIAGNOSTIC_PRINTF("\nAccept these settings: y/n? ");
     fflush(stdout); // required on terminals that use buffering
     
     // Loop until user confirms or declines
@@ -2168,7 +2169,7 @@ Repeat:
         
         ClearSourceCache();
 
-        puts("Accepted");
+        MODEL3_DIAGNOSTIC_PUTS("Accepted");
         goto Finish;    
       }
     }
@@ -2176,9 +2177,9 @@ Repeat:
   }
   else
   {
-    puts("There was a problem calibrating the axis.  This may be because the steps");
-    puts("were not followed correctly or the joystick is sending invalid data.");
-    printf("\nTry calibrating again: y/n? ");
+    MODEL3_DIAGNOSTIC_PUTS("There was a problem calibrating the axis.  This may be because the steps");
+    MODEL3_DIAGNOSTIC_PUTS("were not followed correctly or the joystick is sending invalid data.");
+    MODEL3_DIAGNOSTIC_PRINTF("\nTry calibrating again: y/n? ");
     fflush(stdout); // required on terminals that use buffering
     
     // Loop until user confirms or declines
@@ -2188,7 +2189,7 @@ Repeat:
         break;
       else if (stricmp(mapping, "KEY_Y") == 0)
       {
-        puts("[Cancelled]");
+        MODEL3_DIAGNOSTIC_PUTS("[Cancelled]");
         goto Repeat;
       }
     }
@@ -2196,7 +2197,7 @@ Repeat:
   }
   
 Cancelled:
-  puts("[Cancelled]");
+  MODEL3_DIAGNOSTIC_PUTS("[Cancelled]");
   cancelled = true;
 
 Finish:
@@ -2209,48 +2210,48 @@ Finish:
 
 void CInputSystem::PrintDevices()
 {
-  puts("Keyboards:");
+  MODEL3_DIAGNOSTIC_PUTS("Keyboards:");
   if (m_numKbds == 0)
-    puts(" None");
+    MODEL3_DIAGNOSTIC_PUTS(" None");
   else if (m_numKbds == ANY_KEYBOARD)
-    puts(" System Keyboard");
+    MODEL3_DIAGNOSTIC_PUTS(" System Keyboard");
   else
   {
     for (int kbdNum = 0; kbdNum < m_numKbds; kbdNum++)
     {
       const KeyDetails *keyDetails = GetKeyDetails(kbdNum);
-      printf(" %d: %s\n", kbdNum + 1, keyDetails->name);
+      MODEL3_DIAGNOSTIC_PRINTF(" %d: %s\n", kbdNum + 1, keyDetails->name);
     }
   }
 
-  puts("Mice:");
+  MODEL3_DIAGNOSTIC_PUTS("Mice:");
   if (m_numMice == 0)
-    puts(" None");
+    MODEL3_DIAGNOSTIC_PUTS(" None");
   else if (m_numMice == ANY_MOUSE)
-    puts(" System Mouse");
+    MODEL3_DIAGNOSTIC_PUTS(" System Mouse");
   else
   {
     for (int mseNum = 0; mseNum < m_numMice; mseNum++)
     {
       const MouseDetails *mseDetails = GetMouseDetails(mseNum);
-      printf(" %d: %s\n", mseNum + 1, mseDetails->name);
+      MODEL3_DIAGNOSTIC_PRINTF(" %d: %s\n", mseNum + 1, mseDetails->name);
     }
   }
 
-  puts("Joysticks:");
+  MODEL3_DIAGNOSTIC_PUTS("Joysticks:");
   if (m_numJoys == 0)
-    puts(" None");
+    MODEL3_DIAGNOSTIC_PUTS(" None");
   else if (m_numJoys == ANY_JOYSTICK)
-    puts(" System Joystick");
+    MODEL3_DIAGNOSTIC_PUTS(" System Joystick");
   else
   {
     for (int joyNum = 0; joyNum < m_numJoys; joyNum++)
     {
       const JoyDetails *joyDetails = GetJoyDetails(joyNum);
       if (joyDetails->hasFFeedback)
-        printf(" %d: %s [Force Feedback Available]\n", joyNum + 1, joyDetails->name);
+        MODEL3_DIAGNOSTIC_PRINTF(" %d: %s [Force Feedback Available]\n", joyNum + 1, joyDetails->name);
       else
-        printf(" %d: %s\n", joyNum + 1, joyDetails->name);
+        MODEL3_DIAGNOSTIC_PRINTF(" %d: %s\n", joyNum + 1, joyDetails->name);
     }
   }
 }

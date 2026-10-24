@@ -20,8 +20,9 @@ smsgg-config = { workspace = true }
 smsgg-core = { workspace = true }
 
 bincode = { workspace = true }
-# Keep instruction-level trace/debug checks out of the Android release hot paths.
-log = { workspace = true, features = ["release_max_level_info"] }
+# Android release builds must not evaluate ordinary diagnostic arguments, even
+# when a dependency/frontend raises the runtime logging filter.
+log = { workspace = true, features = ["release_max_level_off"] }
 zip = { workspace = true }
 
 [lints]

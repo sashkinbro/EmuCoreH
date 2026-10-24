@@ -2068,6 +2068,8 @@ const char* XMLDocument::ErrorName() const
 
 void XMLDocument::PrintError() const
 {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
+
     if ( Error() ) {
         static const int LEN = 20;
         char buf1[LEN] = { 0 };
@@ -2086,6 +2088,8 @@ void XMLDocument::PrintError() const
         printf( "XMLDocument error id=%d '%s' str1=%s str2=%s\n",
                 static_cast<int>( _errorID ), ErrorName(), buf1, buf2 );
     }
+
+#endif
 }
 
 void XMLDocument::Parse()

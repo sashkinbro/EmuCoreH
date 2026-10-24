@@ -24,7 +24,7 @@ class DiscordService : Service() {
         override fun run() {
             if (loaded && started) {
                 runCatching(DiscordNative::pump)
-                    .onFailure { Log.w(TAG, "Discord callback pump failed", it) }
+                    .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Discord callback pump failed", it) }
             }
             handler.postDelayed(this, PUMP_INTERVAL_MS)
         }
@@ -33,7 +33,7 @@ class DiscordService : Service() {
     override fun onCreate() {
         super.onCreate()
         loaded = DiscordNative.load() && runCatching(DiscordNative::available).getOrDefault(false)
-        Log.i(TAG, "Helper process ready (SDK loaded=$loaded)")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "Helper process ready (SDK loaded=$loaded)")
         messenger = Messenger(Handler(Looper.getMainLooper()) { message ->
             handleMessage(message)
             true
@@ -54,11 +54,11 @@ class DiscordService : Service() {
             DiscordIpc.MSG_START -> {
                 if (!loaded) return
                 val token = message.data?.getString(DiscordIpc.DATA_TOKEN).orEmpty()
-                Log.i(TAG, "Starting Discord session (saved token=${token.isNotEmpty()})")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "Starting Discord session (saved token=${token.isNotEmpty()})")
                 runCatching {
                     if (token.isNotEmpty()) startActivity(DiscordAuthActivity.intent(this, token))
                     started = true
-                }.onFailure { Log.w(TAG, "Discord start failed", it) }
+                }.onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Discord start failed", it) }
             }
 
             DiscordIpc.MSG_AUTHORIZE -> {
@@ -66,7 +66,7 @@ class DiscordService : Service() {
                 runCatching {
                     startActivity(DiscordAuthActivity.intent(this, authorize = true))
                     started = true
-                }.onFailure { Log.w(TAG, "Discord authorization activity failed", it) }
+                }.onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Discord authorization activity failed", it) }
             }
 
             DiscordIpc.MSG_SET_PRESENCE -> {
@@ -78,7 +78,7 @@ class DiscordService : Service() {
                         data.getString(DiscordIpc.DATA_STATE).orEmpty(),
                         data.getString(DiscordIpc.DATA_COVER).orEmpty()
                     )
-                }.onFailure { Log.w(TAG, "Discord presence update failed", it) }
+                }.onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Discord presence update failed", it) }
             }
 
             DiscordIpc.MSG_QUERY -> reply(message.replyTo)
@@ -106,7 +106,7 @@ class DiscordService : Service() {
         }
         runCatching {
             target.send(Message.obtain(null, DiscordIpc.MSG_STATE).apply { this.data = data })
-        }.onFailure { Log.w(TAG, "Unable to return Discord state", it) }
+        }.onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to return Discord state", it) }
     }
 
     private companion object {

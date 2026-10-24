@@ -66,7 +66,7 @@ object DiscGdtexExtractor {
                 PvrDecoder.decode(fileData.copyOf(gdtexBytes.toInt()))
             }
         }.onFailure { error ->
-            Log.w(TAG, "Unable to extract 0GDTEX.PVR from $fileName", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to extract 0GDTEX.PVR from $fileName", error)
         }.getOrNull()
     }
 
@@ -163,7 +163,7 @@ object DiscGdtexExtractor {
                     )
                 }
             }
-            Log.d(TAG, "GDI track $trackNumber ($name) not accessible")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "GDI track $trackNumber ($name) not accessible")
         }
         return null
     }

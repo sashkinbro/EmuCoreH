@@ -24,15 +24,10 @@
 #include <vector>
 
 #define VK_LOG_TAG "EmuCoreH-Vk"
-#ifdef NDEBUG
-#define VK_LOGI(...) ((void)0)
-#define VK_LOGW(...) ((void)0)
-#define VK_LOGE(...) ((void)0)
-#else
-#define VK_LOGI(...) __android_log_print(ANDROID_LOG_INFO, VK_LOG_TAG, __VA_ARGS__)
-#define VK_LOGW(...) __android_log_print(ANDROID_LOG_WARN, VK_LOG_TAG, __VA_ARGS__)
-#define VK_LOGE(...) __android_log_print(ANDROID_LOG_ERROR, VK_LOG_TAG, __VA_ARGS__)
-#endif
+#include "release_logging.h"
+#define VK_LOGI(...) EMUCOREH_LOG_INFO(VK_LOG_TAG, __VA_ARGS__)
+#define VK_LOGW(...) EMUCOREH_LOG_WARN(VK_LOG_TAG, __VA_ARGS__)
+#define VK_LOGE(...) EMUCOREH_LOG_ERROR(VK_LOG_TAG, __VA_ARGS__)
 
 namespace emucoreh::vulkan {
 namespace {

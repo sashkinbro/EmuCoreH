@@ -22,6 +22,9 @@ target_include_directories(supermodel_libretro PRIVATE Src Src/CPU/68K/Musashi l
 # ...) refuse to boot when the board is absent. Android uses the standalone
 # one-cabinet implementation: no SDL_net, real socket or second instance.
 target_compile_definitions(supermodel_libretro PRIVATE ANDROID __ANDROID__ EMUCOREH_LIBRETRO=1 NET_BOARD=1 NET_BOARD_STANDALONE=1)
+# Release contains only terminal adapter error reporting, not guest diagnostics.
+target_compile_definitions(supermodel_libretro PRIVATE
+  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:MODEL3_RELEASE_SILENT_LOGS=1>")
 target_compile_options(supermodel_libretro PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden -O3)
 target_link_options(supermodel_libretro PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384" "-Wl,--no-undefined" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libretro/exports.map")
 target_link_libraries(supermodel_libretro PRIVATE log android z EGL GLESv3)

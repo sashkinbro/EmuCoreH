@@ -1,6 +1,7 @@
 mod cheats;
 mod content;
 mod disk;
+mod diagnostics;
 mod frontend;
 mod libretro;
 mod options;
@@ -95,41 +96,28 @@ impl Environment {
 }
 
 fn set_boot_error(message: String) {
-    core_log_error(&message);
     let c_string = CString::new(message)
         .unwrap_or_else(|_| CString::new("Unknown emulator error").expect("literal CString"));
     *lock(boot_error_slot()) = Some(c_string);
 }
 
+fn set_fatal_boot_error(message: String) {
+    diagnostics::report_unrecoverable_error(&message);
+    set_boot_error(message);
+}
+
 fn clear_boot_error() {
+    diagnostics::reset_error_report();
     *lock(boot_error_slot()) = None;
 }
 
-#[cfg(target_os = "android")]
+#[cfg(all(target_os = "android", debug_assertions))]
 #[link(name = "log")]
 unsafe extern "C" {
     fn __android_log_write(priority: i32, tag: *const c_char, text: *const c_char) -> i32;
 }
 
-fn core_log_error(message: &str) {
-    #[cfg(target_os = "android")]
-    {
-        if let Ok(text) = CString::new(message) {
-            unsafe {
-                __android_log_write(
-                    6,
-                    b"jgenesis_libretro\0".as_ptr().cast::<c_char>(),
-                    text.as_ptr(),
-                );
-            }
-        }
-    }
-    #[cfg(not(target_os = "android"))]
-    {
-        eprintln!("[jgenesis_libretro] {message}");
-    }
-}
-
+#[cfg(debug_assertions)]
 fn core_log_info(message: &str) {
     #[cfg(target_os = "android")]
     {
@@ -147,6 +135,13 @@ fn core_log_info(message: &str) {
     {
         eprintln!("[jgenesis_libretro] {message}");
     }
+}
+
+macro_rules! core_log_info {
+    ($($argument:tt)*) => {
+        #[cfg(debug_assertions)]
+        { core_log_info(&format!($($argument)*)); }
+    };
 }
 
 enum Emulator {
@@ -551,12 +546,12 @@ fn load_core(path: &Path) -> Result<Core, String> {
     let (bytes, extension) = read_cartridge(path)?;
     let console = detect_cartridge_console(&extension, &bytes);
 
-    let mut emulator = match console {
+    let emulator = match console {
         Console::MasterSystem | Console::GameGear | Console::Sg1000 => {
             let hardware = match console {
                 Console::MasterSystem => SmsGgHardware::MasterSystem,
                 Console::GameGear if smsgg_compat::game_gear_uses_sms_mode(&bytes) => {
-                    core_log_info("Game Gear cartridge requests SMS compatibility mode (pin 42)");
+                    core_log_info!("Game Gear cartridge requests SMS compatibility mode (pin 42)");
                     SmsGgHardware::MasterSystem
                 }
                 Console::GameGear => SmsGgHardware::GameGear,
@@ -602,18 +597,21 @@ fn load_core(path: &Path) -> Result<Core, String> {
         Console::SegaCd | Console::SegaCd32X => unreachable!("disc handled above"),
     };
 
+    #[cfg(debug_assertions)]
+    let mut emulator = emulator;
+    #[cfg(debug_assertions)]
     let title = match &mut emulator {
         Emulator::Genesis(value) => {
             value.game_title().map(|value| value.to_string()).unwrap_or_default()
         }
         Emulator::SmsGg(_) => String::new(),
     };
-    core_log_info(&format!(
+    core_log_info!(
         "Loaded {} content ({}), title='{}'",
         console.label(),
         path.display(),
         title
-    ));
+    );
 
     Ok(Core::new(emulator, save_writer, console, path.to_path_buf()))
 }
@@ -665,14 +663,15 @@ fn load_sega_cd(
     .map_err(|error| format!("Unable to create Sega CD emulator: {error}"))?;
     emulator.update_audio_output_frequency(AUDIO_SAMPLE_RATE);
 
+    #[cfg(debug_assertions)]
     let title = emulator.game_title().unwrap_or_default();
-    core_log_info(&format!(
+    core_log_info!(
         "Loaded {} content ({}), title='{}', BIOS={}",
         console.label(),
         path.display(),
         title,
         bios_path.display()
-    ));
+    );
 
     Ok(Core::new(Emulator::Genesis(emulator), save_writer, console, path.to_path_buf()))
 }
@@ -746,13 +745,15 @@ pub extern "C" fn retro_set_input_state(callback: Option<retro_input_state_t>) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn retro_init() {
-    core_log_info("jgenesis libretro core initialized");
+    diagnostics::reset_error_report();
+    diagnostics::install_panic_hook();
+    core_log_info!("jgenesis libretro core initialized");
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn retro_deinit() {
     *lock(core_slot()) = None;
-    core_log_info("jgenesis libretro core deinitialized");
+    core_log_info!("jgenesis libretro core deinitialized");
 }
 
 #[unsafe(no_mangle)]
@@ -803,17 +804,17 @@ pub extern "C" fn retro_load_game(info: *const retro_game_info) -> bool {
     *lock(core_slot()) = None;
 
     if info.is_null() {
-        set_boot_error("retro_load_game received null game info".to_string());
+        set_fatal_boot_error("retro_load_game received null game info".to_string());
         return false;
     }
     let path_pointer = unsafe { (*info).path };
     if path_pointer.is_null() {
-        set_boot_error("retro_load_game requires a filesystem path".to_string());
+        set_fatal_boot_error("retro_load_game requires a filesystem path".to_string());
         return false;
     }
     let path = unsafe { CStr::from_ptr(path_pointer) }.to_string_lossy().into_owned();
     if path.is_empty() {
-        set_boot_error("retro_load_game received an empty path".to_string());
+        set_fatal_boot_error("retro_load_game received an empty path".to_string());
         return false;
     }
 
@@ -823,7 +824,7 @@ pub extern "C" fn retro_load_game(info: *const retro_game_info) -> bool {
             true
         }
         Err(error) => {
-            set_boot_error(error);
+            set_fatal_boot_error(error);
             false
         }
     }
@@ -885,7 +886,7 @@ pub extern "C" fn retro_run() {
     };
 
     if let Err(error) = core.run_frame(inputs) {
-        set_boot_error(error);
+        set_fatal_boot_error(error);
         guard.take();
         drop(guard);
         if let Some(callback) = frontend {

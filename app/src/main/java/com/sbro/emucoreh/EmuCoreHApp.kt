@@ -35,7 +35,7 @@ class EmuCoreHApp : Application() {
             catch (error: Exception) {
                 // VM startup performs the same recovery under the gate before it can open cards.
                 if ((error as? DriveBackupException)?.reason != "busy") {
-                    android.util.Log.w("DriveBackup", "Pending restore recovery will be retried before VM startup")
+                    if (com.sbro.emucoreh.BuildConfig.DEBUG) android.util.Log.w("DriveBackup", "Pending restore recovery will be retried before VM startup")
                 }
             }
         }

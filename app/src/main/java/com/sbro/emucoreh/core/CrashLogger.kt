@@ -36,10 +36,12 @@ object CrashLogger {
 
     private val dateFmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
 
+    private val entries = CrashLogWriter(com.sbro.emucoreh.BuildConfig.DEBUG, ::writeEntry)
+
     fun init(context: Context) {
         logFile = resolveLogFile(context)
         installUncaughtExceptionHandler()
-        writeStartupLine(context)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) writeStartupLine(context)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             logPreviousRunExits(context)
         }
@@ -55,26 +57,25 @@ object CrashLogger {
     fun installNativeCrashReporter() {
         val file = logFile ?: return
         runCatching { CoreRuntime.bridge.nativeInstallCrashReporter(file.absolutePath) }
-            .onFailure { Log.w(TAG, "Unable to install native crash reporter", it) }
+            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to install native crash reporter", it) }
     }
 
+    /** Only call for an unrecoverable session/startup failure, never a recoverable warning. */
     fun logError(tag: String, message: String, throwable: Throwable? = null) {
-        val body = buildString {
-            append("[$tag] $message")
-            if (throwable != null) {
-                append("\n")
-                append(throwable.stackTraceString())
+        entries.write("ERROR") {
+            buildString {
+                append("[$tag] $message")
+                if (throwable != null) append("\n").append(throwable.stackTraceString())
             }
         }
-        writeEntry("ERROR", body)
     }
 
     fun logInfo(tag: String, message: String) {
-        writeEntry("INFO", "[$tag] $message")
+        entries.write("INFO") { "[$tag] $message" }
     }
 
     fun logContext(key: String, value: Any?) {
-        writeEntry("CTX", "$key = $value")
+        entries.write("CTX") { "$key = $value" }
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ object CrashLogger {
             if (!dir.exists()) dir.mkdirs()
             File(dir, LOG_FILE)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to resolve log file", e)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Failed to resolve log file", e)
             null
         }
     }
@@ -99,17 +100,14 @@ object CrashLogger {
         val androidVer = Build.VERSION.RELEASE
         val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: "?"
 
-        writeEntry("START", "APP START — v$appVersion | Android $androidVer | $device | $abi")
+        entries.write("START") { "APP START — v$appVersion | Android $androidVer | $device | $abi" }
     }
 
     private fun installUncaughtExceptionHandler() {
         previousHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
-                writeEntry(
-                    "CRASH",
-                    "Thread: ${thread.name}\n${throwable.stackTraceString()}"
-                )
+                entries.write("CRASH") { "Thread: ${thread.name}\n${throwable.stackTraceString()}" }
             } catch (_: Exception) {
                 // Don't let logger crash prevent the original crash from propagating
             }
@@ -127,7 +125,7 @@ object CrashLogger {
     @RequiresApi(Build.VERSION_CODES.R)
     private fun logPreviousRunExits(context: Context) {
         runCatching { reportPreviousRunExits(context) }
-            .onFailure { Log.w(TAG, "Unable to read previous exit info", it) }
+            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to read previous exit info", it) }
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -150,7 +148,7 @@ object CrashLogger {
             newest = maxOf(newest, info.timestamp)
             if (reported >= MAX_EXIT_REPORTS || !isAbnormalExit(info.reason)) continue
             reported++
-            writeEntry("CRASH", describeExit(info))
+            entries.write("CRASH") { describeExit(info) }
         }
 
         if (newest != watermark) {
@@ -241,6 +239,7 @@ object CrashLogger {
     }
 
     private fun writeEntry(level: String, body: String) {
+        if (level == "ERROR") Log.println(Log.ERROR, TAG, body)
         val file = logFile ?: return
         val timestamp = dateFmt.format(Date())
         val line = "[$timestamp] $level: $body\n"
@@ -249,7 +248,7 @@ object CrashLogger {
             rotateIfNeeded(file)
             FileWriter(file, /* append = */ true).use { it.write(line) }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to write log entry", e)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Failed to write log entry", e)
         }
     }
 
@@ -267,7 +266,7 @@ object CrashLogger {
             val rotationHeader = "=== LOG ROTATED at ${dateFmt.format(Date())} (old entries trimmed) ===\n"
             file.writeBytes(rotationHeader.toByteArray() + content.copyOfRange(safeStart.coerceAtMost(content.size), content.size))
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to rotate log", e)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Failed to rotate log", e)
         }
     }
 

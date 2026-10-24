@@ -147,7 +147,7 @@ class PlayerProfileRepository(context: Context) {
     suspend fun ensureCurrentUserProfile() {
         auth.currentUser?.let { user ->
             runCatching { removeLegacyAutotestProfileEntries(user.uid) }
-                .onFailure { error -> Log.e(TAG, "Legacy autotest profile cleanup failed", error) }
+                .onFailure { error -> if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Legacy autotest profile cleanup failed", error) }
             ensureUserProfile(
                 uid = user.uid,
                 email = user.email,

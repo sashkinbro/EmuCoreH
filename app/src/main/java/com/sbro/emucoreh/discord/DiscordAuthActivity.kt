@@ -26,7 +26,7 @@ class DiscordAuthActivity : Activity() {
                 DiscordNative.authorize()
             }
         }.onFailure { error ->
-            Log.w(TAG, "Unable to initialize Discord", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to initialize Discord", error)
         }
         finish()
         @Suppress("DEPRECATION")

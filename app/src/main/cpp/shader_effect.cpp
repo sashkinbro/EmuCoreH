@@ -4,11 +4,8 @@
 #include <atomic>
 #include <android/log.h>
 
-#ifdef NDEBUG
-#define SHADER_LOGE(...) ((void)0)
-#else
-#define SHADER_LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "EmuCoreH-Shader", __VA_ARGS__)
-#endif
+#include "release_logging.h"
+#define SHADER_LOGE(...) EMUCOREH_LOG_ERROR("EmuCoreH-Shader", __VA_ARGS__)
 
 namespace emucoreh::shader_effect {
 namespace {

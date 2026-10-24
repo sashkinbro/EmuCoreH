@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 /**
  ** Supermodel
  ** A Sega Model 3 Arcade Emulator.
@@ -563,10 +564,10 @@ CTileGen::~CTileGen(void)
 	{
 		fwrite(memoryPool, sizeof(UINT8), 0x120000, fp);
 		fclose(fp);
-		printf("dumped %s\n", "tileram");
+		MODEL3_DIAGNOSTIC_PRINTF("dumped %s\n", "tileram");
 	}
 	else
-		printf("unable to dump %s\n", "tileram");
+		MODEL3_DIAGNOSTIC_PRINTF("unable to dump %s\n", "tileram");
 #endif
 		
 	IRQ = NULL;

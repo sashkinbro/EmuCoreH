@@ -55,7 +55,7 @@ class DriveBackupApi(private val context: Context, private val email: String) {
             if (details != null) for (i in 0 until details.length()) add(details.optJSONObject(i)?.optString("reason").orEmpty())
         }.filter { it.matches(Regex("[A-Za-z_]+")) }
         // Never log tokens, account addresses, request URLs or the response body.
-        Log.w("DriveBackup", "Drive API failed: HTTP $code, reasons=${reasons.joinToString()}")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w("DriveBackup", "Drive API failed: HTTP $code, reasons=${reasons.joinToString()}")
         if (code == 401 && token.isNotEmpty()) {
             try { Identity.getAuthorizationClient(context).clearToken(ClearTokenRequest.builder().setToken(token).build()).awaitDrive() }
             catch (error: CancellationException) { throw error }

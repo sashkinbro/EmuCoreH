@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 #include "R3DShader.h"
 #ifndef __ANDROID__
 #include "R3DShaderQuads.h"
@@ -311,6 +312,8 @@ void R3DShader::DiscardAlpha(bool discard)
 
 void R3DShader::PrintShaderResult(GLuint shader)
 {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
+
 	//===========
 	GLint result;
 	GLint length;
@@ -325,13 +328,17 @@ void R3DShader::PrintShaderResult(GLuint shader)
 		if (length > 0) {
 			std::vector<char> msg(length);
 			glGetShaderInfoLog(shader, length, NULL, msg.data());
-			printf("%s\n", msg.data());
+			MODEL3_DIAGNOSTIC_PRINTF("%s\n", msg.data());
 		}
 	}
+
+#endif
 }
 
 void R3DShader::PrintProgramResult(GLuint program)
 {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
+
 	//===========
 	GLint result;
 	//===========
@@ -346,7 +353,9 @@ void R3DShader::PrintProgramResult(GLuint program)
 		//The maxLength includes the NULL character
 		std::vector<GLchar> infoLog(maxLength);
 		glGetProgramInfoLog(program, maxLength, &maxLength, infoLog.data());
-		printf("%s\n", infoLog.data());
+		MODEL3_DIAGNOSTIC_PRINTF("%s\n", infoLog.data());
 	}
+
+#endif
 }
 } // New3D

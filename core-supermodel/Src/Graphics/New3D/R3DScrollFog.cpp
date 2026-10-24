@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 #include "R3DScrollFog.h"
 #include "Mat4.h"
 #include <cstdio>
@@ -13,6 +14,8 @@ namespace New3D {
 namespace {
 static void LogShaderError(GLuint shader, const char* label)
 {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
+
 	GLint ok = 0;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
 	if (ok == GL_TRUE) return;
@@ -23,11 +26,15 @@ static void LogShaderError(GLuint shader, const char* label)
 	msg.resize(static_cast<size_t>(len));
 	GLsizei written = 0;
 	glGetShaderInfoLog(shader, len, &written, msg.data());
-	fprintf(stderr, "R3DScrollFog %s compile error: %s\n", label ? label : "shader", msg.c_str());
+	MODEL3_DIAGNOSTIC_FPRINTF(stderr, "R3DScrollFog %s compile error: %s\n", label ? label : "shader", msg.c_str());
+
+#endif
 }
 
 static void LogProgramError(GLuint program)
 {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
+
 	GLint ok = 0;
 	glGetProgramiv(program, GL_LINK_STATUS, &ok);
 	if (ok == GL_TRUE) return;
@@ -38,7 +45,9 @@ static void LogProgramError(GLuint program)
 	msg.resize(static_cast<size_t>(len));
 	GLsizei written = 0;
 	glGetProgramInfoLog(program, len, &written, msg.data());
-	fprintf(stderr, "R3DScrollFog link error: %s\n", msg.c_str());
+	MODEL3_DIAGNOSTIC_FPRINTF(stderr, "R3DScrollFog link error: %s\n", msg.c_str());
+
+#endif
 }
 
 static bool CompileShaderProgram(GLuint* programOut, GLuint* vsOut, GLuint* fsOut, const char* vsSrc, const char* fsSrc)

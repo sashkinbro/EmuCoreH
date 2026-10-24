@@ -17,7 +17,7 @@ final class DiscordNative {
             System.loadLibrary("emucoreh_discord");
             loaded = true;
         } catch (Throwable error) {
-            android.util.Log.w("EmuCoreHDiscord", "Discord SDK bridge unavailable: " + error.getMessage());
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) android.util.Log.w("EmuCoreHDiscord", "Discord SDK bridge unavailable: " + error.getMessage());
             loaded = false;
         }
         return loaded;

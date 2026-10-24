@@ -172,7 +172,7 @@ class HubViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 .onFailure { error ->
-                    Log.w(LOG_TAG, "Hub synchronization failed", error)
+                    if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(LOG_TAG, "Hub synchronization failed", error)
                     _uiState.update {
                         it.copy(
                             isInitialLoading = false,

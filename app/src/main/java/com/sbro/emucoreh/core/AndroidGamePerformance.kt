@@ -44,7 +44,7 @@ internal class AndroidGamePerformance(context: Context) {
             }
             gameManager.setGameState(state)
         }.onFailure { error ->
-            Log.w(TAG, "Unable to report Android game state: $phase", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to report Android game state: $phase", error)
         }
     }
 

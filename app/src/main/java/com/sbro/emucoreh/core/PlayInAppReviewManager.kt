@@ -58,19 +58,19 @@ object PlayInAppReviewManager {
         val reviewManager = runCatching {
             ReviewManagerFactory.create(activity.applicationContext)
         }.getOrElse { error ->
-            Log.w(TAG, "Unable to create ReviewManager", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to create ReviewManager", error)
             complete(Result.RETRYABLE_FAILURE)
             return
         }
         val requestTask = runCatching { reviewManager.requestReviewFlow() }.getOrElse { error ->
-            Log.w(TAG, "Unable to request review flow", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to request review flow", error)
             complete(Result.RETRYABLE_FAILURE)
             return
         }
 
         requestTask.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
-                Log.w(TAG, "Review flow request failed", task.exception)
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Review flow request failed", task.exception)
                 complete(Result.RETRYABLE_FAILURE)
                 return@addOnCompleteListener
             }
@@ -80,14 +80,14 @@ object PlayInAppReviewManager {
             }
 
             val reviewInfo = runCatching { task.result }.getOrElse { error ->
-                Log.w(TAG, "ReviewInfo was unavailable", error)
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "ReviewInfo was unavailable", error)
                 complete(Result.RETRYABLE_FAILURE)
                 return@addOnCompleteListener
             }
             val launchTask = runCatching {
                 reviewManager.launchReviewFlow(activity, reviewInfo)
             }.getOrElse { error ->
-                Log.w(TAG, "Unable to launch review flow", error)
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to launch review flow", error)
                 complete(Result.RETRYABLE_FAILURE)
                 return@addOnCompleteListener
             }
@@ -95,7 +95,7 @@ object PlayInAppReviewManager {
                 if (completedTask.isSuccessful) {
                     complete(Result.COMPLETED)
                 } else {
-                    Log.w(TAG, "Review flow launch failed", completedTask.exception)
+                    if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Review flow launch failed", completedTask.exception)
                     complete(Result.RETRYABLE_FAILURE)
                 }
             }

@@ -169,7 +169,7 @@ class EmuAchievementRepository(context: Context) {
         val uid = auth.currentUser?.uid ?: return emptyList()
         val unlockDocuments = runCatching {
             firestore.collection(UNLOCKS).whereEqualTo("uid", uid).get().await().documents
-        }.onFailure { Log.w(TAG, "Unable to load achievement unlocks; using local progress", it) }
+        }.onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to load achievement unlocks; using local progress", it) }
             .getOrDefault(emptyList())
         val unlocks = unlockDocuments.associate { it.getString("achievementId").orEmpty() to it.unlockedAtMs() }
         val candidates = EmuCoreHAchievementCatalog.definitions.filter { definition ->
@@ -216,7 +216,7 @@ class EmuAchievementRepository(context: Context) {
                 }
                 definition
             }
-        }.await() }.onFailure { Log.w(TAG, "Unable to sync achievement unlocks", it) }.getOrDefault(emptyList())
+        }.await() }.onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to sync achievement unlocks", it) }.getOrDefault(emptyList())
 
         if (newlyUnlocked.size <= 3) {
             newlyUnlocked.forEach(::notifyUnlocked)
@@ -251,7 +251,7 @@ class EmuAchievementRepository(context: Context) {
                 ),
                 SetOptions.merge()
             ).await()
-        }.onFailure { Log.w(TAG, "Unable to sync public achievement summary", it) }
+        }.onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to sync public achievement summary", it) }
     }
 
     private suspend fun loadPublic(uid: String, profile: PlayerProfile): List<EmuAchievementState> {

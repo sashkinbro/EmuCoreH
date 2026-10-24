@@ -235,7 +235,7 @@ fun AppNavigation(
             // Dreamcast boots through the HLE BIOS without a dump, so only a
             // game folder is required before the home screen opens.
             val shouldOpenHome = onboardingCompleted && hasGameFolder
-            Log.i(
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(
                 TAG,
                 "Startup destination onboarding=$onboardingCompleted gameFolder=$hasGameFolder"
             )
@@ -1100,7 +1100,7 @@ fun AppNavigation(
 
         LaunchedEffect(navController, startupDestination, launchIntentVersion) {
             val launchRequest = GameLaunchShortcut.parseLaunchRequest(activity?.intent) ?: return@LaunchedEffect
-            Log.i(
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(
                 TAG,
                 "Handling launch request destination=$startupDestination path=${launchRequest.gamePath} bios=${launchRequest.bootBios}"
             )

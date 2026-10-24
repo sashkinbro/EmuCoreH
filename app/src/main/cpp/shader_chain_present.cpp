@@ -7,11 +7,8 @@
 #include <cstdint>
 #include <string>
 
-#ifdef NDEBUG
-#define SHADER_LOGE(...) ((void)0)
-#else
-#define SHADER_LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "EmuCoreH-Shader", __VA_ARGS__)
-#endif
+#include "release_logging.h"
+#define SHADER_LOGE(...) EMUCOREH_LOG_ERROR("EmuCoreH-Shader", __VA_ARGS__)
 
 #if defined(EMUCOREA_HAVE_LIBRASHADER)
 #include <librashader.h>

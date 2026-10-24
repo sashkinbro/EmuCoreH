@@ -57,7 +57,7 @@ constexpr char const *BIOS_TITLE = "Dreamcast BIOS";
 static void loadSpecialSettings()
 {
 	std::string& prod_id = settings.content.gameId;
-	NOTICE_LOG(BOOT, "Game ID is [%s]", prod_id.c_str());
+	GAME_ID_LOG(BOOT, "Game ID is [%s]", prod_id.c_str());
 
 	if (settings.platform.isConsole())
 	{

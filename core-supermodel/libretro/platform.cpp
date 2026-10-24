@@ -1,3 +1,4 @@
+#define MODEL3_LOGGER_IMPLEMENTATION 1
 // SPDX-FileCopyrightText: 2026 SBRO
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Portable OSD implementation: no SDL Activity, video, audio or JNI ownership.
@@ -5,6 +6,7 @@
 #include "OSD/Audio.h"
 #include "OSD/Video.h"
 #include "OSD/Outputs.h"
+#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
@@ -16,15 +18,31 @@
 extern void model3_log(int level,const char* message);
 extern bool model3_audio(unsigned,INT16*,INT16*,INT16*,INT16*,bool);
 namespace {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
 void log_message(int level,const char* fmt,va_list args){char buf[2048];vsnprintf(buf,sizeof(buf),fmt,args);model3_log(level,buf);}
+#endif
+std::atomic_flag fatal_logged = ATOMIC_FLAG_INIT;
 struct Thread { std::thread worker; int result=0; };
 struct Semaphore { std::mutex mutex;std::condition_variable cv;UINT32 value;explicit Semaphore(UINT32 n):value(n){} };
 thread_local std::string thread_error;
 }
 // Core initializers return ErrorLog(...) directly: FAIL is true, success is zero.
+void ResetFatalLog(){fatal_logged.clear();}
+void FatalLog(const char* message){
+#if defined(MODEL3_RELEASE_SILENT_LOGS)
+  if(fatal_logged.test_and_set())return;
+#endif
+  model3_log(3,message);
+}
+#if defined(MODEL3_RELEASE_SILENT_LOGS)
+bool ErrorLog(const char*,...){return FAIL;}
+void InfoLog(const char*,...){}
+void DebugLog(const char*,...){}
+#else
 bool ErrorLog(const char* fmt,...){va_list ap;va_start(ap,fmt);log_message(3,fmt,ap);va_end(ap);return FAIL;}
 void InfoLog(const char* fmt,...){va_list ap;va_start(ap,fmt);log_message(1,fmt,ap);va_end(ap);}
 void DebugLog(const char* fmt,...){va_list ap;va_start(ap,fmt);log_message(0,fmt,ap);va_end(ap);}
+#endif
 void CThread::Sleep(UINT32 n){std::this_thread::sleep_for(std::chrono::milliseconds(n));}
 UINT32 CThread::GetTicks(){static const auto start=std::chrono::steady_clock::now();return static_cast<UINT32>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()-start).count());}
 CThread* CThread::CreateThread(const std::string& name,ThreadStart fn,void* param){try{auto impl=std::make_unique<Thread>();auto p=impl.get();p->worker=std::thread([p,fn,param]{p->result=fn(param);});return new CThread(name,impl.release());}catch(const std::exception& e){thread_error=e.what();return nullptr;}}

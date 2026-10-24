@@ -62,7 +62,7 @@
 
 // DEBUG
 //#define SUPERMODEL_LOG_AUDIO	// define this to log all audio to sound.bin
-#ifdef SUPERMODEL_LOG_AUDIO
+#if defined(SUPERMODEL_LOG_AUDIO) && !defined(MODEL3_RELEASE_SILENT_LOGS)
 static FILE		*soundFP;
 #endif
 
@@ -394,7 +394,7 @@ bool CSoundBoard::RunFrame(void)
 	// Output the audio buffers
 	bool bufferFull = OutputAudio(NUM_SAMPLES_PER_FRAME, audioFL, audioFR, audioRL, audioRR, m_config["FlipStereo"].ValueAs<bool>());
 
-#ifdef SUPERMODEL_LOG_AUDIO
+#if defined(SUPERMODEL_LOG_AUDIO) && !defined(MODEL3_RELEASE_SILENT_LOGS)
 	// Output to binary file
 	INT16	s;
 	for (int i = 0; i < NUM_SAMPLES_PER_FRAME; i++)
@@ -525,7 +525,7 @@ bool CSoundBoard::Init(const UINT8 *soundROMPtr, const UINT8 *sampleROMPtr)
 	SCSP_SetRAM(1, ram2);
 	
 	// Binary logging
-#ifdef SUPERMODEL_LOG_AUDIO
+#if defined(SUPERMODEL_LOG_AUDIO) && !defined(MODEL3_RELEASE_SILENT_LOGS)
 	soundFP = fopen("sound.bin","wb");	// delete existing file
 	fclose(soundFP);
 	soundFP = fopen("sound.bin","ab");	// append mode
@@ -576,7 +576,7 @@ static void Reverse16(UINT8 *buf, unsigned size)
 
 CSoundBoard::~CSoundBoard(void)
 {	
-#ifdef SUPERMODEL_LOG_AUDIO
+#if defined(SUPERMODEL_LOG_AUDIO) && !defined(MODEL3_RELEASE_SILENT_LOGS)
 	// close binary log file
 	fclose(soundFP);
 #endif

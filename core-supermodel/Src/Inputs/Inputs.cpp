@@ -1,3 +1,4 @@
+#include "Util/ReleaseDiagnostics.h"
 /**
  ** Supermodel
  ** A Sega Model 3 Arcade Emulator.
@@ -336,44 +337,44 @@ void CInputs::PrintHeader(const char *fmt, ...)
 	vsprintf(header, fmt, vl);
 	va_end(vl);
 
-	puts(header);
+	MODEL3_DIAGNOSTIC_PUTS(header);
 	for (size_t i = 0; i < strlen(header); i++)
-		putchar('-');
-	printf("\n\n");
+		MODEL3_DIAGNOSTIC_PUTCHAR('-');
+	MODEL3_DIAGNOSTIC_PRINTF("\n\n");
 }
 
 void CInputs::PrintConfigureInputsHelp()
 {
-	puts("For each control, use the following keys to map the inputs:");
-	puts("");
-	puts("  Return  Set current input mapping and move to next control");
-	puts("  c       Clear current input mapping and remain there");
-	puts("  s       Set the current input mapping and remain there");
-	puts("  a       Append to current input mapping (for multiple assignments)");
-	puts("          and remain there");
-	puts("  r       Reset current input mapping to default and remain there");
-	puts("  Down    Move onto next control");
-	puts("  Up      Go back to previous control");
-	puts("  b       Calibrate joystick axes");
-	puts("  i       Display information about input system and attached devices");
-	puts("  h       Display this help again");
-	puts("  q       Finish and save all changes");
-	puts("  Esc     Finish without saving any changes");
-	puts("");
-	puts("To assign input(s), simply press the appropriate key(s), mouse button(s),");
-	puts("joystick button(s), or move the mouse along one or more axes, or move a");
-	puts("joystick's axis or POV hat controller(s).  The input(s) will be accepted");
-	puts("as soon as all pressed keys and buttons are released and all moved mouse");
-	puts("and joystick controllers are returned to their rest positions.");
-	puts("");
-	puts("Notes:");
-	puts(" - In order to assign keys the configuration window must on top.");
-	puts(" - In order to assign mouse buttons the mouse must be clicked within the");
-	puts("   window.");
-	puts(" - In order to assign mouse axes, the cursor must first be placed in the");
-	puts("   center of the window and then moved in the corresponding direction to the");
-	puts("   window's edge and then returned to the center.");
-	puts("");
+	MODEL3_DIAGNOSTIC_PUTS("For each control, use the following keys to map the inputs:");
+	MODEL3_DIAGNOSTIC_PUTS("");
+	MODEL3_DIAGNOSTIC_PUTS("  Return  Set current input mapping and move to next control");
+	MODEL3_DIAGNOSTIC_PUTS("  c       Clear current input mapping and remain there");
+	MODEL3_DIAGNOSTIC_PUTS("  s       Set the current input mapping and remain there");
+	MODEL3_DIAGNOSTIC_PUTS("  a       Append to current input mapping (for multiple assignments)");
+	MODEL3_DIAGNOSTIC_PUTS("          and remain there");
+	MODEL3_DIAGNOSTIC_PUTS("  r       Reset current input mapping to default and remain there");
+	MODEL3_DIAGNOSTIC_PUTS("  Down    Move onto next control");
+	MODEL3_DIAGNOSTIC_PUTS("  Up      Go back to previous control");
+	MODEL3_DIAGNOSTIC_PUTS("  b       Calibrate joystick axes");
+	MODEL3_DIAGNOSTIC_PUTS("  i       Display information about input system and attached devices");
+	MODEL3_DIAGNOSTIC_PUTS("  h       Display this help again");
+	MODEL3_DIAGNOSTIC_PUTS("  q       Finish and save all changes");
+	MODEL3_DIAGNOSTIC_PUTS("  Esc     Finish without saving any changes");
+	MODEL3_DIAGNOSTIC_PUTS("");
+	MODEL3_DIAGNOSTIC_PUTS("To assign input(s), simply press the appropriate key(s), mouse button(s),");
+	MODEL3_DIAGNOSTIC_PUTS("joystick button(s), or move the mouse along one or more axes, or move a");
+	MODEL3_DIAGNOSTIC_PUTS("joystick's axis or POV hat controller(s).  The input(s) will be accepted");
+	MODEL3_DIAGNOSTIC_PUTS("as soon as all pressed keys and buttons are released and all moved mouse");
+	MODEL3_DIAGNOSTIC_PUTS("and joystick controllers are returned to their rest positions.");
+	MODEL3_DIAGNOSTIC_PUTS("");
+	MODEL3_DIAGNOSTIC_PUTS("Notes:");
+	MODEL3_DIAGNOSTIC_PUTS(" - In order to assign keys the configuration window must on top.");
+	MODEL3_DIAGNOSTIC_PUTS(" - In order to assign mouse buttons the mouse must be clicked within the");
+	MODEL3_DIAGNOSTIC_PUTS("   window.");
+	MODEL3_DIAGNOSTIC_PUTS(" - In order to assign mouse axes, the cursor must first be placed in the");
+	MODEL3_DIAGNOSTIC_PUTS("   center of the window and then moved in the corresponding direction to the");
+	MODEL3_DIAGNOSTIC_PUTS("   window's edge and then returned to the center.");
+	MODEL3_DIAGNOSTIC_PUTS("");
 }
 
 unsigned CInputs::Count()
@@ -479,15 +480,15 @@ bool CInputs::ConfigureInputs(const Game &game)
 		if (groupLabel == NULL || stricmp(groupLabel, itGroupLabel) != 0)
 		{
 			groupLabel = itGroupLabel;
-			printf("%s:\n", groupLabel);
+			MODEL3_DIAGNOSTIC_PRINTF("%s:\n", groupLabel);
 		}
 
 Redisplay:
 		// Print the input label, current input mapping and available options
 		if (index > 0)
-			printf(" %s [%s]: Ret/c/s/a/r/Up/Down/b/h/q/Esc? ", input->label, input->GetMapping());
+			MODEL3_DIAGNOSTIC_PRINTF(" %s [%s]: Ret/c/s/a/r/Up/Down/b/h/q/Esc? ", input->label, input->GetMapping());
 		else
-			printf(" %s [%s]: Ret/c/s/a/r/Down/h/b/q/Esc? ", input->label, input->GetMapping());
+			MODEL3_DIAGNOSTIC_PRINTF(" %s [%s]: Ret/c/s/a/r/Down/h/b/q/Esc? ", input->label, input->GetMapping());
 		fflush(stdout);	// required on terminals that use buffering
 
 		// Loop until user has selected a valid option
@@ -513,50 +514,50 @@ Redisplay:
 			if (stricmp(mapping, "KEY_RETURN") == 0 || stricmp(mapping, "KEY_S") == 0)
 			{
 				// Set the input mapping
-				printf("Setting... ");
+				MODEL3_DIAGNOSTIC_PRINTF("Setting... ");
 				fflush(stdout);	// required on terminals that use buffering
 				if (input->Configure(false, uiExit->GetMapping()))
 				{
-					puts(input->GetMapping());
+					MODEL3_DIAGNOSTIC_PUTS(input->GetMapping());
 					if (stricmp(mapping, "KEY_RETURN") == 0)
 						index++;
 					done = true;
 				}
 				else
 				{
-					puts("[Cancelled]");
+					MODEL3_DIAGNOSTIC_PUTS("[Cancelled]");
 					goto Redisplay;
 				}
 			}
 			else if (stricmp(mapping, "KEY_A") == 0)
 			{
 				// Append to the input mapping(s)
-				printf("Appending... ");
+				MODEL3_DIAGNOSTIC_PRINTF("Appending... ");
 				fflush(stdout);	// required on terminals that use buffering
 				if (input->Configure(true, uiExit->GetMapping()))
-					puts(input->GetMapping());
+					MODEL3_DIAGNOSTIC_PUTS(input->GetMapping());
 				else
-					puts("[Cancelled]");
+					MODEL3_DIAGNOSTIC_PUTS("[Cancelled]");
 				goto Redisplay;
 			}
 			else if (stricmp(mapping, "KEY_C") == 0)
 			{
 				// Clear the input mapping(s)
 				input->SetMapping("NONE");
-				puts("Cleared");
+				MODEL3_DIAGNOSTIC_PUTS("Cleared");
 				goto Redisplay;
 			}
 			else if (stricmp(mapping, "KEY_R") == 0)
 			{
 				// Reset the input mapping(s) to the default
 				input->ResetToDefaultMapping();
-				puts("Reset");
+				MODEL3_DIAGNOSTIC_PUTS("Reset");
 				goto Redisplay;
 			}
 			else if (stricmp(mapping, "KEY_DOWN") == 0)
 			{
 				// Move forward to the next mapping
-				puts("");
+				MODEL3_DIAGNOSTIC_PUTS("");
 				index++;
 				done = true;
 			}
@@ -565,7 +566,7 @@ Redisplay:
 				// Move back to the previous mapping
 				if (index > 0)
 				{
-					puts("");
+					MODEL3_DIAGNOSTIC_PUTS("");
 					index--;
 					done = true;
 				}
@@ -573,29 +574,29 @@ Redisplay:
 			else if (stricmp(mapping, "KEY_HOME") == 0)
 			{
 				// Move to first input
-				puts("");
+				MODEL3_DIAGNOSTIC_PUTS("");
 				index = 0;
 				done = true;
 			}
 			else if (stricmp(mapping, "KEY_B") == 0)
 			{
 				// Calibrate joysticks
-				printf("\n\n");
+				MODEL3_DIAGNOSTIC_PRINTF("\n\n");
 				CalibrateJoysticks();
-				puts("");
+				MODEL3_DIAGNOSTIC_PUTS("");
 				goto Redisplay;
 			}	
 			else if (stricmp(mapping, "KEY_I") == 0)
 			{
 				// Print info about input system
-				printf("\n\n");
+				MODEL3_DIAGNOSTIC_PRINTF("\n\n");
 				m_system->PrintSettings();
 				goto Redisplay;
 			}
 			else if (stricmp(mapping, "KEY_H") == 0)
 			{
 				// Print the help message again
-				printf("\n\n");
+				MODEL3_DIAGNOSTIC_PRINTF("\n\n");
 				PrintConfigureInputsHelp();
 				goto Redisplay;
 			}
@@ -605,7 +606,7 @@ Redisplay:
 	}
 
 Finish:
-	printf("\n\n");
+	MODEL3_DIAGNOSTIC_PRINTF("\n\n");
 
 	m_system->GrabMouse();
 	return !cancelled;
@@ -623,17 +624,17 @@ void CInputs::CalibrateJoysticks()
 {
 	int numJoys = m_system->GetNumJoysticks();
 	if (numJoys == 0 || numJoys == ANY_JOYSTICK)
-		puts("No joysticks attached to calibrate!");
+		MODEL3_DIAGNOSTIC_PUTS("No joysticks attached to calibrate!");
 	else
 	{
-		puts("Choose joystick to calibrate (or press Esc to cancel):");
+		MODEL3_DIAGNOSTIC_PUTS("Choose joystick to calibrate (or press Esc to cancel):");
 		if (numJoys > 10)
 			numJoys = 10;
 		for (int i = 0; i < numJoys; i++)
 		{
 			const JoyDetails *joyDetails = m_system->GetJoyDetails(i);
 			unsigned dispNum = (i == 9 ? 0 : i + 1);
-			printf(" %u: %s\n", dispNum, joyDetails->name);
+			MODEL3_DIAGNOSTIC_PRINTF(" %u: %s\n", dispNum, joyDetails->name);
 		}
 
 		char mapping[50];
@@ -648,7 +649,7 @@ void CInputs::CalibrateJoysticks()
 			joyNum = (joyNum == 0 ? 9 : joyNum - 1);
 			if (joyNum >= numJoys)
 				continue;
-			puts("");
+			MODEL3_DIAGNOSTIC_PUTS("");
 			CalibrateJoystick(joyNum);
 			return;
 		}
@@ -660,22 +661,22 @@ void CInputs::CalibrateJoystick(int joyNum)
 	const JoyDetails *joyDetails = m_system->GetJoyDetails(joyNum);
 	if (joyDetails == NULL || joyDetails->numAxes == 0)
 	{
-		puts("No axes available to calibrate on joystick!");
+		MODEL3_DIAGNOSTIC_PUTS("No axes available to calibrate on joystick!");
 		return;
 	}
 
-	printf("Calibrating joystick '%s'.\n\n", joyDetails->name);
+	MODEL3_DIAGNOSTIC_PRINTF("Calibrating joystick '%s'.\n\n", joyDetails->name);
 
-	puts("Choose axis to calibrate (or press Esc to cancel):");
+	MODEL3_DIAGNOSTIC_PUTS("Choose axis to calibrate (or press Esc to cancel):");
 	vector<unsigned> axisNumList;
 	for (unsigned axisNum = 0; axisNum < NUM_JOY_AXES; axisNum++)
 	{
 		if (!joyDetails->hasAxis[axisNum])
 			continue;
 		axisNumList.push_back(axisNum);
-		printf(" %u: %s\n", (unsigned) axisNumList.size(), joyDetails->axisName[axisNum]);
+		MODEL3_DIAGNOSTIC_PRINTF(" %u: %s\n", (unsigned) axisNumList.size(), joyDetails->axisName[axisNum]);
 	}
-	printf(" 0: Unsure - help me choose...\n");
+	MODEL3_DIAGNOSTIC_PRINTF(" 0: Unsure - help me choose...\n");
 	
 	char mapping[50];
 	while (m_system->ReadMapping(mapping, 50, false, READ_KEYBOARD|READ_MERGE, uiExit->GetMapping()))
@@ -683,7 +684,7 @@ void CInputs::CalibrateJoystick(int joyNum)
 		unsigned axisNum;
 		if (stricmp(mapping, "KEY_0") == 0)
 		{
-			puts("");
+			MODEL3_DIAGNOSTIC_PUTS("");
 			if (!m_system->DetectJoystickAxis(joyNum, axisNum))
 				return;
 		}
@@ -699,7 +700,7 @@ void CInputs::CalibrateJoystick(int joyNum)
 				continue;
 			axisNum = axisNumList[optNum - 1];
 		}
-		puts("");
+		MODEL3_DIAGNOSTIC_PUTS("");
 		if (m_system->CalibrateJoystickAxis(joyNum, axisNum))
 		{
 			for (vector<CInput*>::iterator it = m_inputs.begin(); it != m_inputs.end(); ++it)
@@ -729,8 +730,8 @@ void CInputs::PrintInputs(const Game *game)
 	{
 		if (strcmp((*it)->id, "UIExit") == 0)
 		{
-			printf("Exit Assignment:\n");
-			printf(" %s = %s\n", (*it)->label, (*it)->GetMapping());
+			MODEL3_DIAGNOSTIC_PRINTF("Exit Assignment:\n");
+			MODEL3_DIAGNOSTIC_PRINTF(" %s = %s\n", (*it)->label, (*it)->GetMapping());
 		}
 
 		if (!(*it)->IsConfigurable() || !((*it)->gameFlags & gameFlags))
@@ -740,13 +741,13 @@ void CInputs::PrintInputs(const Game *game)
 		if (groupLabel == NULL || stricmp(groupLabel, itGroupLabel) != 0)
 		{
 			groupLabel = itGroupLabel;
-			printf("%s:\n", groupLabel);
+			MODEL3_DIAGNOSTIC_PRINTF("%s:\n", groupLabel);
 		}
 
-		printf(" %s = %s\n", (*it)->label, (*it)->GetMapping());
+		MODEL3_DIAGNOSTIC_PRINTF(" %s = %s\n", (*it)->label, (*it)->GetMapping());
 	}
 
-	puts("");
+	MODEL3_DIAGNOSTIC_PUTS("");
 }
 
 bool CInputs::Poll(const Game *game, unsigned dispX, unsigned dispY, unsigned dispW, unsigned dispH)
@@ -790,8 +791,8 @@ void CInputs::DumpState(const Game *game)
 			continue;
 
 		if ((*it)->IsVirtual())
-			printf("%s = (%d)\n", (*it)->id, (*it)->value);
+			MODEL3_DIAGNOSTIC_PRINTF("%s = (%d)\n", (*it)->id, (*it)->value);
 		else
-			printf("%s [%s] = (%d)\n", (*it)->id, (*it)->GetMapping(), (*it)->value);
+			MODEL3_DIAGNOSTIC_PRINTF("%s [%s] = (%d)\n", (*it)->id, (*it)->GetMapping(), (*it)->value);
 	}
 }

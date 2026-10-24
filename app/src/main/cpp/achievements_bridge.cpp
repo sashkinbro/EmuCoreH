@@ -37,15 +37,10 @@ extern "C" size_t EmuCoreHGetMemorySize(unsigned id);
 #include "rc_libretro.h"
 
 #define RA_TAG "EmuCoreH-RA"
-#ifdef NDEBUG
-#define RALOGI(...) ((void)0)
-#define RALOGW(...) ((void)0)
-#define RALOGE(...) ((void)0)
-#else
-#define RALOGI(...) __android_log_print(ANDROID_LOG_INFO, RA_TAG, __VA_ARGS__)
-#define RALOGW(...) __android_log_print(ANDROID_LOG_WARN, RA_TAG, __VA_ARGS__)
-#define RALOGE(...) __android_log_print(ANDROID_LOG_ERROR, RA_TAG, __VA_ARGS__)
-#endif
+#include "release_logging.h"
+#define RALOGI(...) EMUCOREH_LOG_INFO(RA_TAG, __VA_ARGS__)
+#define RALOGW(...) EMUCOREH_LOG_WARN(RA_TAG, __VA_ARGS__)
+#define RALOGE(...) EMUCOREH_LOG_ERROR(RA_TAG, __VA_ARGS__)
 
 namespace {
 

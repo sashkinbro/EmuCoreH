@@ -33,7 +33,7 @@ object AppIconManager {
                 PackageManager.DONT_KILL_APP
             )
         } catch (error: RuntimeException) {
-            Log.w(TAG, "Unable to switch launcher icon", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to switch launcher icon", error)
         }
     }
 

@@ -220,7 +220,7 @@ object DocumentPathResolver {
             ?.takeIf { it.isFile && it.canRead() }
             ?.absolutePath
         if (!resolvedDirect.isNullOrBlank()) {
-            Log.i(TAG, "Resolved content URI to direct filesystem game path: $resolvedDirect")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "Resolved content URI to direct filesystem game path: $resolvedDirect")
             return resolvedDirect
         }
 
@@ -239,18 +239,18 @@ object DocumentPathResolver {
                 ?.use(::readLimitedCueText)
                 ?: throw IOException("DocumentsProvider returned no CUE stream")
         }.onFailure { error ->
-            Log.e(TAG, "Unable to read CUE through SAF: $cueUri", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to read CUE through SAF: $cueUri", error)
         }.getOrNull() ?: return null
 
         val references = cueReferences(cueText)
         if (references.isEmpty()) {
-            Log.e(TAG, "CUE has no supported FILE ... BINARY directives: $cueUri")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "CUE has no supported FILE ... BINARY directives: $cueUri")
             return null
         }
 
         val location = findDocumentLocation(context, cueUri)
         if (location == null) {
-            Log.e(TAG, "Unable to locate CUE parent inside a persisted SAF tree: $cueUri")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to locate CUE parent inside a persisted SAF tree: $cueUri")
             return null
         }
 
@@ -274,11 +274,11 @@ object DocumentPathResolver {
                 preparedDiscResources.also { preparedDiscResources = replacement }
             }
             previous?.close()
-            Log.i(TAG, "Prepared SAF CUE with ${openedDescriptors.size} track file(s): $displayName")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "Prepared SAF CUE with ${openedDescriptors.size} track file(s): $displayName")
             return launchPath
         } catch (error: Exception) {
             openedDescriptors.forEach { descriptor -> runCatching { descriptor.close() } }
-            Log.e(TAG, "Unable to prepare SAF CUE launch: $cueUri", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare SAF CUE launch: $cueUri", error)
             return null
         }
     }

@@ -35,7 +35,7 @@ class SettingsBackupRepository(
             }
             true
         }.onFailure { error ->
-            Log.e(TAG, "Unable to export settings backup", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to export settings backup", error)
         }.getOrDefault(false)
     }
 
@@ -50,7 +50,7 @@ class SettingsBackupRepository(
             }
             true
         }.onFailure { error ->
-            Log.e(TAG, "Unable to restore settings backup", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to restore settings backup", error)
         }.getOrDefault(false)
     }
 

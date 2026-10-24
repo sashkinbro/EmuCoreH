@@ -104,7 +104,7 @@ class CoverArtRepository(context: Context) {
                     clearCoverImageMemoryCache()
                 }
             }
-            Log.d(TAG, "Box art cache directory created: $absolutePath")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Box art cache directory created: $absolutePath")
         }
     }
 
@@ -163,7 +163,7 @@ class CoverArtRepository(context: Context) {
                 prefetchedInfo.add(TheGamesDb.findByUniqueIds(batch))
             } catch (failure: BoxartRetryException) {
                 noteRetry(failure.retryAtMillis)
-                Log.d(TAG, "Online cover batch postponed: ${failure.message}")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Online cover batch postponed: ${failure.message}")
                 break
             }
         }
@@ -259,13 +259,13 @@ class CoverArtRepository(context: Context) {
         }
         val coverKeys = coverKeys(serial, title, platform)
         if (coverKeys.isEmpty()) {
-            Log.d(TAG, "No serial or title provided")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "No serial or title provided")
             return null
         }
         cache.find(coverKeys, settings.style, settings.isLight)?.let { found ->
             return found.absolutePath
         }
-        Log.d(TAG, "Cached cover for ${coverKeys.joinToString()}: NOT FOUND")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Cached cover for ${coverKeys.joinToString()}: NOT FOUND")
         return null
     }
 
@@ -292,12 +292,12 @@ class CoverArtRepository(context: Context) {
 
     fun downloadCover(game: GameItem, mode: CoverFetchMode = CoverFetchMode.FULL): String? {
         if (!isFetchBoxartEnabled()) {
-            Log.d(TAG, "Cover download skipped: box art fetching is disabled")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Cover download skipped: box art fetching is disabled")
             return null
         }
         val primaryKey = coverKeys(game.serial, game.title, gamePlatform(game)).firstOrNull()
         if (primaryKey == null) {
-            Log.w(TAG, "Cannot download cover: no serial or title")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Cannot download cover: no serial or title")
             return null
         }
         // The replaced arcade assets keep the same URL. Refresh their downloaded
@@ -351,7 +351,7 @@ class CoverArtRepository(context: Context) {
     }
 
     private fun downloadCoverResolved(game: GameItem, key: String, mode: CoverFetchMode): String? {
-        Log.d(TAG, "========== BOX ART DOWNLOAD START ($key) ==========")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "========== BOX ART DOWNLOAD START ($key) ==========")
         val existingCover = findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true, platform = gamePlatform(game))
             ?.let(::File)
             ?: findCoverFile(key)
@@ -368,7 +368,7 @@ class CoverArtRepository(context: Context) {
             return downloaded ?: existingCover?.absolutePath
         }
         if (existingCover != null && cache.isOnline(existingCover)) {
-            Log.d(TAG, "Cover already exists and matches style and theme: ${existingCover.absolutePath}")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Cover already exists and matches style and theme: ${existingCover.absolutePath}")
             return existingCover.absolutePath
         }
         val missFile = coverMissFile(key)
@@ -412,7 +412,7 @@ class CoverArtRepository(context: Context) {
                     val repoUrl = coverIndex.findCoverBySerial(uniqueId, style, isLight)
                     if (repoUrl != null) {
                         downloadImage(repoUrl, key, "EmuCoreH-Covers serial")?.let {
-                            Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers serial) ==========")
+                            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers serial) ==========")
                             return@fallback acceptOnlineCover(label, it)
                         }
                     }
@@ -427,7 +427,7 @@ class CoverArtRepository(context: Context) {
                         ?: coverIndex.findCoverByTitle(game.title, style, isLight)
                     if (repoTitleUrl != null) {
                         downloadImage(repoTitleUrl, key, "EmuCoreH-Covers title")?.let {
-                            Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers title) ==========")
+                            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "========== BOX ART DOWNLOAD END (EmuCoreH-Covers title) ==========")
                             return@fallback acceptOnlineCover(label, it)
                         }
                     }
@@ -441,7 +441,7 @@ class CoverArtRepository(context: Context) {
                     if (info != null) {
                         info.imageUrl?.let { url ->
                             downloadImage(url, key, "TheGamesDB")?.let {
-                                Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB uid) ==========")
+                                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB uid) ==========")
                                 return@fallback acceptOnlineCover(label, it)
                             }
                         }
@@ -452,7 +452,7 @@ class CoverArtRepository(context: Context) {
                     if (info != null) {
                         info.imageUrl?.let { url ->
                             downloadImage(url, key, "TheGamesDB")?.let {
-                                Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB name) ==========")
+                                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "========== BOX ART DOWNLOAD END (TheGamesDB name) ==========")
                                 return@fallback acceptOnlineCover(label, it)
                             }
                         }
@@ -463,7 +463,7 @@ class CoverArtRepository(context: Context) {
             },
             onRetry = { failure ->
                 noteRetry(failure.retryAtMillis)
-                Log.d(TAG, "Online cover postponed ($key): ${failure.message}")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Online cover postponed ($key): ${failure.message}")
             }
         )
     }
@@ -550,7 +550,7 @@ class CoverArtRepository(context: Context) {
                 }
             }?.absolutePath
         }.getOrElse { error ->
-            Log.w(TAG, "Unable to store GD-ROM texture: ${error.message}")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to store GD-ROM texture: ${error.message}")
             null
         }
     }
@@ -583,10 +583,11 @@ class CoverArtRepository(context: Context) {
     ): String? {
         if (urlString in missingImageUrls) return null
         return imageDownloader.download(urlString, key).also { path ->
-            if (path != null) Log.d(TAG, "$sourceName: SUCCESS - $path")
-            else {
+            if (path != null) {
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "$sourceName: SUCCESS - $path")
+            } else {
                 missingImageUrls.add(urlString)
-                if (!mute) Log.d(TAG, "$sourceName: No artwork at $urlString")
+                if (!mute) if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "$sourceName: No artwork at $urlString")
             }
         }
     }
@@ -622,7 +623,7 @@ class CoverArtRepository(context: Context) {
         }
 
         return (formatted ?: cleanSerial.replace(Regex("[^A-Z0-9_-]"), ""))
-            .also { Log.d(TAG, "Normalized: '$serial' -> '$it'") }
+            .also { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Normalized: '$serial' -> '$it'") }
     }
 
     private fun isFetchBoxartEnabled(): Boolean =

@@ -58,6 +58,11 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments += listOf(
+                        "-DENABLE_LOG=OFF",
+                        "-DENABLE_GDB_SERVER=OFF",
+                        "-DENABLE_DC_PROFILER=OFF",
+                        "-DENABLE_FC_PROFILER=OFF",
+                        "-DTEST_AUTOMATION=OFF",
                         "-DCMAKE_C_FLAGS_RELWITHDEBINFO=-O3 -g -DNDEBUG",
                         "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=-O3 -g -DNDEBUG"
                     )

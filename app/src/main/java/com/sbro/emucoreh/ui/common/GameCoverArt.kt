@@ -292,7 +292,7 @@ private fun loadBitmap(
             BitmapFactory.decodeStream(stream, null, decodeOptions)
         }
     }.getOrElse { e ->
-        Log.w("GameCoverArt", "Failed to load cover from $coverPath: ${e.message}")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w("GameCoverArt", "Failed to load cover from $coverPath: ${e.message}")
         null
     }
 }

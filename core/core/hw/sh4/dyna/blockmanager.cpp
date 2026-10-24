@@ -408,6 +408,7 @@ void bm_Term()
 
 void bm_WriteBlockMap(const std::string& file)
 {
+#if !defined(LIBRETRO) || !defined(NDEBUG)
 	FILE* f=fopen(file.c_str(),"wb");
 	if (f)
 	{
@@ -421,14 +422,17 @@ void bm_WriteBlockMap(const std::string& file)
 		fclose(f);
 		INFO_LOG(DYNAREC, "Finished writing block map");
 	}
+#endif
 }
 
 void sh4_jitsym(FILE* out)
 {
+#if !defined(LIBRETRO) || !defined(NDEBUG)
 	for (const auto& [_, block] : blkmap)
 	{
 		fprintf(out, "%p %d %08X\n", block->code, block->host_code_size, block->addr);
 	}
+#endif
 }
 
 RuntimeBlockInfo::~RuntimeBlockInfo()
@@ -564,6 +568,7 @@ bool print_stats = true;
 
 void fprint_hex(FILE* d,const char* init,u8* ptr, u32& ofs, u32 limit)
 {
+#if !defined(LIBRETRO) || !defined(NDEBUG)
 	int base=ofs;
 	int cnt=0;
 	while(ofs<limit)
@@ -581,12 +586,14 @@ void fprint_hex(FILE* d,const char* init,u8* ptr, u32& ofs, u32 limit)
 		cnt++;
 	}
 	fputs("\n",d);
+#endif
 }
 
 
 
 void print_blocks()
 {
+#if !defined(LIBRETRO) || !defined(NDEBUG)
 	FILE* f=0;
 
 	if (print_stats)
@@ -652,6 +659,7 @@ void print_blocks()
 	}
 
 	if (f) fclose(f);
+#endif
 }
 #endif
 

@@ -40,7 +40,7 @@ class IgdbCatalogRepository(private val context: Context) {
                 assetReady = true
                 true
             }.getOrElse {
-                Log.w(TAG, "Catalog asset installation failed: ${it.message}")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Catalog asset installation failed: ${it.message}")
                 false
             }
         }
@@ -147,11 +147,11 @@ class IgdbCatalogRepository(private val context: Context) {
         val db = getDatabase() ?: return null
         val catalogPlatform = catalogPlatformName(platform)
         findIdByDatabaseSerial(db, candidateSerials, catalogPlatform)?.let { id ->
-            Log.d(TAG, "Catalog match by database serial: $serial -> $id")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Catalog match by database serial: $serial -> $id")
             return id
         }
         findIdBySerialIndex(db, candidateSerials, catalogPlatform)?.let { id ->
-            Log.d(TAG, "Catalog match by cover-index serial: $serial -> $id")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Catalog match by cover-index serial: $serial -> $id")
             return id
         }
 
@@ -160,17 +160,17 @@ class IgdbCatalogRepository(private val context: Context) {
             .filter { it.isNotBlank() }
             .distinct()
         findExactTitleId(db, candidateTitles, catalogPlatform)?.let { id ->
-            Log.d(TAG, "Catalog match by exact title: $title -> $id")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Catalog match by exact title: $title -> $id")
             return id
         }
         // Every supported Model 3 set has reviewed aliases; never guess another edition or sequel.
         if (catalogPlatform == "Sega Model 3") return null
         findFuzzyTitleId(db, candidateTitles, catalogPlatform)?.let { id ->
-            Log.d(TAG, "Catalog match by fuzzy title: $title -> $id")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Catalog match by fuzzy title: $title -> $id")
             return id
         }
 
-        Log.w(TAG, "No catalog match for serial=$serial title=$title")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "No catalog match for serial=$serial title=$title")
         return null
     }
 
@@ -334,7 +334,7 @@ class IgdbCatalogRepository(private val context: Context) {
                 SQLiteDatabase.OPEN_READONLY or SQLiteDatabase.NO_LOCALIZED_COLLATORS
             ).also { database = it }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to open catalog database: ${e.message}")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Failed to open catalog database: ${e.message}")
             null
         }
     }

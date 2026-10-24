@@ -204,7 +204,7 @@ class DriveBackupViewModel(application: Application) : AndroidViewModel(applicat
                     is androidx.credentials.exceptions.GetCredentialException -> "credential type=${error.type}"
                     else -> error.javaClass.simpleName
                 }
-                Log.w("DriveBackup", "Account operation failed: $diagnostic")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w("DriveBackup", "Account operation failed: $diagnostic")
                 mutable.update { it.copy(message = (error as? DriveBackupException)?.reason ?: "failed") }
                 if ((error as? DriveBackupException)?.reason == "auth") withContext(Dispatchers.IO) {
                     store.update { it.copy(needsAuthorization = true) }

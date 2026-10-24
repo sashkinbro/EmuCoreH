@@ -215,7 +215,7 @@ class ProPurchaseManager private constructor(context: Context) : PurchasesUpdate
         billingClient.queryPurchasesAsync(params) { billingResult, purchases ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 if (BuildConfig.DEBUG) {
-                    Log.i(
+                    if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(
                         TAG,
                         "Purchase restore returned=" +
                             purchases.joinToString(prefix = "[", postfix = "]") { purchase ->
@@ -296,7 +296,7 @@ class ProPurchaseManager private constructor(context: Context) : PurchasesUpdate
 
         billingClient.queryProductDetailsAsync(params) { billingResult, result ->
             if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
-                Log.w(TAG, "Product details query failed: code=${billingResult.responseCode}, message=${billingResult.debugMessage}")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Product details query failed: code=${billingResult.responseCode}, message=${billingResult.debugMessage}")
                 _state.value = _state.value.copy(
                     isProductLoading = false,
                     isProductAvailable = false,
@@ -309,7 +309,7 @@ class ProPurchaseManager private constructor(context: Context) : PurchasesUpdate
                 .filter { it.productId in ProPurchaseTier.productIds }
                 .associateBy(ProductDetails::getProductId)
             if (BuildConfig.DEBUG) {
-                Log.i(
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(
                     TAG,
                     "Product query fetched=${returnedDetails.keys}; " +
                         "unfetched=${result.unfetchedProductList.joinToString(prefix = "[", postfix = "]") {
@@ -332,14 +332,14 @@ class ProPurchaseManager private constructor(context: Context) : PurchasesUpdate
                 )
             }
             if (BuildConfig.DEBUG) {
-                Log.i(
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(
                     TAG,
                     "Eligible Pro offers=${offers.joinToString { "${it.tier.productId}:${it.formattedPrice}" }}"
                 )
             }
             val baseOffer = offers.firstOrNull { it.tier == ProPurchaseTier.BASE }
             if (baseOffer == null) {
-                Log.w(
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(
                     TAG,
                     "Base Pro product details missing. Returned products=${result.productDetailsList.map { it.productId }}"
                 )

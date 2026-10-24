@@ -174,7 +174,7 @@ object KeyboardMouseManager {
                 Handler(Looper.getMainLooper())
             )
         }.onFailure { error ->
-            Log.w(TAG, "Unable to register input-device listener", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to register input-device listener", error)
         }
         scope.launch {
             prefs.keyboardMouseSettings.collect { newSettings ->
@@ -184,7 +184,7 @@ object KeyboardMouseManager {
         scope.launch {
             while (isActive) {
                 runCatching { refreshConnections() }
-                    .onFailure { error -> Log.w(TAG, "Input-device poll failed", error) }
+                    .onFailure { error -> if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Input-device poll failed", error) }
                 delay(CONNECTION_POLL_INTERVAL_MS.milliseconds)
             }
         }
@@ -194,7 +194,7 @@ object KeyboardMouseManager {
     /** Forces a fresh device scan; called by the Activity when it regains focus. */
     fun refreshConnectionState() {
         runCatching { refreshConnections() }
-            .onFailure { error -> Log.w(TAG, "Explicit input-device refresh failed", error) }
+            .onFailure { error -> if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Explicit input-device refresh failed", error) }
     }
 
     /** The Activity owns the Android pointer-capture primitive; the manager owns policy. */

@@ -23,7 +23,7 @@ object CoreBinaryFingerprint {
         val libraryName = System.mapLibraryName(CORE_LIBRARY_NAME)
         packagedFingerprint(context, libraryName) ?: extractedFingerprint(context, libraryName)
     }.onFailure { error ->
-        Log.w(TAG, "Unable to compute the core fingerprint", error)
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to compute the core fingerprint", error)
     }.getOrNull()
 
     private fun packagedFingerprint(context: Context, libraryName: String): String? {
