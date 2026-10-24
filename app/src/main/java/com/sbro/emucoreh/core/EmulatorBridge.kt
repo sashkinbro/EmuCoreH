@@ -598,21 +598,21 @@ object EmulatorBridge {
     fun getGameMetadata(
         path: String,
         readDiscMetadata: Boolean = true,
-        knownPlatform: EmulationPlatform? = null
+        knownPlatform: EmulationPlatform? = null,
+        knownDisplayName: String? = null
     ): GameMetadata {
+        val contentDisplayName = if (path.startsWith("content://")) {
+            knownDisplayName?.takeIf { it.isNotBlank() }
+                ?: getContext()?.let { DocumentPathResolver.getDisplayName(it, path) }
+                ?: path
+        } else {
+            null
+        }
         val inferredMetadata = when {
-            path.startsWith("content://") -> {
-                val context = getContext()
-                val displayName = context?.let { DocumentPathResolver.getDisplayName(it, path) } ?: path
-                parseMetadataFromName(displayName)
-            }
+            contentDisplayName != null -> parseMetadataFromName(contentDisplayName)
             else -> parseMetadataFromName(File(path).nameWithoutExtension)
         }
-        val extensionSource = if (path.startsWith("content://")) {
-            getContext()?.let { DocumentPathResolver.getDisplayName(it, path) } ?: path
-        } else {
-            path
-        }
+        val extensionSource = contentDisplayName ?: path
         val extension = extensionSource.substringAfterLast('.', "").lowercase()
         if (knownPlatform?.isModel3 == true || Model3Romsets.find(extensionSource.substringAfterLast('/')) != null) {
             val game = Model3Romsets.find(extensionSource.substringAfterLast('/'))
@@ -621,7 +621,11 @@ object EmulatorBridge {
 
         getContext()?.let { context ->
             if (knownPlatform?.isSega == true ||
-                (knownPlatform == null && SegaPlatformDetector.detect(context, path).isSega)
+                (knownPlatform == null && SegaPlatformDetector.detect(
+                    context,
+                    path,
+                    knownDisplayName = contentDisplayName
+                ).isSega)
             ) {
                 return SegaMetadataReader.read(context, path)?.let { metadata ->
                     metadata.copy(title = normalizeNativeGameTitle(metadata.title, inferredMetadata.title))

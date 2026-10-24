@@ -35,6 +35,25 @@ class CustomGameCoverRepository(context: Context) {
             ?.absolutePath
     }
 
+    /**
+     * Snapshot of all custom covers keyed by their stable game-path hash.
+     * Library scans resolve thousands of games and must not list this directory
+     * once per game.
+     */
+    fun customCoverIndex(): Map<String, String> = synchronized(filesLock) {
+        directory
+            .listFiles()
+            .orEmpty()
+            .asSequence()
+            .filter { it.isFile && !it.name.endsWith(".tmp") && it.length() > 0L }
+            .filter { savedCoverName.matches(it.name) }
+            .groupBy { it.name.substringBefore('.') }
+            .mapValues { (_, files) -> files.maxByOrNull(File::lastModified)!!.absolutePath }
+    }
+
+    fun findCustomCoverPath(gamePath: String, index: Map<String, String>): String? =
+        index[stableKey(gamePath)]
+
     fun saveCustomCover(gamePath: String, sourceUri: Uri): String? = synchronized(filesLock) {
         val key = stableKey(gamePath)
         val extension = resolveExtension(sourceUri)

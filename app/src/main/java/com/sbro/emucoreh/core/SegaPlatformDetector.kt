@@ -15,9 +15,13 @@ object SegaPlatformDetector {
     private const val MAX_DEPTH = 8
     private val cartridgeExtensions = setOf("md", "gen", "smd", "32x", "sms", "gg", "sg", "bin")
 
-    fun detect(context: Context, path: String): EmulationPlatform = runCatching {
+    fun detect(
+        context: Context,
+        path: String,
+        knownDisplayName: String? = null
+    ): EmulationPlatform = runCatching {
         if (!path.startsWith("content://")) return@runCatching detectFile(File(path))
-        detectDocument(context, path, mutableSetOf(), 0)
+        detectDocument(context, path, knownDisplayName, mutableSetOf(), 0)
     }.getOrDefault(EmulationPlatform.DREAMCAST)
 
     fun detectFile(file: File): EmulationPlatform = detectFile(file, mutableSetOf(), 0)
@@ -45,12 +49,23 @@ object SegaPlatformDetector {
         } else detected
     }.getOrElse { detectName(file.name) }
 
-    private fun detectDocument(context: Context, path: String, visited: MutableSet<String>, depth: Int): EmulationPlatform {
+    private fun detectDocument(
+        context: Context,
+        path: String,
+        knownDisplayName: String?,
+        visited: MutableSet<String>,
+        depth: Int
+    ): EmulationPlatform {
         if (depth > MAX_DEPTH || !visited.add(path)) return EmulationPlatform.DREAMCAST
-        val name = DocumentPathResolver.getDisplayName(context, path)
+        val name = knownDisplayName
+            ?.takeIf { it.isNotBlank() }
+            ?: DocumentPathResolver.getDisplayName(context, path)
         val ext = extension(name)
         if (ext == "zip" && Model3Romsets.find(name) != null) return EmulationPlatform.MODEL_3
         if (ext in setOf("gdi", "cdi", "iso", "7z", "dat", "lst")) return EmulationPlatform.DREAMCAST
+        // These hardware extensions already select the core; reading the file
+        // header cannot change the result and costs a full SAF open per game.
+        if (ext in setOf("32x", "sms", "gg", "sg")) return detectName(name)
         if (ext == "chd") {
             DocumentPathResolver.resolveFilePath(context, path)?.let { direct ->
                 val file = File(direct)
@@ -76,7 +91,13 @@ object SegaPlatformDetector {
                     if (bytes.size > MAX_DESCRIPTOR_BYTES) return@use EmulationPlatform.DREAMCAST
                     for (reference in descriptorReferences(name, bytes.toString(Charsets.UTF_8))) {
                         val target = DocumentPathResolver.resolveTrackDocument(context, Uri.parse(path), reference) ?: continue
-                        val detected = detectDocument(context, target.uri.toString(), visited, depth + 1)
+                        val detected = detectDocument(
+                            context,
+                            target.uri.toString(),
+                            target.name,
+                            visited,
+                            depth + 1
+                        )
                         if (detected == EmulationPlatform.SEGA_CD || (ext == "m3u" && detected.isSega)) return@use detected
                     }
                     EmulationPlatform.DREAMCAST

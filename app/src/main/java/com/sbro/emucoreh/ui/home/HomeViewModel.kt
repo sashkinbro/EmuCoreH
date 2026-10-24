@@ -593,6 +593,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         syncMissingCovers()
                         return@withLock
                     }
+                    if (com.sbro.emucoreh.BuildConfig.DEBUG) {
+                        logStartupMilestone("scan_start cached=${cachedGames.size}")
+                    }
                     val context = getApplication<Application>()
                     val cachedByPath = flattenLibraryGroups(cachedGames).associateBy { it.path }
                     val scannedGames = MultiDiscLibrary.group(paths.flatMap { path ->
@@ -634,6 +637,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     publishVisibleGames()
                     updateBootstrapState()
                     libraryCacheRepository.save(rootPath, allGames, preferEnglishGameTitles)
+                    logStartupMilestone("scan_done games=${allGames.size}")
                     syncMissingCovers()
                 } catch (_: Exception) {
                     completeLibraryScanWithFallback(rootPath)
@@ -869,13 +873,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val context = getApplication<Application>()
         coverSyncJob = viewModelScope.launch(Dispatchers.IO) {
             val coverRepository = CoverArtRepository(context)
+            val coverSettings = coverRepository.displayCoverSettings()
             var removedStalePaths = false
             synchronized(this@HomeViewModel) {
                 allGames = allGames.map { game ->
                     val hasSerial = !game.serial.isNullOrBlank()
                     val resolvedCoverPath = game.serial
                         ?.takeIf { it.isNotBlank() }
-                        ?.let(coverRepository::findCachedCoverPath)
+                        ?.let { serial ->
+                            coverRepository.findCachedCoverPath(
+                                serial = serial,
+                                title = null,
+                                ignoreDisabled = false,
+                                platform = null,
+                                settings = coverSettings
+                            )
+                        }
                     when {
                         coverRepository.isMissingManagedCover(game.coverArtPath) ||
                             customGameCoverRepository.isMissingCustomCover(game.coverArtPath) -> {

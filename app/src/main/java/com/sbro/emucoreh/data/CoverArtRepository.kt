@@ -247,7 +247,8 @@ class CoverArtRepository(context: Context) {
         settings = displayCoverSettings()
     )
 
-    private fun findCachedCoverPath(
+    /** Batch callers resolve [settings] once instead of reading DataStore per game. */
+    fun findCachedCoverPath(
         serial: String?,
         title: String?,
         ignoreDisabled: Boolean,
@@ -272,8 +273,15 @@ class CoverArtRepository(context: Context) {
     fun findCachedCoverUri(
         serial: String?,
         title: String? = null,
-        platform: String? = null
-    ): String? = findCachedCoverPath(serial, title = title, platform = platform)
+        platform: String? = null,
+        settings: CoverDisplaySettings? = null
+    ): String? = findCachedCoverPath(
+        serial = serial,
+        title = title,
+        ignoreDisabled = false,
+        platform = platform,
+        settings = settings ?: displayCoverSettings()
+    )
 
     /** Cache key used when a game has no product code (CHD, arcade archives). */
     private fun titleCoverKey(title: String?): String? = title
