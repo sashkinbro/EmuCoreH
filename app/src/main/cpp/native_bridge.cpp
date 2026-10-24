@@ -29,6 +29,10 @@
 #include <EGL/eglext.h>
 #include <GLES3/gl3.h>
 
+#ifndef GL_BGRA_EXT
+#define GL_BGRA_EXT 0x80E1
+#endif
+
 #include <algorithm>
 #include <atomic>
 #include <cctype>
@@ -1117,36 +1121,64 @@ void PresentHardwareFrame(GLsizei src_width, GLsizei src_height) {
     ANativeWindow_release(window);
 }
 
+bool BgraTextureUploadSupported() {
+    static const bool supported = [] {
+        const auto* extensions = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
+        return extensions != nullptr &&
+               std::strstr(extensions, "GL_EXT_texture_format_BGRA8888") != nullptr;
+    }();
+    return supported;
+}
+
 void PresentSoftwareFrame(const void* data, unsigned width, unsigned height, size_t pitch) {
     if (data == nullptr || width == 0 || height == 0) return;
-    if (g_core_id.load() == 1 && width <= 4096 && height <= 4096 &&
-        pitch >= static_cast<size_t>(width) * sizeof(uint32_t)) {
+    const size_t row_bytes = static_cast<size_t>(width) * sizeof(uint32_t);
+    if (pitch < row_bytes) return;
+    const auto* source = static_cast<const uint8_t*>(data);
+
+    // Save-state thumbnails read this snapshot at arbitrary later times (also
+    // while paused), so keep one row-wise copy. jgenesis emits opaque
+    // 0xFFRRGGBB pixels, which makes this a plain memcpy instead of a
+    // per-pixel conversion loop.
+    if (g_core_id.load() == 1 && width <= 4096 && height <= 4096) {
         std::lock_guard<std::mutex> lock(g_frontend.software_frame_mutex);
         g_frontend.software_frame.resize(static_cast<size_t>(width) * height);
-        const auto* pixels = static_cast<const uint8_t*>(data);
         for (unsigned y = 0; y < height; ++y) {
-            const auto* row = pixels + static_cast<size_t>(y) * pitch;
-            for (unsigned x = 0; x < width; ++x) {
-                uint32_t pixel;
-                std::memcpy(&pixel, row + static_cast<size_t>(x) * sizeof(pixel), sizeof(pixel));
-                g_frontend.software_frame[static_cast<size_t>(y) * width + x] =
-                    static_cast<jint>(0xff000000u | (pixel & 0x00ffffffu));
-            }
+            std::memcpy(&g_frontend.software_frame[static_cast<size_t>(y) * width],
+                        source + static_cast<size_t>(y) * pitch, row_bytes);
         }
         g_frontend.software_frame_width = width;
         g_frontend.software_frame_height = height;
     }
+
     if (!g_gl.ready || g_gl.fbo_texture == 0 ||
         width > static_cast<unsigned>(g_gl.fbo_width) ||
-        height > static_cast<unsigned>(g_gl.fbo_height) ||
-        pitch < static_cast<size_t>(width) * sizeof(uint32_t)) {
+        height > static_cast<unsigned>(g_gl.fbo_height)) {
         return;
     }
-    // The libretro software frame is top-down XRGB8888. GLES expects RGBA
-    // with its first upload row at the bottom of the texture.
+
+    // Upload the XRGB8888 bytes directly as BGRA when the driver supports it.
+    // Only the row order is flipped for GL's bottom-left texture origin; no
+    // per-pixel channel swizzle is needed on the emulation thread.
+    if (BgraTextureUploadSupported()) {
+        static thread_local std::vector<uint8_t> bgra;
+        bgra.resize(static_cast<size_t>(row_bytes) * height);
+        for (unsigned y = 0; y < height; ++y) {
+            std::memcpy(bgra.data() + static_cast<size_t>(height - 1 - y) * row_bytes,
+                        source + static_cast<size_t>(y) * pitch, row_bytes);
+        }
+        glBindTexture(GL_TEXTURE_2D, g_gl.fbo_texture);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, static_cast<GLsizei>(width),
+                        static_cast<GLsizei>(height), GL_BGRA_EXT, GL_UNSIGNED_BYTE, bgra.data());
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        PresentHardwareFrame(static_cast<GLsizei>(width), static_cast<GLsizei>(height));
+        return;
+    }
+
+    // Portable fallback for drivers without BGRA upload support.
     static thread_local std::vector<uint8_t> rgba;
     rgba.resize(static_cast<size_t>(width) * height * 4);
-    const auto* source = static_cast<const uint8_t*>(data);
     for (unsigned y = 0; y < height; ++y) {
         const auto* row = source + static_cast<size_t>(y) * pitch;
         auto* target = rgba.data() + static_cast<size_t>(height - 1 - y) * width * 4;
@@ -1242,6 +1274,12 @@ void RetroVideoRefresh(const void* data, unsigned width, unsigned height, size_t
 
     g_frontend.frame_width = width;
     g_frontend.frame_height = height;
+    if (vulkan::IsActive()) {
+        const int mode = g_frontend.display_aspect_mode.load();
+        const double aspect = DisplayAspectForMode(mode, g_frontend.aspect_ratio.load());
+        vulkan::PresentSoftware(data, width, height, pitch, aspect, mode == 0, mode == 1);
+        return;
+    }
     PresentSoftwareFrame(data, width, height, pitch);
     if (g_gl.surface != EGL_NO_SURFACE) eglSwapBuffers(g_gl.display, g_gl.surface);
 }

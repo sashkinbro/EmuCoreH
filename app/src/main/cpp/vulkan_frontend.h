@@ -4,6 +4,7 @@
 #pragma once
 
 #include <android/native_window.h>
+#include <cstddef>
 #include <cstdint>
 
 #ifndef VK_USE_PLATFORM_ANDROID_KHR
@@ -41,6 +42,10 @@ void SetDisplayCrop(int left, int top, int right, int bottom);
 bool EnsureContext(ANativeWindow* window, uint32_t window_generation);
 bool Present(uint32_t source_width, uint32_t source_height, double display_aspect, bool stretch,
              bool adjust_aspect_for_crop);
+// Upload an XRGB8888 software frame and present it through the same Vulkan
+// blit/effect/shader-chain path as a hardware-rendered core.
+bool PresentSoftware(const void* data, uint32_t width, uint32_t height, size_t pitch,
+                     double display_aspect, bool stretch, bool adjust_aspect_for_crop);
 
 void Destroy();
 

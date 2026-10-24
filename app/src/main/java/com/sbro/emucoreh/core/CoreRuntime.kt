@@ -264,9 +264,21 @@ internal object CoreRuntime {
         }
         val app = context ?: return false
         val detectedPlatform = if (biosOnly) EmulationPlatform.DREAMCAST else SegaPlatformDetector.detect(app, gamePath)
-        val requestedCore = if (detectedPlatform.coreId != 0) RendererDefaults.CORE_OPENGL
-            else RendererDefaults.toCoreRenderer(requestedRenderer)
-        val candidates = listOf(requestedCore)
+        val requestedCore = when {
+            // Supermodel's renderer is OpenGL ES only.
+            detectedPlatform.isModel3 -> RendererDefaults.CORE_OPENGL
+            // jgenesis has no core-side GPU rasterizer, but both of our GPU
+            // output backends can present its software frames. Legacy
+            // "Software" preferences from Flycast map to the OpenGL output.
+            detectedPlatform.isSega -> RendererDefaults.toCoreRenderer(requestedRenderer)
+                .takeIf { it != RendererDefaults.CORE_SOFTWARE } ?: RendererDefaults.CORE_OPENGL
+            else -> RendererDefaults.toCoreRenderer(requestedRenderer)
+        }
+        val candidates = if (detectedPlatform.isSega && requestedCore == RendererDefaults.CORE_VULKAN) {
+            listOf(RendererDefaults.CORE_VULKAN, RendererDefaults.CORE_OPENGL)
+        } else {
+            listOf(requestedCore)
+        }
 
         shutdownSession()
         platform = detectedPlatform
@@ -917,11 +929,17 @@ internal object CoreRuntime {
                                           timing: EmulationTiming.Metrics?, audioStats: LongArray?,
                                           cpuLoadPercent: Double) {
         if (frames <= 0 || !performanceMetricsEnabled) return
-        val softwareRenderer = platform.isSega || activeCoreRenderer == RendererDefaults.CORE_SOFTWARE
+        val softwareRenderer = activeCoreRenderer == RendererDefaults.CORE_SOFTWARE
         val targetFps = activeFrameRate
         val displayFps = timing?.fps ?: fps
         val speed = timing?.speedPercent ?: (fps / targetFps * 100.0)
-        val renderer = if (platform.isSega) "jgenesis" else if (platform.isModel3) "Supermodel" else RendererDefaults.coreRendererName(activeCoreRenderer)
+        val renderer = if (platform.isSega) {
+            "jgenesis ${RendererDefaults.coreRendererName(activeCoreRenderer)}"
+        } else if (platform.isModel3) {
+            "Supermodel"
+        } else {
+            RendererDefaults.coreRendererName(activeCoreRenderer)
+        }
         val frameMs = frameNanos / frames / 1_000_000.0
         val gpuLoad = if (detailedPerformanceMetrics) GpuLoadReader.loadPercent() else null
         val overlay = buildString {

@@ -3566,7 +3566,8 @@ private fun EmulationSidebarMenu(
                                     previewPath = uiState.currentSlotPreviewPath,
                                     lastModified = uiState.currentSlotLastModified,
                                     isSaving = uiState.actionLabel == "saving",
-                                    gameTitle = uiState.currentGameTitle
+                                    gameTitle = uiState.currentGameTitle,
+                                    reloadToken = uiState.savePreviewVersion
                                 )
 
                                 }
@@ -3584,6 +3585,7 @@ private fun EmulationSidebarMenu(
                                         previewPath = uiState.autoSavePreviewPath,
                                         lastModified = uiState.autoSaveLastModified,
                                         contentDescription = stringResource(R.string.emulation_auto_save_title),
+                                        reloadToken = uiState.savePreviewVersion,
                                         modifier = Modifier
                                             .width(74.dp)
                                             .aspectRatio(16f / 9f)
@@ -3681,6 +3683,7 @@ private fun EmulationSidebarMenu(
                                     previewPath = uiState.autoSavePreviewPath,
                                     lastModified = uiState.autoSaveLastModified,
                                     contentDescription = stringResource(R.string.emulation_auto_save_restore_title),
+                                    reloadToken = uiState.savePreviewVersion,
                                     modifier = Modifier
                                         .width(64.dp)
                                         .aspectRatio(16f / 9f)
@@ -6161,6 +6164,7 @@ private fun SaveSlotPreview(
     lastModified: Long,
     isSaving: Boolean,
     gameTitle: String,
+    reloadToken: Long,
     modifier: Modifier = Modifier
 ) {
     val shape = neonShape(14.dp)
@@ -6187,7 +6191,10 @@ private fun SaveSlotPreview(
                 showTitleWhileLoading = false,
                 shimmerWhileLoading = false,
                 decodeWidth = 720,
-                decodeHeight = 405
+                decodeHeight = 405,
+                // Overwriting a slot reuses the same PNG path; the refresh
+                // token forces the new image to be decoded.
+                reloadToken = reloadToken
             )
         } else {
             Box(
@@ -6267,6 +6274,7 @@ private fun SaveSlotThumbnail(
     previewPath: String?,
     lastModified: Long,
     contentDescription: String,
+    reloadToken: Long,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -6284,7 +6292,8 @@ private fun SaveSlotThumbnail(
                 showTitleWhileLoading = false,
                 shimmerWhileLoading = false,
                 decodeWidth = 240,
-                decodeHeight = 135
+                decodeHeight = 135,
+                reloadToken = reloadToken
             )
         } else {
             Icon(

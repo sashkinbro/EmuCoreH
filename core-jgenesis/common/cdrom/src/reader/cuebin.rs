@@ -427,10 +427,22 @@ fn to_cue_sheet(
             let is_last_track_in_file = i == parsed_tracks.len() - 1;
             let data_end_time = if is_last_track_in_file {
                 let file_len_bytes = file_metadata.len();
-                let track_len_bytes = file_len_bytes - address_in_file;
+                let track_len_bytes = file_len_bytes.checked_sub(address_in_file).ok_or_else(|| {
+                    CdRomError::CueParse(format!(
+                        "CUE track starts beyond the end of '{file_name}' ({file_len_bytes} bytes)"
+                    ))
+                })?;
                 let track_len_sectors = track_len_bytes / track.mode.bytes_per_sector();
+                let track_len = u32::try_from(track_len_sectors)
+                    .ok()
+                    .and_then(CdTime::from_sector_number_checked)
+                    .ok_or_else(|| {
+                        CdRomError::CueParse(format!(
+                            "Disc image exceeds the 80-minute CD limit ({track_len_sectors} sectors)"
+                        ))
+                    })?;
 
-                start_time_in_file + CdTime::from_sector_number(track_len_sectors as u32)
+                start_time_in_file + track_len
             } else {
                 let next_track = &parsed_tracks[i + 1];
                 next_track.pause_start.unwrap_or(next_track.track_start)

@@ -90,21 +90,23 @@ fun GameCoverArt(
     decodeWidth: Int = DEFAULT_COVER_DECODE_WIDTH,
     decodeHeight: Int = DEFAULT_COVER_DECODE_HEIGHT,
     trimTransparentPadding: Boolean = false,
+    reloadToken: Long = 0L,
     onAspectRatioResolved: ((Float) -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val cacheKey: (String) -> String = remember(decodeWidth, decodeHeight, trimTransparentPadding) {
-        { path -> "$path@${decodeWidth}x${decodeHeight}:trim=$trimTransparentPadding" }
-    }
-    var bitmap by remember(coverPath, decodeWidth, decodeHeight, trimTransparentPadding) {
+    val cacheKey: (String) -> String =
+        remember(decodeWidth, decodeHeight, trimTransparentPadding, reloadToken) {
+            { path -> "$path@${decodeWidth}x${decodeHeight}:trim=$trimTransparentPadding:v=$reloadToken" }
+        }
+    var bitmap by remember(coverPath, decodeWidth, decodeHeight, trimTransparentPadding, reloadToken) {
         mutableStateOf(coverPath?.let { getCachedBitmap(cacheKey(it)) })
     }
-    var loadedPath by remember(coverPath, decodeWidth, decodeHeight, trimTransparentPadding) {
+    var loadedPath by remember(coverPath, decodeWidth, decodeHeight, trimTransparentPadding, reloadToken) {
         mutableStateOf(coverPath?.takeIf { getCachedBitmap(cacheKey(it)) != null })
     }
     var isLoading by remember { mutableStateOf(false) }
 
-    LaunchedEffect(coverPath, loadEnabled, decodeWidth, decodeHeight, trimTransparentPadding) {
+    LaunchedEffect(coverPath, loadEnabled, decodeWidth, decodeHeight, trimTransparentPadding, reloadToken) {
         if (coverPath.isNullOrBlank()) {
             bitmap = null
             loadedPath = null

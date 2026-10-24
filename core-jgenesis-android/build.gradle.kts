@@ -41,7 +41,12 @@ abstract class BuildJGenesis @Inject constructor(
             environment("CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER", compiler.absolutePath)
             environment("CC_aarch64_linux_android", compiler.absolutePath)
             environment("AR_aarch64_linux_android", archiver.absolutePath)
-            environment("RUSTFLAGS", "-C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384 -C link-arg=-Wl,-soname,libjgenesis_libretro.so")
+            // cortex-a55 is the safe common feature set for the big.LITTLE
+            // Android SoCs this core targets: it enables LSE atomics, CRC and
+            // dot-product while staying compatible with A55 little cores (the
+            // A76 profile additionally enables SSBS, which not every T820-class
+            // part exposes to userspace).
+            environment("RUSTFLAGS", "-C target-cpu=cortex-a55 -C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384 -C link-arg=-Wl,-soname,libjgenesis_libretro.so")
         }
         files.copy {
             from(cargoTargetDirectory.file("aarch64-linux-android/release/libjgenesis_libretro.so"))

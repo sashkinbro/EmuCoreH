@@ -138,8 +138,12 @@ opt-level = 1
 opt-level = 3
 
 [profile.release]
-incremental = true
-lto = "thin"
+# Android ships this profile as the emulator core. Incremental compilation
+# prevents cross-CGU optimisation and measurably slows the SH-2 interpreter,
+# so release builds use one codegen unit and full LTO instead.
+incremental = false
+lto = "fat"
+codegen-units = 1
 
 [profile.release.build-override]
 opt-level = 1

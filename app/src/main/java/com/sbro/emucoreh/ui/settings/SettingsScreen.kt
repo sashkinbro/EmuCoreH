@@ -2090,15 +2090,27 @@ private fun SettingsContent(
                 SettingsTab.Graphics -> {
                     if (platform.isSega) SegaCoreOptionRows(platform, category = "video")
                     SettingsSection(title = stringResource(R.string.settings_graphics_tab)) {
-                        if (platform.coreId == 0) {
-                        ChoiceSection(
-                            title = stringResource(R.string.settings_renderer),
-                            options = listOf(
+                        if (platform.coreId == 0 || platform.isSega) {
+                        val rendererOptions = if (platform.isSega) {
+                            // jgenesis always emulates on the CPU, but its
+                            // frames are presented through one of our GPU
+                            // output backends.
+                            listOf(
+                                12 to stringResource(R.string.settings_renderer_opengl),
+                                14 to stringResource(R.string.settings_renderer_vulkan)
+                            )
+                        } else {
+                            listOf(
                                 12 to stringResource(R.string.settings_renderer_opengl),
                                 14 to stringResource(R.string.settings_renderer_vulkan),
                                 13 to stringResource(R.string.settings_renderer_software)
-                            ),
-                            selectedValue = RendererDefaults.normalizeAndroidRenderer(uiState.renderer),
+                            )
+                        }
+                        ChoiceSection(
+                            title = stringResource(R.string.settings_renderer),
+                            options = rendererOptions,
+                            selectedValue = RendererDefaults.normalizeAndroidRenderer(uiState.renderer)
+                                .let { if (platform.isSega && it == RendererDefaults.SOFTWARE) RendererDefaults.OPENGL else it },
                             onSelect = viewModel::setRenderer,
                             helpText = stringResource(R.string.settings_help_renderer),
                             onResetToDefault = { viewModel.setRenderer(defaults.renderer) }

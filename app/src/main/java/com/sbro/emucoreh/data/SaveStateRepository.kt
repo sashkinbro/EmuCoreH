@@ -337,7 +337,10 @@ class SaveStateRepository(private val context: Context) {
                 if (game.path.isBlank()) return@forEach
                 unresolvedSlots.forEach { slot ->
                     val expected = runCatching {
-                        NativeApp.getSaveStatePathForFile(game.path, slot)
+                        // The library already knows the platform. Passing it
+                        // avoids re-probing every CHD through the native disc
+                        // classifier just to build the save path index.
+                        NativeApp.getSaveStatePathForFile(game.path, slot, game.platform)
                     }.getOrNull()
                     if (!expected.isNullOrBlank()) {
                         savePathToGame[expected.lowercase(Locale.ROOT)] = game

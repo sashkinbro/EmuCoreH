@@ -87,6 +87,12 @@ impl CdTime {
         Self::new(minutes as u8, seconds as u8, frames as u8)
     }
 
+    /// Checked variant of [`CdTime::from_sector_number`] for untrusted disc metadata.
+    #[must_use]
+    pub fn from_sector_number_checked(sector_number: u32) -> Option<Self> {
+        (sector_number < Self::MAX_SECTORS).then(|| Self::from_sector_number(sector_number))
+    }
+
     #[must_use]
     pub fn to_frames(self) -> u32 {
         let seconds: u32 = self.seconds.into();
@@ -108,6 +114,12 @@ impl CdTime {
         let frames = frames % u32::from(Self::FRAMES_PER_SECOND);
 
         Self::new(minutes as u8, seconds as u8, frames as u8)
+    }
+
+    /// Checked variant of [`CdTime::from_frames`] for untrusted disc metadata.
+    #[must_use]
+    pub fn from_frames_checked(frames: u32) -> Option<Self> {
+        (frames < Self::MAX_SECTORS).then(|| Self::from_frames(frames))
     }
 
     #[must_use]
@@ -220,6 +232,15 @@ mod tests {
 
         // Seconds carry
         assert_eq!(CdTime::new(10, 20, 30) + CdTime::new(15, 55, 35), CdTime::new(26, 15, 65));
+    }
+
+    #[test]
+    fn checked_conversions_reject_out_of_range_disc_metadata() {
+        assert_eq!(CdTime::from_frames_checked(359_999), Some(CdTime::new(79, 59, 74)));
+        assert_eq!(CdTime::from_sector_number_checked(359_999), Some(CdTime::new(79, 59, 74)));
+        assert_eq!(CdTime::from_frames_checked(360_000), None);
+        assert_eq!(CdTime::from_sector_number_checked(360_000), None);
+        assert_eq!(CdTime::from_frames_checked(u32::MAX), None);
     }
 
     #[test]

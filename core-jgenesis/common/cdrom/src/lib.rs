@@ -53,6 +53,8 @@ pub enum CdRomError {
     ChdHeaderParseError { metadata_value: String },
     #[error("CHD header contains an invalid CD-ROM track list: {track_numbers:?}")]
     ChdInvalidTrackList { track_numbers: Vec<u8> },
+    #[error("CHD header contains an invalid {field} value for track {track_number}: {frames} frames")]
+    ChdInvalidTrackLength { track_number: u8, field: &'static str, frames: u32 },
     #[error("I/O error reading from disc: {0}")]
     DiscReadIo(#[source] io::Error),
     #[error("WAV file in unsupported format; must contain 44100 Hz 16-bit stereo samples")]

@@ -71,6 +71,7 @@ import com.sbro.emucoreh.ui.theme.neon.LocalNeonTheme
 import com.sbro.emucoreh.ui.theme.neon.NeonSystemBanner
 import com.sbro.emucoreh.ui.theme.neon.neonButtonShape
 import com.sbro.emucoreh.ui.theme.neon.neonShape
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -105,7 +106,6 @@ fun SaveManagerScreen(
     var previewPaths by remember(gamePath, gameTitle, gameSerial) { mutableStateOf<Map<String, String>>(emptyMap()) }
     var isWorking by remember { mutableStateOf(false) }
     var isPreparingEntries by remember(gamePath, gameTitle, gameSerial) { mutableStateOf(true) }
-    var isResolvingEntries by remember(gamePath, gameTitle, gameSerial) { mutableStateOf(false) }
     val pendingDelete = remember { mutableStateOf<SaveStateEntryInfo?>(null) }
     var importPreview by remember { mutableStateOf<SaveStateImportPreview?>(null) }
     var refreshGeneration by remember(gamePath, gameTitle, gameSerial) { mutableIntStateOf(0) }
@@ -128,43 +128,38 @@ fun SaveManagerScreen(
             isPreparingEntries = true
             entries = emptyList()
             previewPaths = emptyMap()
-            val initialEntries = withContext(Dispatchers.IO) {
-                repository.listEntries(
-                    filterGamePath = gamePath,
-                    filterGameTitle = gameTitle,
-                    filterGameSerial = gameSerial
-                )
-            }
+            // Resolve names, game paths and thumbnails before publishing the
+            // first list snapshot. Showing the raw save identity (and a blank
+            // thumbnail) for a second and then replacing it looked like a
+            // stale/corrupt list even though the final data was correct.
+            val resolved = runCatchingNonCancellation {
+                withContext(Dispatchers.IO) {
+                    val initialEntries = runCatchingNonCancellation {
+                        repository.listEntries(
+                            filterGamePath = gamePath,
+                            filterGameTitle = gameTitle,
+                            filterGameSerial = gameSerial
+                        )
+                    }.getOrElse { emptyList() }
+                    val enrichedEntries = if (gamePath.isNullOrBlank() && initialEntries.isNotEmpty()) {
+                        runCatchingNonCancellation { repository.enrichGlobalEntries(initialEntries) }
+                            .getOrDefault(initialEntries)
+                    } else {
+                        initialEntries
+                    }
+                    val previews = runCatchingNonCancellation {
+                        enrichedEntries.mapNotNull { entry ->
+                            repository.getPreviewImagePath(entry)?.let { entry.absolutePath to it }
+                        }.toMap()
+                    }.getOrElse { emptyMap() }
+                    enrichedEntries to previews
+                }
+            }.getOrNull()
             if (refreshGeneration != generation) return@launch
-
-            entries = initialEntries
+            entries = resolved?.first ?: emptyList()
+            previewPaths = resolved?.second ?: emptyMap()
             isPreparingEntries = false
             isWorking = false
-
-            val resolvedEntries = if (gamePath.isNullOrBlank() && initialEntries.isNotEmpty()) {
-                isResolvingEntries = true
-                withContext(Dispatchers.IO) {
-                    repository.enrichGlobalEntries(initialEntries)
-                }
-            } else {
-                initialEntries
-            }
-            if (refreshGeneration != generation) return@launch
-            if (resolvedEntries !== initialEntries) {
-                entries = resolvedEntries
-            }
-            isResolvingEntries = false
-
-            scope.launch(Dispatchers.IO) {
-                resolvedEntries.forEach { entry ->
-                    val previewPath = repository.getPreviewImagePath(entry) ?: return@forEach
-                    withContext(Dispatchers.Main) {
-                        if (refreshGeneration != generation) return@withContext
-                        if (previewPaths[entry.absolutePath] == previewPath) return@withContext
-                        previewPaths = previewPaths + (entry.absolutePath to previewPath)
-                    }
-                }
-            }
         }
     }
 
@@ -401,7 +396,7 @@ fun SaveManagerScreen(
                         SaveEntryCard(
                             entry = entry,
                             previewPath = previewPaths[entry.absolutePath],
-                            showLoadUnavailable = !isResolvingEntries,
+                            showLoadUnavailable = true,
                             onLoadClick = {
                                 val path = entry.gamePath ?: return@SaveEntryCard
                                 onLoadClick(path, entry.slot)
@@ -682,7 +677,10 @@ private fun SaveEntryCard(
                         coverPath = previewPath,
                         fallbackTitle = entry.gameTitle,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        // A slot preview is overwritten in place. The save
+                        // timestamp is the cache-busting token.
+                        reloadToken = entry.lastModified
                     )
                 }
 
@@ -961,3 +959,13 @@ private fun String?.isUsableDisplayTitle(): Boolean {
         !value.contains("%2F", ignoreCase = true) &&
         !value.contains("%3A", ignoreCase = true)
 }
+
+/** [runCatching] that still propagates coroutine cancellation. */
+private inline fun <T> runCatchingNonCancellation(block: () -> T): Result<T> =
+    try {
+        Result.success(block())
+    } catch (cancel: CancellationException) {
+        throw cancel
+    } catch (error: Exception) {
+        Result.failure(error)
+    }

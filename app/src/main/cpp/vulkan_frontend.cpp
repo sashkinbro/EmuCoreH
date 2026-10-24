@@ -168,6 +168,23 @@ struct State {
     bool has_frame_image = false;
     uint32_t sync_index = 0;
     uint32_t submitted_sync_index = UINT32_MAX;
+
+    // Cores without a hardware renderer (jgenesis) still get GPU output.
+    // Their XRGB8888 frames are copied into this frontend-owned sampled image
+    // and then go through the normal blit/effect/shader-chain present path.
+    bool software_mode = false;
+    VkImage software_image = VK_NULL_HANDLE;
+    VkDeviceMemory software_image_memory = VK_NULL_HANDLE;
+    VkImageView software_image_view = VK_NULL_HANDLE;
+    VkImageLayout software_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    uint32_t software_width = 0;
+    uint32_t software_height = 0;
+    VkBuffer software_staging = VK_NULL_HANDLE;
+    VkDeviceMemory software_staging_memory = VK_NULL_HANDLE;
+    void* software_staging_mapped = nullptr;
+    size_t software_staging_size = 0;
+    bool software_upload_pending = false;
+    retro_vulkan_image software_frame_image = {};
 };
 
 State g_vk;
@@ -391,65 +408,89 @@ bool PickPhysicalDevice() {
 
 bool CreateDevice() {
     if (g_vk.device != VK_NULL_HANDLE) return true;
-    if (!g_vk.has_negotiation || g_vk.negotiation.create_device == nullptr) {
-        VK_LOGE("Core did not provide a Vulkan context negotiation interface");
-        return false;
-    }
-
-    // The core builds its device through Vulkan-Hpp, which reports driver
-    // errors by throwing. This call runs on a JVM-managed thread, so an
-    // escaping exception would unwind into ART and abort the process with
-    // SIGABRT; every attempt stays contained here instead. The core throws
-    // before it creates any device object, which makes one retry safe.
-    retro_vulkan_context context{};
-    const char* required_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    bool created = false;
-    for (int attempt = 0; attempt < 2 && !created; ++attempt) {
-        context = retro_vulkan_context{};
-        try {
-            created = g_vk.negotiation.create_device(&context, g_vk.instance, g_vk.physical_device,
-                                                     g_vk.surface, &vkGetInstanceProcAddr,
-                                                     required_extensions, 1, nullptr, 0, nullptr);
-        } catch (const std::exception& error) {
-            emucoreh::crash::LogNativeError((std::string("Core Vulkan device creation failed: ") +
-                                             error.what())
-                                                .c_str());
-            VK_LOGE("Core create_device threw: %s", error.what());
-        } catch (...) {
-            emucoreh::crash::LogNativeError("Core Vulkan device creation failed with an unknown exception");
-            VK_LOGE("Core create_device threw an unknown exception");
-        }
-    }
-    if (!created || context.device == VK_NULL_HANDLE) {
-        VK_LOGE("Core failed to create the Vulkan device");
-        return false;
-    }
-
-    g_vk.device = context.device;
-    // Flycast/VMA resolve the 1.1 memory-requirements entry points themselves.
-    // A device that advertises 1.1 must expose them; failing here keeps the
-    // failure inside hardware setup instead of a null call on the first frame.
-    VkPhysicalDeviceProperties device_properties{};
-    vkGetPhysicalDeviceProperties(g_vk.physical_device, &device_properties);
-    if (device_properties.apiVersion >= kMinimumCoreVulkanApi) {
-        for (const char* name : {"vkGetBufferMemoryRequirements2", "vkGetImageMemoryRequirements2",
-                                 "vkBindBufferMemory2", "vkBindImageMemory2"}) {
-            if (LoadDeviceFunction<PFN_vkVoidFunction>(name) == nullptr) {
-                VK_LOGE("Required Vulkan 1.1 entry point is missing: %s", name);
-                return false;
+    if (g_vk.has_negotiation && g_vk.negotiation.create_device != nullptr) {
+        // The core builds its device through Vulkan-Hpp, which reports driver
+        // errors by throwing. This call runs on a JVM-managed thread, so an
+        // escaping exception would unwind into ART and abort the process with
+        // SIGABRT; every attempt stays contained here instead. The core throws
+        // before it creates any device object, which makes one retry safe.
+        retro_vulkan_context context{};
+        const char* required_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+        bool created = false;
+        for (int attempt = 0; attempt < 2 && !created; ++attempt) {
+            context = retro_vulkan_context{};
+            try {
+                created = g_vk.negotiation.create_device(&context, g_vk.instance, g_vk.physical_device,
+                                                         g_vk.surface, &vkGetInstanceProcAddr,
+                                                         required_extensions, 1, nullptr, 0, nullptr);
+            } catch (const std::exception& error) {
+                emucoreh::crash::LogNativeError((std::string("Core Vulkan device creation failed: ") +
+                                                 error.what())
+                                                    .c_str());
+                VK_LOGE("Core create_device threw: %s", error.what());
+            } catch (...) {
+                emucoreh::crash::LogNativeError("Core Vulkan device creation failed with an unknown exception");
+                VK_LOGE("Core create_device threw an unknown exception");
             }
         }
-    }
-    g_vk.queue = context.queue;
-    g_vk.queue_family = context.queue_family_index;
-    g_vk.present_queue = context.presentation_queue != VK_NULL_HANDLE ? context.presentation_queue : context.queue;
-    g_vk.present_queue_family = context.presentation_queue != VK_NULL_HANDLE
-                                    ? context.presentation_queue_family_index
-                                    : context.queue_family_index;
-    if (g_vk.present_queue_family != g_vk.queue_family) {
-        VK_LOGE("Vulkan present queue family %u differs from graphics family %u", g_vk.present_queue_family,
-                g_vk.queue_family);
-        return false;
+        if (!created || context.device == VK_NULL_HANDLE) {
+            VK_LOGE("Core failed to create the Vulkan device");
+            return false;
+        }
+
+        g_vk.device = context.device;
+        // Flycast/VMA resolve the 1.1 memory-requirements entry points themselves.
+        // A device that advertises 1.1 must expose them; failing here keeps the
+        // failure inside hardware setup instead of a null call on the first frame.
+        VkPhysicalDeviceProperties device_properties{};
+        vkGetPhysicalDeviceProperties(g_vk.physical_device, &device_properties);
+        if (device_properties.apiVersion >= kMinimumCoreVulkanApi) {
+            for (const char* name : {"vkGetBufferMemoryRequirements2", "vkGetImageMemoryRequirements2",
+                                     "vkBindBufferMemory2", "vkBindImageMemory2"}) {
+                if (LoadDeviceFunction<PFN_vkVoidFunction>(name) == nullptr) {
+                    VK_LOGE("Required Vulkan 1.1 entry point is missing: %s", name);
+                    return false;
+                }
+            }
+        }
+        g_vk.queue = context.queue;
+        g_vk.queue_family = context.queue_family_index;
+        g_vk.present_queue =
+            context.presentation_queue != VK_NULL_HANDLE ? context.presentation_queue : context.queue;
+        g_vk.present_queue_family = context.presentation_queue != VK_NULL_HANDLE
+                                        ? context.presentation_queue_family_index
+                                        : context.queue_family_index;
+        if (g_vk.present_queue_family != g_vk.queue_family) {
+            VK_LOGE("Vulkan present queue family %u differs from graphics family %u",
+                    g_vk.present_queue_family, g_vk.queue_family);
+            return false;
+        }
+    } else {
+        // The core only outputs CPU frames (jgenesis). The frontend owns the
+        // device, uploads each frame into a sampled image and runs the same
+        // GPU present/effect path used by hardware-rendered cores.
+        const float priority = 1.0f;
+        VkDeviceQueueCreateInfo queue_info{};
+        queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queue_info.queueFamilyIndex = g_vk.queue_family;
+        queue_info.queueCount = 1;
+        queue_info.pQueuePriorities = &priority;
+        const char* required_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+        VkDeviceCreateInfo device_info{};
+        device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        device_info.queueCreateInfoCount = 1;
+        device_info.pQueueCreateInfos = &queue_info;
+        device_info.enabledExtensionCount = 1;
+        device_info.ppEnabledExtensionNames = required_extensions;
+        if (vkCreateDevice(g_vk.physical_device, &device_info, nullptr, &g_vk.device) != VK_SUCCESS) {
+            VK_LOGE("Frontend vkCreateDevice failed");
+            g_vk.device = VK_NULL_HANDLE;
+            return false;
+        }
+        vkGetDeviceQueue(g_vk.device, g_vk.queue_family, 0, &g_vk.queue);
+        g_vk.present_queue = g_vk.queue;
+        g_vk.present_queue_family = g_vk.queue_family;
+        VK_LOGI("Frontend Vulkan device created for software frame output");
     }
 
     g_vk.pfn_create_swapchain = LoadDeviceFunction<PFN_vkCreateSwapchainKHR>("vkCreateSwapchainKHR");
@@ -930,6 +971,222 @@ bool EnsureShaderChain() {
 }
 #endif  // EMUCOREA_HAVE_LIBRASHADER
 
+uint32_t FindSoftwareMemoryType(uint32_t type_bits, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memory_properties{};
+    vkGetPhysicalDeviceMemoryProperties(g_vk.physical_device, &memory_properties);
+    for (uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
+        if ((type_bits & (1u << i)) != 0 &&
+            (memory_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+    return UINT32_MAX;
+}
+
+void DestroySoftwareTarget() {
+    if (g_vk.device != VK_NULL_HANDLE) {
+        if (g_vk.software_staging_mapped != nullptr &&
+            g_vk.software_staging_memory != VK_NULL_HANDLE) {
+            vkUnmapMemory(g_vk.device, g_vk.software_staging_memory);
+        }
+        if (g_vk.software_staging != VK_NULL_HANDLE) {
+            vkDestroyBuffer(g_vk.device, g_vk.software_staging, nullptr);
+        }
+        if (g_vk.software_staging_memory != VK_NULL_HANDLE) {
+            vkFreeMemory(g_vk.device, g_vk.software_staging_memory, nullptr);
+        }
+        if (g_vk.software_image_view != VK_NULL_HANDLE) {
+            vkDestroyImageView(g_vk.device, g_vk.software_image_view, nullptr);
+        }
+        if (g_vk.software_image != VK_NULL_HANDLE) {
+            vkDestroyImage(g_vk.device, g_vk.software_image, nullptr);
+        }
+        if (g_vk.software_image_memory != VK_NULL_HANDLE) {
+            vkFreeMemory(g_vk.device, g_vk.software_image_memory, nullptr);
+        }
+    }
+    g_vk.software_image = VK_NULL_HANDLE;
+    g_vk.software_image_memory = VK_NULL_HANDLE;
+    g_vk.software_image_view = VK_NULL_HANDLE;
+    g_vk.software_staging = VK_NULL_HANDLE;
+    g_vk.software_staging_memory = VK_NULL_HANDLE;
+    g_vk.software_staging_mapped = nullptr;
+    g_vk.software_staging_size = 0;
+    g_vk.software_width = 0;
+    g_vk.software_height = 0;
+    g_vk.software_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    g_vk.software_upload_pending = false;
+    g_vk.software_frame_image = {};
+}
+
+bool EnsureSoftwareTarget(uint32_t width, uint32_t height) {
+    if (width == 0 || height == 0) return false;
+    if (g_vk.software_image != VK_NULL_HANDLE && g_vk.software_width == width &&
+        g_vk.software_height == height) {
+        return true;
+    }
+
+    DestroySoftwareTarget();
+
+    VkImageCreateInfo image_info{};
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.imageType = VK_IMAGE_TYPE_2D;
+    image_info.format = VK_FORMAT_B8G8R8A8_UNORM;
+    image_info.extent = {width, height, 1};
+    image_info.mipLevels = 1;
+    image_info.arrayLayers = 1;
+    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                       VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    if (vkCreateImage(g_vk.device, &image_info, nullptr, &g_vk.software_image) != VK_SUCCESS) {
+        VK_LOGE("vkCreateImage (software frame) failed");
+        DestroySoftwareTarget();
+        return false;
+    }
+
+    VkMemoryRequirements image_requirements{};
+    vkGetImageMemoryRequirements(g_vk.device, g_vk.software_image, &image_requirements);
+    const uint32_t image_memory_type =
+        FindSoftwareMemoryType(image_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if (image_memory_type == UINT32_MAX) {
+        VK_LOGE("No device-local memory for software frame image");
+        DestroySoftwareTarget();
+        return false;
+    }
+    VkMemoryAllocateInfo image_allocate_info{};
+    image_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    image_allocate_info.allocationSize = image_requirements.size;
+    image_allocate_info.memoryTypeIndex = image_memory_type;
+    if (vkAllocateMemory(g_vk.device, &image_allocate_info, nullptr,
+                         &g_vk.software_image_memory) != VK_SUCCESS) {
+        VK_LOGE("vkAllocateMemory (software frame) failed");
+        DestroySoftwareTarget();
+        return false;
+    }
+    vkBindImageMemory(g_vk.device, g_vk.software_image, g_vk.software_image_memory, 0);
+
+    VkImageViewCreateInfo view_info{};
+    view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    view_info.image = g_vk.software_image;
+    view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    view_info.format = VK_FORMAT_B8G8R8A8_UNORM;
+    view_info.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    if (vkCreateImageView(g_vk.device, &view_info, nullptr, &g_vk.software_image_view) != VK_SUCCESS) {
+        VK_LOGE("vkCreateImageView (software frame) failed");
+        DestroySoftwareTarget();
+        return false;
+    }
+
+    const VkDeviceSize staging_size = static_cast<VkDeviceSize>(width) * height * 4;
+    VkBufferCreateInfo buffer_info{};
+    buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_info.size = staging_size;
+    buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    if (vkCreateBuffer(g_vk.device, &buffer_info, nullptr, &g_vk.software_staging) != VK_SUCCESS) {
+        VK_LOGE("vkCreateBuffer (software frame staging) failed");
+        DestroySoftwareTarget();
+        return false;
+    }
+    VkMemoryRequirements buffer_requirements{};
+    vkGetBufferMemoryRequirements(g_vk.device, g_vk.software_staging, &buffer_requirements);
+    const uint32_t buffer_memory_type = FindSoftwareMemoryType(
+        buffer_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    if (buffer_memory_type == UINT32_MAX) {
+        VK_LOGE("No host-visible coherent memory for software frame staging");
+        DestroySoftwareTarget();
+        return false;
+    }
+    VkMemoryAllocateInfo buffer_allocate_info{};
+    buffer_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    buffer_allocate_info.allocationSize = buffer_requirements.size;
+    buffer_allocate_info.memoryTypeIndex = buffer_memory_type;
+    if (vkAllocateMemory(g_vk.device, &buffer_allocate_info, nullptr,
+                         &g_vk.software_staging_memory) != VK_SUCCESS) {
+        VK_LOGE("vkAllocateMemory (software frame staging) failed");
+        DestroySoftwareTarget();
+        return false;
+    }
+    if (vkBindBufferMemory(g_vk.device, g_vk.software_staging, g_vk.software_staging_memory, 0) !=
+        VK_SUCCESS) {
+        VK_LOGE("vkBindBufferMemory (software frame staging) failed");
+        DestroySoftwareTarget();
+        return false;
+    }
+    if (vkMapMemory(g_vk.device, g_vk.software_staging_memory, 0, staging_size, 0,
+                    &g_vk.software_staging_mapped) != VK_SUCCESS) {
+        VK_LOGE("vkMapMemory (software frame staging) failed");
+        g_vk.software_staging_mapped = nullptr;
+        DestroySoftwareTarget();
+        return false;
+    }
+
+    g_vk.software_width = width;
+    g_vk.software_height = height;
+    g_vk.software_staging_size = static_cast<size_t>(staging_size);
+    g_vk.software_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    g_vk.software_frame_image = {};
+    g_vk.software_frame_image.create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    g_vk.software_frame_image.create_info.image = g_vk.software_image;
+    g_vk.software_frame_image.create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    g_vk.software_frame_image.create_info.format = VK_FORMAT_B8G8R8A8_UNORM;
+    g_vk.software_frame_image.create_info.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    g_vk.software_frame_image.image_view = g_vk.software_image_view;
+    g_vk.software_frame_image.image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    VK_LOGI("Vulkan software frame target %ux%u ready", width, height);
+    return true;
+}
+
+bool UploadSoftwareFrame(const void* data, uint32_t width, uint32_t height, size_t pitch) {
+    if (!EnsureSoftwareTarget(width, height)) return false;
+    const size_t row_bytes = static_cast<size_t>(width) * 4;
+    if (pitch < row_bytes || g_vk.software_staging_mapped == nullptr) return false;
+    auto* destination = static_cast<uint8_t*>(g_vk.software_staging_mapped);
+    const auto* source = static_cast<const uint8_t*>(data);
+    for (uint32_t y = 0; y < height; ++y) {
+        std::memcpy(destination + static_cast<size_t>(y) * row_bytes,
+                    source + static_cast<size_t>(y) * pitch, row_bytes);
+    }
+    g_vk.software_upload_pending = true;
+    return true;
+}
+
+void RecordSoftwareUpload(VkCommandBuffer command_buffer) {
+    if (!g_vk.software_upload_pending || g_vk.software_image == VK_NULL_HANDLE) return;
+
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = g_vk.software_layout;
+    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = g_vk.software_image;
+    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+    VkBufferImageCopy region{};
+    region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.imageExtent = {g_vk.software_width, g_vk.software_height, 1};
+    vkCmdCopyBufferToImage(command_buffer, g_vk.software_staging, g_vk.software_image,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+    g_vk.software_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    g_vk.software_upload_pending = false;
+}
+
 void DestroySwapchain() {
     if (g_vk.device == VK_NULL_HANDLE) return;
     if (g_vk.effect_pipeline != VK_NULL_HANDLE) {
@@ -1218,6 +1475,7 @@ bool RecordPresentBlit(uint32_t swapchain_index, uint32_t source_width, uint32_t
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) return false;
+    RecordSoftwareUpload(command_buffer);
 
     const VkImage source_image = g_vk.frame_image.create_info.image;
     const VkImageLayout source_layout = g_vk.frame_image.image_layout;
@@ -1283,7 +1541,6 @@ bool RecordPresentBlit(uint32_t swapchain_index, uint32_t source_width, uint32_t
     return vkEndCommandBuffer(command_buffer) == VK_SUCCESS;
 }
 
-#if !defined(EMUCOREA_HAVE_LIBRASHADER)
 bool RecordPresentEffect(uint32_t swapchain_index, uint32_t source_width, uint32_t source_height,
                          const PresentRect& dst, const CropRect& crop, int effect) {
     if (!EnsureEffectPipeline()) return false;
@@ -1296,6 +1553,7 @@ bool RecordPresentEffect(uint32_t swapchain_index, uint32_t source_width, uint32
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) return false;
+    RecordSoftwareUpload(command_buffer);
 
     const VkImage source_image = g_vk.frame_image.create_info.image;
     const VkImageLayout source_layout = g_vk.frame_image.image_layout;
@@ -1410,7 +1668,6 @@ bool RecordPresentEffect(uint32_t swapchain_index, uint32_t source_width, uint32
 
     return vkEndCommandBuffer(command_buffer) == VK_SUCCESS;
 }
-#endif  // !EMUCOREA_HAVE_LIBRASHADER
 
 #if defined(EMUCOREA_HAVE_LIBRASHADER)
 bool RecordPresentShaderChain(uint32_t swapchain_index, uint32_t source_width, uint32_t source_height,
@@ -1425,6 +1682,7 @@ bool RecordPresentShaderChain(uint32_t swapchain_index, uint32_t source_width, u
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) return false;
+    RecordSoftwareUpload(command_buffer);
 
     const VkImageLayout source_layout = g_vk.frame_image.image_layout;
     VkImageMemoryBarrier source_barrier{};
@@ -1528,6 +1786,12 @@ bool Prepare(ANativeWindow* window, uint32_t window_generation) {
     if (g_vk.requested || g_vk.active) return true;
     if (window == nullptr) return false;
 
+    // A Vulkan surface is prepared before the core is loaded. At this point a
+    // software-frame core has not had a chance to request a hardware context,
+    // so assume the frontend-owned output path until AcceptHardwareRender()
+    // says otherwise.
+    g_vk.requested = true;
+    g_vk.software_mode = true;
     if (!EnsureInstance() || !EnsureSurface(window, window_generation) || !PickPhysicalDevice()) {
         Destroy();
         return false;
@@ -1539,6 +1803,7 @@ bool Prepare(ANativeWindow* window, uint32_t window_generation) {
 bool AcceptHardwareRender(retro_hw_render_callback* callback) {
     if (callback == nullptr) return false;
     g_vk.requested = true;
+    g_vk.software_mode = false;
     g_vk.callback = *callback;
     g_vk.has_callback = true;
     g_vk.context_reset_pending = true;
@@ -1561,7 +1826,10 @@ bool AcceptNegotiationInterface(const retro_hw_render_context_negotiation_interf
 }
 
 bool FillHardwareRenderInterface(retro_hw_render_interface** out_interface) {
-    if (out_interface == nullptr || !g_vk.requested || g_vk.device == VK_NULL_HANDLE) return false;
+    if (out_interface == nullptr || !g_vk.requested || g_vk.device == VK_NULL_HANDLE ||
+        g_vk.software_mode) {
+        return false;
+    }
     FillInterface();
     *out_interface = reinterpret_cast<retro_hw_render_interface*>(&g_vk.interface);
     return true;
@@ -1722,24 +1990,21 @@ bool Present(uint32_t source_width, uint32_t source_height, double display_aspec
 #if defined(EMUCOREA_HAVE_LIBRASHADER)
     if (want_chain && EnsureShaderChain() && EnsureShaderChainTarget(dst.width, dst.height)) {
         recorded = RecordPresentShaderChain(swapchain_index, source_width, source_height, dst);
-        if (!recorded) VK_LOGW("librashader chain frame failed; falling back to blit");
+        if (!recorded) VK_LOGW("librashader chain frame failed; falling back to shader effect");
     }
+#endif
     if (!recorded) {
-        recorded = RecordPresentBlit(swapchain_index, source_width, source_height, dst, crop);
-    }
-#else
-    int effect = g_shader_effect.load(std::memory_order_relaxed);
-    if (effect == 0) {
-        effect = 5; // Fallback to Bilinear shader quad for reliable linear upscaling
-    }
-    if (effect != 0) {
+        // The shader path also handles software B8G8R8A8 sources whose format
+        // is not blit-compatible with an R8G8B8A8 swapchain.
+        int effect = g_shader_effect.load(std::memory_order_relaxed);
+        if (effect == 0) effect = 5;  // Bilinear, the neutral upscaler.
         recorded = RecordPresentEffect(swapchain_index, source_width, source_height, dst, crop, effect);
         if (!recorded) VK_LOGW("Vulkan shader effect path failed; falling back to blit");
     }
-    if (!recorded) {
+    if (!recorded &&
+        (!g_vk.software_mode || g_vk.frame_image.create_info.format == g_vk.swapchain_format)) {
         recorded = RecordPresentBlit(swapchain_index, source_width, source_height, dst, crop);
     }
-#endif
     if (!recorded) {
         VK_LOGW("Failed to record Vulkan present commands");
         return false;
@@ -1786,6 +2051,28 @@ bool Present(uint32_t source_width, uint32_t source_height, double display_aspec
     return true;
 }
 
+bool PresentSoftware(const void* data, uint32_t width, uint32_t height, size_t pitch,
+                     double display_aspect, bool stretch, bool adjust_aspect_for_crop) {
+    if (!IsActive() || g_vk.device == VK_NULL_HANDLE) return false;
+    if (data == nullptr || width == 0 || height == 0) return false;
+    if (pitch < static_cast<size_t>(width) * 4) return false;
+
+    // The mapped staging buffer and a differently sized software image may
+    // still be read by the previous submission. Wait once here so reallocation
+    // and the CPU copy are safe; Present() re-checks the already-signalled
+    // fence immediately afterwards.
+    if (g_vk.frame_fence != VK_NULL_HANDLE &&
+        vkWaitForFences(g_vk.device, 1, &g_vk.frame_fence, VK_TRUE, kFenceWaitTimeoutNs) != VK_SUCCESS) {
+        VK_LOGW("Vulkan software frame fence timed out");
+        return false;
+    }
+    if (!UploadSoftwareFrame(data, width, height, pitch)) return false;
+
+    g_vk.frame_image = g_vk.software_frame_image;
+    g_vk.has_frame_image = true;
+    return Present(width, height, display_aspect, stretch, adjust_aspect_for_crop);
+}
+
 void Destroy() {
     if (g_vk.device != VK_NULL_HANDLE) {
         vkDeviceWaitIdle(g_vk.device);
@@ -1793,6 +2080,7 @@ void Destroy() {
 #if defined(EMUCOREA_HAVE_LIBRASHADER)
         DestroyShaderChain();
 #endif
+        DestroySoftwareTarget();
         if (g_vk.command_pool != VK_NULL_HANDLE) vkDestroyCommandPool(g_vk.device, g_vk.command_pool, nullptr);
         if (g_vk.acquire_semaphore != VK_NULL_HANDLE)
             vkDestroySemaphore(g_vk.device, g_vk.acquire_semaphore, nullptr);

@@ -90,11 +90,20 @@ impl<F: Read + Seek> ChdFile<F> {
     pub fn open(f: F) -> CdRomResult<(Self, CueSheet)> {
         let mut chd = Chd::open(f, None)?;
 
-        // Parse TOC info from CHD metadata
+        // Parse TOC info from CHD metadata. CHD files may also carry
+        // non-CD metadata (hard-disk, A/V, GD-ROM); only the CD tags describe
+        // the track layout this reader understands.
         let mut metadata_iter = chd.metadata();
         let mut cd_metadata_list = Vec::new();
         while let Some(mut metadata_entry) = metadata_iter.next() {
             let metadata = metadata_entry.read()?;
+            let tag = metadata.metatag;
+            if tag != chd::metadata::KnownMetadata::CdRomOld as u32
+                && tag != chd::metadata::KnownMetadata::CdRomTrack as u32
+                && tag != chd::metadata::KnownMetadata::CdRomTrack2 as u32
+            {
+                continue;
+            }
 
             let Some(cd_metadata) = CdMetadata::parse_from(metadata.value.clone()) else {
                 let value_str = String::from_utf8_lossy(&metadata.value).to_string();
@@ -104,6 +113,9 @@ impl<F: Read + Seek> ChdFile<F> {
             cd_metadata_list.push(cd_metadata);
         }
 
+        if cd_metadata_list.is_empty() {
+            return Err(CdRomError::ChdInvalidTrackList { track_numbers: Vec::new() });
+        }
         cd_metadata_list.sort_by_key(|metadata| metadata.track_number);
         validate_track_numbers(&cd_metadata_list)?;
 
@@ -119,12 +131,23 @@ impl<F: Read + Seek> ChdFile<F> {
                     // Data tracks always have a 2-second pregap
                     CdTime::new(0, 2, 0)
                 }
-                TrackType::Audio => CdTime::from_frames(cd_metadata.pregap_frames),
+                TrackType::Audio => CdTime::from_frames_checked(cd_metadata.pregap_frames)
+                    .ok_or(CdRomError::ChdInvalidTrackLength {
+                        track_number: cd_metadata.track_number,
+                        field: "PREGAP",
+                        frames: cd_metadata.pregap_frames,
+                    })?,
             };
 
             let postgap_len = track_type.default_postgap_len();
 
-            let track_len = CdTime::from_frames(cd_metadata.frames);
+            let track_len = CdTime::from_frames_checked(cd_metadata.frames).ok_or(
+                CdRomError::ChdInvalidTrackLength {
+                    track_number: cd_metadata.track_number,
+                    field: "FRAMES",
+                    frames: cd_metadata.frames,
+                },
+            )?;
             let padded_track_len = pregap_len + track_len + postgap_len;
 
             tracks.push(Track {
@@ -159,10 +182,11 @@ impl<F: Read + Seek> ChdFile<F> {
 
         cue::finalize_track_list(&mut tracks);
 
-        assert!(
-            cue::tracks_are_continuous(&tracks),
-            "CHD tracks are not continuous; this is a bug"
-        );
+        if !cue::tracks_are_continuous(&tracks) {
+            return Err(CdRomError::ChdInvalidTrackList {
+                track_numbers: tracks.iter().map(|track| track.number).collect(),
+            });
+        }
 
         log::debug!("CHD track start frames: {track_start_frames:?}");
 

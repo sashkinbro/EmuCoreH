@@ -477,10 +477,23 @@ object NativeApp {
     }
 
     @JvmStatic fun getSaveStatePathForFile(path: String, slot: Int): String? {
+        return saveStatePathForFile(path, slot, null)
+    }
+
+    /**
+     * Same identity as [getSaveStatePathForFile], but reuses the platform that
+     * the library cache already stored. Bulk save-list enrichment must not run
+     * the native CHD probe for every game in the library.
+     */
+    @JvmStatic fun getSaveStatePathForFile(path: String, slot: Int, platformName: String?): String? {
+        return saveStatePathForFile(path, slot, EmulationPlatform.fromName(platformName))
+    }
+
+    private fun saveStatePathForFile(path: String, slot: Int, knownPlatform: EmulationPlatform?): String? {
         if (path.isBlank()) return null
         val context = getContext() ?: return null
         val directory = EmulatorStorage.saveStatesDir(context, dataRootOverride)
-        val platform = SegaPlatformDetector.detect(context, path)
+        val platform = knownPlatform ?: SegaPlatformDetector.detect(context, path)
         val identity = if (platform.isModel3) {
             "M3-${path.sha256().take(16).uppercase()}"
         } else if (platform.isSega) {

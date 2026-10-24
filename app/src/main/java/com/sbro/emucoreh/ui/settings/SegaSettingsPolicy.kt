@@ -20,6 +20,9 @@ internal fun gameMenuCustomizationTabAvailable(platform: EmulationPlatform, tab:
 internal fun settingsSearchEntryAvailable(platform: EmulationPlatform, tab: String, title: Int): Boolean {
     if (platform.coreId == 0) return true
     if (!segaSettingsTabAvailable(tab) || title in flycastOnlySearchSettings) return false
+    // Model 3 has no renderer choice; Supermodel is OpenGL-only. Sega does
+    // expose the jgenesis output backend, so the row is only hidden here.
+    if (platform.isModel3 && title == R.string.settings_renderer) return false
     return platform.supportsAnalogControlSettings() || title !in analogSearchSettings
 }
 
@@ -32,7 +35,7 @@ private val analogSearchSettings = setOf(
 )
 
 private val flycastOnlySearchSettings = setOf(
-    R.string.settings_renderer, R.string.settings_upscale, R.string.settings_racing_mode,
+    R.string.settings_upscale, R.string.settings_racing_mode,
     R.string.settings_gyro_mode, R.string.settings_gyro_mode_light_gun, R.string.settings_gyro_stick,
     R.string.settings_arcade_device_player_1, R.string.settings_arcade_device_player_2,
     R.string.settings_light_gun_aim, R.string.settings_light_gun_cursor,

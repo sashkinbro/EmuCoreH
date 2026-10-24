@@ -893,15 +893,24 @@ private fun GameSettingsTabContent(
             GameSettingsManagerTab.Core -> {
                 if (platform.isModel3) Model3SettingsInfo()
                 EditorSection(title = stringResource(R.string.game_settings_manager_section_profile)) {
-                    if (platform.coreId == 0) {
-                    SelectionRow(
-                        title = stringResource(R.string.settings_renderer),
-                        options = listOf(
+                    if (platform.coreId == 0 || platform.isSega) {
+                    val rendererOptions = if (platform.isSega) {
+                        listOf(
+                            12 to stringResource(R.string.settings_renderer_opengl),
+                            14 to stringResource(R.string.settings_renderer_vulkan)
+                        )
+                    } else {
+                        listOf(
                             12 to stringResource(R.string.settings_renderer_opengl),
                             14 to stringResource(R.string.settings_renderer_vulkan),
                             13 to stringResource(R.string.settings_renderer_software)
-                        ),
-                        selectedValue = normalizeManagerRenderer(draft.renderer),
+                        )
+                    }
+                    SelectionRow(
+                        title = stringResource(R.string.settings_renderer),
+                        options = rendererOptions,
+                        selectedValue = normalizeManagerRenderer(draft.renderer)
+                            .let { if (platform.isSega && it == RendererDefaults.SOFTWARE) RendererDefaults.OPENGL else it },
                         onSelected = { onDraftChange(draft.copy(renderer = it)) },
                         helpText = stringResource(R.string.settings_help_renderer),
                         onResetToDefault = {

@@ -91,6 +91,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val BIOS_SESSION_TITLE = "Dreamcast BIOS"
@@ -244,6 +245,8 @@ data class EmulationUiState(
     val autoLoadOnStart: Boolean = false,
     val autoSaveLastModified: Long = 0L,
     val autoSavePreviewPath: String? = null,
+    /** Bumped whenever slot previews are re-resolved, even if the path is unchanged. */
+    val savePreviewVersion: Long = 0L,
     val isAutoSaveInProgress: Boolean = false,
     val activePlayTimeMs: Long = 0L,
     val showDebugOptions: Boolean = false,
@@ -392,6 +395,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     private var pendingPlayTimeSyncMs: Long = 0L
     private var playTimeSyncJob: Job? = null
     private var savePreviewJob: Job? = null
+    private val savePreviewVersion = AtomicLong(0L)
     private var lastCloudPlayTimeSyncAtMs: Long = 0L
     private var shouldCountCurrentProfileSession = false
     // Sessions that must never enter persistent player stats stay untracked.
@@ -3260,7 +3264,11 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             ensureActive()
             _uiState.value = _uiState.value.copy(
                 currentSlotPreviewPath = currentPreview,
-                autoSavePreviewPath = autoSavePreview
+                autoSavePreviewPath = autoSavePreview,
+                // A slot preview file keeps its path across overwrites. Bump
+                // this token so the image composable reloads the new bytes
+                // instead of reusing the bitmap cached under the old path.
+                savePreviewVersion = savePreviewVersion.incrementAndGet()
             )
         }
     }
