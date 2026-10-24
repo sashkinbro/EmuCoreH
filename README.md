@@ -123,7 +123,7 @@ Discord support is built when a compatible Discord Social SDK directory is suppl
 | Game Gear | jgenesis | GG, recognized BIN cartridges, single-ROM ZIP |
 | SG-1000 | jgenesis | SG, single-ROM ZIP |
 
-Unknown disc/archive formats retain the existing Flycast route. CUE track files are grouped with their disc instead of appearing as separate games. Sega CD 32X combined hardware is not advertised as a separate supported system.
+Unknown disc/archive formats retain the existing Flycast route. GDI/CUE track files are grouped with their disc instead of appearing as separate games, and folder-per-game dumps take their title from the folder (for example `King of Fighters XI/disc.gdi`). Disc images kept in an `atomiswave`, `naomi`, `naomi2` or `systemsp` folder are grouped under that arcade platform; archives still use the bundled romset catalog. Sega CD 32X combined hardware is not advertised as a separate supported system.
 
 ### Sega Model 3
 

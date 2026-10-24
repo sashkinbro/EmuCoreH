@@ -17,8 +17,10 @@ data class GameLibraryCacheSnapshot(
 class GameLibraryCacheRepository(context: Context) {
 
     companion object {
-        // v10: identify Model 3 sets; older displayable snapshots refresh in the background.
-        private const val CACHE_SCHEMA_VERSION = 10
+        // v11: folder-title/platform hints and hidden GDI/CUE tracks; older
+        // displayable snapshots refresh in the background instead of keeping
+        // track files and shared `disc.gdi` titles in the library.
+        private const val CACHE_SCHEMA_VERSION = 11
 
         fun libraryKey(paths: List<String>): String =
             paths.map(String::trim).filter(String::isNotBlank).distinct().joinToString("\u001F")

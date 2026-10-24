@@ -50,6 +50,16 @@ class ArcadeCatalogRepository(context: Context) {
     /** Parsed `games` object keyed by lowercase romset. */
     private val games: JSONObject? by lazy { catalog?.optJSONObject("games") }
 
+    /**
+     * Unique catalog titles keyed by [CoverIndexRepository.normalizeTitle].
+     * Clone sets often repeat a title, so ambiguous titles stay unresolved.
+     */
+    private val romsetsByTitle: Map<String, String> by lazy {
+        cachedTitles ?: synchronized(lock) {
+            cachedTitles ?: games?.let(::romsetTitles).orEmpty().also { cachedTitles = it }
+        }
+    }
+
     private val gdroms: Set<String> by lazy {
         catalog?.optJSONArray("gdroms")?.let { array ->
             buildSet { for (index in 0 until array.length()) add(array.optString(index)) }
@@ -74,6 +84,16 @@ class ArcadeCatalogRepository(context: Context) {
     fun isKnownRomset(nameOrPath: String?): Boolean = find(nameOrPath) != null
 
     /**
+     * Resolves a unique catalog title to its romset. Used to give converted
+     * Atomiswave/Naomi disc images the same arcade artwork as their ROM set.
+     */
+    fun findRomsetByTitle(title: String?): String? =
+        romsetsByTitle[normalizeTitle(title)]
+
+    private fun normalizeTitle(title: String?): String =
+        CoverIndexRepository.normalizeTitle(title.orEmpty())
+
+    /**
      * True when the disc image belongs to an arcade GD-ROM set. Flycast boots
      * those through the romset archive, so the raw image is hidden from the
      * library just like the standalone scanner does.
@@ -89,6 +109,26 @@ class ArcadeCatalogRepository(context: Context) {
 
         @Volatile
         private var cached: JSONObject? = null
+
+        @Volatile
+        private var cachedTitles: Map<String, String>? = null
+
+        /** Unique normalized title -> romset; duplicate titles are omitted. */
+        internal fun romsetTitles(games: JSONObject): Map<String, String> {
+            val resolved = LinkedHashMap<String, String>()
+            val ambiguous = HashSet<String>()
+            val keys = games.keys()
+            while (keys.hasNext()) {
+                val romset = keys.next()
+                val entry = games.optJSONObject(romset) ?: continue
+                val title = entry.optString("title").takeIf(String::isNotBlank) ?: romset
+                val normalized = CoverIndexRepository.normalizeTitle(title)
+                if (normalized.isBlank()) continue
+                if (resolved.put(normalized, romset) != null) ambiguous += normalized
+            }
+            ambiguous.forEach(resolved::remove)
+            return resolved
+        }
 
         /** Lowercase base name without directory or extension. */
         internal fun romsetKey(nameOrPath: String?): String? = nameOrPath

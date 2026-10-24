@@ -23,6 +23,7 @@ class CoverIndexRepository(private val context: Context) {
     private val learned by lazy {
         context.getSharedPreferences("cover_serial_map", Context.MODE_PRIVATE)
     }
+    private val arcadeCatalog by lazy { ArcadeCatalogRepository(context) }
 
     /**
      * Resolves a cover URL by product code / serial (e.g. MK-51037, T1202N, HDR-0053).
@@ -107,6 +108,20 @@ class CoverIndexRepository(private val context: Context) {
             if (path != null) return makeCoverUrl(path, style, isLight)
         }
         return null
+    }
+
+    /**
+     * Arcade artwork for converted GD-ROM ports whose title matches a bundled
+     * Naomi/Atomiswave catalogue entry (for example a Metal Slug 6 GDI).
+     */
+    fun findArcadeCoverByTitle(
+        title: String?,
+        style: Int = AppPreferences.COVER_ART_STYLE_3D,
+        isLight: Boolean = false
+    ): String? {
+        if (style == AppPreferences.COVER_ART_STYLE_DISABLED) return null
+        val romset = arcadeCatalog.findRomsetByTitle(title) ?: return null
+        return findArcadeCover(romset, style = style, isLight = isLight)
     }
 
     /** Legacy method maintained for backward compatibility with IgdbCatalogRepository. */

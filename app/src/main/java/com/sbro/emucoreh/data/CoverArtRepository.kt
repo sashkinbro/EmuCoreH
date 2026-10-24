@@ -488,11 +488,16 @@ class CoverArtRepository(context: Context) {
             return null
         }
         val arcade = isArcadeGame(game.fileName)
+        val arcadePlatform = catalogPlatformName(gamePlatform(game)) in
+            setOf("Sega Naomi", "Sega Naomi 2", "Sammy Atomiswave", "Arcade")
         val title = FlycastBoxartSource.searchName(game.title, arcade)
         val urls = listOfNotNull(
             if (arcade) coverIndex.findArcadeCover(game.fileName, game.serial, style, isLight)
             else coverIndex.findCoverBySerial(game.serial, style, isLight),
-            coverIndex.findCoverByTitle(title, style, isLight, allowFuzzy = false)
+            coverIndex.findCoverByTitle(title, style, isLight, allowFuzzy = false),
+            // Converted Atomiswave/Naomi GD-ROMs have a Dreamcast container but
+            // their arcade catalogue title is often the only available artwork.
+            if (!arcade && arcadePlatform) coverIndex.findArcadeCoverByTitle(game.title, style, isLight) else null
         ).distinct()
         for (url in urls) downloadImage(url, key, "EmuCoreH-Covers")?.let { return it }
         return null
@@ -572,6 +577,8 @@ class CoverArtRepository(context: Context) {
         val indexUrl = coverIndex.findCoverBySerial(serial, style, isLight, canonical)
             ?: coverIndex.findCoverByTitle(title, style, isLight, platform = canonical)
             ?: (if (canonical == "Dreamcast") coverIndex.findArcadeCover(title, serial, style, isLight) else null)
+            ?: (if (canonical in setOf("Sega Naomi", "Sega Naomi 2", "Sammy Atomiswave", "Arcade"))
+                coverIndex.findArcadeCoverByTitle(title, style, isLight) else null)
         if (indexUrl != null) return indexUrl
 
         for (key in coverKeys(serial, title, platform)) {

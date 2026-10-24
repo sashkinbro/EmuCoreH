@@ -20,6 +20,35 @@ enum class LibraryPlatform {
     ARCADE,
 }
 
+/**
+ * Common library folder names. Disc images have no header that distinguishes
+ * a Dreamcast GD-ROM from an Atomiswave-to-Dreamcast port, so the containing
+ * folder is the only layout hint available. Archives keep using the bundled
+ * romset catalog and never take their platform from a folder name.
+ */
+object LibraryPlatformFolders {
+    private val nonAlphanumeric = Regex("[^a-z0-9]+")
+    private val aliases = mapOf(
+        "atomiswave" to LibraryPlatform.ATOMISWAVE,
+        "sammyatomiswave" to LibraryPlatform.ATOMISWAVE,
+        "naomi" to LibraryPlatform.NAOMI,
+        "seganaomi" to LibraryPlatform.NAOMI,
+        "naomi2" to LibraryPlatform.NAOMI_2,
+        "seganaomi2" to LibraryPlatform.NAOMI_2,
+        "systemsp" to LibraryPlatform.SYSTEM_SP,
+        "syssp" to LibraryPlatform.SYSTEM_SP,
+        "segasystemsp" to LibraryPlatform.SYSTEM_SP,
+        "dreamcast" to LibraryPlatform.DREAMCAST,
+        "dc" to LibraryPlatform.DREAMCAST,
+    )
+
+    fun detectName(name: String?): LibraryPlatform? =
+        name?.let(::normalizeKey)?.let(aliases::get)
+
+    private fun normalizeKey(value: String): String =
+        value.lowercase(Locale.ROOT).replace(nonAlphanumeric, "")
+}
+
 object LibraryPlatformResolver {
     private val arcadeExtensions = setOf("zip", "7z", "dat", "lst", "bin")
     private const val MAX_PARENT_DEPTH = 16

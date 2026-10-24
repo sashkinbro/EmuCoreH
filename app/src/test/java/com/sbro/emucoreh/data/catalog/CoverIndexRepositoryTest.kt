@@ -154,6 +154,17 @@ class CoverIndexRepositoryTest {
     }
 
     @Test
+    fun convertedAtomiswavePortsResolveTheirOwnArtwork() {
+        val titles = bundledTitles()
+        assertEquals("covers/119939.jpg", CoverIndexRepository.resolveTitlePath(
+            titles, "King of Fighters Neowave", allowFuzzy = false
+        ))
+        assertEquals("covers/119940.jpg", CoverIndexRepository.resolveTitlePath(
+            titles, "King of Fighters XI", allowFuzzy = false
+        ))
+    }
+
+    @Test
     fun soulCaliburDumpFilenameResolvesBundledArtwork() {
         assertEquals("covers/103173.jpg", CoverIndexRepository.resolveTitlePath(
             bundledTitles(), "Soul Calibur v1.000 (1999)(Namco)(US)[!][4S].chd"

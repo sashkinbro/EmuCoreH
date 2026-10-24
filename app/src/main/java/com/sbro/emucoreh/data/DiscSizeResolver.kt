@@ -12,8 +12,10 @@ import java.util.Locale
  */
 object DiscSizeResolver {
     private val containerExtensions = setOf("cue", "gdi", "lst", "m3u")
-    private val cueFilePattern = Regex("FILE\\s+\"([^\"]+)\"", RegexOption.IGNORE_CASE)
-    private val cueFileSingleQuotePattern = Regex("FILE\\s+'([^']+)'", RegexOption.IGNORE_CASE)
+    private val cueFilePattern = Regex(
+        """FILE\s+(?:"([^"]+)"|'([^']+)'|(\S+))""",
+        RegexOption.IGNORE_CASE
+    )
     private const val MAX_DEPTH = 2
 
     /**
@@ -62,10 +64,24 @@ object DiscSizeResolver {
         return if (matched) total else null
     }
 
+    /**
+     * Files referenced by a descriptor. The library uses the same parser to
+     * hide `.gdi`/`.cue` track files that would otherwise be listed as games.
+     */
+    internal fun trackReferences(entryName: String, contents: String): List<String> =
+        when (entryName.substringAfterLast('.', "").lowercase(Locale.US)) {
+            "cue" -> parseCue(contents)
+            "gdi", "lst" -> parseTrackList(contents)
+            else -> emptyList()
+        }
+
     private fun parseCue(contents: String): List<String> =
         contents.lineSequence().mapNotNull { line ->
-            val quoted = cueFilePattern.find(line) ?: cueFileSingleQuotePattern.find(line)
-            quoted?.groupValues?.getOrNull(1)?.let(::baseName)?.takeIf { it.isNotEmpty() }
+            val match = cueFilePattern.find(line) ?: return@mapNotNull null
+            val name = match.groups[1]?.value
+                ?: match.groups[2]?.value
+                ?: match.groups[3]?.value
+            name?.let(::baseName)?.takeIf { it.isNotEmpty() }
         }.toList()
 
     /** `.gdi` and `.lst` lines look like `1 0 4 2352 track01.bin 0`. */

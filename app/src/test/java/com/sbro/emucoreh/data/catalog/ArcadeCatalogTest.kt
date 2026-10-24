@@ -1,5 +1,7 @@
 package com.sbro.emucoreh.data.catalog
 
+import java.io.File
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -22,5 +24,20 @@ class ArcadeCatalogTest {
         assertNull(ArcadeCatalogRepository.romsetKey(""))
         assertNull(ArcadeCatalogRepository.romsetKey("   "))
         assertNull(ArcadeCatalogRepository.romsetKey("folder/"))
+    }
+
+    @Test
+    fun uniqueArcadeTitlesResolveTheirRomsetForConvertedDiscArtwork() {
+        val asset = listOf(
+            File("src/main/assets/catalog/arcade_games.json"),
+            File("app/src/main/assets/catalog/arcade_games.json"),
+        ).first { it.isFile }
+        val games = JSONObject(asset.readText()).getJSONObject("games")
+        val titles = ArcadeCatalogRepository.romsetTitles(games)
+
+        assertEquals("mslug6", titles["metal slug 6"])
+        assertEquals("kofxi", titles["the king of fighters xi"])
+        assertEquals("kofnw", titles["the king of fighters neowave"])
+        assertNull(titles["not a real arcade game"])
     }
 }

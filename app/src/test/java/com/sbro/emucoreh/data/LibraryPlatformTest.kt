@@ -4,6 +4,7 @@ import com.sbro.emucoreh.data.catalog.ArcadeCatalogRepository
 import java.io.File
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class LibraryPlatformTest {
@@ -51,6 +52,23 @@ class LibraryPlatformTest {
             }
             assertEquals(extension, LibraryPlatform.DREAMCAST, result)
         }
+    }
+
+    @Test
+    fun arcadeDiscPortsCanUseTheirLibraryFolderAsAPlatformHint() {
+        assertEquals(LibraryPlatform.ATOMISWAVE, LibraryPlatformFolders.detectName("atomiswave"))
+        assertEquals(LibraryPlatform.ATOMISWAVE, LibraryPlatformFolders.detectName("Sammy Atomiswave"))
+        assertEquals(LibraryPlatform.NAOMI, LibraryPlatformFolders.detectName("naomi"))
+        assertEquals(LibraryPlatform.NAOMI_2, LibraryPlatformFolders.detectName("Naomi 2"))
+        assertEquals(LibraryPlatform.SYSTEM_SP, LibraryPlatformFolders.detectName("System SP"))
+        assertEquals(LibraryPlatform.DREAMCAST, LibraryPlatformFolders.detectName("Dreamcast"))
+        assertNull(LibraryPlatformFolders.detectName("Metal Slug 6"))
+        assertNull(LibraryPlatformFolders.detectName(null))
+
+        val hinted = game("disc.gdi").copy(platform = "ATOMISWAVE")
+        assertEquals(LibraryPlatform.ATOMISWAVE, LibraryPlatformResolver.resolve(hinted) {
+            error("Folder hints must not need an arcade lookup")
+        })
     }
 
     @Test
