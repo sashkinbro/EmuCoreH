@@ -1594,7 +1594,7 @@ fun EmulationScreen(
                     fixedHeaderLine = uiState.performanceOverlayHeader,
                     isRightCorner = uiState.fpsOverlayCorner.isRightOverlayCorner(),
                     fontScale = uiState.fpsOverlayScale / 100f,
-                    metricsMask = uiState.fpsOverlayMetrics
+                    metricsMask = performanceOverlayMetricsForCore(uiState.fpsOverlayMetrics, platform.coreId)
                 )
             }
         }

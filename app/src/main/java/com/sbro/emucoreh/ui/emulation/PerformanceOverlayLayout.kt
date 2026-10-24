@@ -13,6 +13,9 @@ private val overlaySlashSpacing = Regex("\\s*/\\s*")
 private val overlayGroupingSpacing = Regex("\\s+(?=[\\[(])")
 private val overlayUnitSpacing = Regex("(?<=\\d)\\s+(?=(?:ms|MB)\\b)")
 
+internal fun performanceOverlayMetricsForCore(metricsMask: Int, coreId: Int): Int =
+    if (coreId == 1 || coreId == 2) metricsMask and PerformanceOverlayMetrics.RESOLUTION.inv() else metricsMask
+
 internal fun compactPerformanceOverlayLine(line: String): String {
     return line
         .replace(overlayColonSpacing, ":")
