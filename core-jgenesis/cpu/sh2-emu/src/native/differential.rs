@@ -253,7 +253,9 @@ fn differential_dma_cache_changed_fetch_and_state_restore() {
     assert_eq!(used, encoded.len());
     restored.set_pc(0x20000100);
     compare(&restored, &bus, 1, &mut native);
-    require_native(&native, 6);
+    // The first stale guard executes its changed opcode in the interpreter, then
+    // evicts that block; restored guest state can subsequently learn fresh host code.
+    require_native(&native, 5);
     let mut disabled = NativeExecutor::default();
     disabled.disable();
     compare(&restored, &bus, 2, &mut disabled);
@@ -266,4 +268,200 @@ fn recording_bus_accounts_for_access_sizes() {
     bus.write::<{ OpSize::LONGWORD }>(0x800, 0x12345678, AccessContext::Dma { channel: 0 });
     assert_eq!(bus.read::<{ OpSize::WORD }>(0x802, AccessContext::Fetch), 0x5678);
     assert_eq!(bus.cycles, 5);
+}
+
+#[test]
+fn differential_guarded_blocks_budget_stop_and_changed_opcodes() {
+    let mut native = NativeExecutor::default();
+    let mut bus = RecordingBus::new();
+    let program = [0xE101, 0x7101, 0x6213, 0x312C, 0x212A, 0x0009, 0x7102, 0x7103];
+    bus.program(0x100, &program);
+    // Learn from executed fetches, then enter the same block with every possible budget.
+    compare(&cpu(), &bus, 8, &mut native);
+    for budget in 1..=8 {
+        compare(&cpu(), &bus, budget, &mut native);
+    }
+    for stop in 1..=24 {
+        bus.stop_at = stop;
+        compare(&cpu(), &bus, 8, &mut native);
+    }
+    bus.stop_at = u64::MAX;
+    // Invalidate an interior guard, including an opcode which requires the interpreter.
+    for replacement in [0xE1FF, 0x312E, 0xA001] {
+        bus.program(0x104, &[replacement]);
+        compare(&cpu(), &bus, 8, &mut native);
+        bus.program(0x100, &program);
+    }
+    if cfg!(all(target_arch = "aarch64", any(target_os = "android", target_os = "linux"))) {
+        assert!(native.native_blocks() > 0, "must execute generated multi-instruction blocks");
+        assert!(native.guard_exits() > 0, "must exercise a real guard mismatch");
+        assert!(native.block_instructions() > 8, "must execute several native bodies per block");
+        assert!(native.budget_exits() > 0);
+        assert!(native.stop_exits() > 0);
+        assert!(native.interpreted_instructions() > 0);
+    }
+}
+
+#[test]
+fn differential_warm_blocks_preserve_cache_dma_irq_and_restored_state() {
+    let mut native = NativeExecutor::default();
+    let mut initial = cpu();
+    initial.set_pc(0x100);
+    initial.cache.write_control(1);
+    let mut bus = RecordingBus::new();
+    bus.program(0x100, &[0xE101, 0x7101, 0x6213, 0x312C, 0x212A, 0x0009, 0x7102, 0x7103]);
+    // First real execution populates guest cache and learns the native block.
+    let (mut warm, mut warm_bus) = compare(&initial, &bus, 8, &mut native);
+    warm.set_pc(0x100);
+    warm_bus.events.borrow_mut().clear();
+    // Underlying memory changes must remain invisible until the guest cache is purged.
+    warm_bus.program(0x100, &[0xE17F, 0x7107]);
+    let (cached, _) = compare(&warm, &warm_bus, 8, &mut native);
+    assert_eq!(cached.registers.gpr[1], 11);
+    // Serialize only guest state, then reuse the existing host code with that restored state.
+    let encoded = state(&warm);
+    let (restored, _): (Sh2, _) =
+        bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+    compare(&restored, &warm_bus, 5, &mut native);
+    warm.cache.purge_all();
+    compare(&warm, &warm_bus, 8, &mut native);
+
+    let mut irq_cpu = warm.clone();
+    irq_cpu.registers.sr.interrupt_mask = 0;
+    warm_bus.irq = 12;
+    warm_bus.put((64 + 6) * 4, &0x20000300u32.to_be_bytes());
+    let before = native.native_instructions();
+    compare(&irq_cpu, &warm_bus, 8, &mut native);
+    assert_eq!(native.native_instructions(), before, "IRQ exits before entering learned block");
+    warm_bus.irq = 0;
+    warm_bus.reset = true;
+    compare(&warm, &warm_bus, 8, &mut native);
+    assert_eq!(native.native_instructions(), before, "reset exits before entering learned block");
+    warm_bus.reset = false;
+
+    // DMA runs before instruction entry and may overwrite a previously learned opcode.
+    let mut dma_cpu = cpu();
+    bus.program(0x100, &[0xE101, 0x7101, 0x6213, 0x312C]);
+    compare(&dma_cpu, &bus, 4, &mut native);
+    dma_cpu.dmac.operation.dma_master_enabled = true;
+    let channel = &mut dma_cpu.dmac.channels[1];
+    channel.source_address = 0x800;
+    channel.destination_address = 0x100;
+    channel.transfer_count = 2;
+    channel.control.dma_enabled = true;
+    channel.control.source_address_mode = crate::DmaAddressMode::AutoIncrement;
+    channel.control.destination_address_mode = crate::DmaAddressMode::AutoIncrement;
+    bus.put(0x800, &0xE1FFu16.to_be_bytes());
+    compare(&dma_cpu, &bus, 4, &mut native);
+    if cfg!(all(target_arch = "aarch64", any(target_os = "android", target_os = "linux"))) {
+        assert!(native.block_instructions() >= 13);
+        assert!(native.guard_exits() >= 2);
+    }
+}
+
+// This bus deliberately has no logging, allocation, synchronization or formatted events.
+// It measures dispatch/fetch/body overhead, not game-level speed or peripheral timing.
+struct TimingBus {
+    cycles: u64,
+}
+impl BusInterface for TimingBus {
+    type DebugView<'a> = DummySh2Debugger;
+    fn read<const SIZE: u8>(&mut self, address: u32, _: AccessContext) -> u32 {
+        self.cycles += 2;
+        if SIZE == OpSize::WORD {
+            [0x7101, 0x6213, 0x312C, 0x212A, 0x222B, 0x6323, 0x2339, 0x0009]
+                [(address as usize >> 1) & 7]
+        } else {
+            0
+        }
+    }
+    fn read_cache_line(&mut self, _: u32, _: AccessContext) -> [u16; 8] {
+        unreachable!()
+    }
+    fn write<const SIZE: u8>(&mut self, _: u32, _: u32, _: AccessContext) {
+        unreachable!()
+    }
+    fn reset(&self) -> bool {
+        false
+    }
+    fn interrupt_level(&self) -> u8 {
+        0
+    }
+    fn dma_request_0(&self) -> bool {
+        false
+    }
+    fn dma_request_1(&self) -> bool {
+        false
+    }
+    fn acknowledge_dreq_1(&mut self) {}
+    fn serial_rx(&mut self) -> Option<u8> {
+        None
+    }
+    fn serial_tx(&mut self, _: u8) {}
+    fn increment_cycle_counter(&mut self, cycles: u64) {
+        self.cycles += cycles;
+    }
+    fn should_stop_execution(&self) -> bool {
+        false
+    }
+    crate::impl_sh2_opcode_table!(TimingBus);
+}
+
+#[test]
+#[ignore = "release-only synthetic A/B benchmark; run explicitly with --ignored --nocapture"]
+fn benchmark_native_dispatch_without_bus_logging() {
+    use std::{hint::black_box, time::Instant};
+    const ITERATIONS: u64 = 100_000;
+    let mut reference = None;
+    for mode in 0..3 {
+        let mut samples = Vec::new();
+        let mut totals = (0, 0, 0);
+        for _ in 0..5 {
+            let mut cpu = cpu();
+            cpu.trace_log_enabled = false;
+            let mut bus = TimingBus { cycles: 0 };
+            let mut native = NativeExecutor::default();
+            if mode == 1 {
+                native.disable_blocks();
+            }
+            let start = Instant::now();
+            for _ in 0..ITERATIONS {
+                cpu.set_pc(0x20000100);
+                if mode == 0 {
+                    cpu.execute(16, black_box(&mut bus));
+                } else {
+                    cpu.execute_with_native(16, black_box(&mut bus), black_box(&mut native));
+                }
+            }
+            samples.push(start.elapsed().as_secs_f64() * 1e9 / (ITERATIONS * 16) as f64);
+            let result = (state(&cpu), bus.cycles);
+            if let Some(expected) = &reference {
+                assert_eq!(&result, expected);
+            } else {
+                reference = Some(result);
+            }
+            totals = (
+                native.native_instructions(),
+                native.block_instructions(),
+                native.interpreted_instructions(),
+            );
+        }
+        samples.sort_by(f64::total_cmp);
+        println!(
+            "SH2 mode={} median_ns/instruction={:.3} samples={samples:?} native={} block={} fallback={}",
+            ["interpreter", "native-leaf", "guarded-block"][mode],
+            samples[2],
+            totals.0,
+            totals.1,
+            totals.2
+        );
+        if cfg!(all(target_arch = "aarch64", any(target_os = "android", target_os = "linux")))
+            && mode != 0
+        {
+            assert_eq!(totals.0, ITERATIONS * 16);
+            if mode == 2 {
+                assert_eq!(totals.1, (ITERATIONS - 1) * 16);
+            }
+        }
+    }
 }

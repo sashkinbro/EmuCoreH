@@ -1,4 +1,4 @@
-//! Experimental single-instruction ARM64 bodies; no guest or serialized host resources.
+//! Experimental ARM64 instruction bodies and guarded, execution-learned blocks.
 
 #[cfg(any(
     test,
@@ -43,9 +43,20 @@ fn emit(opcode: u16) -> Option<Vec<u32>> {
     Some(code)
 }
 
+#[cfg(all(
+    target_arch = "aarch64",
+    target_endian = "little",
+    any(target_os = "android", target_os = "linux")
+))]
+fn supported(opcode: u16) -> bool {
+    matches!(opcode & 0xF000, 0xE000 | 0x7000)
+        || matches!(opcode & 0xF00F, 0x6003 | 0x300C | 0x2009 | 0x200A | 0x200B)
+        || opcode == 0x0009
+}
+
 /// Host execution context. Keep separate from `Sh2`: clone and savestate operations never
 /// copy executable pointers. Unsupported hosts and allocation failures use the interpreter.
-/// This intentionally compiles one fetched opcode at a time, not guest memory blocks.
+/// Blocks are learned from real executed fetches, never speculative guest-memory reads.
 #[derive(Default)]
 pub struct NativeExecutor {
     #[cfg(all(
@@ -54,6 +65,25 @@ pub struct NativeExecutor {
         any(target_os = "android", target_os = "linux")
     ))]
     cache: std::collections::HashMap<u16, jgenesis_common::native_code::PublishedCode>,
+    #[cfg(all(
+        target_arch = "aarch64",
+        target_endian = "little",
+        any(target_os = "android", target_os = "linux")
+    ))]
+    blocks: std::collections::HashMap<u32, jgenesis_common::native_code::PublishedCode>,
+    #[cfg(all(
+        target_arch = "aarch64",
+        target_endian = "little",
+        any(target_os = "android", target_os = "linux")
+    ))]
+    trace: Vec<(u32, u16)>,
+    native_blocks: u64,
+    block_instructions: u64,
+    budget_exits: u64,
+    stop_exits: u64,
+    interpreted_instructions: u64,
+    guard_exits: u64,
+    blocks_disabled: bool,
     disabled: bool,
     native_instructions: u64,
 }
@@ -63,6 +93,79 @@ impl NativeExecutor {
     #[must_use]
     pub fn native_instructions(&self) -> u64 {
         self.native_instructions
+    }
+
+    /// Entries into generated multi-instruction code (including guarded exits).
+    #[must_use]
+    pub fn native_blocks(&self) -> u64 {
+        self.native_blocks
+    }
+
+    /// Native ALU bodies executed inside multi-instruction code.
+    #[must_use]
+    pub fn block_instructions(&self) -> u64 {
+        self.block_instructions
+    }
+
+    #[must_use]
+    pub fn budget_exits(&self) -> u64 {
+        self.budget_exits
+    }
+
+    #[must_use]
+    pub fn stop_exits(&self) -> u64 {
+        self.stop_exits
+    }
+
+    /// Instructions dispatched to the interpreter, including fetched guard mismatches.
+    #[must_use]
+    pub fn interpreted_instructions(&self) -> u64 {
+        self.interpreted_instructions
+    }
+
+    /// Blocks whose next PC or fetched opcode no longer matched their learned trace.
+    #[must_use]
+    pub fn guard_exits(&self) -> u64 {
+        self.guard_exits
+    }
+
+    pub(crate) fn finish_trace(&mut self) {
+        #[cfg(all(
+            target_arch = "aarch64",
+            target_endian = "little",
+            any(target_os = "android", target_os = "linux")
+        ))]
+        {
+            let trace = std::mem::take(&mut self.trace);
+            if self.disabled || trace.len() < 2 {
+                return;
+            }
+            let Some(code) = block::emit(&trace) else {
+                return;
+            };
+            let Some(body) = jgenesis_common::native_code::PublishedCode::publish(&code) else {
+                self.disabled = true;
+                return;
+            };
+            if self.blocks.len() == 256 {
+                self.blocks.clear();
+            }
+            self.blocks.insert(trace[0].0, body);
+        }
+    }
+
+    /// Keep single-instruction translation while disabling learned blocks, for A/B measurement.
+    pub fn disable_blocks(&mut self) {
+        self.blocks_disabled = true;
+        #[cfg(all(
+            target_arch = "aarch64",
+            target_endian = "little",
+            any(target_os = "android", target_os = "linux")
+        ))]
+        {
+            self.blocks.clear();
+            self.trace.clear();
+        }
     }
 
     /// Disable translation (also useful when executable memory is forbidden by the host).
@@ -133,3 +236,53 @@ mod tests {
 
 #[cfg(test)]
 mod differential;
+
+#[cfg(any(
+    test,
+    all(
+        target_arch = "aarch64",
+        target_endian = "little",
+        any(target_os = "android", target_os = "linux")
+    )
+))]
+mod block;
+
+impl<Bus: crate::bus::BusInterface> crate::ExecutionBody<Bus> for NativeExecutor {
+    fn opcode(&mut self, gpr: &mut [u32; 16], pc: u32, opcode: u16) -> bool {
+        #[cfg(all(
+            target_arch = "aarch64",
+            target_endian = "little",
+            any(target_os = "android", target_os = "linux")
+        ))]
+        if !self.disabled && !self.blocks_disabled {
+            if self.trace.last().is_some_and(|&(previous, _)| previous.wrapping_add(2) != pc)
+                || !supported(opcode)
+            {
+                self.finish_trace();
+            }
+            if supported(opcode) {
+                self.trace.push((pc, opcode));
+                if self.trace.len() == 16 {
+                    self.finish_trace();
+                }
+            }
+        }
+        let _ = pc;
+        let executed = self.execute(gpr, opcode);
+        self.interpreted_instructions += u64::from(!executed);
+        executed
+    }
+
+    fn block(&mut self, cpu: &mut crate::Sh2, bus: &mut Bus, ticks: u64) -> (u64, bool) {
+        #[cfg(all(
+            target_arch = "aarch64",
+            target_endian = "little",
+            any(target_os = "android", target_os = "linux")
+        ))]
+        if !self.disabled && !self.blocks_disabled {
+            return block::run(self, cpu, bus, ticks);
+        }
+        let _ = (cpu, bus, ticks);
+        (0, false)
+    }
+}

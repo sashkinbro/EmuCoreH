@@ -350,7 +350,7 @@ impl<B: BusInterface> InstructionExecutor<'_, '_, B> {
             let mut ccr = self.cpu.registers.ccr.into();
             if native.execute(&mut self.cpu.registers.data, &mut ccr, opcode) {
                 self.cpu.registers.ccr = ccr.into();
-                return Ok(4);
+                return Ok(crate::native::instruction_cycles(opcode));
             }
         }
 

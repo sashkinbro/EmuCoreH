@@ -78,6 +78,22 @@ fn trace_log_enabled(name: &str) -> bool {
     }
 }
 
+// Both backends share reset, DMA, delay-slot and interrupt scheduling.
+trait ExecutionBody<Bus: BusInterface> {
+    fn opcode(&mut self, gpr: &mut [u32; 16], pc: u32, opcode: u16) -> bool;
+    fn block(&mut self, _cpu: &mut Sh2, _bus: &mut Bus, _ticks: u64) -> (u64, bool) {
+        (0, false)
+    }
+}
+
+struct Interpreter;
+impl<Bus: BusInterface> ExecutionBody<Bus> for Interpreter {
+    #[inline(always)]
+    fn opcode(&mut self, _: &mut [u32; 16], _: u32, _: u16) -> bool {
+        false
+    }
+}
+
 impl Sh2 {
     #[must_use]
     #[allow(clippy::missing_panics_doc)]
@@ -105,7 +121,7 @@ impl Sh2 {
     /// Will not execute any instructions if a reset is performed or an interrupt is handled.
     #[inline]
     pub fn execute<Bus: BusInterface>(&mut self, ticks: u64, bus: &mut Bus) {
-        self.execute_with_body(ticks, bus, &mut |_, _| false);
+        self.execute_with_body(ticks, bus, &mut Interpreter);
     }
 
     /// Experimental opt-in ARM64 bodies. Fetch, DMA, IRQs, delay slots and cycle accounting
@@ -118,7 +134,8 @@ impl Sh2 {
         bus: &mut Bus,
         executor: &mut native::NativeExecutor,
     ) {
-        self.execute_with_body(ticks, bus, &mut |gpr, opcode| executor.execute(gpr, opcode));
+        self.execute_with_body(ticks, bus, executor);
+        executor.finish_trace();
     }
 
     #[inline]
@@ -126,7 +143,7 @@ impl Sh2 {
         &mut self,
         mut ticks: u64,
         bus: &mut Bus,
-        body: &mut impl FnMut(&mut [u32; 16], u16) -> bool,
+        body: &mut impl ExecutionBody<Bus>,
     ) {
         if ticks == 0 {
             return;
@@ -206,8 +223,17 @@ impl Sh2 {
             return;
         }
 
-        for _ in 0..ticks {
+        while ticks != 0 {
+            let (executed, stopped) = body.block(self, bus, ticks);
+            if executed != 0 {
+                ticks -= executed;
+                if stopped {
+                    return;
+                }
+                continue;
+            }
             self.execute_single_instruction(bus, body);
+            ticks -= 1;
             // Interrupts are sampled at the start of every execute() slice and
             // the slice length is 50 instructions, so polling only the cycle
             // budget here removes two global register reads per guest
@@ -223,8 +249,19 @@ impl Sh2 {
     fn execute_single_instruction<Bus: BusInterface>(
         &mut self,
         bus: &mut Bus,
-        body: &mut impl FnMut(&mut [u32; 16], u16) -> bool,
+        body: &mut impl ExecutionBody<Bus>,
     ) {
+        let pc = self.registers.pc;
+        let opcode = self.prepare_instruction(bus);
+        if !body.opcode(&mut self.registers.gpr, pc, opcode) {
+            let opcode_table = Bus::opcode_table();
+            opcode_table.decode(opcode)(self, opcode, bus);
+        }
+        bus.increment_cycle_counter(1);
+    }
+
+    #[inline(always)]
+    fn prepare_instruction<Bus: BusInterface>(&mut self, bus: &mut Bus) -> u16 {
         let pc = self.registers.pc;
         let opcode = self.read_opcode(pc, bus);
 
@@ -254,13 +291,8 @@ impl Sh2 {
             log::trace!("  SR={:?}", self.registers.sr);
         }
 
-        if !body(&mut self.registers.gpr, opcode) {
-            let opcode_table = Bus::opcode_table();
-            opcode_table.decode(opcode)(self, opcode, bus);
-        }
-        bus.increment_cycle_counter(1);
+        opcode
     }
-
     /// Advance internal peripherals by `system_cycles`, specifically the watchdog timer (WDT) and
     /// the serial interface (SCI). Also updates internal interrupt state.
     #[inline]
