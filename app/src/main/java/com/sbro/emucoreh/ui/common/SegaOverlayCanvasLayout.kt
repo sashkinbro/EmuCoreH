@@ -4,6 +4,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.EmulationPlatform
@@ -58,8 +59,12 @@ internal fun buildSegaOverlayCanvasLayout(
         OverlayCanvasButtonSpec(id, drawable, actualWidth, actualHeight, baseX, baseY,
             (baseX + finiteDp(layout.offset.first)).coerceIn(left, maxX),
             (baseY + finiteDp(layout.offset.second)).coerceIn(top, maxY),
-            if (isCenter) RoundedCornerShape(10.dp) else CircleShape,
-            layout.opacity, layout.visible, label.takeUnless { it in setOf("A", "B", "X", "Y") })
+            if (isCenter) RoundedCornerShape(10.dp) else if (isDpad && !platform.isModel3) RoundedCornerShape(8.dp) else CircleShape,
+            layout.opacity, layout.visible, label.takeUnless { it in setOf("A", "B", "X", "Y") },
+            resizeCenter = DpOffset(
+                left + bounds.x.dp + bounds.width.dp / 2f + finiteDp(group.first - defaultGroup.first),
+                top + bounds.y.dp + bounds.height.dp / 2f + finiteDp(group.second - defaultGroup.second)
+            ))
     }.filter { preview || it.visible }
     return OverlayCanvasLayout(
         leftShoulders = emptyList(), rightShoulders = emptyList(),

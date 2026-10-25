@@ -2340,4 +2340,6 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_title">Remove selected presets?</string>
     <string name="settings_shader_presets_remove_body">Selected presets: %1$d. Remove them from the list?</string>
     <string name="settings_shader_presets_remove_failed">Could not remove the selected presets.</string>
+    <string name="controls_editor_groups">Groups</string>
+    <string name="controls_editor_individual">Individual buttons</string>
 </resources>

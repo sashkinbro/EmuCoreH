@@ -2315,4 +2315,6 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_title">Seçilen ön ayarlar kaldırılsın mı?</string>
     <string name="settings_shader_presets_remove_body">Seçilen ön ayarlar: %1$d. Listeden kaldırılsın mı?</string>
     <string name="settings_shader_presets_remove_failed">Seçilen ön ayarlar kaldırılamadı.</string>
+    <string name="controls_editor_groups">Gruplar</string>
+    <string name="controls_editor_individual">Tek tek düğmeler</string>
 </resources>

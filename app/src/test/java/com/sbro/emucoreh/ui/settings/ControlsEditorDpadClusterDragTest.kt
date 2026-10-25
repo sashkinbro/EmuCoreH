@@ -8,6 +8,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ControlsEditorDpadClusterDragTest {
+    @Test fun segaConsoleButtonsSelectTheWholeGroupUnlessIndividualEditingIsEnabled() {
+        assertEquals("group_dpad", editorDragTarget(com.sbro.emucoreh.core.EmulationPlatform.GENESIS, "dpad_up", false))
+        assertEquals("group_actions", editorDragTarget(com.sbro.emucoreh.core.EmulationPlatform.SEGA_CD, "l1", false))
+        assertEquals("dpad_up", editorDragTarget(com.sbro.emucoreh.core.EmulationPlatform.GENESIS, "dpad_up", true))
+        assertEquals("dpad_up", editorDragTarget(com.sbro.emucoreh.core.EmulationPlatform.DREAMCAST, "dpad_up", false))
+        assertEquals("a", editorDragTarget(com.sbro.emucoreh.core.EmulationPlatform.MODEL_3, "a", false))
+        assertEquals("start", editorDragTarget(com.sbro.emucoreh.core.EmulationPlatform.GENESIS, "start", false))
+    }
+
     @Test
     fun dragBaseIgnoresTheCurrentClusterOffset() {
         val spec = OverlayCanvasDpadClusterSpec(

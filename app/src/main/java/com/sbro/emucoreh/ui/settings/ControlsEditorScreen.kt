@@ -464,6 +464,7 @@ fun ControlsEditorScreen(
     var deleteCustomCandidate by remember { mutableStateOf<CustomTouchControl?>(null) }
     var showLayoutGrid by rememberSaveable { mutableStateOf(false) }
     var snapToGrid by rememberSaveable { mutableStateOf(false) }
+    var individualEditing by rememberSaveable(platform) { mutableStateOf(false) }
     var groupScalePercent by remember { mutableStateOf(100) }
     val groupScaleAction = remember { mutableStateOf<((Float) -> Unit)?>(null) }
     val resetSelectedToast = stringResource(R.string.settings_reset_to_default_toast)
@@ -824,6 +825,7 @@ fun ControlsEditorScreen(
             selectedControlId = selectedControlId,
             showGrid = showLayoutGrid,
             snapToGrid = snapToGrid,
+            individualEditing = individualEditing,
             groupScaleAction = groupScaleAction,
             onSelectControl = { selectedControlId = it },
             onSetControlOffset = ::setControlOffsetLocally,
@@ -878,6 +880,16 @@ fun ControlsEditorScreen(
                             color = Color.White.copy(alpha = 0.84f)
                         )
                     }
+                if (platform.usesPlatformTouchLayouts && !platform.isModel3) {
+                    OutlinedButton(
+                        onClick = { individualEditing = !individualEditing; selectedControlId = null },
+                        shape = neonShape(16.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                        modifier = Modifier.testTag("controls_editor_group_mode")
+                    ) {
+                        Text(stringResource(if (individualEditing) R.string.controls_editor_individual else R.string.controls_editor_groups))
+                    }
+                }
                 }
             }
 
@@ -1736,6 +1748,7 @@ private fun PreviewLayout(
     selectedControlId: String?,
     showGrid: Boolean,
     snapToGrid: Boolean,
+    individualEditing: Boolean,
     groupScaleAction: MutableState<((Float) -> Unit)?>,
     onSelectControl: (String) -> Unit,
     onSetControlOffset: (String, Pair<Float, Float>) -> Unit,
@@ -2022,8 +2035,13 @@ private fun PreviewLayout(
             val maxY = specs.maxOf { with(density) { (it.y + it.height).toPx() } }
             val canvasWidthPx = with(density) { maxWidth.toPx() }
             val canvasHeightPx = with(density) { maxHeight.toPx() }
-            val dx = delta.first.coerceIn(-minX, canvasWidthPx - maxX)
-            val dy = delta.second.coerceIn(-minY, canvasHeightPx - maxY)
+            val segaConsole = state.platform.usesPlatformTouchLayouts && !state.platform.isModel3
+            val left = if (segaConsole) with(density) { (safeLeftInset + 12.dp).toPx() } else 0f
+            val right = if (segaConsole) with(density) { (safeRightInset + 12.dp).toPx() } else 0f
+            val top = if (segaConsole) with(density) { (safeTop + 12.dp).toPx() } else 0f
+            val bottom = if (segaConsole) with(density) { (safeBottom + 12.dp).toPx() } else 0f
+            val dx = delta.first.coerceIn(left - minX, (canvasWidthPx - right - maxX).coerceAtLeast(left - minX))
+            val dy = delta.second.coerceIn(top - minY, (canvasHeightPx - bottom - maxY).coerceAtLeast(top - minY))
             return dx to dy
         }
 
@@ -2076,7 +2094,9 @@ private fun PreviewLayout(
                         offsetY = control.offset.second,
                         scale = control.scale,
                         width = with(density) { spec.width.toPx() },
-                        height = with(density) { spec.height.toPx() }
+                        height = with(density) { spec.height.toPx() },
+                        resizeCenterX = with(density) { (spec.resizeCenter?.x ?: (spec.baseX + spec.width / 2f)).toPx() },
+                        resizeCenterY = with(density) { (spec.resizeCenter?.y ?: (spec.baseY + spec.height / 2f)).toPx() }
                     )
                 }
                 val results = scaleOverlayControlGroup(
@@ -2085,7 +2105,12 @@ private fun PreviewLayout(
                     minScale = AppPreferences.OVERLAY_CONTROL_SCALE_MIN,
                     maxScale = AppPreferences.OVERLAY_CONTROL_SCALE_MAX,
                     canvasWidth = canvasWidthPx,
-                    canvasHeight = canvasHeightPx
+                    canvasHeight = canvasHeightPx,
+                    preserveSegaGeometry = state.platform.usesPlatformTouchLayouts && !state.platform.isModel3,
+                    safeLeft = with(density) { (safeLeftInset + 12.dp).toPx() },
+                    safeRight = with(density) { (safeRightInset + 12.dp).toPx() },
+                    safeTop = with(density) { (safeTop + 12.dp).toPx() },
+                    safeBottom = with(density) { (safeBottom + 12.dp).toPx() }
                 )
                 results.forEach { result ->
                     currentOnUpdateControlScale(result.controlId, result.scale)
@@ -2124,14 +2149,24 @@ private fun PreviewLayout(
                 "coin", "test", "service", "gun_trigger", "gun_pedal", "gun_reload", "gun_recalibrate" -> 3f
                 else -> 1f
             }
+            val dragTarget = editorDragTarget(state.platform, spec.id, individualEditing)
+            val draggedGroup = when (dragTarget) {
+                ControlGroupDpad -> dpadGroupSpecs
+                ControlGroupActions -> actionGroupSpecs
+                else -> emptyList()
+            }
             PreviewCanvasButton(
                 spec = spec,
                 visualStyle = state.touchControlVisualStyle,
                 pressEffect = state.touchControlPressEffect,
-                selected = selectedControlId == spec.id,
-                onSelectControl = selectControl,
-                onMoveControlBy = { id, delta -> moveButton(id, spec, delta) },
-                onCommitControlPosition = commitControl,
+                selected = selectedControlId == dragTarget,
+                onSelectControl = { selectControl(dragTarget) },
+                onMoveControlBy = { id, delta ->
+                    if (draggedGroup.isEmpty()) moveButton(id, spec, delta) else moveButtonGroup(draggedGroup, delta)
+                },
+                onCommitControlPosition = { id ->
+                    if (draggedGroup.isEmpty()) commitControl(id) else commitButtonGroup(draggedGroup)
+                },
                 baseZIndex = baseZIndex
             )
         }
@@ -2472,6 +2507,7 @@ private fun DraggableControl(
     val currentOnCommitControlPosition by rememberUpdatedState(onCommitControlPosition)
     Box(
         modifier = modifier
+            .testTag("controls_editor_control_$id")
             .zIndex(baseZIndex + if (selected) selectedZBoost else 0f)
             .clickable(
                 interactionSource = interactionSource,
@@ -2623,5 +2659,14 @@ private fun PreviewCanvasStick(
             visualStyle = visualStyle,
             pressEffect = pressEffect
         )
+    }
+}
+
+internal fun editorDragTarget(platform: EmulationPlatform, id: String, individualEditing: Boolean): String {
+    if (individualEditing || !platform.usesPlatformTouchLayouts || platform.isModel3) return id
+    return when {
+        id in DpadControlIds -> ControlGroupDpad
+        id in ActionControlIds || id in setOf("l1", "r1") -> ControlGroupActions
+        else -> id
     }
 }

@@ -2323,4 +2323,6 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_title">إزالة الإعدادات المسبقة المحددة؟</string>
     <string name="settings_shader_presets_remove_body">الإعدادات المسبقة المحددة: %1$d. هل تريد إزالتها من القائمة؟</string>
     <string name="settings_shader_presets_remove_failed">تعذرت إزالة الإعدادات المسبقة المحددة.</string>
+    <string name="controls_editor_groups">مجموعات</string>
+    <string name="controls_editor_individual">أزرار منفردة</string>
 </resources>

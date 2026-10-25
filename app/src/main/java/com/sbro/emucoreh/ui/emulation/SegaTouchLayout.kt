@@ -11,6 +11,7 @@ internal fun segaTouchLayout(
     platform: EmulationPlatform, width: Float, height: Float, scale: Float
 ): List<SegaTouchButtonBounds> {
     if (width <= 0f || height <= 0f || !width.isFinite() || !height.isFinite()) return emptyList()
+    if (!platform.isModel3) return segaConsoleTouchLayout(platform, width, height, scale)
     val sixButtons = platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X, EmulationPlatform.MODEL_3)
     val systemButtons = if (platform.isModel3) listOf(109, 108, 106, 107) else if (sixButtons) listOf(109, 108) else
         if (platform == EmulationPlatform.SG_1000) emptyList() else listOf(108)
@@ -45,6 +46,48 @@ internal fun segaTouchLayout(
         systemButtons.forEachIndexed { index, key ->
             add(SegaTouchButtonBounds(key, systemLeft + index * (systemWidth + gap),
                 (height - systemHeight).coerceAtLeast(0f), systemWidth, systemHeight))
+        }
+    }
+}
+
+/** Compact arrow cross and the ascending ABC/XYZ rows of a Sega console pad. */
+private fun segaConsoleTouchLayout(
+    platform: EmulationPlatform, width: Float, height: Float, scale: Float
+): List<SegaTouchButtonBounds> {
+    val six = platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X)
+    val systems = if (six) listOf(109, 108) else if (platform == EmulationPlatform.SG_1000) emptyList() else listOf(108)
+    val diameter = minOf(64f * scale.coerceIn(.5f, 1.5f), width / (if (six) 5.7f else 4.6f), height / 3.9f)
+    val step = diameter * .72f
+    val arrow = diameter * .7f
+    val crossSize = 2f * step + arrow
+    val faceWidth = diameter * (if (six) 3.2f else 2.1f)
+    val faceLeft = width - faceWidth
+    val systemHeight = diameter * .65f
+    val systemWidth = diameter * 1.4f
+    val systemGap = diameter * .1f
+    val systemRowWidth = systems.size * systemWidth + (systems.size - 1).coerceAtLeast(0) * systemGap
+    val systemLeft = (width - systemRowWidth) / 2f
+    val reserveRow = systems.isNotEmpty() && (systemLeft < crossSize + diameter * .1f || systemLeft + systemRowWidth > faceLeft - diameter * .1f)
+    val bottom = height - if (reserveRow) systemHeight + systemGap else 0f
+    val faceBottom = bottom - diameter * .35f
+    return buildList {
+        fun button(key: Int, x: Float, y: Float, size: Float = diameter) =
+            add(SegaTouchButtonBounds(key, x, y, size, size))
+        val crossTop = bottom - crossSize
+        button(19, step, crossTop, arrow)
+        button(21, 0f, crossTop + step, arrow)
+        button(22, 2f * step, crossTop + step, arrow)
+        button(20, step, crossTop + 2f * step, arrow)
+        val faces = if (six) listOf(102, 100, 103, 99, 96, 97) else listOf(96, 97)
+        faces.forEachIndexed { index, key ->
+            val column = index % (if (six) 3 else 2)
+            val row = index / (if (six) 3 else 2)
+            button(key, faceLeft + column * diameter * 1.1f,
+                faceBottom - diameter - (if (six && row == 0) diameter * 1.1f else 0f) - column * diameter * .18f)
+        }
+        systems.forEachIndexed { index, key ->
+            add(SegaTouchButtonBounds(key, (width - systemRowWidth) / 2f + index * (systemWidth + systemGap),
+                height - systemHeight, systemWidth, systemHeight))
         }
     }
 }

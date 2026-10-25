@@ -2330,4 +2330,6 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_title">پیش‌تنظیم‌های انتخاب‌شده حذف شوند؟</string>
     <string name="settings_shader_presets_remove_body">پیش‌تنظیم‌های انتخاب‌شده: %1$d. از فهرست حذف شوند؟</string>
     <string name="settings_shader_presets_remove_failed">پیش‌تنظیم‌های انتخاب‌شده حذف نشدند.</string>
+    <string name="controls_editor_groups">گروه‌ها</string>
+    <string name="controls_editor_individual">دکمه‌های جداگانه</string>
 </resources>

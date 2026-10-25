@@ -5,6 +5,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollTo
 import com.sbro.emucoreh.core.EmulationPlatform
 import com.sbro.emucoreh.data.SegaTouchLayouts
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.sbro.emucoreh.data.CustomTouchControl
@@ -25,7 +30,8 @@ class ControlsEditorScreenInstrumentedTest {
     private fun showEditor(
         customControls: CustomTouchControlLibrary,
         onCustomControlsChange: (CustomTouchControlLibrary) -> Unit,
-        platform: EmulationPlatform = EmulationPlatform.DREAMCAST
+        platform: EmulationPlatform = EmulationPlatform.DREAMCAST,
+        onOffsets: (Map<String, Pair<Float, Float>>) -> Unit = {}
     ) {
         composeRule.setContent {
             EmuCoreHTheme {
@@ -35,8 +41,8 @@ class ControlsEditorScreenInstrumentedTest {
                     platform = platform,
                     manageActivityOrientation = false,
                     onBackClick = {},
-                    onUpdateControlOffset = { _, _ -> },
-                    onUpdateControlOffsets = {},
+                    onUpdateControlOffset = { id, offset -> onOffsets(mapOf(id to offset)) },
+                    onUpdateControlOffsets = onOffsets,
                     onUpdateControlScale = { _, _ -> },
                     onUpdateControlWidthScale = { _, _ -> },
                     onUpdateControlOpacity = { _, _ -> },
@@ -47,6 +53,69 @@ class ControlsEditorScreenInstrumentedTest {
                     onCustomControlsChange = onCustomControlsChange
                 )
             }
+        }
+    }
+
+    @Test fun hardwareModeLegendStaysEnglishInEverySupportedLocale() {
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        composeRule.setContent {
+            androidx.compose.foundation.layout.Column {
+                for (language in listOf("en", "ar", "cs", "de", "es", "fa", "fr", "hi", "id", "it", "ja", "ko", "pl", "pt", "ru", "tr", "uk", "zh")) {
+                    val config = android.content.res.Configuration(context.resources.configuration).apply { setLocale(java.util.Locale.forLanguageTag(language)) }
+                    val localized = context.createConfigurationContext(config)
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        androidx.compose.ui.platform.LocalContext provides localized,
+                        androidx.compose.ui.platform.LocalConfiguration provides config
+                    ) {
+                        androidx.compose.material3.Text(com.sbro.emucoreh.ui.common.localizedOverlayLabel("Mode"),
+                            modifier = androidx.compose.ui.Modifier.testTag("mode_$language"))
+                    }
+                }
+            }
+        }
+        for (language in listOf("en", "ar", "cs", "de", "es", "fa", "fr", "hi", "id", "it", "ja", "ko", "pl", "pt", "ru", "tr", "uk", "zh")) {
+            composeRule.onNodeWithTag("mode_$language").assertTextEquals("Mode")
+        }
+    }
+
+    @Test fun firstDragOnSegaArrowMovesAllFourDirectionsAndToggleRetainsIndividualEditing() {
+        val saved = AtomicReference<Map<String, Pair<Float, Float>>>()
+        val ids = setOf("dpad_up", "dpad_down", "dpad_left", "dpad_right")
+        showEditor(CustomTouchControlLibrary.Empty, {}, EmulationPlatform.GENESIS, saved::set)
+        val before = ids.associateWith { id ->
+            composeRule.onNodeWithTag("controls_editor_control_$id", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        }
+        composeRule.onNodeWithTag("controls_editor_control_dpad_up", useUnmergedTree = true).performTouchInput {
+            swipe(center, center + Offset(30f, -30f), 400)
+        }
+        composeRule.runOnIdle {
+            val offsets = saved.get()
+            assertEquals(ids, offsets.keys)
+            val delta = offsets.getValue("dpad_up")
+            offsets.forEach { (id, offset) ->
+                assertEquals("Unequal group X offset for $id: $offsets", delta.first, offset.first, .01f)
+                assertEquals("Unequal group Y offset for $id: $offsets", delta.second, offset.second, .01f)
+            }
+            assertTrue("Group did not move right: $offsets", delta.first > 0f)
+        }
+        // Layout places controls on integer pixels. Their rendered movement must match
+        // the common continuous offset to within one pixel of placement rounding.
+        val offsets = saved.get()
+        ids.forEach { id ->
+            val after = composeRule.onNodeWithTag("controls_editor_control_$id", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+            val old = before.getValue(id)
+            val delta = offsets.getValue(id)
+            assertEquals("Rendered X movement for $id: $offsets", delta.first, after.left - old.left, 1f)
+            assertEquals("Rendered Y movement for $id: $offsets", delta.second, after.top - old.top, 1f)
+            assertEquals(old.width, after.width, .01f)
+            assertEquals(old.height, after.height, .01f)
+        }
+        composeRule.onNodeWithTag("controls_editor_group_mode").performClick()
+        composeRule.onNodeWithTag("controls_editor_control_dpad_up", useUnmergedTree = true).performTouchInput {
+            swipe(center, center + Offset(30f, -30f), 400)
+        }
+        composeRule.runOnIdle {
+            assertEquals(setOf("dpad_up"), saved.get().keys)
         }
     }
 

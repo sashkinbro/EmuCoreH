@@ -23,7 +23,9 @@ data class OverlayCanvasButtonSpec(
     val shape: Shape,
     val opacity: Int,
     val visible: Boolean,
-    val labelOverride: String? = null
+    val labelOverride: String? = null,
+    /** Unscaled slot centre before safe-area clamping, for reversible Sega group resizing. */
+    val resizeCenter: DpOffset? = null
 )
 
 data class OverlayCanvasStickSpec(

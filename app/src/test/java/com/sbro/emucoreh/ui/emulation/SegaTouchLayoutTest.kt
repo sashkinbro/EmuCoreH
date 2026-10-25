@@ -5,6 +5,21 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SegaTouchLayoutTest {
+    @Test fun consoleDefaultsUseCompactCrossAndRaisedSlantedSixButtonRows() {
+        for (platform in listOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X)) {
+            val buttons = segaTouchLayout(platform, 800f, 400f, 1f).associateBy { it.keyCode }
+            val a = buttons.getValue(99)
+            val b = buttons.getValue(96)
+            val c = buttons.getValue(97)
+            assertTrue("Face buttons must be thumb sized", a.width >= 60f)
+            assertTrue("ABC rises to the right", a.y > b.y && b.y > c.y)
+            assertTrue("XYZ rises to the right", buttons.getValue(102).y > buttons.getValue(100).y && buttons.getValue(100).y > buttons.getValue(103).y)
+            assertTrue("Face row is raised", a.y + a.height < 400f - a.height * .25f)
+            val cross = buttons.values.filter { it.keyCode in setOf(19, 20, 21, 22) }
+            assertTrue("Cross stays compact", cross.maxOf { it.x + it.width } - cross.minOf { it.x } <= a.width * 2.2f)
+        }
+    }
+
     @Test fun everyPlatformFitsPortraitLandscapeAndShortScreensAtEveryScale() {
         for (platform in EmulationPlatform.entries.filter { it.isSega }) {
             for ((width, height) in listOf(296f to 544f, 544f to 216f, 176f to 96f, 800f to 320f)) {

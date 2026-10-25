@@ -2336,4 +2336,6 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_title">Odebrat vybrané předvolby?</string>
     <string name="settings_shader_presets_remove_body">Vybrané předvolby: %1$d. Odebrat je ze seznamu?</string>
     <string name="settings_shader_presets_remove_failed">Vybrané předvolby se nepodařilo odebrat.</string>
+    <string name="controls_editor_groups">Skupiny</string>
+    <string name="controls_editor_individual">Jednotlivá tlačítka</string>
 </resources>

@@ -5,6 +5,19 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OverlayGroupScalingTest {
+    @org.junit.Test fun segaGroupScalingKeepsSpacingWhenGrowingAgainstSafeEdge() {
+        val members = listOf(
+            OverlayGroupScaleMember("a", 100f, 100f, 0f, 0f, 100, 40f, 40f),
+            OverlayGroupScaleMember("b", 150f, 90f, 0f, 0f, 100, 40f, 40f)
+        )
+        val result = scaleOverlayControlGroup(members, 1.5f, 50, 200, 200f, 200f, preserveSegaGeometry = true, safeLeft = 12f, safeTop = 12f, safeRight = 12f, safeBottom = 12f)
+        // Resizing recenters each default slot before the persisted offset is applied.
+        val aX = 90f + result[0].offset.first
+        val bX = 128f + result[1].offset.first
+        org.junit.Assert.assertEquals(75f, bX - aX, .001f)
+        org.junit.Assert.assertEquals(188f, bX + 60f, .001f)
+    }
+
     private fun members(): List<OverlayGroupScaleMember> = listOf(
         OverlayGroupScaleMember("up", baseX = 300f, baseY = 200f, offsetX = 0f, offsetY = 0f, scale = 100, width = 40f, height = 40f),
         OverlayGroupScaleMember("down", baseX = 300f, baseY = 280f, offsetX = 0f, offsetY = 0f, scale = 100, width = 40f, height = 40f),

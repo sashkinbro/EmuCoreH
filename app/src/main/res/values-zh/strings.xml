@@ -2316,4 +2316,6 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_title">移除所选预设？</string>
     <string name="settings_shader_presets_remove_body">已选预设：%1$d。是否从列表中移除？</string>
     <string name="settings_shader_presets_remove_failed">无法移除所选预设。</string>
+    <string name="controls_editor_groups">分组</string>
+    <string name="controls_editor_individual">单个按钮</string>
 </resources>
