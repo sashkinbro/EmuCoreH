@@ -206,7 +206,7 @@ internal fun HomeShelfMode(
                             pageSize = PageSize.Fixed(cardWidth),
                             contentPadding = PaddingValues(horizontal = horizontalPadding),
                             pageSpacing = 8.dp,
-                            beyondViewportPageCount = 3,
+                            beyondViewportPageCount = 4,
                             flingBehavior = pagerFlingBehavior,
                             modifier = Modifier.fillMaxSize()
                         ) { page ->

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -29,6 +31,7 @@ class HomeLibraryVirtualizationInstrumentedTest {
 
     @Test fun thirteenThousandGamesOnlyComposeVisibleListRows() = verifyBoundedComposition(true)
 
+    @OptIn(ExperimentalFoundationApi::class)
     private fun verifyBoundedComposition(listView: Boolean) {
         val active = mutableSetOf<String>()
         val sections = LibraryPlatform.entries.map { platform ->
@@ -37,7 +40,8 @@ class HomeLibraryVirtualizationInstrumentedTest {
             })
         }
         compose.setContent {
-            LazyVerticalGrid(GridCells.Fixed(1), Modifier.testTag("library")) {
+            val state = rememberLazyGridState(cacheWindow = homeLibraryCacheWindow)
+            LazyVerticalGrid(GridCells.Fixed(1), Modifier.testTag("library"), state = state) {
                 homeLibraryItems(sections, 6, listView,
                     header = { Box(Modifier.fillMaxWidth().height(32.dp)) },
                     row = { games, _ ->
@@ -58,6 +62,11 @@ class HomeLibraryVirtualizationInstrumentedTest {
         compose.runOnIdle {
             assertTrue("Offscreen rows retained: ${active.size}", active.size in 1..100)
             assertTrue("Scroll did not reach later games", active.any { it.substringAfterLast('/').toInt() > 100 })
+        }
+        compose.onNodeWithTag("library").performScrollToIndex(5)
+        compose.onNodeWithTag("library").performScrollToIndex(1000)
+        compose.runOnIdle {
+            assertTrue("Reversal and long jump retained ${active.size} covers", active.size in 1..100)
         }
     }
 }

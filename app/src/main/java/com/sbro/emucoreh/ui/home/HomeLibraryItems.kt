@@ -2,10 +2,16 @@ package com.sbro.emucoreh.ui.home
 
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.runtime.Composable
 import com.sbro.emucoreh.data.GameItem
 
 internal fun homeLibraryRowKey(game: GameItem): String = "row_${game.path}"
+
+// Prepare one screen ahead and retain half a screen on reversal, regardless of catalog size.
+@OptIn(ExperimentalFoundationApi::class)
+internal val homeLibraryCacheWindow = LazyLayoutCacheWindow(aheadFraction = 1f, behindFraction = 0.5f)
 
 internal fun LazyGridScope.homeLibraryItems(
     sections: List<HomeLibrarySection>,

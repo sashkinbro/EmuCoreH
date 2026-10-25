@@ -53,6 +53,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -177,7 +178,7 @@ import com.sbro.emucoreh.ui.theme.neon.LocalNeonTheme
 import com.sbro.emucoreh.ui.theme.neon.neonButtonShape
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @SuppressLint("ConfigurationScreenWidthHeight", "FrequentlyChangingValue")
 @Composable
 fun HomeScreen(
@@ -230,7 +231,7 @@ fun HomeScreen(
     )
     val isListView = uiState.libraryViewMode == HomeLibraryViewMode.LIST
     val standardViewMode = if (isShelfView) uiState.lastStandardLibraryViewMode else uiState.libraryViewMode
-    val gridState = rememberLazyGridState()
+    val gridState = rememberLazyGridState(cacheWindow = homeLibraryCacheWindow)
     val scope = rememberCoroutineScope()
     val showScrollToTop by remember {
         derivedStateOf { gridState.firstVisibleItemIndex > 2 || gridState.firstVisibleItemScrollOffset > 900 }
@@ -557,7 +558,7 @@ fun HomeScreen(
                                 if (uiState.recentGames.isNotEmpty()) {
                                     item(key = "recent", contentType = "recent", span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                         val recentFocusRequester = libraryFocusRegistry.rememberRowRequester("recent")
-                                        val recentRowState = rememberLazyListState()
+                                        val recentRowState = rememberLazyListState(cacheWindow = homeLibraryCacheWindow)
                                         val recentFocusIndex by remember(recentRowState) {
                                             derivedStateOf { recentRowState.firstVisibleItemIndex }
                                         }
