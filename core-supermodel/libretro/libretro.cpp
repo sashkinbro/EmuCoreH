@@ -311,7 +311,7 @@ RETRO_API void retro_set_input_state(retro_input_state_t cb){input_state=cb;}
 RETRO_API void retro_set_controller_port_device(unsigned p,unsigned device){if(p<2)controller_types[p]=device;}
 RETRO_API void retro_init(){ResetFatalLog();error.clear();if(environment){retro_log_callback cb{};if(environment(RETRO_ENVIRONMENT_GET_LOG_INTERFACE,&cb))logger=cb.log;}}
 RETRO_API void retro_deinit(){unload();runtime_guard.Reset();logger=nullptr;context_alive=false;hw={};}
-RETRO_API void retro_get_system_info(retro_system_info* info){if(info)*info={"Supermodel (Super3)","0.3a","zip",true,true};}
+RETRO_API void retro_get_system_info(retro_system_info* info){if(info)*info={"Super3","0.3a","zip",true,true};}
 RETRO_API void retro_get_system_av_info(retro_system_av_info* info){if(info)*info={host?host->resolution.Geometry():Resolution().Geometry(),{60.0,44100.0}};}
 RETRO_API bool retro_load_game(const retro_game_info* game_info){
   unload();ResetFatalLog();runtime_guard.Reset();error.clear();
