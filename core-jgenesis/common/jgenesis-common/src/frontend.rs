@@ -327,6 +327,13 @@ pub trait MappableInputs<Button> {
 
 pub trait InputPoller<Inputs> {
     fn poll(&mut self) -> &Inputs;
+
+    /// Return the current inputs when they need to be applied. A poller may
+    /// return `None` only while its previously delivered inputs remain current.
+    /// Existing pollers continue to poll and apply their inputs on every call.
+    fn poll_if_changed(&mut self) -> Option<&Inputs> {
+        Some(self.poll())
+    }
 }
 
 pub struct ConstantInputPoller<'a, Inputs>(pub &'a Inputs);

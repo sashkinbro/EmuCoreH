@@ -1,6 +1,140 @@
 use super::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+#[test]
+fn frame_input_poller_delivers_each_frames_press_and_release_once() {
+    use jgenesis_common::frontend::InputPoller;
+
+    for pressed in [false, true, true, false] {
+        let mut inputs = GenesisInputs::default();
+        inputs.set_field(GenesisButton::A, Player::One, pressed);
+        let mut poller = FrameInputPoller::new(&inputs);
+        assert_eq!(poller.poll(), &inputs);
+        assert_eq!(poller.poll_if_changed(), Some(&inputs));
+        for _ in 0..100 {
+            assert_eq!(poller.poll_if_changed(), None);
+            assert_eq!(poller.poll(), &inputs);
+        }
+    }
+}
+
+#[test]
+fn default_input_poller_delivers_dynamic_updates_on_every_tick() {
+    use jgenesis_common::frontend::InputPoller;
+
+    struct DynamicPoller(u32);
+    impl InputPoller<u32> for DynamicPoller {
+        fn poll(&mut self) -> &u32 {
+            self.0 += 1;
+            &self.0
+        }
+    }
+
+    let mut poller = DynamicPoller(0);
+    for expected in 1..=100 {
+        assert_eq!(poller.poll_if_changed(), Some(&expected));
+    }
+}
+
+fn controller_polling_test_core(name: &str) -> Core {
+    let mut rom = genesis_rom();
+    let mut program = Vec::new();
+    let write_byte = |program: &mut Vec<u8>, value: u8, address: u32| {
+        program.extend_from_slice(&[0x13, 0xfc, 0, value]);
+        program.extend_from_slice(&address.to_be_bytes());
+    };
+    write_byte(&mut program, 0x40, 0xA10009); // TH is an output
+    let loop_offset = program.len();
+    for (sample, th) in [0, 0x40, 0, 0x40, 0, 0x40, 0, 0x40].into_iter().enumerate() {
+        write_byte(&mut program, th, 0xA10003);
+        program.extend_from_slice(&[0x13, 0xf9]); // MOVE.B port, RAM
+        program.extend_from_slice(&0x00A10003u32.to_be_bytes());
+        program.extend_from_slice(&(0x00FF0000u32 + sample as u32).to_be_bytes());
+    }
+    program.extend_from_slice(&[0x4e, 0xf9]); // JMP loop
+    program.extend_from_slice(&(0x200u32 + loop_offset as u32).to_be_bytes());
+    rom[0x200..0x200 + program.len()].copy_from_slice(&program);
+
+    let directory = std::env::temp_dir().join(format!("jgenesis-input-{name}-{}", std::process::id()));
+    let mut writer = FsSaveWriter::new(directory.clone(), name.into());
+    let emulator = GenesisEmulator::create(
+        GenesisHardware::Standalone,
+        Some(rom),
+        None,
+        None,
+        GenesisEmulatorConfig::default(),
+        &mut writer,
+    ).unwrap();
+    Core::new(Emulator::Genesis(emulator), writer, Console::Genesis, directory.join("input.md"))
+}
+
+fn genesis_test_state(core: &Core) -> Vec<u8> {
+    let Emulator::Genesis(emulator) = &core.emulator else { panic!("Genesis fixture") };
+    encode_state(emulator).unwrap()
+}
+
+#[test]
+fn frame_inputs_match_per_tick_updates_through_six_button_handshakes() {
+    struct CountingPoller<'a> { inputs: &'a GenesisInputs, polls: usize }
+    impl InputPoller<GenesisInputs> for CountingPoller<'_> {
+        fn poll(&mut self) -> &GenesisInputs {
+            self.polls += 1;
+            self.inputs
+        }
+    }
+
+    let mut optimized = controller_polling_test_core("frame");
+    let mut reference = controller_polling_test_core("constant");
+    for pressed in [false, true, true, false] {
+        let mut inputs = GenesisInputs::default();
+        for button in [GenesisButton::A, GenesisButton::Z, GenesisButton::Mode] {
+            inputs.set_field(button, Player::One, pressed);
+        }
+        optimized.run_frame(Inputs::Genesis(inputs)).unwrap();
+        reference.frame.begin_frame();
+        reference.audio.begin_frame();
+        let Emulator::Genesis(emulator) = &mut reference.emulator else { unreachable!() };
+        let mut poller = CountingPoller { inputs: &inputs, polls: 0 };
+        loop {
+            let effect = emulator.tick(
+                &mut reference.frame, &mut reference.audio, &mut poller, &mut reference.save_writer,
+            ).unwrap();
+            if effect == TickEffect::FrameRendered { break; }
+            assert!(poller.polls < MAX_FRAME_ITERATIONS as usize);
+        }
+        assert!(poller.polls > 1_000, "reference applies inputs throughout the frame");
+        assert_eq!(genesis_test_state(&optimized), genesis_test_state(&reference));
+        assert_eq!(optimized.frame.pixels, reference.frame.pixels);
+        assert_eq!(optimized.audio.samples, reference.audio.samples);
+    }
+}
+
+#[test]
+fn dynamic_default_poller_updates_the_real_genesis_backend_each_tick() {
+    struct DynamicPoller { inputs: GenesisInputs, ticks: usize }
+    impl InputPoller<GenesisInputs> for DynamicPoller {
+        fn poll(&mut self) -> &GenesisInputs {
+            self.ticks += 1;
+            self.inputs.set_field(GenesisButton::A, Player::One, self.ticks % 2 != 0);
+            &self.inputs
+        }
+    }
+
+    let mut dynamic = controller_polling_test_core("dynamic");
+    let mut reference = controller_polling_test_core("per-tick");
+    let mut poller = DynamicPoller { inputs: GenesisInputs::default(), ticks: 0 };
+    for tick in 1..=100 {
+        let Emulator::Genesis(emulator) = &mut dynamic.emulator else { unreachable!() };
+        emulator.tick(&mut dynamic.frame, &mut dynamic.audio, &mut poller, &mut dynamic.save_writer).unwrap();
+        let mut inputs = GenesisInputs::default();
+        inputs.set_field(GenesisButton::A, Player::One, tick % 2 != 0);
+        let Emulator::Genesis(emulator) = &mut reference.emulator else { unreachable!() };
+        emulator.tick(&mut reference.frame, &mut reference.audio, &mut ConstantInputPoller(&inputs), &mut reference.save_writer).unwrap();
+        assert_eq!(genesis_test_state(&dynamic), genesis_test_state(&reference), "tick {tick}");
+    }
+    assert_eq!(poller.ticks, 100);
+}
+
 static VIDEO: AtomicUsize = AtomicUsize::new(0);
 static AUDIO: AtomicUsize = AtomicUsize::new(0);
 static COLOR: AtomicUsize = AtomicUsize::new(0);

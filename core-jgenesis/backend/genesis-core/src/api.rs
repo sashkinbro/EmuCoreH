@@ -268,7 +268,9 @@ impl GenesisEmulator {
         I: InputPoller<GenesisInputs>,
         S: SaveWriter,
     {
-        self.bus.input.set_inputs(*input_poller.poll());
+        if let Some(inputs) = input_poller.poll_if_changed() {
+            self.bus.input.set_inputs(*inputs);
+        }
         self.bus.m68k_opcode = self.m68k.next_opcode();
 
         let m68k_pc = self.m68k.pc();

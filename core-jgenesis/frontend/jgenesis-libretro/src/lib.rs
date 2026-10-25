@@ -21,7 +21,9 @@ use genesis_config::{
 };
 use genesis_core::GenesisEmulator;
 use genesis_core::api::GenesisHardware;
-use jgenesis_common::frontend::{ConstantInputPoller, EmulatorTrait, MappableInputs, TickEffect};
+use jgenesis_common::frontend::{
+    ConstantInputPoller, EmulatorTrait, InputPoller, MappableInputs, TickEffect,
+};
 use jgenesis_common::input::Player;
 use libretro::*;
 use smsgg_config::{GgAspectRatio, SmsAspectRatio, SmsGgButton, SmsGgInputs, SmsModel};
@@ -170,6 +172,33 @@ enum Inputs {
     SmsGg(SmsGgInputs),
 }
 
+/// Libretro snapshots inputs once per retro_run. Deliver that snapshot on the
+/// first emulation tick, while leaving controller I/O and timers running normally.
+struct FrameInputPoller<'a, Inputs> {
+    inputs: &'a Inputs,
+    delivered: bool,
+}
+
+impl<'a, Inputs> FrameInputPoller<'a, Inputs> {
+    fn new(inputs: &'a Inputs) -> Self {
+        Self { inputs, delivered: false }
+    }
+}
+
+impl<Inputs> InputPoller<Inputs> for FrameInputPoller<'_, Inputs> {
+    fn poll(&mut self) -> &Inputs {
+        self.inputs
+    }
+
+    fn poll_if_changed(&mut self) -> Option<&Inputs> {
+        if self.delivered {
+            return None;
+        }
+        self.delivered = true;
+        Some(self.inputs)
+    }
+}
+
 impl Drop for Core {
     fn drop(&mut self) {
         let result = match &mut self.emulator {
@@ -274,6 +303,10 @@ impl Core {
         self.audio.begin_frame();
         self.state_cache.clear();
 
+        let mut genesis_poller = match &inputs {
+            Inputs::Genesis(inputs) => Some(FrameInputPoller::new(inputs)),
+            Inputs::SmsGg(_) => None,
+        };
         let mut iterations = 0u32;
         loop {
             iterations = iterations.saturating_add(1);
@@ -281,14 +314,17 @@ impl Core {
                 return Err("emulator did not finish a frame in time".to_string());
             }
 
-            let effect = match (&mut self.emulator, &inputs) {
-                (Emulator::Genesis(emulator), Inputs::Genesis(inputs)) => {
-                    let mut poller = ConstantInputPoller(inputs);
-                    emulator
-                        .tick(&mut self.frame, &mut self.audio, &mut poller, &mut self.save_writer)
-                        .map_err(|error| error.to_string())
+            let effect = match (&mut self.emulator, &inputs, &mut genesis_poller) {
+                (Emulator::Genesis(emulator), Inputs::Genesis(_), Some(poller)) => {
+                    let result = emulator.tick(
+                        &mut self.frame,
+                        &mut self.audio,
+                        poller,
+                        &mut self.save_writer,
+                    );
+                    result.map_err(|error| error.to_string())
                 }
-                (Emulator::SmsGg(emulator), Inputs::SmsGg(inputs)) => {
+                (Emulator::SmsGg(emulator), Inputs::SmsGg(inputs), _) => {
                     let mut poller = ConstantInputPoller(inputs);
                     emulator
                         .tick(&mut self.frame, &mut self.audio, &mut poller, &mut self.save_writer)

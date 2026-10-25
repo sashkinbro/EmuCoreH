@@ -62,7 +62,6 @@ impl Renderer for FrameOutput {
         // The frontend uploads this buffer directly to the GPU as BGRA/XRGB.
         // Write the opaque alpha byte here so neither the OpenGL nor the
         // Vulkan path has to touch pixels on the CPU again.
-        self.pixels.clear();
         self.pixels.resize(pixel_count, 0);
         for (target, color) in self.pixels.iter_mut().zip(&frame_buffer[..pixel_count]) {
             *target = 0xFF00_0000
