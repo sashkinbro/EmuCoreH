@@ -1163,7 +1163,7 @@ internal object CoreRuntime {
                     metricsFrameTotalNanos = 0L
                     metricsStartCpuMs = android.os.Process.getElapsedCpuTime()
                     timingClock.sample(audioStats, sampleNanos)
-                } else if (now - metricsStartNanos >= 1_000_000_000L) {
+                } else if (now - metricsStartNanos >= 250_000_000L) {
                     val elapsed = now - metricsStartNanos
                     val fps = metricsFrames * 1_000_000_000.0 / elapsed
                     val cpuNowMs = android.os.Process.getElapsedCpuTime()
