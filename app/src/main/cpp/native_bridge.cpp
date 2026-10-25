@@ -938,6 +938,8 @@ void DestroyFramebuffer() {
     g_gl.fbo_height = 0;
 }
 
+bool BgraTextureUploadSupported();
+
 bool CreatePresentFramebuffer() {
     retro_system_av_info info{};
     if (g_core.get_system_av_info != nullptr) g_core.get_system_av_info(&info);
@@ -950,7 +952,12 @@ bool CreatePresentFramebuffer() {
     DestroyFramebuffer();
     glGenTextures(1, &g_gl.fbo_texture);
     glBindTexture(GL_TEXTURE_2D, g_gl.fbo_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    // EXT_texture_format_BGRA8888 uploads require matching BGRA storage on
+    // GLES. Uploading BGRA into RGBA8 is rejected by drivers such as Mali.
+    const bool software_bgra = g_core_id.load() == 1 && BgraTextureUploadSupported();
+    glTexImage2D(GL_TEXTURE_2D, 0, software_bgra ? GL_BGRA_EXT : GL_RGBA8,
+                 width, height, 0, software_bgra ? GL_BGRA_EXT : GL_RGBA,
+                 GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

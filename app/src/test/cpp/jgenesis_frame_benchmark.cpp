@@ -173,6 +173,21 @@ int main(int argc, char** argv) {
       const char* message = error ? error() : nullptr;
       throw std::runtime_error(message ? message : "Game load failed");
     }
+    // Restore an owner-supplied gameplay snapshot so renderer and CPU variants
+    // can begin at exactly the same scene without replaying title screens.
+    if (const char* path = std::getenv("JGENESIS_BENCH_STATE")) {
+      const auto size = std::filesystem::file_size(path);
+      if (!size || size > 128 * 1024 * 1024)
+        throw std::runtime_error("Invalid initial state size");
+      std::vector<uint8_t> initial(size);
+      FILE* file = std::fopen(path, "rb");
+      if (!file) throw std::runtime_error("Cannot open initial state");
+      const auto read = std::fread(initial.data(), 1, initial.size(), file);
+      std::fclose(file);
+      if (read != initial.size() ||
+          !symbol<bool(*)(const void*, size_t)>(library, "retro_unserialize")(initial.data(), initial.size()))
+        throw std::runtime_error("Initial gameplay state restore failed");
+    }
     for (long i = 0; i < warmup && !stopped; ++i) run();
     if (reset_counters) reset_counters();
     for (int sample = 0; sample < 3 && !stopped; ++sample) {
