@@ -269,15 +269,22 @@ impl Sh2Bus {
     // the slave SH-2. After the slave SH-2 sees a specific value from the master SH-2, it
     // writes to the communication port twice in quick succession, and the master SH-2 must
     // read the first value before it's overwritten
+    #[inline(always)]
     fn need_to_sync_other(&self, address: u32) -> bool {
         (0x4020..0x4030).contains(&address) && self.other_sh2.is_some()
     }
 
+    #[inline(always)]
     fn maybe_sync_other_cpu(&mut self, address: u32) {
         if !self.need_to_sync_other(address) {
             return;
         }
 
+        self.sync_other_cpu();
+    }
+
+    #[inline(never)]
+    fn sync_other_cpu(&mut self) {
         let Some(OtherCpu { cpu: mut other_cpu, cycle_counter: other_cycle_counter }) =
             self.other_sh2
         else {
