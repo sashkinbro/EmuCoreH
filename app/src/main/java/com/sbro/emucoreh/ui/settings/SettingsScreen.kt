@@ -170,6 +170,8 @@ import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.EmulatorStorage
 import com.sbro.emucoreh.core.GamepadManager
 import com.sbro.emucoreh.core.NativeApp
+import com.sbro.emucoreh.core.supportsInternalResolution
+import com.sbro.emucoreh.core.normalizeUpscaleForPlatform
 import com.sbro.emucoreh.core.buildUpscaleOptions
 import com.sbro.emucoreh.core.upscaleKeyToMultiplier
 import com.sbro.emucoreh.core.upscaleMultiplierKey
@@ -2143,20 +2145,20 @@ private fun SettingsContent(
                         // duplicated the setting under a different name than the
                         // in-game menu / game manager, and persisted a global
                         // core-option override that shadowed per-game values.
-                        if (platform.coreId == 0) {
+                        if (platform.supportsInternalResolution) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_upscale),
                             options = buildUpscaleOptions(
                                 stringResource(R.string.settings_upscale_native),
-                                EmulatorBridge.getMaxUpscaleMultiplier(uiState.renderer)
+                                EmulatorBridge.getMaxUpscaleMultiplier(uiState.renderer, platform)
                             ),
-                            selectedValue = upscaleMultiplierKey(uiState.upscaleMultiplier),
+                            selectedValue = upscaleMultiplierKey(normalizeUpscaleForPlatform(uiState.upscaleMultiplier, platform)),
                             onSelect = { key ->
                                 viewModel.setUpscaleMultiplier(upscaleKeyToMultiplier(key))
                             },
                             helpText = stringResource(R.string.settings_help_upscale),
                             onResetToDefault = {
-                                viewModel.setUpscaleMultiplier(defaults.upscaleMultiplier)
+                                viewModel.setUpscaleMultiplier(normalizeUpscaleForPlatform(defaults.upscaleMultiplier, platform))
                             }
                         )
                         }

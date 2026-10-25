@@ -175,6 +175,8 @@ import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.core.GamepadManager
 import com.sbro.emucoreh.core.KeyboardMouseManager
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
+import com.sbro.emucoreh.core.supportsInternalResolution
+import com.sbro.emucoreh.core.normalizeUpscaleForPlatform
 import com.sbro.emucoreh.core.buildUpscaleOptions
 import com.sbro.emucoreh.core.upscaleKeyToMultiplier
 import com.sbro.emucoreh.core.upscaleMultiplierValue
@@ -4429,17 +4431,17 @@ private fun EmulationSidebarMenu(
                         // persisted changes to the global core-option store, so
                         // they leaked into every game and never appeared in the
                         // game manager.
-                        if (platform.coreId == 0) {
+                        if (platform.supportsInternalResolution) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_upscale),
                             options = buildUpscaleOptions(
                                 stringResource(R.string.settings_upscale_native),
-                                EmulatorBridge.getMaxUpscaleMultiplier(uiState.renderer)
+                                EmulatorBridge.getMaxUpscaleMultiplier(uiState.renderer, platform)
                             ).map { (value, label) -> LiveSelectionOption(value, label) },
-                            currentValue = upscaleMultiplierValue(uiState.upscale),
+                            currentValue = upscaleMultiplierValue(normalizeUpscaleForPlatform(uiState.upscale, platform)),
                             onValueChange = { onSetUpscale(upscaleKeyToMultiplier(it)) },
                             helpText = stringResource(R.string.settings_help_upscale),
-                            onResetToDefault = { onSetUpscale(globalDefaults.upscaleMultiplier) }
+                            onResetToDefault = { onSetUpscale(normalizeUpscaleForPlatform(globalDefaults.upscaleMultiplier, platform)) }
                         )
                         }
 

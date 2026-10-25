@@ -244,7 +244,8 @@ object EmulatorBridge {
         return RendererDefaults.normalizeAndroidRenderer(renderer)
     }
 
-    fun getMaxUpscaleMultiplier(renderer: Int): Int {
+    fun getMaxUpscaleMultiplier(renderer: Int, platform: EmulationPlatform = CoreRuntime.platform): Int {
+        if (platform.coreId != 0) return platform.maxInternalResolutionMultiplier
         if (!isNativeLoaded) return UPSCALE_MAX.toInt()
         val resolvedRenderer = normalizeRenderer(renderer)
         return runCatching { NativeApp.getMaxUpscaleMultiplier(resolvedRenderer) }

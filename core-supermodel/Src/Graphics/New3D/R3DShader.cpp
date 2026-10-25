@@ -21,6 +21,21 @@ R3DShader::R3DShader(const Util::Config::Node &config)
 	Start();	// reset attributes
 }
 
+R3DShader::~R3DShader()
+{
+	// Resolution/context changes destroy the renderer while its GL context is live.
+	// A program still bound to the context otherwise remains pending deletion.
+	if (m_shaderProgram) {
+		GLint current = 0;
+		glGetIntegerv(GL_CURRENT_PROGRAM, &current);
+		if (static_cast<GLuint>(current) == m_shaderProgram) glUseProgram(0);
+		glDeleteProgram(m_shaderProgram);
+	}
+	if (m_vertexShader) glDeleteShader(m_vertexShader);
+	if (m_geoShader) glDeleteShader(m_geoShader);
+	if (m_fragmentShader) glDeleteShader(m_fragmentShader);
+}
+
 void R3DShader::Start()
 {
 	m_textured1			= false;

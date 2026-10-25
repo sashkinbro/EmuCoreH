@@ -32,7 +32,7 @@ import com.sbro.emucoreh.data.SegaTouchLayoutProfile
 import com.sbro.emucoreh.data.SegaTouchLayouts
 import com.sbro.emucoreh.core.GameFormats
 import com.sbro.emucoreh.core.resolveAndroidGamePhase
-import com.sbro.emucoreh.core.normalizeUpscale
+import com.sbro.emucoreh.core.normalizeUpscaleForPlatform
 import com.sbro.emucoreh.data.AppPreferences
 import com.sbro.emucoreh.data.SettingsSnapshot
 import com.sbro.emucoreh.data.AppPreferences.Companion.FPS_OVERLAY_MODE_SIMPLE
@@ -2242,7 +2242,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun setUpscale(upscale: Float) {
         viewModelScope.launch {
-            val normalizedUpscale = normalizeUpscale(upscale)
+            val normalizedUpscale = normalizeUpscaleForPlatform(upscale, com.sbro.emucoreh.core.CoreRuntime.platform)
             persistRuntimeState(_uiState.value.copy(upscale = normalizedUpscale)) {
                 preferences.setUpscaleMultiplier(normalizedUpscale)
             }

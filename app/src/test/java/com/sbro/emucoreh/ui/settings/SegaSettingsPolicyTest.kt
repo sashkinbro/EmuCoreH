@@ -47,11 +47,15 @@ class SegaSettingsPolicyTest {
                 assertFalse(settingsSearchEntryAvailable(platform, "Controls", title))
             }
         }
-        for (title in listOf(R.string.settings_renderer, R.string.settings_upscale,
+        for (title in listOf(R.string.settings_renderer,
             R.string.settings_racing_mode, R.string.settings_gyro_mode,
             R.string.settings_arcade_device_player_1, R.string.settings_pad_vibration)) {
             assertFalse(settingsSearchEntryAvailable(EmulationPlatform.MODEL_3, "Controls", title))
             assertTrue(settingsSearchEntryAvailable(EmulationPlatform.DREAMCAST, "Controls", title))
+        }
+        assertTrue(settingsSearchEntryAvailable(EmulationPlatform.MODEL_3, "Graphics", R.string.settings_upscale))
+        for (platform in EmulationPlatform.entries.filter { it.isSega }) {
+            assertFalse(settingsSearchEntryAvailable(platform, "Graphics", R.string.settings_upscale))
         }
         for (tab in listOf("Network", "Arcade")) {
             assertFalse(settingsSearchEntryAvailable(EmulationPlatform.MODEL_3, tab, R.string.settings_renderer))

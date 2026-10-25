@@ -398,6 +398,7 @@ internal object CoreRuntime {
             pushAspectRatio(displayAspectRatioPreference() ?: ASPECT_RATIO_AUTO)
             pushShaderEffect()
             pushShaderPreset()
+            pushInternalResolution(startUpscalePreference())
         } else applyStartOptions(coreRenderer)
         val handle = bridge.createSession()
         if (handle == 0L) {
@@ -438,9 +439,8 @@ internal object CoreRuntime {
         pushAspectRatio(displayAspectRatioPreference() ?: ASPECT_RATIO_AUTO)
         pushShaderEffect()
         pushShaderPreset()
-        val upscale = settings["EmuCoreH/Display:Upscale"]?.toFloatOrNull()
-            ?: settings["EmuCoreH:UpscaleMultiplier"]?.toFloatOrNull()
-        upscale?.let(::pushInternalResolution)
+        val upscale = startUpscalePreference()
+        pushInternalResolution(upscale)
         // These frontend defaults intentionally differ from standalone Flycast.
         // Publish them too, so a fresh gun profile displays the configured cursor.
         listOf("reicast_lightgun1_crosshair", "reicast_lightgun2_crosshair").forEach { key ->
@@ -460,17 +460,18 @@ internal object CoreRuntime {
         }
         // Internal resolution is owned by the app's per-game upscale setting, so
         // re-assert it after the persisted store so a stale entry cannot shadow it.
-        upscale?.let(::pushInternalResolution)
+        pushInternalResolution(upscale)
     }
 
+    private fun startUpscalePreference(): Float =
+        settings["EmuCoreH/Display:Upscale"]?.toFloatOrNull()
+            ?: settings["EmuCoreH:UpscaleMultiplier"]?.toFloatOrNull()
+            ?: UPSCALE_DEFAULT
+
     private fun pushInternalResolution(preference: Float) {
-        val option = FlycastCoreOptions.option("reicast_internal_resolution") ?: return
-        val targetWidth = Math.round(640f * preference).coerceAtLeast(640)
-        val choice = option.choices.minByOrNull { candidate ->
-            val width = candidate.value.substringBefore('x').toIntOrNull() ?: Int.MAX_VALUE
-            Math.abs(width - targetWidth)
-        }?.value ?: return
-        bridge.nativeSetOption(option.key, choice)
+        internalResolutionCoreOption(platform, preference)?.let { (key, value) ->
+            bridge.nativeSetOption(key, value)
+        }
     }
 
     /** Persists and forwards a Flycast core option. */
@@ -901,18 +902,13 @@ internal object CoreRuntime {
             pushShaderEffect()
             pushShaderPreset()
         }
+        if (section == "EmuCoreH/Display" && key == "Upscale") {
+            value.toFloatOrNull()?.let(::pushInternalResolution)
+            return
+        }
         if (platform.coreId != 0) return
         val bool = value.toBooleanStrictOrNull()
         val target: Pair<String, String>? = when ("$section:$key") {
-            "EmuCoreH/Display:Upscale" -> value.toFloatOrNull()?.let {
-                val option = FlycastCoreOptions.option("reicast_internal_resolution") ?: return@let null
-                val targetWidth = Math.round(640f * it).coerceAtLeast(640)
-                val choice = option.choices.minByOrNull { candidate ->
-                    val width = candidate.value.substringBefore('x').toIntOrNull() ?: Int.MAX_VALUE
-                    Math.abs(width - targetWidth)
-                }?.value ?: return@let null
-                option.key to choice
-            }
             "EmuCoreH/Runtime:LoadTextureReplacements" ->
                 bool?.let { "reicast_custom_textures" to if (it) "enabled" else "disabled" }
             "EmuCoreH/Runtime:PrecacheTextureReplacements" ->

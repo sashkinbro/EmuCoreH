@@ -5,6 +5,7 @@
 #include "adapter_helpers.h"
 #include "input_mapping.h"
 #include "runtime_guard.h"
+#include "resolution.h"
 #include "state_safety.h"
 #include "Supermodel.h"
 #include "Model3/Model3.h"
@@ -29,7 +30,9 @@
 namespace fs=std::filesystem;
 using namespace model3retro;
 namespace {
-constexpr unsigned width=496,height=384;
+constexpr unsigned width=Resolution::native_width,height=Resolution::native_height;
+constexpr const char* resolution_key="supermodel_internal_resolution";
+const retro_variable core_variables[]={{resolution_key,"Internal resolution; 1x|2x|3x|4x"},{nullptr,nullptr}};
 retro_environment_t environment=nullptr;
 retro_video_refresh_t video=nullptr;
 retro_audio_sample_t sample=nullptr;
@@ -67,6 +70,8 @@ struct Host {
   size_t state_size=0;
   int gear=1;
   bool gl_ready=false;
+  Resolution resolution;
+  unsigned graphics_scale=0;
   bool loaded=false;
   std::vector<int16_t> pcm;
   bool fingerprint_audio=false;
@@ -97,18 +102,21 @@ void tile_blit(const uint32_t* pixels,int w,int h,bool blend){if(host&&host->gl_
 void destroy_graphics(){
   if(!host||!host->gl_ready)return;
   if(host->model)host->model->AttachRenderers(&host->render2d,&host->null3d);
-  host->compositor.reset();host->renderer.reset();host->presenter.Shutdown();host->gl_ready=false;
+  host->compositor.reset();host->renderer.reset();host->presenter.Shutdown();host->gl_ready=false;host->graphics_scale=0;
 }
+const char* resolution_variable(){retro_variable var{resolution_key,nullptr};if(environment)environment(RETRO_ENVIRONMENT_GET_VARIABLE,&var);return var.value;}
 bool create_graphics(){
   if(!host||!host->model||!context_alive)return false;
+  if(host->gl_ready&&host->graphics_scale!=host->resolution.Scale())destroy_graphics();
   if(host->gl_ready)return true;
+  const auto geometry=host->resolution.Geometry();
   glBindFramebuffer(GL_FRAMEBUFFER,static_cast<GLuint>(hw.get_current_framebuffer()));
-  if(!host->presenter.Init())return fail("GLES presenter initialization failed");
-  host->presenter.Resize(width,height);
+  if(!host->presenter.Init()){host->presenter.Shutdown();return fail("GLES presenter initialization failed");}
+  host->presenter.Resize(geometry.base_width,geometry.base_height);
   host->renderer=std::make_unique<New3D::CNew3D>(host->config,host->game.name);
-  if(host->renderer->Init(0,0,width,height,width,height)!=OKAY){host->renderer.reset();host->presenter.Shutdown();return fail("GLES New3D initialization failed");}
+  if(host->renderer->Init(0,0,geometry.base_width,geometry.base_height,geometry.base_width,geometry.base_height)!=OKAY){host->renderer.reset();host->presenter.Shutdown();return fail("GLES New3D initialization failed");}
   host->compositor=std::make_unique<CompositedRender3D>(host->renderer.get(),&host->render2d,&host->presenter);
-  host->model->AttachRenderers(&host->render2d,host->compositor.get());host->gl_ready=true;
+  host->model->AttachRenderers(&host->render2d,host->compositor.get());host->gl_ready=true;host->graphics_scale=host->resolution.Scale();
   CRender2D::SetAndroidTileBlit(tile_blit);return true;
 }
 const char* graphics_error(){return create_graphics()?nullptr:error.c_str();}
@@ -245,7 +253,7 @@ bool model3_audio(unsigned n,INT16* lf,INT16* rf,INT16* lr,INT16* rr,bool flip){
 unsigned SupermodelFrontendFramebuffer(){return hw.get_current_framebuffer?static_cast<unsigned>(hw.get_current_framebuffer()):0;}
 extern "C" {
 RETRO_API unsigned retro_api_version(){return RETRO_API_VERSION;}
-RETRO_API void retro_set_environment(retro_environment_t cb){environment=cb;bool no_game=false;if(cb)cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME,&no_game);}
+RETRO_API void retro_set_environment(retro_environment_t cb){environment=cb;bool no_game=false;if(cb){cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME,&no_game);cb(RETRO_ENVIRONMENT_SET_VARIABLES,const_cast<retro_variable*>(core_variables));}}
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb){video=cb;}
 RETRO_API void retro_set_audio_sample(retro_audio_sample_t cb){sample=cb;}
 RETRO_API void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb){batch=cb;}
@@ -255,7 +263,7 @@ RETRO_API void retro_set_controller_port_device(unsigned p,unsigned device){if(p
 RETRO_API void retro_init(){ResetFatalLog();error.clear();if(environment){retro_log_callback cb{};if(environment(RETRO_ENVIRONMENT_GET_LOG_INTERFACE,&cb))logger=cb.log;}}
 RETRO_API void retro_deinit(){unload();runtime_guard.Reset();logger=nullptr;context_alive=false;hw={};}
 RETRO_API void retro_get_system_info(retro_system_info* info){if(info)*info={"Supermodel (Super3)","c410f82-emucoreh1","zip",true,true};}
-RETRO_API void retro_get_system_av_info(retro_system_av_info* info){if(info)*info={{width,height,width,height,4.f/3.f},{60.0,44100.0}};}
+RETRO_API void retro_get_system_av_info(retro_system_av_info* info){if(info)*info={host?host->resolution.Geometry():Resolution().Geometry(),{60.0,44100.0}};}
 RETRO_API bool retro_load_game(const retro_game_info* game_info){
   unload();ResetFatalLog();runtime_guard.Reset();error.clear();
   if(!environment||!game_info||!game_info->path)return fail("A full-path Model 3 ZIP ROM set is required");
@@ -265,7 +273,7 @@ RETRO_API bool retro_load_game(const retro_game_info* game_info){
     if(!system||!save)return fail("Frontend system and save directories are required");
     const fs::path xml=fs::path(system)/"supermodel"/"Games.xml";
     if(!fs::is_regular_file(xml))return fail("Missing system/supermodel/Games.xml ROM definitions");
-    host=std::make_unique<Host>();GameLoader loader(xml.string());ROMSet roms;
+    host=std::make_unique<Host>();host->resolution=Resolution(resolution_variable());GameLoader loader(xml.string());ROMSet roms;
     if(loader.Load(&host->game,&roms,game_info->path,"")){host.reset();return fail("ROM set is unsupported, incomplete, or has incorrect CRCs");}
     if(host->game.driveboard_type==Game::DRIVE_BOARD_SKI)host->config.Set("EmulateSkiBoard",true);
     host->directory=fs::path(save)/"supermodel"/host->game.name;fs::create_directories(host->directory);
@@ -282,11 +290,22 @@ RETRO_API bool retro_load_game(const retro_game_info* game_info){
 RETRO_API void retro_unload_game(){unload();}
 RETRO_API void retro_reset(){if(host&&host->model){host->model->Reset();host->gear=1;}}
 RETRO_API void retro_run(){
+  if(host&&host->model&&context_alive&&!runtime_guard.Failed()){
+    bool updated=false;
+    if(environment(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,&updated)&&updated){
+      const auto previous=host->resolution.Geometry();
+      if(host->resolution.Update(resolution_variable(),[](const retro_game_geometry& geometry){return environment(RETRO_ENVIRONMENT_SET_GEOMETRY,const_cast<retro_game_geometry*>(&geometry));})){
+        if(video)video(nullptr,previous.base_width,previous.base_height,0);
+        return;
+      }
+    }
+  }
   runtime_guard.Run(host&&host->model&&context_alive,graphics_error,[]{
-    poll_inputs();glBindFramebuffer(GL_FRAMEBUFFER,SupermodelFrontendFramebuffer());glViewport(0,0,width,height);glDisable(GL_SCISSOR_TEST);glClearColor(0,0,0,1);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+    const auto geometry=host->resolution.Geometry();
+    poll_inputs();glBindFramebuffer(GL_FRAMEBUFFER,SupermodelFrontendFramebuffer());glViewport(0,0,geometry.base_width,geometry.base_height);glDisable(GL_SCISSOR_TEST);glClearColor(0,0,0,1);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
     host->model->RunFrame();
     if(host->render2d.HasTopSurface()){host->presenter.UpdateFrameARGB(host->render2d.GetTopSurfaceARGB(),host->render2d.GetFrameWidth(),host->render2d.GetFrameHeight());host->presenter.Render(true);}
-    if(video)video(RETRO_HW_FRAME_BUFFER_VALID,width,height,0);
+    if(video)video(RETRO_HW_FRAME_BUFFER_VALID,geometry.base_width,geometry.base_height,0);
   },fatal_runtime);
 }
 RETRO_API size_t retro_serialize_size(){try{if(!host)return 0;if(!host->state_size){auto data=capture_state();if(!data.empty()&&data.size()<=max_state_size-state_header_size)host->state_size=data.size()+state_header_size;}return host->state_size;}catch(...){return 0;}}

@@ -17,6 +17,9 @@ class R3DShader
 {
 public:
 	R3DShader(const Util::Config::Node &config);
+	~R3DShader();
+	R3DShader(const R3DShader&) = delete;
+	R3DShader& operator=(const R3DShader&) = delete;
 
 	bool	LoadShader			(const char* vertexShader = nullptr, const char* fragmentShader = nullptr);
 	void	SetMeshUniforms		(const Mesh* m);

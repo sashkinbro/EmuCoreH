@@ -43,6 +43,8 @@ import com.sbro.emucoreh.core.AndroidGyroscopeInput
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.RendererDefaults
 import com.sbro.emucoreh.core.SetupValidator
+import com.sbro.emucoreh.core.supportsInternalResolution
+import com.sbro.emucoreh.core.normalizeUpscaleForPlatform
 import com.sbro.emucoreh.core.buildUpscaleOptions
 import com.sbro.emucoreh.core.upscaleKeyToMultiplier
 import com.sbro.emucoreh.core.upscaleMultiplierKey
@@ -537,8 +539,8 @@ fun PerGameSettingsManagerScreen(
                     }
                     var draft by remember(game.path, editableProfile) { mutableStateOf(editableProfile) }
                     var hasUserChange by remember(game.path, editableProfile) { mutableStateOf(false) }
-                    val maxUpscaleMultiplier = remember(draft.renderer) {
-                        EmulatorBridge.getMaxUpscaleMultiplier(normalizeManagerRenderer(draft.renderer))
+                    val maxUpscaleMultiplier = remember(draft.renderer, platform) {
+                        EmulatorBridge.getMaxUpscaleMultiplier(normalizeManagerRenderer(draft.renderer), platform)
                     }
 
                     LaunchedEffect(draft) {
@@ -967,11 +969,11 @@ private fun GameSettingsTabContent(
                     // while the game ran the in-game value, and a single edit
                     // here pinned a core-option override that shadowed the
                     // app-level value at launch forever.
-                    if (platform.coreId == 0) {
+                    if (platform.supportsInternalResolution) {
                     SelectionRow(
                         title = stringResource(R.string.settings_upscale),
                         options = buildUpscaleOptions(nativeUpscaleLabel, maxUpscaleMultiplier),
-                        selectedValue = upscaleMultiplierKey(draft.upscaleMultiplier),
+                        selectedValue = upscaleMultiplierKey(normalizeUpscaleForPlatform(draft.upscaleMultiplier, platform)),
                         onSelected = { key ->
                             onDraftChange(draft.copy(upscaleMultiplier = upscaleKeyToMultiplier(key)))
                         },
@@ -980,7 +982,7 @@ private fun GameSettingsTabContent(
                             onDraftChange(
                                 draft.copy(
                                     upscaleMultiplier = upscaleKeyToMultiplier(
-                                        upscaleMultiplierKey(defaultProfile.upscaleMultiplier)
+                                        upscaleMultiplierKey(normalizeUpscaleForPlatform(defaultProfile.upscaleMultiplier, platform))
                                     )
                                 )
                             )

@@ -2,6 +2,7 @@ package com.sbro.emucoreh.ui.settings
 
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.core.supportsInternalResolution
 import com.sbro.emucoreh.data.GameMenuTabId
 
 /** Only unsupported system tabs are hidden; shared tab content uses individual option gates. */
@@ -19,6 +20,7 @@ internal fun gameMenuCustomizationTabAvailable(platform: EmulationPlatform, tab:
 /** Search must expose the same core capabilities as the settings rows it opens. */
 internal fun settingsSearchEntryAvailable(platform: EmulationPlatform, tab: String, title: Int): Boolean {
     if (platform.coreId == 0) return true
+    if (title == R.string.settings_upscale) return segaSettingsTabAvailable(tab) && platform.supportsInternalResolution
     if (!segaSettingsTabAvailable(tab) || title in flycastOnlySearchSettings) return false
     // Model 3 has no renderer choice; Supermodel is OpenGL-only. Sega does
     // expose the jgenesis output backend, so the row is only hidden here.
@@ -35,7 +37,7 @@ private val analogSearchSettings = setOf(
 )
 
 private val flycastOnlySearchSettings = setOf(
-    R.string.settings_upscale, R.string.settings_racing_mode,
+    R.string.settings_racing_mode,
     R.string.settings_gyro_mode, R.string.settings_gyro_mode_light_gun, R.string.settings_gyro_stick,
     R.string.settings_arcade_device_player_1, R.string.settings_arcade_device_player_2,
     R.string.settings_light_gun_aim, R.string.settings_light_gun_cursor,
