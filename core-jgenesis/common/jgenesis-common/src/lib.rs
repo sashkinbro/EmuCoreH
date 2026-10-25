@@ -15,3 +15,11 @@ pub use paths::{determine_emulator_dir, fix_appimage_relative_path, is_appimage_
 
 pub const DEFAULT_LOG_FILTER: &str =
     "info,wgpu_core=warn,wgpu_hal=warn,naga=warn,egui_wgpu=warn,zbus=warn,tracing=warn";
+
+#[cfg(all(
+    feature = "native-code",
+    target_arch = "aarch64",
+    target_endian = "little",
+    any(target_os = "android", target_os = "linux")
+))]
+pub mod native_code;

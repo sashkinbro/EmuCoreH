@@ -7,6 +7,8 @@ edition = "2024"
 
 [features]
 default = []
+# Experimental and explicitly selected through execute_instruction_with_native.
+native-arm64 = ["jgenesis-common/native-code"]
 bincode = ["dep:bincode"]
 memorybus = []
 

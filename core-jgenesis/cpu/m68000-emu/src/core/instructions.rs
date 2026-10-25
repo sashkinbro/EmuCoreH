@@ -345,6 +345,15 @@ impl<B: BusInterface> InstructionExecutor<'_, '_, B> {
             MultiplyUnsigned(..) | MultiplySigned(..) | DivideUnsigned(..) | DivideSigned(..)
         );
 
+        #[cfg(feature = "native-arm64")]
+        if let Some(native) = self.native.as_deref_mut() {
+            let mut ccr = self.cpu.registers.ccr.into();
+            if native.execute(&mut self.cpu.registers.data, &mut ccr, opcode) {
+                self.cpu.registers.ccr = ccr.into();
+                return Ok(4);
+            }
+        }
+
         match instruction {
             Add { size: OpSize::Byte, source, dest, with_extend } => {
                 self.add_byte(source, dest, with_extend)

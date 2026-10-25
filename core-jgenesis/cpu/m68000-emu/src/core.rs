@@ -415,6 +415,8 @@ struct InstructionExecutor<'cpu, 'bus, B> {
     bus: &'bus mut B,
     opcode: u16,
     instruction: Option<Instruction>,
+    #[cfg(feature = "native-arm64")]
+    native: Option<&'cpu mut crate::native::NativeExecutor>,
 }
 
 const ADDRESS_ERROR_VECTOR: u32 = 3;
@@ -428,7 +430,14 @@ const AUTO_VECTORED_INTERRUPT_BASE_ADDRESS: u32 = 0x60;
 
 impl<'cpu, 'bus, B: BusInterface> InstructionExecutor<'cpu, 'bus, B> {
     fn new(cpu: &'cpu mut M68000, bus: &'bus mut B) -> Self {
-        Self { cpu, bus, opcode: 0, instruction: None }
+        Self {
+            cpu,
+            bus,
+            opcode: 0,
+            instruction: None,
+            #[cfg(feature = "native-arm64")]
+            native: None,
+        }
     }
 
     // Read a word from the bus; returns an address error if address is odd
@@ -1213,6 +1222,27 @@ impl M68000 {
     #[must_use]
     pub fn next_opcode(&self) -> u16 {
         self.registers.prefetch
+    }
+
+    /// Execute through the experimental ARM64 register translator when supported.
+    /// The executor owns host code independently of CPU clones and savestates.
+    /// All bus, prefetch, interrupt and exception handling uses the interpreter pipeline.
+    #[cfg(feature = "native-arm64")]
+    pub fn execute_instruction_with_native<B: BusInterface>(
+        &mut self,
+        bus: &mut B,
+        native: &mut crate::native::NativeExecutor,
+    ) -> u32 {
+        if bus.reset() {
+            self.reset(bus);
+            return RESET_CYCLES;
+        }
+        if bus.halt() || self.registers.frozen {
+            return 1;
+        }
+        let mut executor = InstructionExecutor::new(self, bus);
+        executor.native = Some(native);
+        executor.execute()
     }
 
     #[inline]

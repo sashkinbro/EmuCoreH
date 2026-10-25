@@ -10,3 +10,6 @@ pub use crate::core::{
     cycles_if_move_btst_cmp,
 };
 pub use traits::BusInterface;
+
+#[cfg(feature = "native-arm64")]
+pub mod native;

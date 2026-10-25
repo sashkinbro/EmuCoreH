@@ -1,6 +1,13 @@
 //! Experimental single-instruction ARM64 bodies; no guest or serialized host resources.
 
-#[cfg(any(test, all(target_arch = "aarch64", any(target_os = "android", target_os = "linux"))))]
+#[cfg(any(
+    test,
+    all(
+        target_arch = "aarch64",
+        target_endian = "little",
+        any(target_os = "android", target_os = "linux")
+    )
+))]
 fn emit(opcode: u16) -> Option<Vec<u32>> {
     let n = u32::from((opcode >> 8) & 15);
     let m = u32::from((opcode >> 4) & 15);
@@ -41,8 +48,12 @@ fn emit(opcode: u16) -> Option<Vec<u32>> {
 /// This intentionally compiles one fetched opcode at a time, not guest memory blocks.
 #[derive(Default)]
 pub struct NativeExecutor {
-    #[cfg(all(target_arch = "aarch64", any(target_os = "android", target_os = "linux")))]
-    cache: std::collections::HashMap<u16, executable::Body>,
+    #[cfg(all(
+        target_arch = "aarch64",
+        target_endian = "little",
+        any(target_os = "android", target_os = "linux")
+    ))]
+    cache: std::collections::HashMap<u16, jgenesis_common::native_code::PublishedCode>,
     disabled: bool,
     native_instructions: u64,
 }
@@ -63,13 +74,17 @@ impl NativeExecutor {
         if self.disabled {
             return false;
         }
-        #[cfg(all(target_arch = "aarch64", any(target_os = "android", target_os = "linux")))]
+        #[cfg(all(
+            target_arch = "aarch64",
+            target_endian = "little",
+            any(target_os = "android", target_os = "linux")
+        ))]
         {
             if !self.cache.contains_key(&opcode) {
                 let Some(code) = emit(opcode) else {
                     return false;
                 };
-                let Some(body) = executable::Body::publish(&code) else {
+                let Some(body) = jgenesis_common::native_code::PublishedCode::publish(&code) else {
                     self.disabled = true;
                     return false;
                 };
@@ -79,121 +94,24 @@ impl NativeExecutor {
                 }
                 self.cache.insert(opcode, body);
             }
-            self.cache[&opcode].execute(gpr);
+            // SAFETY: validated leaf emitter uses x0 for a valid borrowed [u32;16],
+            // accesses indices 0..15, and preserves AAPCS64 callee-saved registers.
+            unsafe {
+                let run: unsafe extern "C" fn(*mut u32) =
+                    std::mem::transmute(self.cache[&opcode].entry_pointer());
+                run(gpr.as_mut_ptr());
+            }
             self.native_instructions += 1;
             true
         }
-        #[cfg(not(all(target_arch = "aarch64", any(target_os = "android", target_os = "linux"))))]
+        #[cfg(not(all(
+            target_arch = "aarch64",
+            target_endian = "little",
+            any(target_os = "android", target_os = "linux")
+        )))]
         {
             let _ = (gpr, opcode);
             false
-        }
-    }
-}
-
-#[cfg(all(target_arch = "aarch64", any(target_os = "android", target_os = "linux")))]
-mod executable {
-    use std::ffi::c_void;
-    use std::ptr::NonNull;
-
-    unsafe extern "C" {
-        fn getpagesize() -> i32;
-        fn mmap(
-            addr: *mut c_void,
-            len: usize,
-            prot: i32,
-            flags: i32,
-            fd: i32,
-            offset: isize,
-        ) -> *mut c_void;
-        fn mprotect(addr: *mut c_void, len: usize, prot: i32) -> i32;
-        fn munmap(addr: *mut c_void, len: usize) -> i32;
-    }
-
-    pub(super) struct Body {
-        ptr: NonNull<c_void>,
-        len: usize,
-    }
-
-    impl Body {
-        pub(super) fn publish(code: &[u32]) -> Option<Self> {
-            // SAFETY: no arguments and no preconditions for getpagesize.
-            let page = usize::try_from(unsafe { getpagesize() }).ok()?;
-            if !page.is_power_of_two() {
-                return None;
-            }
-            let bytes = code.len().checked_mul(4)?;
-            let len = bytes.checked_add(page - 1)? & !(page - 1);
-            if len == 0 {
-                return None;
-            }
-            // Linux/Android MAP_PRIVATE | MAP_ANONYMOUS, PROT_READ | PROT_WRITE.
-            // SAFETY: anonymous mapping, no backing file, kernel selects its address.
-            let raw = unsafe { mmap(std::ptr::null_mut(), len, 3, 0x22, -1, 0) };
-            if raw as isize == -1 {
-                return None;
-            }
-            let Some(ptr) = NonNull::new(raw) else {
-                // A zero mapping cannot be represented as a Rust function pointer.
-                unsafe {
-                    munmap(raw, len);
-                }
-                return None;
-            };
-            let body = Self { ptr, len };
-            // SAFETY: mapping is writable and at least code.len()*4 bytes long.
-            unsafe {
-                std::ptr::copy_nonoverlapping(code.as_ptr(), raw.cast::<u32>(), code.len());
-            }
-            // Publish only RX, never RWX. Failure drops/unmaps the unpublished mapping.
-            if unsafe { mprotect(raw, len, 5) } != 0 {
-                return None;
-            }
-            // SAFETY: cache maintenance spans this live RX mapping. AAPCS64 permits x0-x17
-            // scratch; emitted leaf bodies use x0 (GPR array) and w1/w2 only, preserve
-            // SP and x19-x30, and RET through the caller's x30. No Rust struct offsets.
-            unsafe {
-                flush(raw as usize, bytes);
-            }
-            Some(body)
-        }
-
-        pub(super) fn execute(&self, gpr: &mut [u32; 16]) {
-            // SAFETY: publication verifies live RX memory containing only our leaf emitter's
-            // code. x0 addresses a uniquely borrowed contiguous array of 16 four-byte u32s;
-            // all generated loads/stores use array indices 0..15 and never retain the pointer.
-            unsafe {
-                let run: unsafe extern "C" fn(*mut u32) = std::mem::transmute(self.ptr.as_ptr());
-                run(gpr.as_mut_ptr());
-            }
-        }
-    }
-
-    impl Drop for Body {
-        fn drop(&mut self) {
-            // SAFETY: owns this mapping exclusively; no generated call can outlive &self.
-            unsafe {
-                munmap(self.ptr.as_ptr(), self.len);
-            }
-        }
-    }
-
-    unsafe fn flush(start: usize, bytes: usize) {
-        use std::arch::asm;
-        let ctr: usize;
-        // ARM ARM cache publication sequence, using runtime D/I cache line sizes.
-        unsafe {
-            asm!("mrs {ctr}, ctr_el0", ctr = out(reg) ctr, options(nostack, preserves_flags));
-            let dline = 4 << ((ctr >> 16) & 15);
-            let iline = 4 << (ctr & 15);
-            for addr in ((start & !(dline - 1))..(start + bytes)).step_by(dline) {
-                asm!("dc cvau, {addr}", addr = in(reg) addr, options(nostack, preserves_flags));
-            }
-            asm!("dsb ish", options(nostack, preserves_flags));
-            for addr in ((start & !(iline - 1))..(start + bytes)).step_by(iline) {
-                asm!("ic ivau, {addr}", addr = in(reg) addr, options(nostack, preserves_flags));
-            }
-            asm!("dsb ish", "isb", options(nostack, preserves_flags));
         }
     }
 }

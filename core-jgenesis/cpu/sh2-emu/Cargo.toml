@@ -5,7 +5,7 @@ edition = "2024"
 
 [features]
 # Experimental, explicitly selected with Sh2::execute_with_native. Never default.
-native-arm64 = []
+native-arm64 = ["jgenesis-common/native-code"]
 
 [dependencies]
 jgenesis-common = { workspace = true }
