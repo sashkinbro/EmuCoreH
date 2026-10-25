@@ -13,7 +13,7 @@ import java.util.Locale
 object DiscSizeResolver {
     private val containerExtensions = setOf("cue", "gdi", "lst", "m3u")
     private val cueFilePattern = Regex(
-        """FILE\s+(?:"([^"]+)"|'([^']+)'|(\S+))""",
+        """^\s*FILE\s+(?:"([^"]+)"|'([^']+)'|(\S+))""",
         RegexOption.IGNORE_CASE
     )
     private const val MAX_DEPTH = 2
@@ -70,22 +70,22 @@ object DiscSizeResolver {
      */
     internal fun trackReferences(entryName: String, contents: String): List<String> =
         when (entryName.substringAfterLast('.', "").lowercase(Locale.US)) {
-            "cue" -> parseCue(contents)
-            "gdi", "lst" -> parseTrackList(contents)
+            "cue" -> parseCue(contents, preservePath = true)
+            "gdi", "lst" -> parseTrackList(contents, preservePath = true)
             else -> emptyList()
         }
 
-    private fun parseCue(contents: String): List<String> =
-        contents.lineSequence().mapNotNull { line ->
+    private fun parseCue(contents: String, preservePath: Boolean = false): List<String> =
+        contents.removePrefix("\uFEFF").lineSequence().mapNotNull { line ->
             val match = cueFilePattern.find(line) ?: return@mapNotNull null
             val name = match.groups[1]?.value
                 ?: match.groups[2]?.value
                 ?: match.groups[3]?.value
-            name?.let(::baseName)?.takeIf { it.isNotEmpty() }
+            name?.let { if (preservePath) it else baseName(it) }?.takeIf { it.isNotEmpty() }
         }.toList()
 
     /** `.gdi` and `.lst` lines look like `1 0 4 2352 track01.bin 0`. */
-    private fun parseTrackList(contents: String): List<String> =
+    private fun parseTrackList(contents: String, preservePath: Boolean = false): List<String> =
         contents.lineSequence().mapNotNull { line ->
             val trimmed = line.trim()
             if (trimmed.isEmpty() || trimmed.startsWith("#")) return@mapNotNull null
@@ -99,7 +99,7 @@ object DiscSizeResolver {
             } else {
                 raw
             }
-            name.let(::baseName).takeIf { it.isNotEmpty() }
+            name.let { if (preservePath) it else baseName(it) }.takeIf { it.isNotEmpty() }
         }.toList()
 
     private fun parseM3u(contents: String): List<String> =

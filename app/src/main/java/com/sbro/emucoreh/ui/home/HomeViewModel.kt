@@ -42,8 +42,12 @@ import com.sbro.emucoreh.data.decideCoreUpdateResetAction
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -140,6 +144,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var customCoversRevisionInitialized = false
     private var currentFetchBoxart = true
     private val scanMutex = Mutex()
+    private val scanRequests = LibraryScanRequests(viewModelScope)
     private var deferredLibraryScan: DeferredLibraryScan? = null
     private var deferredWorkJob: Job? = null
     private var deferredCoverSync = false
@@ -226,7 +231,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
-            preferences.gamePaths.distinctUntilChanged().collect { paths ->
+            preferences.gamePaths.distinctUntilChanged().collectLatest { paths ->
+                // Invalidate before provider validation suspends, including when all roots are removed.
+                scanRequests.invalidate()
+                deferredLibraryScan = null
                 val context = getApplication<Application>()
                 val selectedPaths = paths.map(String::trim).filter(String::isNotBlank).distinct()
                 val selectedKey = libraryKey(selectedPaths)
@@ -571,11 +579,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         showRefreshIndicator: Boolean = false
     ) {
         val rootPath = libraryKey(paths)
-        viewModelScope.launch(Dispatchers.IO) {
+        scanRequests.launch { request ->
             scanMutex.withLock {
                 try {
+                    request.ensureCurrent()
                     if (shouldDeferLibraryWork(paths, isInitialLoad, showRefreshIndicator)) return@withLock
-                    val cacheSnapshot = resolveCacheSnapshot(rootPath)
+                    val cacheSnapshot = withContext(Dispatchers.IO) { resolveCacheSnapshot(rootPath) }
+                    request.ensureCurrent()
                     val cachedGames = cacheSnapshot.games
                     val showFullScreenLoader = false
                     _uiState.value = _uiState.value.copy(
@@ -598,22 +608,32 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     val context = getApplication<Application>()
                     val cachedByPath = flattenLibraryGroups(cachedGames).associateBy { it.path }
-                    val scannedGames = MultiDiscLibrary.group(paths.flatMap { path ->
-                        if (path.startsWith("content://")) {
-                            repository.scanDirectoryFromUri(
-                                path.toUri(), context, cachedByPath,
-                                shouldAbort = { EmulatorBridge.isVmActive() },
-                                preferEnglishTitles = preferEnglishGameTitles
-                            )
-                        } else {
-                            repository.scanDirectory(
-                                path, context, cachedByPath,
-                                shouldAbort = { EmulatorBridge.isVmActive() },
-                                preferEnglishTitles = preferEnglishGameTitles
-                            )
+                    val preferEnglishTitles = preferEnglishGameTitles
+                    val scannedGames = withContext(Dispatchers.IO) {
+                        val scanContext = currentCoroutineContext()
+                        val shouldAbort = {
+                            !request.isCurrent || !scanContext.isActive || EmulatorBridge.isVmActive()
                         }
-                    }.distinctBy { GameRepository.libraryIdentity(it.path) })
-                        .sortedBy { it.title.lowercase() }
+                        MultiDiscLibrary.group(paths.flatMap { path ->
+                            scanContext.ensureActive()
+                            request.ensureCurrent()
+                            if (path.startsWith("content://")) {
+                                repository.scanDirectoryFromUri(
+                                    path.toUri(), context, cachedByPath,
+                                    shouldAbort = shouldAbort,
+                                    preferEnglishTitles = preferEnglishTitles
+                                )
+                            } else {
+                                repository.scanDirectory(
+                                    path, context, cachedByPath,
+                                    shouldAbort = shouldAbort,
+                                    preferEnglishTitles = preferEnglishTitles
+                                )
+                            }
+                        }.distinctBy { GameRepository.libraryIdentity(it.path) })
+                            .sortedBy { it.title.lowercase() }
+                    }
+                    request.ensureCurrent()
                     if (EmulatorBridge.isVmActive()) {
                         queueDeferredLibraryWork(
                             rootPaths = paths,
@@ -636,10 +656,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     )
                     publishVisibleGames()
                     updateBootstrapState()
-                    libraryCacheRepository.save(rootPath, allGames, preferEnglishGameTitles)
+                    val gamesToCache = allGames
+                    withContext(Dispatchers.IO) {
+                        libraryCacheRepository.save(rootPath, gamesToCache, preferEnglishTitles)
+                    }
+                    request.ensureCurrent()
                     logStartupMilestone("scan_done games=${allGames.size}")
                     syncMissingCovers()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
                 } catch (_: Exception) {
+                    currentCoroutineContext().ensureActive()
+                    request.ensureCurrent()
                     completeLibraryScanWithFallback(rootPath)
                 }
             }
@@ -663,6 +691,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         showRefreshIndicator: Boolean = false
     ) {
         val normalized = rootPaths.map(String::trim).filter(String::isNotBlank).distinct()
+        scanRequests.invalidate()
+        deferredLibraryScan = null
         if (normalized.isEmpty()) return
         if (shouldDeferLibraryWork(normalized, isInitialLoad, showRefreshIndicator)) return
         scanGames(normalized, isInitialLoad, showRefreshIndicator)

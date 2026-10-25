@@ -18,10 +18,15 @@ internal object DiscTrackReferences {
     fun isTrackCandidate(name: String): Boolean =
         extension(name) in trackExtensions
 
-    /** Every track name referenced by the supplied descriptors, lower-cased. */
+    /** Paths relative to the scan root, resolved from each descriptor's directory. */
     fun referenced(descriptors: Sequence<Pair<String, String>>): Set<String> =
         descriptors
-            .flatMap { (name, text) -> DiscSizeResolver.trackReferences(name, text).asSequence() }
+            .flatMap { (name, text) ->
+                val parent = name.replace('\\', '/').split('/').dropLast(1)
+                DiscSizeResolver.trackReferences(name, text).asSequence().mapNotNull { reference ->
+                    MultiDiscLibrary.resolveRelativeSegments(parent, reference)?.joinToString("/")
+                }
+            }
             .map(::normalize)
             .filter(String::isNotEmpty)
             .toSet()
@@ -29,9 +34,23 @@ internal object DiscTrackReferences {
     fun isReferenced(name: String, referencedTracks: Set<String>): Boolean =
         isTrackCandidate(name) && normalize(name) in referencedTracks
 
+    /** Providers may expose multiple entries with the same display path. Keep ambiguous matches. */
+    fun <T> withoutReferencedTracks(
+        entries: List<T>,
+        referencedTracks: Set<String>,
+        relativePath: (T) -> String
+    ): List<T> {
+        val paths = entries.map { normalize(relativePath(it)) }
+        val counts = paths.groupingBy { it }.eachCount()
+        return entries.filterIndexed { index, _ ->
+            val path = paths[index]
+            counts[path] != 1 || !isReferenced(path, referencedTracks)
+        }
+    }
+
     internal fun normalize(name: String): String =
         name.replace('\\', '/')
-            .substringAfterLast('/')
+            .removePrefix("./")
             .trim()
             .lowercase(Locale.ROOT)
 
