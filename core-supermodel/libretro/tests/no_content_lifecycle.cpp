@@ -28,6 +28,8 @@ int main(int argc,char** argv){
   check(symbol<unsigned(*)()>(lib,"retro_api_version")()==1,"ABI version");
   for(int iteration=0;iteration<3;iteration++){
     init();retro_system_info info{};symbol<void(*)(retro_system_info*)>(lib,"retro_get_system_info")(&info);
+    check(!std::strcmp(info.library_name,"Supermodel (Super3)")&&
+          !std::strcmp(info.library_version,"0.3a"),"public core name/version without revision metadata");
     check(info.need_fullpath&&info.block_extract&&!std::strcmp(info.valid_extensions,"zip"),"ZIP contract");
     retro_system_av_info av{};symbol<void(*)(retro_system_av_info*)>(lib,"retro_get_system_av_info")(&av);
     check(av.geometry.base_width==496&&av.geometry.base_height==384&&av.timing.sample_rate==44100,"AV contract");
