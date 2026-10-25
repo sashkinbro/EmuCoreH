@@ -170,20 +170,40 @@ void R3DFrameBuffers::SetFBO(Layer layer)
 	case Layer::trans2:
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, m_frameBufferID);
+#ifdef __ANDROID__
+		// GLES requires drawBuffers[i] to name attachment i. Select the
+		// texture physically instead of the desktop output-to-attachment remap.
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, 0, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, 0, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texIDs[(int)layer], 0);
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0 };
+#else
 		GLenum buffers[] = { GL_COLOR_ATTACHMENT0 + (GLenum)layer };
+#endif
 		glDrawBuffers(countof(buffers), buffers);
 		break;
 	}
 	case Layer::trans12:
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, m_frameBufferID);
+#ifdef __ANDROID__
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, 0, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texIDs[1], 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_texIDs[2], 0);
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+#else
 		GLenum buffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+#endif
 		glDrawBuffers(countof(buffers), buffers);
 		break;
 	}
 	case Layer::all:
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, m_frameBufferID);
+#ifdef __ANDROID__
+		for (unsigned i = 0; i < 3; ++i)
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_texIDs[i], 0);
+#endif
 		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
 		glDrawBuffers(countof(buffers), buffers);
 		break;

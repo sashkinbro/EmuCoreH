@@ -28,10 +28,70 @@ target_compile_definitions(supermodel_libretro PRIVATE
 target_compile_options(supermodel_libretro PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden -O3)
 target_link_options(supermodel_libretro PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384" "-Wl,--no-undefined" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libretro/exports.map")
 target_link_libraries(supermodel_libretro PRIVATE log android z EGL GLESv3)
-set_target_properties(supermodel_libretro PROPERTIES OUTPUT_NAME supermodel_libretro)
+option(MODEL3_ENABLE_EXPERIMENTAL_VULKAN "Build the experimental Real3D Vulkan consumer" OFF)
+option(MODEL3_TEST_ACCURATE_GLES "Use upstream accurate GLES passes for renderer comparison probes" OFF)
+if(MODEL3_TEST_ACCURATE_GLES)
+  target_compile_definitions(supermodel_libretro PRIVATE MODEL3_TEST_ACCURATE_GLES=1)
+endif()
 option(MODEL3_BUILD_LIFECYCLE_TESTS "Build Android libretro ABI/lifecycle test executables" OFF)
+if(MODEL3_ENABLE_EXPERIMENTAL_VULKAN OR MODEL3_BUILD_LIFECYCLE_TESTS)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  find_program(MODEL3_GLSLC glslc HINTS "${CMAKE_ANDROID_NDK}/shader-tools/windows-x86_64" "${CMAKE_ANDROID_NDK}/shader-tools/linux-x86_64" "${CMAKE_ANDROID_NDK}/shader-tools/darwin-x86_64" REQUIRED)
+  set(MODEL3_VULKAN_SHADER_HEADER "${CMAKE_CURRENT_BINARY_DIR}/generated/VulkanShaders.h")
+  add_custom_command(OUTPUT "${MODEL3_VULKAN_SHADER_HEADER}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/generated"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/Src/Graphics/Vulkan/compile_shaders.py"
+      "${MODEL3_GLSLC}" "${CMAKE_CURRENT_BINARY_DIR}/generated" "${MODEL3_VULKAN_SHADER_HEADER}"
+    DEPENDS Src/Graphics/Vulkan/compile_shaders.py Src/Graphics/New3D/R3DShaderTriangles.h
+    VERBATIM)
+endif()
+if(MODEL3_ENABLE_EXPERIMENTAL_VULKAN)
+  target_sources(supermodel_libretro PRIVATE Src/Graphics/Vulkan/VulkanScene.cpp "${MODEL3_VULKAN_SHADER_HEADER}")
+  target_include_directories(supermodel_libretro PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+  target_compile_definitions(supermodel_libretro PRIVATE MODEL3_ENABLE_EXPERIMENTAL_VULKAN=1)
+  target_link_libraries(supermodel_libretro PRIVATE vulkan)
+endif()
+set_target_properties(supermodel_libretro PROPERTIES OUTPUT_NAME supermodel_libretro)
 if(MODEL3_BUILD_LIFECYCLE_TESTS)
-  add_executable(model3_graphics_lifecycle libretro/tests/graphics_lifecycle.cpp Src/Graphics/New3D/R3DShader.cpp Src/Util/NewConfig.cpp Src/Util/Format.cpp)
+  target_compile_definitions(supermodel_libretro PRIVATE MODEL3_RENDER_SNAPSHOT=1)
+  add_library(model3_vulkan_validation SHARED libretro/tests/vulkan_activity.cpp libretro/tests/vulkan_core_activity.cpp
+    Src/Graphics/Vulkan/VulkanScene.cpp Src/Graphics/New3D/Mat4.cpp "${MODEL3_VULKAN_SHADER_HEADER}")
+  target_include_directories(model3_vulkan_validation PRIVATE Src libretro "${CMAKE_CURRENT_BINARY_DIR}/generated")
+  target_link_libraries(model3_vulkan_validation PRIVATE vulkan android log)
+  target_link_options(model3_vulkan_validation PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
+  add_executable(model3_gles_state_compare libretro/tests/gles_state_compare.cpp)
+  target_include_directories(model3_gles_state_compare PRIVATE libretro)
+  target_link_libraries(model3_gles_state_compare PRIVATE EGL GLESv3 dl)
+  target_link_options(model3_gles_state_compare PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
+  add_executable(model3_vulkan_core_lifecycle libretro/tests/vulkan_core_lifecycle.cpp)
+  target_include_directories(model3_vulkan_core_lifecycle PRIVATE libretro)
+  target_link_libraries(model3_vulkan_core_lifecycle PRIVATE vulkan dl)
+  target_link_options(model3_vulkan_core_lifecycle PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
+  add_executable(model3_vulkan_scene_lifecycle libretro/tests/vulkan_scene_lifecycle.cpp
+    Src/Graphics/Vulkan/VulkanScene.cpp Src/Graphics/New3D/Mat4.cpp "${MODEL3_VULKAN_SHADER_HEADER}")
+  target_include_directories(model3_vulkan_scene_lifecycle PRIVATE Src libretro "${CMAKE_CURRENT_BINARY_DIR}/generated")
+  target_compile_definitions(model3_vulkan_scene_lifecycle PRIVATE MODEL3_TEST_HOST_VISIBILITY=1 MODEL3_TEST_RESOURCE_FAILURES=1)
+  target_link_libraries(model3_vulkan_scene_lifecycle PRIVATE vulkan)
+  target_link_options(model3_vulkan_scene_lifecycle PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384"
+    "-Wl,--wrap=vkBeginCommandBuffer" "-Wl,--wrap=vkCmdCopyImageToBuffer"
+    "-Wl,--wrap=vkCmdPipelineBarrier" "-Wl,--wrap=vkQueueSubmit"
+    "-Wl,--wrap=vkCreateImage" "-Wl,--wrap=vkDestroyImage" "-Wl,--wrap=vkAllocateMemory" "-Wl,--wrap=vkFreeMemory"
+    "-Wl,--wrap=vkCreateImageView" "-Wl,--wrap=vkCreateShaderModule" "-Wl,--wrap=vkDestroyShaderModule"
+    "-Wl,--wrap=vkCreateBuffer" "-Wl,--wrap=vkDestroyBuffer" "-Wl,--wrap=vkMapMemory")
+  set(SCENE_TEST_SOURCES libretro/tests/scene_consumer_lifecycle.cpp Src/Util/NewConfig.cpp Src/Util/Format.cpp)
+  foreach(name IN LISTS NEW3D_NAMES)
+    list(APPEND SCENE_TEST_SOURCES "Src/Graphics/New3D/${name}.cpp")
+  endforeach()
+  add_executable(model3_scene_consumer_lifecycle ${SCENE_TEST_SOURCES})
+  target_include_directories(model3_scene_consumer_lifecycle PRIVATE Src libretro)
+  target_compile_definitions(model3_scene_consumer_lifecycle PRIVATE __ANDROID__)
+  target_link_libraries(model3_scene_consumer_lifecycle PRIVATE GLESv3)
+  target_link_options(model3_scene_consumer_lifecycle PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384"
+    "-Wl,--wrap=glGenBuffers" "-Wl,--wrap=glCreateShader" "-Wl,--wrap=glUseProgram"
+    "-Wl,--wrap=glViewport" "-Wl,--wrap=glDrawArrays" "-Wl,--wrap=glDeleteBuffers")
+  add_executable(model3_graphics_lifecycle libretro/tests/graphics_lifecycle.cpp Src/Graphics/New3D/R3DShader.cpp
+    Src/Graphics/New3D/R3DFrameBuffers.cpp Src/Graphics/New3D/GLSLShader.cpp Src/Graphics/New3D/VBO.cpp
+    Src/Graphics/New3D/Mat4.cpp Src/Util/NewConfig.cpp Src/Util/Format.cpp)
   target_include_directories(model3_graphics_lifecycle PRIVATE Src libretro)
   target_compile_definitions(model3_graphics_lifecycle PRIVATE __ANDROID__)
   target_link_libraries(model3_graphics_lifecycle PRIVATE EGL GLESv3)

@@ -38,6 +38,7 @@
 #include "TextureSheet.h"
 #include "Graphics/IRender3D.h"
 #include "Model.h"
+#include "SceneFrame.h"
 #include "Mat4.h"
 #include "Util/NewConfig.h"
 #include "R3DShader.h"
@@ -190,7 +191,7 @@ public:
 	* Parameters:
 	*   config  Run-time configuration.
 	*/
-	CNew3D(const Util::Config::Node &config, const std::string& gameName);
+	CNew3D(const Util::Config::Node &config, const std::string& gameName, SceneConsumer* consumer = nullptr);
 	~CNew3D(void);
 
 private:
@@ -236,6 +237,7 @@ private:
 
 	// Misc
 	const Util::Config::Node &m_config;
+	SceneConsumer* m_sceneConsumer = nullptr; // borrowed; set before initialization
 	std::string m_gameName;
 	int m_numPolyVerts;
 	GLenum m_primType;

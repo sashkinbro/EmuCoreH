@@ -11,6 +11,12 @@
 #include "R3DFloat.h"
 #include "Util/BitCast.h"
 #include "OSD/Logger.h"
+#ifdef MODEL3_RENDER_SNAPSHOT
+#include "SceneSnapshot.h"
+#include <cstdlib>
+#include <fstream>
+#include <stdexcept>
+#endif
 
 #ifdef __ANDROID__
 #define MAX_RAM_VERTS 150000
@@ -23,9 +29,19 @@
 #define BYTE_TO_FLOAT(B)	((2.0f * (B) + 1.0f) * (float)(1.0/255.0))
 
 namespace New3D {
+#ifdef MODEL3_TEST_ACCURATE_GLES
+static void QaGlErrors(const char* stage) {
+	for (GLenum error; (error=glGetError())!=GL_NO_ERROR;)
+		std::fprintf(stderr,"QA_GLES stage=%s error=0x%x\n",stage,error);
+}
+#define MODEL3_QA_GL_CHECK(stage) QaGlErrors(stage)
+#else
+#define MODEL3_QA_GL_CHECK(stage) ((void)0)
+#endif
 
-CNew3D::CNew3D(const Util::Config::Node &config, const std::string& gameName)
+CNew3D::CNew3D(const Util::Config::Node &config, const std::string& gameName, SceneConsumer* consumer)
 	: m_config(config),
+	  m_sceneConsumer(consumer),
 	  m_r3dShader(config),
 	  m_gameName(gameName)
 {
@@ -79,7 +95,8 @@ void CNew3D::SetStepping(int stepping)
 		m_vertexFactor = (1.0f / 128.0f);		// 17.7
 	}
 
-	m_vbo.Create(GL_ARRAY_BUFFER, GL_DYNAMIC_DRAW, sizeof(FVertex) * (MAX_RAM_VERTS + MAX_ROM_VERTS));
+	if (!m_sceneConsumer)
+		m_vbo.Create(GL_ARRAY_BUFFER, GL_DYNAMIC_DRAW, sizeof(FVertex) * (MAX_RAM_VERTS + MAX_ROM_VERTS));
 }
 
 bool CNew3D::Init(unsigned xOffset, unsigned yOffset, unsigned xRes, unsigned yRes, unsigned totalXResParam, unsigned totalYResParam)
@@ -93,6 +110,7 @@ bool CNew3D::Init(unsigned xOffset, unsigned yOffset, unsigned xRes, unsigned yR
 	m_yRes    = yRes;
 	m_totalXRes	= totalXResParam;
 	m_totalYRes = totalYResParam;
+	if (m_sceneConsumer) return OKAY;
 
 	m_r3dShader.LoadShader();
 #ifndef __ANDROID__
@@ -122,6 +140,10 @@ bool CNew3D::Init(unsigned xOffset, unsigned yOffset, unsigned xRes, unsigned yR
 
 void CNew3D::UploadTextures(unsigned level, unsigned x, unsigned y, unsigned width, unsigned height)
 {
+	if (m_sceneConsumer) {
+		m_sceneConsumer->InvalidateTextures(level,x,y,width,height);
+		return;
+	}
 	if (level == 0) {
 		m_texSheet.Invalidate(x, y, width, height);		// base textures only
 	} 
@@ -376,6 +398,48 @@ void CNew3D::DisableRenderStates()
 
 void CNew3D::RenderFrame(void)
 {
+	if (m_sceneConsumer) {
+		for (auto& pair : m_nfPairs) {
+			pair.zNear = -std::numeric_limits<float>::max();
+			pair.zFar = std::numeric_limits<float>::max();
+		}
+		{
+			std::lock_guard<std::mutex> guard(m_losMutex);
+			std::swap(m_losBack,m_losFront);
+			std::fill(std::begin(m_losBack->value),std::end(m_losBack->value),0.f);
+		}
+		// Cached ROM geometry can be rebuilt before traversal without retaining
+		// references to cleared meshes in the current frame.
+		if (m_polyBufferRom.size() >= MAX_ROM_VERTS) {
+			m_polyBufferRom.clear();
+			m_romMap.clear();
+		}
+		m_polyBufferRam.clear();
+		m_nodes.clear();
+		m_modelMat.Release();
+		m_nodeAttribs.Reset();
+		RenderViewport(0x800000);
+		for (auto& node : m_nodes) {
+			if (node.models.empty()) continue;
+			const auto& pair=m_nfPairs[node.viewport.priority];
+			CalcViewport(&node.viewport,std::abs(pair.zNear*0.96f),std::abs(pair.zFar*1.05f));
+		}
+		SceneFrame frame{m_nodes,m_polyBufferRam,m_polyBufferRom,m_textureRAM,MAX_ROM_VERTS,m_totalXRes,m_totalYRes};
+		for (unsigned i=0;i<4;++i) frame.zRanges[i]={m_nfPairs[i].zNear,m_nfPairs[i].zFar};
+#ifdef MODEL3_RENDER_SNAPSHOT
+		static bool captured=false;
+		if (!captured) {
+			if (const char* path=std::getenv("MODEL3_VULKAN_SCENE_SNAPSHOT")) {
+				std::ofstream output(path,std::ios::binary);
+				if (!WriteSceneSnapshot(output,frame)) throw std::runtime_error("Unable to capture QA Real3D scene");
+				captured=true;
+			}
+		}
+#endif
+		const auto los=m_sceneConsumer->Render(frame);
+		std::copy(los.begin(),los.end(),m_losBack->value);
+		return;
+	}
 #ifdef __ANDROID__
 	if (!m_new3dAccurate) {
 		// Android/GLES: basic mesh path (no multi-pass transparency compositing yet).
@@ -543,6 +607,7 @@ void CNew3D::RenderFrame(void)
 	if (!m_r3dFrameBuffers) return;
 	m_r3dFrameBuffers->SetFBO(Layer::trans12);
 	glClear(GL_COLOR_BUFFER_BIT);					// wipe both trans layers
+	MODEL3_QA_GL_CHECK("clear-trans");
 
 	for (int pri = 0; pri <= 3; pri++) {
 
@@ -559,15 +624,19 @@ void CNew3D::RenderFrame(void)
 
 			m_r3dShader.DiscardAlpha(true);						// discard all translucent pixels in opaque pass
 			bool hasOverlay = RenderScene(pri, renderOverlay, Layer::colour);
+			MODEL3_QA_GL_CHECK("opaque-scene");
 
 			if (!renderOverlay) {
 				ProcessLos(pri);
+				MODEL3_QA_GL_CHECK("LOS-read");
 			}
 
 			DisableRenderStates();
 
 			m_r3dFrameBuffers->DrawOverTransLayers();			// mask trans layer with opaque pixels
+			MODEL3_QA_GL_CHECK("wipe-trans");
 			m_r3dFrameBuffers->CompositeBaseLayer();				// copy opaque pixels to back buffer
+			MODEL3_QA_GL_CHECK("base-composite");
 
 			SetRenderStates();
 
@@ -575,12 +644,16 @@ void CNew3D::RenderFrame(void)
 
 			m_r3dShader.DiscardAlpha		(false);			// render only translucent pixels
 			m_r3dFrameBuffers->StoreDepth	();					// save depth buffer for 1st trans pass
+			MODEL3_QA_GL_CHECK("store-depth");
 			m_r3dFrameBuffers->SetFBO		(Layer::trans1);
 			RenderScene						(pri, renderOverlay, Layer::trans1);
+			MODEL3_QA_GL_CHECK("trans1-scene");
 
 			m_r3dFrameBuffers->RestoreDepth	();					// restore depth buffer, trans layers don't seem to depth test against each other
+			MODEL3_QA_GL_CHECK("restore-depth");
 			m_r3dFrameBuffers->SetFBO		(Layer::trans2);
 			RenderScene						(pri, renderOverlay, Layer::trans2);
+			MODEL3_QA_GL_CHECK("trans2-scene");
 
 			DisableRenderStates();
 
@@ -589,6 +662,7 @@ void CNew3D::RenderFrame(void)
 	}
 
 	m_r3dFrameBuffers->CompositeAlphaLayer();
+	MODEL3_QA_GL_CHECK("alpha-composite");
 }
 
 void CNew3D::BeginFrame(void)

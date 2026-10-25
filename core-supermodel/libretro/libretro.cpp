@@ -18,6 +18,10 @@
 #include "OSD/Outputs.h"
 #include "gles_presenter.h"
 #include "compositor.h"
+#ifdef MODEL3_ENABLE_EXPERIMENTAL_VULKAN
+#include "libretro_vulkan.h"
+#include "Graphics/Vulkan/VulkanScene.h"
+#endif
 #include <GLES3/gl3.h>
 #include <filesystem>
 #include <fstream>
@@ -54,6 +58,20 @@ public:
   void SetStepping(int)override{} bool Init(unsigned,unsigned,unsigned,unsigned,unsigned,unsigned)override{return OKAY;}
   void SetSunClamp(bool)override{} void SetSignedShade(bool)override{} float GetLosValue(int)override{return 0;}
 };
+#ifdef MODEL3_ENABLE_EXPERIMENTAL_VULKAN
+class VulkanFrameConsumer final:public New3D::SceneConsumer {
+public:
+  New3D::VulkanScene& renderer;
+  CRender2D& tiles;
+  VulkanFrameConsumer(New3D::VulkanScene& r,CRender2D& t):renderer(r),tiles(t){}
+  std::array<float,4> Render(const New3D::SceneFrame& frame)override{
+    renderer.SetTileLayers(tiles.HasFrame()?tiles.GetFrameBufferARGB():nullptr,
+      tiles.HasTopSurface()?tiles.GetTopSurfaceARGB():nullptr,tiles.GetFrameWidth(),tiles.GetFrameHeight());
+    return renderer.Render(frame);
+  }
+  void InvalidateTextures(unsigned level,unsigned x,unsigned y,unsigned w,unsigned h)override{renderer.InvalidateTextures(level,x,y,w,h);}
+};
+#endif
 struct Host {
   Util::Config::Node config{"Global"};
   // Libretro supplies already calibrated values directly, so no desktop input system is initialized or polled.
@@ -64,6 +82,12 @@ struct Host {
   GlesPresenter presenter;
   std::unique_ptr<New3D::CNew3D> renderer;
   std::unique_ptr<CompositedRender3D> compositor;
+#ifdef MODEL3_ENABLE_EXPERIMENTAL_VULKAN
+  const retro_hw_render_interface_vulkan* vulkan_interface=nullptr;
+  std::unique_ptr<New3D::VulkanScene> vulkan;
+  std::unique_ptr<VulkanFrameConsumer> vulkan_consumer;
+  retro_vulkan_image vulkan_image{};
+#endif
   std::unique_ptr<CModel3> model;
   Game game;
   fs::path directory;
@@ -83,6 +107,9 @@ struct Host {
     config.Set("NbSoundChannels","4");config.Set("SoundFreq","57.6");
     config.Set("SoundVolume","100");config.Set("MusicVolume","150");
     config.Set("LegacySoundDSP",false);config.Set("New3DEngine",true);config.Set("New3DAccurate",false);
+#ifdef MODEL3_TEST_ACCURATE_GLES
+    config.Set("New3DAccurate",true);
+#endif
     config.Set("AndroidForceNew3D",true);config.Set("AndroidTileBlit",true);config.Set("AndroidSimpleShader",false);
     config.Set("AndroidClampRamVerts",true);config.Set("QuadRendering",false);config.Set("FlipStereo",false);
     config.Set("PowerPCFrequency","50");config.Set("InputSystem","libretro");
@@ -102,7 +129,11 @@ void tile_blit(const uint32_t* pixels,int w,int h,bool blend){if(host&&host->gl_
 void destroy_graphics(){
   if(!host||!host->gl_ready)return;
   if(host->model)host->model->AttachRenderers(&host->render2d,&host->null3d);
-  host->compositor.reset();host->renderer.reset();host->presenter.Shutdown();host->gl_ready=false;host->graphics_scale=0;
+  host->compositor.reset();host->renderer.reset();
+#ifdef MODEL3_ENABLE_EXPERIMENTAL_VULKAN
+  host->vulkan_consumer.reset();host->vulkan.reset();host->vulkan_interface=nullptr;
+#endif
+  host->presenter.Shutdown();host->gl_ready=false;host->graphics_scale=0;
 }
 const char* resolution_variable(){retro_variable var{resolution_key,nullptr};if(environment)environment(RETRO_ENVIRONMENT_GET_VARIABLE,&var);return var.value;}
 bool create_graphics(){
@@ -110,6 +141,24 @@ bool create_graphics(){
   if(host->gl_ready&&host->graphics_scale!=host->resolution.Scale())destroy_graphics();
   if(host->gl_ready)return true;
   const auto geometry=host->resolution.Geometry();
+#ifdef MODEL3_ENABLE_EXPERIMENTAL_VULKAN
+  if(hw.context_type==RETRO_HW_CONTEXT_VULKAN){
+    const retro_hw_render_interface* iface=nullptr;
+    if(!environment(RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE,&iface)||!iface||iface->interface_type!=RETRO_HW_RENDER_INTERFACE_VULKAN||iface->interface_version<RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION)
+      return fail("Frontend did not provide a compatible Vulkan interface");
+    auto* vk=reinterpret_cast<const retro_hw_render_interface_vulkan*>(iface);
+    if(!vk->set_image||!vk->lock_queue||!vk->unlock_queue)return fail("Frontend Vulkan queue contract is incomplete");
+    host->vulkan_interface=vk;
+    New3D::VulkanContext context{vk->gpu,vk->device,vk->queue,vk->queue_index,
+      [vk]{vk->lock_queue(vk->handle);},[vk]{vk->unlock_queue(vk->handle);}};
+    host->vulkan=std::make_unique<New3D::VulkanScene>(std::move(context));
+    host->vulkan_consumer=std::make_unique<VulkanFrameConsumer>(*host->vulkan,host->render2d);
+    host->renderer=std::make_unique<New3D::CNew3D>(host->config,host->game.name,host->vulkan_consumer.get());
+    if(host->renderer->Init(0,0,geometry.base_width,geometry.base_height,geometry.base_width,geometry.base_height)!=OKAY)return fail("Vulkan scene initialization failed");
+    host->model->AttachRenderers(&host->render2d,host->renderer.get());host->gl_ready=true;host->graphics_scale=host->resolution.Scale();
+    CRender2D::SetAndroidTileBlit(nullptr);return true;
+  }
+#endif
   glBindFramebuffer(GL_FRAMEBUFFER,static_cast<GLuint>(hw.get_current_framebuffer()));
   if(!host->presenter.Init()){host->presenter.Shutdown();return fail("GLES presenter initialization failed");}
   host->presenter.Resize(geometry.base_width,geometry.base_height);
@@ -282,8 +331,12 @@ RETRO_API bool retro_load_game(const retro_game_info* game_info){
     if(host->model->Init()!=OKAY||host->model->LoadGame(host->game,roms)!=OKAY){host.reset();return fail("Model 3 initialization failed");}
     host->outputs.SetGame(host->game);host->model->AttachInputs(&host->inputs);host->model->AttachOutputs(&host->outputs);host->model->AttachRenderers(&host->render2d,&host->null3d);host->model->Reset();host->loaded=true;nvram(false);
     hw={};hw.context_type=RETRO_HW_CONTEXT_OPENGLES3;hw.context_reset=context_reset;hw.context_destroy=context_destroy;hw.depth=true;hw.stencil=true;hw.bottom_left_origin=true;hw.version_major=3;hw.version_minor=0;
-    if(!environment(RETRO_ENVIRONMENT_SET_HW_RENDER,&hw)){unload();return fail("Frontend rejected OpenGL ES 3 hardware rendering");}
-    if(!hw.get_current_framebuffer){unload();return fail("Frontend did not provide a framebuffer callback");}
+#ifdef MODEL3_ENABLE_EXPERIMENTAL_VULKAN
+    unsigned preferred=RETRO_HW_CONTEXT_OPENGLES3;
+    if(environment(RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER,&preferred)&&preferred==RETRO_HW_CONTEXT_VULKAN){hw.context_type=RETRO_HW_CONTEXT_VULKAN;hw.bottom_left_origin=false;hw.version_major=1;hw.version_minor=0;}
+#endif
+    if(!environment(RETRO_ENVIRONMENT_SET_HW_RENDER,&hw)){unload();return fail(hw.context_type==RETRO_HW_CONTEXT_VULKAN?"Frontend rejected Vulkan hardware rendering":"Frontend rejected OpenGL ES 3 hardware rendering");}
+    if(hw.context_type!=RETRO_HW_CONTEXT_VULKAN&&!hw.get_current_framebuffer){unload();return fail("Frontend did not provide a framebuffer callback");}
     describe_inputs();return true;
   }catch(const std::exception& e){unload();return fail(e.what());}
 }
@@ -302,7 +355,22 @@ RETRO_API void retro_run(){
   }
   runtime_guard.Run(host&&host->model&&context_alive,graphics_error,[]{
     const auto geometry=host->resolution.Geometry();
+#ifdef MODEL3_ENABLE_EXPERIMENTAL_VULKAN
+    if(host->vulkan){
+      poll_inputs();host->model->RunFrame();
+      auto& image=host->vulkan_image;image={};image.image_view=host->vulkan->View();image.image_layout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      image.create_info.sType=VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;image.create_info.image=host->vulkan->Image();image.create_info.viewType=VK_IMAGE_VIEW_TYPE_2D;image.create_info.format=VK_FORMAT_R8G8B8A8_UNORM;image.create_info.subresourceRange={VK_IMAGE_ASPECT_COLOR_BIT,0,1,0,1};
+      host->vulkan_interface->set_image(host->vulkan_interface->handle,&image,0,nullptr,VK_QUEUE_FAMILY_IGNORED);
+      if(video)video(RETRO_HW_FRAME_BUFFER_VALID,geometry.base_width,geometry.base_height,0);
+      return;
+    }
+#endif
     poll_inputs();glBindFramebuffer(GL_FRAMEBUFFER,SupermodelFrontendFramebuffer());glViewport(0,0,geometry.base_width,geometry.base_height);glDisable(GL_SCISSOR_TEST);glClearColor(0,0,0,1);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+#ifdef MODEL3_TEST_ACCURATE_GLES
+    // Offscreen opaque/transparency surfaces use zero alpha to represent no
+    // geometry. Preserve the frontend's opaque black clear above.
+    glClearColor(0,0,0,0);
+#endif
     host->model->RunFrame();
     if(host->render2d.HasTopSurface()){host->presenter.UpdateFrameARGB(host->render2d.GetTopSurfaceARGB(),host->render2d.GetFrameWidth(),host->render2d.GetFrameHeight());host->presenter.Render(true);}
     if(video)video(RETRO_HW_FRAME_BUFFER_VALID,geometry.base_width,geometry.base_height,0);
