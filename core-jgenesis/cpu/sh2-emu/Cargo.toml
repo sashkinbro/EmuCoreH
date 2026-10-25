@@ -3,6 +3,10 @@ name = "sh2-emu"
 version = { workspace = true }
 edition = "2024"
 
+[features]
+# Experimental, explicitly selected with Sh2::execute_with_native. Never default.
+native-arm64 = []
+
 [dependencies]
 jgenesis-common = { workspace = true }
 

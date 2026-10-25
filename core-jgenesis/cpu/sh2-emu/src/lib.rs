@@ -12,6 +12,8 @@ mod divu;
 mod dma;
 mod frt;
 mod instructions;
+#[cfg(feature = "native-arm64")]
+pub mod native;
 mod registers;
 mod sci;
 mod wdt;
@@ -102,7 +104,30 @@ impl Sh2 {
     ///
     /// Will not execute any instructions if a reset is performed or an interrupt is handled.
     #[inline]
-    pub fn execute<Bus: BusInterface>(&mut self, mut ticks: u64, bus: &mut Bus) {
+    pub fn execute<Bus: BusInterface>(&mut self, ticks: u64, bus: &mut Bus) {
+        self.execute_with_body(ticks, bus, &mut |_, _| false);
+    }
+
+    /// Experimental opt-in ARM64 bodies. Fetch, DMA, IRQs, delay slots and cycle accounting
+    /// use the same shell as `execute`; unsupported opcodes/hosts fall back to its interpreter.
+    #[cfg(feature = "native-arm64")]
+    #[inline]
+    pub fn execute_with_native<Bus: BusInterface>(
+        &mut self,
+        ticks: u64,
+        bus: &mut Bus,
+        executor: &mut native::NativeExecutor,
+    ) {
+        self.execute_with_body(ticks, bus, &mut |gpr, opcode| executor.execute(gpr, opcode));
+    }
+
+    #[inline]
+    fn execute_with_body<Bus: BusInterface>(
+        &mut self,
+        mut ticks: u64,
+        bus: &mut Bus,
+        body: &mut impl FnMut(&mut [u32; 16], u16) -> bool,
+    ) {
         if ticks == 0 {
             return;
         }
@@ -153,7 +178,7 @@ impl Sh2 {
         // Interrupts cannot trigger in a delay slot per the SH7604 hardware manual
         // Before checking for interrupts, make sure the CPU is not in a delay slot
         if self.registers.next_op_in_delay_slot {
-            self.execute_single_instruction(bus);
+            self.execute_single_instruction(bus, body);
             ticks -= 1;
         }
 
@@ -182,7 +207,7 @@ impl Sh2 {
         }
 
         for _ in 0..ticks {
-            self.execute_single_instruction(bus);
+            self.execute_single_instruction(bus, body);
             // Interrupts are sampled at the start of every execute() slice and
             // the slice length is 50 instructions, so polling only the cycle
             // budget here removes two global register reads per guest
@@ -195,7 +220,11 @@ impl Sh2 {
     }
 
     #[inline(always)]
-    fn execute_single_instruction<Bus: BusInterface>(&mut self, bus: &mut Bus) {
+    fn execute_single_instruction<Bus: BusInterface>(
+        &mut self,
+        bus: &mut Bus,
+        body: &mut impl FnMut(&mut [u32; 16], u16) -> bool,
+    ) {
         let pc = self.registers.pc;
         let opcode = self.read_opcode(pc, bus);
 
@@ -225,8 +254,10 @@ impl Sh2 {
             log::trace!("  SR={:?}", self.registers.sr);
         }
 
-        let opcode_table = Bus::opcode_table();
-        opcode_table.decode(opcode)(self, opcode, bus);
+        if !body(&mut self.registers.gpr, opcode) {
+            let opcode_table = Bus::opcode_table();
+            opcode_table.decode(opcode)(self, opcode, bus);
+        }
         bus.increment_cycle_counter(1);
     }
 
