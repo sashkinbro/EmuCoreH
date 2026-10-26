@@ -17,6 +17,8 @@ pub mod native;
 mod registers;
 mod sci;
 mod wdt;
+#[cfg(test)]
+mod interpreter_tests;
 
 use crate::bus::{AccessContext, BusInterface};
 use crate::cache::CpuCache;
@@ -233,10 +235,14 @@ impl Sh2 {
             }
         }
 
+        // This immutable bus-type table is shared by every instruction in a slice.
+        // Resolve its LazyLock once instead of issuing an acquire load per opcode.
+        let opcode_table = Bus::opcode_table();
+
         // Interrupts cannot trigger in a delay slot per the SH7604 hardware manual
         // Before checking for interrupts, make sure the CPU is not in a delay slot
         if self.registers.next_op_in_delay_slot {
-            self.execute_single_instruction(bus, body);
+            self.execute_single_instruction(bus, body, opcode_table);
             ticks -= 1;
         }
 
@@ -273,7 +279,7 @@ impl Sh2 {
                 }
                 continue;
             }
-            self.execute_single_instruction(bus, body);
+            self.execute_single_instruction(bus, body, opcode_table);
             ticks -= 1;
             // Interrupts are sampled at the start of every execute() slice and
             // the slice length is 50 instructions, so polling only the cycle
@@ -291,13 +297,13 @@ impl Sh2 {
         &mut self,
         bus: &mut Bus,
         body: &mut impl ExecutionBody<Bus>,
+        opcode_table: &OpcodeTable<Bus>,
     ) {
         let opcode = self.prepare_instruction(bus);
         let native = body.opcode(self, bus, opcode);
         #[cfg(feature = "jit-preview")]
         jgenesis_common::jit::record_opcode(opcode, native);
         if !native {
-            let opcode_table = Bus::opcode_table();
             opcode_table.decode(opcode)(self, opcode, bus);
         }
         bus.increment_cycle_counter(1);

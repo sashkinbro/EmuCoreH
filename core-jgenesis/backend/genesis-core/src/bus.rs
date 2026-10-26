@@ -306,7 +306,11 @@ impl GenesisBus {
             self.vdp.update_interrupt_latches();
         }
 
-        self.apply_pending_writes();
+        // Reads/register-only instructions queue no writes. Avoid moving both
+        // Vec headers and entering the write dispatcher when there is no work.
+        if !self.pending_writes.byte.is_empty() || !self.pending_writes.word.is_empty() {
+            self.apply_pending_writes();
+        }
 
         Ok(vdp_tick_effect)
     }

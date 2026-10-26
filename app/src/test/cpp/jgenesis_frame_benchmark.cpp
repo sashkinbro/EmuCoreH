@@ -19,6 +19,7 @@ std::string system_directory, save_directory;
 uint64_t video_frames = 0, audio_frames = 0, nonzero_audio = 0;
 bool colored_frame = false, stopped = false;
 bool verify_output = false;
+bool verify_video_digest = true;
 uint64_t video_digest = 14695981039346656037ULL, audio_digest = 14695981039346656037ULL;
 void digest_bytes(uint64_t& digest, const void* data, size_t size) {
   const auto* bytes = static_cast<const uint8_t*>(data);
@@ -68,7 +69,7 @@ bool environment(unsigned command, void* data) {
 void video(const void* data, unsigned width, unsigned height, size_t pitch) {
   if (!data || data == RETRO_HW_FRAME_BUFFER_VALID || !width || !height) return;
   ++video_frames;
-  if (verify_output) {
+  if (verify_output && verify_video_digest) {
     digest_bytes(video_digest, &width, sizeof(width));
     digest_bytes(video_digest, &height, sizeof(height));
     const size_t row_size = size_t(width) * (pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 4 : 2);
@@ -143,6 +144,8 @@ int main(int argc, char** argv) {
   }
   try {
     verify_output = std::getenv("JGENESIS_BENCH_VERIFY") != nullptr;
+    if (const char* configured = std::getenv("JGENESIS_BENCH_VIDEO_DIGEST"))
+      verify_video_digest = std::strcmp(configured, "0") != 0;
     char* end = nullptr;
     const long warmup = std::strtol(argv[5], &end, 10);
     if (!end || *end || warmup < 0 || warmup > 36000) throw std::runtime_error("Invalid warmup");
@@ -257,9 +260,9 @@ int main(int argc, char** argv) {
     std::printf("video_frames=%llu nonuniform=%d audio_frames=%llu nonzero_samples=%llu stopped=%d\n",
       static_cast<unsigned long long>(video_frames), colored_frame,
       static_cast<unsigned long long>(audio_frames), static_cast<unsigned long long>(nonzero_audio), stopped);
-    std::printf("verification=%d video_digest=%016llx audio_digest=%016llx state_bytes=%zu\n",
+    std::printf("verification=%d video_digest=%016llx audio_digest=%016llx state_bytes=%zu video_verification=%d\n",
       verify_output, static_cast<unsigned long long>(video_digest),
-      static_cast<unsigned long long>(audio_digest), state.size());
+      static_cast<unsigned long long>(audio_digest), state.size(), verify_output && verify_video_digest);
     return video_frames && colored_frame && audio_frames && nonzero_audio && !stopped ? 0 : 1;
   } catch (const std::exception& error) {
     std::fprintf(stderr, "Benchmark failed: %s\n", error.what()); return 1;
