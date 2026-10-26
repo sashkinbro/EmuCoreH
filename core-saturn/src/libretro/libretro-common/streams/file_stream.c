@@ -1,3 +1,4 @@
+#include "../../../../release_diagnostics.h"
 /* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
@@ -497,7 +498,7 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 
    if (!file)
    {
-      fprintf(stderr, "Failed to open %s: %s\n", path, strerror(errno));
+      SATURN_DIAGNOSTIC_FPRINTF(stderr, "Failed to open %s: %s\n", path, strerror(errno));
       goto error;
    }
 
@@ -516,7 +517,7 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    ret = filestream_read(file, content_buf, (int64_t)content_buf_size);
    if (ret < 0)
    {
-      fprintf(stderr, "Failed to read %s: %s\n", path, strerror(errno));
+      SATURN_DIAGNOSTIC_FPRINTF(stderr, "Failed to read %s: %s\n", path, strerror(errno));
       goto error;
    }
 

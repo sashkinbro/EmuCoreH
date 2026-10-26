@@ -34,11 +34,12 @@ object CrashLogger {
     @Volatile
     private var previousHandler: Thread.UncaughtExceptionHandler? = null
 
-    private val dateFmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+    private val dateFmt by lazy { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US) }
 
     private val entries = CrashLogWriter(com.sbro.emucoreh.BuildConfig.DEBUG, ::writeEntry)
 
     fun init(context: Context) {
+        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         logFile = resolveLogFile(context)
         installUncaughtExceptionHandler()
         if (com.sbro.emucoreh.BuildConfig.DEBUG) writeStartupLine(context)
@@ -55,6 +56,7 @@ object CrashLogger {
      * it is safe to call again after late native (re)initialization.
      */
     fun installNativeCrashReporter() {
+        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         val file = logFile ?: return
         runCatching { CoreRuntime.bridge.nativeInstallCrashReporter(file.absolutePath) }
             .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to install native crash reporter", it) }
@@ -62,6 +64,7 @@ object CrashLogger {
 
     /** Only call for an unrecoverable session/startup failure, never a recoverable warning. */
     fun logError(tag: String, message: String, throwable: Throwable? = null) {
+        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         entries.write("ERROR") {
             buildString {
                 append("[$tag] $message")
@@ -71,10 +74,12 @@ object CrashLogger {
     }
 
     fun logInfo(tag: String, message: String) {
+        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         entries.write("INFO") { "[$tag] $message" }
     }
 
     fun logContext(key: String, value: Any?) {
+        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         entries.write("CTX") { "$key = $value" }
     }
 
@@ -239,6 +244,7 @@ object CrashLogger {
     }
 
     private fun writeEntry(level: String, body: String) {
+        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         if (level == "ERROR") Log.println(Log.ERROR, TAG, body)
         val file = logFile ?: return
         val timestamp = dateFmt.format(Date())

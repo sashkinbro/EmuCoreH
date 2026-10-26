@@ -72,6 +72,18 @@ extern "C"{
   void LogStop(void);
   void LogChangeOutput(DebugOutType t, char * s);
 
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+#undef DEBUG
+#undef CDDEBUG
+#undef NETLINK_DEBUG
+#undef SCSP_DEBUG
+#undef SCSPDSP_DEBUG
+#undef VDP1_DEBUG
+#undef VDP2_DEBUG
+#undef SMPC_DEBUG
+#undef YGL_DEBUG
+#undef FRAME_DEBUG
+#endif
 //#define DEBUG
 #ifdef DEBUG
 #define LOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)

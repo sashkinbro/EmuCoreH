@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: LicenseRef-EmuCoreH-Proprietary
 #include "crash_reporter.h"
 
+#ifdef NDEBUG
+namespace emucoreh::crash {
+void InstallCrashReporter(const char*) {}
+void LogNativeError(const char*) {}
+}
+#else
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -325,3 +331,5 @@ void InstallCrashReporter(const char* log_path) {
 }
 
 }  // namespace emucoreh::crash
+
+#endif

@@ -21,18 +21,17 @@ namespace {
 #if !defined(MODEL3_RELEASE_SILENT_LOGS)
 void log_message(int level,const char* fmt,va_list args){char buf[2048];vsnprintf(buf,sizeof(buf),fmt,args);model3_log(level,buf);}
 #endif
-std::atomic_flag fatal_logged = ATOMIC_FLAG_INIT;
+
 struct Thread { std::thread worker; int result=0; };
 struct Semaphore { std::mutex mutex;std::condition_variable cv;UINT32 value;explicit Semaphore(UINT32 n):value(n){} };
 thread_local std::string thread_error;
 }
 // Core initializers return ErrorLog(...) directly: FAIL is true, success is zero.
-void ResetFatalLog(){fatal_logged.clear();}
+void ResetFatalLog(){}
 void FatalLog(const char* message){
-#if defined(MODEL3_RELEASE_SILENT_LOGS)
-  if(fatal_logged.test_and_set())return;
-#endif
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
   model3_log(3,message);
+#endif
 }
 #if defined(MODEL3_RELEASE_SILENT_LOGS)
 bool ErrorLog(const char*,...){return FAIL;}

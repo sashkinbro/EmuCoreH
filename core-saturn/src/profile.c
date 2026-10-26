@@ -1,3 +1,4 @@
+#include "../release_diagnostics.h"
 /* copyright Patrick Kooman, 2002
 
   Lightweight C & C++ profiler. Works both in
@@ -78,7 +79,7 @@ static int CompareEntries (const void* p_1, const void* p_2) {
   p_entry1 = (entry_t*) p_1 ;
   p_entry2 = (entry_t*) p_2 ;
   /* Compare */
-  return p_entry2->l_total_ms - p_entry1->l_total_ms ; 
+  return p_entry2->l_total_ms - p_entry1->l_total_ms ;
 }
 
 /* Called on the first start-call. It receives the start-time */
@@ -91,35 +92,35 @@ static void Init (void) {
   g_i_hwm = 0 ;
 }
 
-/* Prints profiling statistice to stdout, 
+/* Prints profiling statistice to stdout,
 sorted by percentage (descending) */
 void ProfilePrint (void) {
   int i ;
   long l_prof_time ;
   if (g_i_hwm == 0) {
-    fprintf (stdout, "ProfilePrint: nothing to print.\n") ;
+    SATURN_DIAGNOSTIC_FPRINTF (stdout, "ProfilePrint: nothing to print.\n") ;
     return ;
   }
   /* Retreive the time */
   l_prof_time = clock () - g_init_time ;
   if (l_prof_time == 0) {
     /* Avoid division by 0 */
-    fprintf (stdout, "Warning: nothing to show because timer ran for less than 1 clock-tick.") ;
+    SATURN_DIAGNOSTIC_FPRINTF (stdout, "Warning: nothing to show because timer ran for less than 1 clock-tick.") ;
   }
   /* Print warnings for tags which are not stopped. */
   for (i = 0; i < g_i_hwm; ++i) {
     if (g_tag [i].i_stopped == 0) {
       g_tag [i].l_total_ms += clock () - g_tag [i].start_time ;
-      fprintf (stdout, "Warning: \"%s\" started but not stopped. (Done now, but result may be over-expensive!)\n", g_tag [i].str_name) ;
+      SATURN_DIAGNOSTIC_FPRINTF (stdout, "Warning: \"%s\" started but not stopped. (Done now, but result may be over-expensive!)\n", g_tag [i].str_name) ;
     }
   }
   /* Sort the array desending */
   qsort (&g_tag, g_i_hwm, sizeof (entry_t), CompareEntries) ;
-  fprintf (stdout, "Profiler results (descending by percentage):\n\n") ;
+  SATURN_DIAGNOSTIC_FPRINTF (stdout, "Profiler results (descending by percentage):\n\n") ;
   for (i = 0; i < g_i_hwm; ++i) {
     /* Print statistics */
-    fprintf (stdout, "< calls: %2d, total ms: %3d, percentage: %3.1f%% > - \"%s\"\n",
-      g_tag [i].i_calls, 
+    SATURN_DIAGNOSTIC_FPRINTF (stdout, "< calls: %2d, total ms: %3d, percentage: %3.1f%% > - \"%s\"\n",
+      g_tag [i].i_calls,
       (int) ((double) g_tag [i].l_total_ms / CLOCKS_PER_SEC * 1000),
       (double) g_tag [i].l_total_ms / l_prof_time * 100,
       g_tag [i].str_name) ;
@@ -139,7 +140,7 @@ void ProfileStart (char* str_tag) {
   }
   /* Test for "" */
   if (*str_tag == '\0') {
-    fprintf (stdout, "ERROR in ProfileStart: a tag may not be \"\". Call is denied.") ; 
+    SATURN_DIAGNOSTIC_FPRINTF (stdout, "ERROR in ProfileStart: a tag may not be \"\". Call is denied.") ;
     return ;
   }
   /* Search the entry with the given name */
@@ -148,13 +149,13 @@ void ProfileStart (char* str_tag) {
     /* New tag, add it*/
     p_entry = AddTag (str_tag) ;
     if (!p_entry) {
-      fprintf (stdout, "WARNING in ProfileStart: no more space to store the tag (\"%s\"). Increase NUM_TAGS in \"profile.h\". Call is denied.\n", str_tag) ;
+      SATURN_DIAGNOSTIC_FPRINTF (stdout, "WARNING in ProfileStart: no more space to store the tag (\"%s\"). Increase NUM_TAGS in \"profile.h\". Call is denied.\n", str_tag) ;
       return ;
-    }    
+    }
   }
   /* Check for nesting of equal tag.*/
   if (Nested (str_tag)) {
-    fprintf (stdout, "ERROR in ProfileStart: nesting of equal tags not allowed (\"%s\"). Call is denied.\n", str_tag) ;
+    SATURN_DIAGNOSTIC_FPRINTF (stdout, "ERROR in ProfileStart: nesting of equal tags not allowed (\"%s\"). Call is denied.\n", str_tag) ;
     return ;
   }
   /* Increase the number of hits */
@@ -172,15 +173,15 @@ void ProfileStop (char* str_tag) {
   entry_t* p_entry ;
   /* Test for "" */
   if (*str_tag == '\0') {
-    fprintf (stdout, "ERROR in ProfileStop: a tag may not be \"\". Call is denied.") ; 
+    SATURN_DIAGNOSTIC_FPRINTF (stdout, "ERROR in ProfileStop: a tag may not be \"\". Call is denied.") ;
     return ;
   }
   /* Check for a existing name */
   p_entry = LookupTag (str_tag) ;
   if (!p_entry) {
-    fprintf (stdout, "WARNING in ProfileStop: tag \"%s\" was never started. Call is denied.\n", str_tag) ;
+    SATURN_DIAGNOSTIC_FPRINTF (stdout, "WARNING in ProfileStop: tag \"%s\" was never started. Call is denied.\n", str_tag) ;
     return ;
-  }    
+  }
   /* Get the time */
   end_time = clock () ;
   p_entry->l_total_ms += end_time - p_entry->start_time ;

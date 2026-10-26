@@ -92,3 +92,8 @@ of physical force-feedback output. Its handshake/status state is serialized and
 tested with authored host sequences, including mid-initialization restoration;
 this alone does not establish Ski Champ gameplay compatibility. Physical motor
 output remains disabled.
+
+Release diagnostic policy: non-Debug configurations remove normal and fatal logging,
+PCM fingerprint loops/APIs, shader diagnostic retrieval, and renderer/lifecycle QA
+build options. Debug retains those facilities. Boot error strings and actual save,
+backup and ROM I/O remain available independently of logging.

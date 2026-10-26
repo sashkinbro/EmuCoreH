@@ -115,4 +115,10 @@ void  OSDAddLogString( char * log );
 }
 #endif
 
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS) && !defined(SATURN_OSD_IMPLEMENTATION)
+#define OSDPushMessage(...) ((void)0)
+#define OSDAddFrameProfileData(...) ((void)0)
+#define OSDAddLogString(...) ((void)0)
+#endif
+
 #endif

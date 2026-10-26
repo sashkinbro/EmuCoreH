@@ -272,7 +272,7 @@ object EmulatorBridge {
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "initializeOnce completed")
         } catch (error: Exception) {
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "initializeOnce failed", error)
-            CrashLogger.logError(TAG, "initializeOnce FAILED", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "initializeOnce FAILED", error)
         }
     }
 
@@ -356,9 +356,9 @@ object EmulatorBridge {
                 add(settingOp("Folders", "Textures", "string", runtimeDirectories.textures.absolutePath))
                 add(settingOp("Folders", "Cheats", "string", runtimeDirectories.cheats.absolutePath))
                 add(settingOp("Folders", "Patches", "string", runtimeDirectories.patches.absolutePath))
-                add(settingOp("Folders", "Logs", "string", runtimeDirectories.logs.absolutePath))
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) add(settingOp("Folders", "Logs", "string", runtimeDirectories.logs.absolutePath))
                 add(settingOp("Filenames", "BIOS", "string", preferredBiosFile.orEmpty()))
-                add(settingOp("EmuCoreH", "OpenGLTextureDebugLog", "bool", (resolvedRenderer == 12).toString()))
+                add(settingOp("EmuCoreH", "OpenGLTextureDebugLog", "bool", (com.sbro.emucoreh.BuildConfig.DEBUG && resolvedRenderer == 12).toString()))
                 add(settingOp("EmuCoreH/Runtime", "AndroidGpuProfileOverride", "string", gpuHardwareProfileOverride))
                 add(settingOp("EmuCoreH/Runtime", "FrameLimitEnable", "bool", effectiveFrameLimitEnabled.toString()))
                 add(settingOp("EmuCoreH/Runtime", "VsyncEnable", "bool", vSyncEnabled.toString()))

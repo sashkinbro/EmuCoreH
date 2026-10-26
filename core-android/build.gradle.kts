@@ -59,6 +59,7 @@ android {
                 cmake {
                     arguments += listOf(
                         "-DENABLE_LOG=OFF",
+                        "-DUSE_BREAKPAD=OFF",
                         "-DENABLE_GDB_SERVER=OFF",
                         "-DENABLE_DC_PROFILER=OFF",
                         "-DENABLE_FC_PROFILER=OFF",

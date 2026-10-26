@@ -198,13 +198,15 @@ class DriveBackupViewModel(application: Application) : AndroidViewModel(applicat
             catch (error: CancellationException) { throw error }
             catch (error: Exception) {
                 pendingEmail = ""
-                val diagnostic = when (error) {
-                    is com.google.android.gms.common.api.ApiException -> "Google status=${error.statusCode}"
-                    is DriveBackupException -> "reason=${error.reason}"
-                    is androidx.credentials.exceptions.GetCredentialException -> "credential type=${error.type}"
-                    else -> error.javaClass.simpleName
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) {
+                    val diagnostic = when (error) {
+                        is com.google.android.gms.common.api.ApiException -> "Google status=${error.statusCode}"
+                        is DriveBackupException -> "reason=${error.reason}"
+                        is androidx.credentials.exceptions.GetCredentialException -> "credential type=${error.type}"
+                        else -> error.javaClass.simpleName
+                    }
+                    Log.w("DriveBackup", "Account operation failed: $diagnostic")
                 }
-                if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w("DriveBackup", "Account operation failed: $diagnostic")
                 mutable.update { it.copy(message = (error as? DriveBackupException)?.reason ?: "failed") }
                 if ((error as? DriveBackupException)?.reason == "auth") withContext(Dispatchers.IO) {
                     store.update { it.copy(needsAuthorization = true) }

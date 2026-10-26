@@ -31,7 +31,7 @@ class EmuCoreHApp : Application() {
         // The Discord SDK helper must not initialize the emulator-side application graph.
         if (getProcessName().endsWith(":discord")) return
         // CrashLogger must be the very first thing — it catches crashes in all subsequent init steps
-        startupStep("crash_logger") { CrashLogger.init(this) }
+        if (BuildConfig.DEBUG) startupStep("crash_logger") { CrashLogger.init(this) }
         if (DriveBackupArchive.hasPendingRecovery(this)) applicationScope.launch {
             try { BackupSessionGate.whileStopped { DriveBackupArchive(this@EmuCoreHApp).recoverPending() } }
             catch (cancelled: CancellationException) { throw cancelled }

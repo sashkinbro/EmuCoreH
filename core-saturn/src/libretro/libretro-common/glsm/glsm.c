@@ -1,3 +1,4 @@
+#include "../../../../release_diagnostics.h"
 /* Copyright (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
@@ -1063,7 +1064,7 @@ void rglProgramParameteri( 	GLuint program,
 #if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && (defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1))
    glProgramParameteri(program, pname, value);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
 #endif
 }
 
@@ -1156,7 +1157,7 @@ void rglGetActiveUniformBlockiv(GLuint program,
    glGetActiveUniformBlockiv(program, uniformBlockIndex,
          pname, params);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
 #endif
 }
 
@@ -1179,7 +1180,7 @@ void rglGetActiveUniformsiv( 	GLuint program,
    glGetActiveUniformsiv(program, uniformCount,
          uniformIndices, pname, params);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
 #endif
 }
 
@@ -1201,7 +1202,7 @@ void rglGetUniformIndices(GLuint program,
    glGetUniformIndices(program, uniformCount,
          uniformNames, uniformIndices);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
 #endif
 }
 
@@ -1222,7 +1223,7 @@ void rglBindBufferBase( 	GLenum target,
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glBindBufferBase(target, index, buffer);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
 #endif
 }
 
@@ -1243,7 +1244,7 @@ GLuint rglGetUniformBlockIndex( 	GLuint program,
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    return glGetUniformBlockIndex(program, uniformBlockName);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
    return 0;
 #endif
 }
@@ -1266,7 +1267,7 @@ void rglUniformBlockBinding( 	GLuint program,
    glUniformBlockBinding(program, uniformBlockIndex,
          uniformBlockBinding);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
 #endif
 }
 
@@ -2049,7 +2050,7 @@ void *rglMapBufferRange( 	GLenum target,
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    return glMapBufferRange(target, offset, length, access);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
    return NULL;
 #endif
 }
@@ -2115,7 +2116,7 @@ void rglMemoryBarrier( 	GLbitfield barriers)
 #if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3) && defined(HAVE_OPENGLES_3_1)
    glMemoryBarrier(barriers);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
 #endif
 }
 
@@ -2139,7 +2140,7 @@ void rglBindImageTexture( 	GLuint unit,
 #if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3) && defined(HAVE_OPENGLES_3_1)
    glBindImageTexture(unit, texture, level, layered, layer, access, format);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
 #endif
 }
 
@@ -2161,7 +2162,7 @@ void rglGetProgramBinary( 	GLuint program,
 #if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glGetProgramBinary(program, bufsize, length, binaryFormat, binary);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
 #endif
 }
 
@@ -2182,7 +2183,7 @@ void rglProgramBinary(GLuint program,
 #if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_1)
    glProgramBinary(program, binaryFormat, binary, length);
 #else
-   printf("WARNING! Not implemented.\n");
+   SATURN_DIAGNOSTIC_PRINTF("WARNING! Not implemented.\n");
 #endif
 }
 

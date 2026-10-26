@@ -24,12 +24,16 @@ target_include_directories(supermodel_libretro PRIVATE Src Src/CPU/68K/Musashi l
 target_compile_definitions(supermodel_libretro PRIVATE ANDROID __ANDROID__ EMUCOREH_LIBRETRO=1 NET_BOARD=1 NET_BOARD_STANDALONE=1)
 # Release contains only terminal adapter error reporting, not guest diagnostics.
 target_compile_definitions(supermodel_libretro PRIVATE
-  "$<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:MODEL3_RELEASE_SILENT_LOGS=1>")
+  "$<$<NOT:$<CONFIG:Debug>>:MODEL3_RELEASE_SILENT_LOGS=1>")
 target_compile_options(supermodel_libretro PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden -O3)
-target_link_options(supermodel_libretro PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384" "-Wl,--no-undefined" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libretro/exports.map")
+target_link_options(supermodel_libretro PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384" "-Wl,--no-undefined" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libretro/$<IF:$<CONFIG:Debug>,exports.map,exports-release.map>")
 target_link_libraries(supermodel_libretro PRIVATE log android z EGL GLESv3)
 option(MODEL3_ENABLE_EXPERIMENTAL_VULKAN "Build the experimental Real3D Vulkan consumer" OFF)
 option(MODEL3_TEST_ACCURATE_GLES "Use upstream accurate GLES passes for renderer comparison probes" OFF)
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(MODEL3_TEST_ACCURATE_GLES OFF)
+  set(MODEL3_BUILD_LIFECYCLE_TESTS OFF)
+endif()
 if(MODEL3_TEST_ACCURATE_GLES)
   target_compile_definitions(supermodel_libretro PRIVATE MODEL3_TEST_ACCURATE_GLES=1)
 endif()

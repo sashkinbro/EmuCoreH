@@ -13,13 +13,13 @@ class CrashLogWriterTest {
         assertEquals(emptyList<String>(), entries)
     }
 
-    @Test fun releasePreservesFatalAndCrashReports() {
+    @Test fun releaseDoesNotBuildOrWriteFatalOrCrashReports() {
         val entries = mutableListOf<Pair<String, String>>()
         val writer = CrashLogWriter(false) { level, body -> entries.add(level to body) }
-        writer.write("ERROR") { "runtime failed" }
-        writer.write("ERROR") { "runtime failed" }
-        writer.write("CRASH") { "uncaught exception" }
-        assertEquals(listOf("ERROR" to "runtime failed", "CRASH" to "uncaught exception"), entries)
+        for (level in listOf("ERROR", "CRASH")) {
+            writer.write(level) { error("Release must not evaluate $level diagnostics") }
+        }
+        assertEquals(emptyList<Pair<String, String>>(), entries)
     }
 
     @Test fun debugStillAllowsDiagnosticMessages() {

@@ -1,3 +1,4 @@
+#include "../../release_diagnostics.h"
 /*
         Copyright 2019 devMiyax(smiyaxdev@gmail.com)
 
@@ -253,6 +254,10 @@ i_desc opcode_list[] =
 
 void DumpInstX( int i, u32 pc, u16 op  )
 {
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+
+#else
+
   char buf[256];
   //sprintf( buf, "%08X : ", pc );
 
@@ -336,6 +341,8 @@ void DumpInstX( int i, u32 pc, u16 op  )
   }
   LOG("%08X:%04X %s\n", pc , op, buf );
   return;
+
+#endif
 }
 
 
@@ -562,8 +569,8 @@ void PageFlip(void); // "flips" the page
 void internal_jmp(void);
 void internal_delay_jmp(void);
 #else
-void internal_jmp(void){ printf("nope"); }
-void internal_delay_jmp(void){ printf("nope"); }
+void internal_jmp(void){ SATURN_DIAGNOSTIC_PRINTF("nope"); }
+void internal_delay_jmp(void){ SATURN_DIAGNOSTIC_PRINTF("nope"); }
 #endif
 int internal_jmp_size = 18*4;
 int internal_delay_jmp_size = 15*4;
@@ -1742,7 +1749,7 @@ int DynarecSh2::GetCurrentStatics(MapCompileStatics & buf){
 void DynarecSh2::ShowCompileInfo(){
   int i = 0;
   while (asm_list[i].func != NULL) {
-    printf("%s: %d\n", opcode_list[i].mnem, asm_list[i].build_count);
+    SATURN_DIAGNOSTIC_PRINTF("%s: %d\n", opcode_list[i].mnem, asm_list[i].build_count);
     i++;
   }
 }

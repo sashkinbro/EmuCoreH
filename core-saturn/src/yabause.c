@@ -1,3 +1,4 @@
+#include "../release_diagnostics.h"
 /*  Copyright 2003-2005 Guillaume Duhamel
     Copyright 2004-2006 Theo Berkau
     Copyright 2006      Anders Montonen
@@ -137,21 +138,21 @@ static u32 g_scsp_main_mode = 1;
 
 #ifndef NO_CLI
 void print_usage(const char *program_name) {
-   printf("Yabause v" VERSION "\n");
-   printf("\n"
+   SATURN_DIAGNOSTIC_PRINTF("Yabause v" VERSION "\n");
+   SATURN_DIAGNOSTIC_PRINTF("\n"
           "Purpose:\n"
           "  This program is intended to be a Sega Saturn emulator\n"
           "\n"
           "Usage: %s [OPTIONS]...\n", program_name);
-   printf("   -h         --help                 Print help and exit\n");
-   printf("   -b STRING  --bios=STRING          bios file\n");
-   printf("   -l STRING  --language=STRING      english, deutsch, french, spanish,\n                                     italian, japanese\n");
-   printf("   -i STRING  --iso=STRING           iso/cue file\n");
-   printf("   -c STRING  --cdrom=STRING         cdrom path\n");
-   printf("   -ns        --nosound              turn sound off\n");
-   printf("   -a         --autostart            autostart emulation\n");
-   printf("   -f         --fullscreen           start in fullscreen mode\n");
-   printf("   -r DIR     --playrecord           play play record\n");
+   SATURN_DIAGNOSTIC_PRINTF("   -h         --help                 Print help and exit\n");
+   SATURN_DIAGNOSTIC_PRINTF("   -b STRING  --bios=STRING          bios file\n");
+   SATURN_DIAGNOSTIC_PRINTF("   -l STRING  --language=STRING      english, deutsch, french, spanish,\n                                     italian, japanese\n");
+   SATURN_DIAGNOSTIC_PRINTF("   -i STRING  --iso=STRING           iso/cue file\n");
+   SATURN_DIAGNOSTIC_PRINTF("   -c STRING  --cdrom=STRING         cdrom path\n");
+   SATURN_DIAGNOSTIC_PRINTF("   -ns        --nosound              turn sound off\n");
+   SATURN_DIAGNOSTIC_PRINTF("   -a         --autostart            autostart emulation\n");
+   SATURN_DIAGNOSTIC_PRINTF("   -f         --fullscreen           start in fullscreen mode\n");
+   SATURN_DIAGNOSTIC_PRINTF("   -r DIR     --playrecord           play play record\n");
 }
 #endif
 

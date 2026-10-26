@@ -1,3 +1,4 @@
+#define SATURN_OSD_IMPLEMENTATION 1
 /*  Copyright 2012 Guillaume Duhamel
 
     This file is part of Yabause.
@@ -132,6 +133,8 @@ int OSDChangeCore(int coreid)
 
 void OSDPushMessage(int msgtype, int ttl, const char * format, ...)
 {
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+
    va_list arglist;
    char message[1024];
 
@@ -149,6 +152,8 @@ void OSDPushMessage(int msgtype, int ttl, const char * format, ...)
    osdmessages[msgtype].message = strdup(message);
    osdmessages[msgtype].timetolive = ttl;
    osdmessages[msgtype].timeleft = ttl;
+
+#endif
 }
 
 
@@ -178,15 +183,23 @@ int OSDDisplayMessages(pixel_t * buffer, int w, int h)
 }
 
 void  OSDAddFrameProfileData( char * label, u32 data ){
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+
    if (OSD && OSD->AddFrameProfileData){
       OSD->AddFrameProfileData(label,data);
    }
+
+#endif
 }
 
 void  OSDAddLogString( char * log ){
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+
    if (OSD && OSD->AddLogString){
       OSD->AddLogString(log);
    }
+
+#endif
 }
 
 void OSDToggle(int what)

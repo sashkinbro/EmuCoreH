@@ -32,9 +32,8 @@ object EmulatorStorage {
         "sstates",
         "memcards",
         "cheats",
-        "patches",
-        "logs"
-    )
+        "patches"
+    ).let { if (com.sbro.emucoreh.BuildConfig.DEBUG) it + "logs" else it }
 
     private fun defaultRoot(context: Context): File {
         return context.getExternalFilesDir(null) ?: context.filesDir
@@ -130,7 +129,7 @@ object EmulatorStorage {
             textures = texturesDir(context),
             cheats = directory("cheats"),
             patches = directory("patches"),
-            logs = directory("logs")
+            logs = File(root, "logs").apply { if (com.sbro.emucoreh.BuildConfig.DEBUG) mkdirs() }
         )
     }
 

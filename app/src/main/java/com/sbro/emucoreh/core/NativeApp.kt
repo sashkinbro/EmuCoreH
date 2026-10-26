@@ -54,7 +54,7 @@ object NativeApp {
     init {
         loadedCoreLibraryName = "emucoreh_jni"
         hasNativeCore = runCatching { CoreRuntime.bridge.apiVersion() }
-            .onFailure { CrashLogger.logError(TAG, "Unable to load $loadedCoreLibraryName", it) }
+            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "Unable to load $loadedCoreLibraryName", it) }
             .isSuccess
         hasNativeTools = false
     }

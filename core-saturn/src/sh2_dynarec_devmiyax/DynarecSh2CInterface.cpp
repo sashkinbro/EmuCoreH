@@ -1,3 +1,4 @@
+#include "../../release_diagnostics.h"
 /*
         Copyright 2019 devMiyax(smiyaxdev@gmail.com)
 
@@ -351,7 +352,7 @@ void SH2DynAddCycle(SH2_struct *context, u32 value) {
 
 void SH2DynWriteNotify(u32 start, u32 length){
   CompileBlocks * block = CompileBlocks::getInstance();
-  
+
   switch (start & 0x0FF00000){
     // ROM
   case 0x00000000:
@@ -495,7 +496,7 @@ void memSetLong(u32 addr , u32 data )
 
   CompileBlocks * block = CompileBlocks::getInstance();
   switch (addr & 0xDFF00000)
-  {  
+  {
     // Low Memory
   case 0x00200000:
     block->LookupTableLow[ (addr & 0x000FFFFF)>>1  ] = NULL;
@@ -537,7 +538,7 @@ u8 memGetByte(u32 addr)
   dynaLock();
   u8 val;
   u32 cycle = 0;
-  
+
   switch (addr & 0xDFF00000)
   {
     // Low Memory
@@ -560,7 +561,7 @@ u8 memGetByte(u32 addr)
   dynaFree();
   return val;
 }
- 
+
 u16 memGetWord(u32 addr)
 {
   dynaLock();
@@ -668,17 +669,17 @@ int DebugEachClock() {
   s32 m = INSTRUCTION_C(inst);
   s32 n = INSTRUCTION_B(inst);
 
-  LOG("%08X: rotcrout R%d=%08X, SR=%08X\n", 
-    DynarecSh2::CurrentContext->GET_PC(), 
-    n,DynarecSh2::CurrentContext->GetGenRegPtr()[n], 
+  LOG("%08X: rotcrout R%d=%08X, SR=%08X\n",
+    DynarecSh2::CurrentContext->GET_PC(),
+    n,DynarecSh2::CurrentContext->GetGenRegPtr()[n],
     DynarecSh2::CurrentContext->GET_SR());
 #endif
 
-#if 0  
-  LOG("%08X: subc R%d=%08X R%d=%08X SR=%08X\n", 
-    DynarecSh2::CurrentContext->GET_PC(), 
-    m,DynarecSh2::CurrentContext->GetGenRegPtr()[m], 
-    n,DynarecSh2::CurrentContext->GetGenRegPtr()[n], 
+#if 0
+  LOG("%08X: subc R%d=%08X R%d=%08X SR=%08X\n",
+    DynarecSh2::CurrentContext->GET_PC(),
+    m,DynarecSh2::CurrentContext->GetGenRegPtr()[m],
+    n,DynarecSh2::CurrentContext->GetGenRegPtr()[n],
     DynarecSh2::CurrentContext->GET_SR());
 #endif
 
@@ -686,7 +687,7 @@ int DebugEachClock() {
 if( DynarecSh2::CurrentContext->GET_PC() >= 0x0602E3C2 &&  DynarecSh2::CurrentContext->GET_PC() < 0x0602E468 ) {
    u32 addrn = DynarecSh2::CurrentContext->GetGenRegPtr()[6]-4;
    u32 addrm = DynarecSh2::CurrentContext->GetGenRegPtr()[7]-4;
-   printf("%08X: MACL R[%d]=%08X@%08X,R[%d]=%08X@%08X,MACH=%08X,MACL=%08X\n",
+   SATURN_DIAGNOSTIC_PRINTF("%08X: MACL R[%d]=%08X@%08X,R[%d]=%08X@%08X,MACH=%08X,MACL=%08X\n",
       DynarecSh2::CurrentContext->GET_PC(),
       6,addrn,MappedMemoryReadLong(addrn),
       7,addrm,MappedMemoryReadLong(addrm),
@@ -704,11 +705,11 @@ if( DynarecSh2::CurrentContext->GET_PC() >= 0x0602E3C2 &&  DynarecSh2::CurrentCo
   u16 inst = memGetWord(pc);
   s32 m = INSTRUCTION_C(inst);
   s32 n = INSTRUCTION_B(inst);
-  printf("%08X: DIV0S %04X R[%d]:%08X,R[%d]:%08X,SR:%08X\n", 
-    DynarecSh2::CurrentContext->GET_PC(), 
+  SATURN_DIAGNOSTIC_PRINTF("%08X: DIV0S %04X R[%d]:%08X,R[%d]:%08X,SR:%08X\n",
+    DynarecSh2::CurrentContext->GET_PC(),
     inst,
-    m,DynarecSh2::CurrentContext->GetGenRegPtr()[m], 
-    n,DynarecSh2::CurrentContext->GetGenRegPtr()[n], 
+    m,DynarecSh2::CurrentContext->GetGenRegPtr()[m],
+    n,DynarecSh2::CurrentContext->GetGenRegPtr()[n],
     DynarecSh2::CurrentContext->GET_SR());
 #endif
 
@@ -718,10 +719,10 @@ if( pc == 0x060133C8 ) {
   u16 inst = memGetWord(pc);
   s32 m = INSTRUCTION_C(inst);
   s32 n = INSTRUCTION_B(inst);
-  printf("%08X: DIV1(O) m:%08X,n:%08X,SR:%08X\n", 
-    DynarecSh2::CurrentContext->GET_PC(), 
-    DynarecSh2::CurrentContext->GetGenRegPtr()[m], 
-    DynarecSh2::CurrentContext->GetGenRegPtr()[n], 
+  SATURN_DIAGNOSTIC_PRINTF("%08X: DIV1(O) m:%08X,n:%08X,SR:%08X\n",
+    DynarecSh2::CurrentContext->GET_PC(),
+    DynarecSh2::CurrentContext->GetGenRegPtr()[m],
+    DynarecSh2::CurrentContext->GetGenRegPtr()[n],
     DynarecSh2::CurrentContext->GET_SR());
 }
 #endif
@@ -742,7 +743,7 @@ if( pc == 0x060133C8 ) {
   dynaFree();
   return 0;
 }
-  
+
 int EachClock() {
   dynaLock();
   if (DynarecSh2::CurrentContext->CheckInterupt()) {

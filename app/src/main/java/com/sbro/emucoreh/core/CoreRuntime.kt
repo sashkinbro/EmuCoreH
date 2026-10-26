@@ -159,8 +159,8 @@ internal object CoreRuntime {
         runCatching {
             bridge.nativeInit(systemDirectory, saveDirectory, coreAssetsDirectory)
             bridge.apiVersion()
-        }.onFailure { CrashLogger.logError(TAG, "Unable to initialise libretro frontend", it) }
-        CrashLogger.installNativeCrashReporter()
+        }.onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "Unable to initialise libretro frontend", it) }
+        if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.installNativeCrashReporter()
     }
 
     fun isRunning(): Boolean = running && failure.value == null && sessionLock.withLock { session != 0L }
@@ -257,7 +257,7 @@ internal object CoreRuntime {
     }
 
     private fun startSession(gamePath: String, biosOnly: Boolean): Boolean {
-        val startupStartedAtNanos = System.nanoTime()
+        val startupStartedAtNanos = if (com.sbro.emucoreh.BuildConfig.DEBUG) System.nanoTime() else 0L
         if (!biosOnly && !isSupportedDiscPath(gamePath)) {
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unsupported disc image: $gamePath")
             return false
@@ -300,7 +300,7 @@ internal object CoreRuntime {
         } else File(root, "save")).apply { mkdirs() }.absolutePath
         coreAssetsDirectory = File(root, "assets").apply { mkdirs() }.absolutePath
         if (!bridge.nativeSelectCore(platform.coreId)) {
-            CrashLogger.logError(TAG, "Unable to select core for $platform")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "Unable to select core for $platform")
             return false
         }
         bridge.nativeInit(systemDirectory, saveDirectory, coreAssetsDirectory)
@@ -322,7 +322,7 @@ internal object CoreRuntime {
             }
         }
         if (!created) {
-            CrashLogger.logError(TAG, "Unable to start $platform: all renderer candidates failed")
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "Unable to start $platform: all renderer candidates failed")
             return false
         }
 
@@ -369,7 +369,7 @@ internal object CoreRuntime {
             started = true
             return true
         } catch (error: Exception) {
-            CrashLogger.logError(TAG, "Failed to start frame/audio runtime", error)
+            if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "Failed to start frame/audio runtime", error)
             return false
         } finally {
             if (!started) shutdownSession()
@@ -900,7 +900,9 @@ internal object CoreRuntime {
         return floatArrayOf(rect.left.toFloat(), rect.top.toFloat(), rect.right.toFloat(), rect.bottom.toFloat())
     }
 
-    fun diagnostics(): String = sessionLock.withLock { bridge.getDiagnostics() }
+    fun diagnostics(): String = if (com.sbro.emucoreh.BuildConfig.DEBUG) {
+        sessionLock.withLock { bridge.getDiagnostics() }
+    } else "{}"
 
     fun updateSetting(section: String, key: String, value: String): Boolean {
         if ((section == "EmuCoreH" || section == "EmuCoreH/Runtime") && key == "Renderer") {
@@ -987,10 +989,10 @@ internal object CoreRuntime {
     }
 
     private fun runLoop(output: NativeAudioOutput) {
-        var metricsStartNanos = System.nanoTime()
+        var metricsStartNanos = 0L
         var metricsFrames = 0
         var metricsFrameTotalNanos = 0L
-        var metricsStartCpuMs = android.os.Process.getElapsedCpuTime()
+        var metricsStartCpuMs = 0L
         val framePacer = FramePacer()
         val timingClock = EmulationTiming()
         var previousSourceFrames = output.stats()?.getOrNull(5) ?: 0L
@@ -1083,7 +1085,9 @@ internal object CoreRuntime {
                     bridge.setAudioPlaybackRate(1.0)
                     framePacer.reset()
                 }
-                val t0 = System.nanoTime()
+                // Release measures only the user-requested performance overlay.
+                val collectMetrics = performanceMetricsEnabled
+                val t0 = if (collectMetrics) System.nanoTime() else 0L
                 var skippedPausedFrame = false
                 val coreNanos = sessionLock.withLock {
                     if (!running || session == 0L) null else if (paused) {
@@ -1130,11 +1134,11 @@ internal object CoreRuntime {
                         }
                         frameStartNanos = System.nanoTime()
                         framePacer.frameStarted(frameStartNanos)
-                        val coreStartNanos = System.nanoTime()
+                        val coreStartNanos = if (collectMetrics || com.sbro.emucoreh.BuildConfig.DEBUG) System.nanoTime() else 0L
                         bridge.setLightGunCursorEnabled(lightGunCursorEnabled)
                         bridge.runFrame(session)
                         arcadeInputMode = bridge.getArcadeInputMode(session)
-                        val elapsed = System.nanoTime() - coreStartNanos
+                        val elapsed = if (collectMetrics || com.sbro.emucoreh.BuildConfig.DEBUG) System.nanoTime() - coreStartNanos else 0L
                         bridge.getDisplayRect(session)
                             ?.takeIf { it.size == 4 && it[2] > 0 && it[3] > 0 }
                             ?.let {
@@ -1154,15 +1158,20 @@ internal object CoreRuntime {
                         elapsed
                     }
                 } ?: if (skippedPausedFrame) continue else break
-                val frameNanos = System.nanoTime() - t0
+                val frameNanos = if (collectMetrics) System.nanoTime() - t0 else 0L
                 // Recover a disconnected stream in release builds as well.
                 output.bufferedFrames()
                 val audioStats = output.stats()
-                val sampleNanos = System.nanoTime()
+                val sampleNanos = if (collectMetrics) System.nanoTime() else 0L
                 val sourceFrames = audioStats?.getOrNull(5) ?: previousSourceFrames
                 lastRunSourceFrames = (sourceFrames - previousSourceFrames).coerceAtLeast(0L)
                 previousSourceFrames = sourceFrames
                 sourceSampleRate = audioStats?.getOrNull(8) ?: sourceSampleRate
+
+                if (!collectMetrics) {
+                    resetMetrics = true
+                    continue
+                }
 
                 if (resetMetrics) {
                     metricsStartNanos = frameStartNanos
@@ -1176,19 +1185,15 @@ internal object CoreRuntime {
                     timingClock.sample(audioStats, sampleNanos)
                     continue
                 }
-                metricsMaxIntervalNanos = maxOf(metricsMaxIntervalNanos, frameStartNanos - previousFrameStartNanos)
-                metricsMaxCoreNanos = maxOf(metricsMaxCoreNanos, coreNanos)
-                previousFrameStartNanos = frameStartNanos
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) {
+                    metricsMaxIntervalNanos = maxOf(metricsMaxIntervalNanos, frameStartNanos - previousFrameStartNanos)
+                    metricsMaxCoreNanos = maxOf(metricsMaxCoreNanos, coreNanos)
+                    previousFrameStartNanos = frameStartNanos
+                }
                 metricsFrames++
                 metricsFrameTotalNanos += frameNanos
                 val now = frameStartNanos
-                if (!performanceMetricsEnabled) {
-                    metricsStartNanos = now
-                    metricsFrames = 0
-                    metricsFrameTotalNanos = 0L
-                    metricsStartCpuMs = android.os.Process.getElapsedCpuTime()
-                    timingClock.sample(audioStats, sampleNanos)
-                } else if (now - metricsStartNanos >= 250_000_000L) {
+                if (now - metricsStartNanos >= 250_000_000L) {
                     val elapsed = now - metricsStartNanos
                     val fps = metricsFrames * 1_000_000_000.0 / elapsed
                     val cpuNowMs = android.os.Process.getElapsedCpuTime()
@@ -1232,7 +1237,9 @@ internal object CoreRuntime {
     }
 
     private fun reportFailure(detail: String, throwable: Throwable? = null) {
-        if (_failure.compareAndSet(null, RuntimeFailure(detail))) CrashLogger.logError(TAG, detail, throwable)
+        if (_failure.compareAndSet(null, RuntimeFailure(detail)) && com.sbro.emucoreh.BuildConfig.DEBUG) {
+            CrashLogger.logError(TAG, detail, throwable)
+        }
     }
 
     private fun loadDisc(handle: Long, gamePath: String): Int {

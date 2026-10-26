@@ -1,3 +1,4 @@
+#include "../release_diagnostics.h"
 /*  Copyright 2003-2006 Guillaume Duhamel
     Copyright 2004 Lawrence Sebald
     Copyright 2004-2007 Theo Berkau
@@ -3530,7 +3531,7 @@ void Vdp2DrawRotationThread(void * p) {
   char str[64];
 #endif
 
-  printf("Vdp2DrawRotationThread\n");
+  SATURN_DIAGNOSTIC_PRINTF("Vdp2DrawRotationThread\n");
   while (Vdp2DrawRotationThread_running) {
     YabThreadSetCurrentThreadAffinityMask(0x02);
     YabThreadLock(g_rotate_mtx);

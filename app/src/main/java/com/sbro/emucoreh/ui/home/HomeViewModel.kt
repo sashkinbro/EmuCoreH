@@ -113,7 +113,7 @@ private data class DeferredLibraryScan(
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val startupStartedNanos = System.nanoTime()
+    private val startupStartedNanos = if (com.sbro.emucoreh.BuildConfig.DEBUG) System.nanoTime() else 0L
 
     companion object {
         private const val AUTO_REFRESH_INTERVAL_MS = 15 * 60 * 1000L
@@ -258,7 +258,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     )
                     publishVisibleGames()
                     updateBootstrapState()
-                    logStartupMilestone("cached_library games=${startupCache.games.size}")
+                    if (com.sbro.emucoreh.BuildConfig.DEBUG) logStartupMilestone("cached_library games=${startupCache.games.size}")
                 }
                 // Provider traversal validates the roots after an eligible disk cache is already visible.
                 val effectivePaths = withContext(Dispatchers.IO) {
@@ -323,7 +323,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 biosInitialized = true
                 updateBootstrapState()
-                logStartupMilestone("installed_bios_ready valid=$installedBios")
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) logStartupMilestone("installed_bios_ready valid=$installedBios")
                 // Import/migration can traverse slow SAF providers; it must not hold the home loader.
                 val restoredBios = withContext(Dispatchers.IO) {
                     BiosImport.restoreSelections(getApplication(), paths)
@@ -671,7 +671,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         libraryCacheRepository.save(rootPath, gamesToCache, preferEnglishTitles)
                     }
                     request.ensureCurrent()
-                    logStartupMilestone("scan_done games=${allGames.size}")
+                    if (com.sbro.emucoreh.BuildConfig.DEBUG) logStartupMilestone("scan_done games=${allGames.size}")
                     syncMissingCovers()
                 } catch (cancelled: CancellationException) {
                     throw cancelled
@@ -915,10 +915,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = _uiState.value.copy(
             isBootstrapping = !(biosInitialized && libraryInitialized)
         )
-        if (wasBootstrapping && !_uiState.value.isBootstrapping) logStartupMilestone("ready")
+        if (com.sbro.emucoreh.BuildConfig.DEBUG && wasBootstrapping && !_uiState.value.isBootstrapping) logStartupMilestone("ready")
     }
 
     private fun logStartupMilestone(milestone: String) {
+        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         val elapsedMs = (System.nanoTime() - startupStartedNanos) / 1_000_000L
         if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i("HomeStartup", "$milestone elapsedMs=$elapsedMs")
     }

@@ -94,6 +94,11 @@ struct retro_perf_callback perf_cb;
 retro_get_cpu_features_t perf_get_cpu_features_cb = NULL;
 
 static retro_log_printf_t log_cb;
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+#define SATURN_DIAGNOSTIC_LOG(...) ((void)0)
+#else
+#define SATURN_DIAGNOSTIC_LOG(...) log_cb(__VA_ARGS__)
+#endif
 static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
@@ -370,6 +375,7 @@ static s16 *sound_buf;
 
 /* QA-only PCM diagnostics. Normal sessions pay only the disabled branch.
  * Reset/read between emulated frames, with no concurrent audio callback. */
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
 static atomic_bool audio_fingerprint_enabled;
 static atomic_uint_fast64_t audio_pcm_hash;
 static atomic_uint_fast64_t audio_pcm_samples;
@@ -394,6 +400,8 @@ RETRO_API void saturn_reset_audio_fingerprint(void)
 RETRO_API uint64_t saturn_audio_fingerprint(void) { return atomic_load_explicit(&audio_pcm_hash, memory_order_relaxed); }
 RETRO_API uint64_t saturn_audio_samples(void) { return atomic_load_explicit(&audio_pcm_samples, memory_order_relaxed); }
 RETRO_API uint64_t saturn_audio_nonzero_samples(void) { return atomic_load_explicit(&audio_pcm_nonzero, memory_order_relaxed); }
+
+#endif
 
 static int SNDLIBRETROInit(void) {
     int vertfreq = (yabsys.IsPal == 1 ? 50 : 60);
@@ -455,6 +463,7 @@ static void sdlConvert32uto16s(int32_t *srcL, int32_t *srcR, int16_t *dst, size_
 static void SNDLIBRETROUpdateAudio(u32 *leftchanbuffer, u32 *rightchanbuffer, u32 num_samples)
 {
    sdlConvert32uto16s((int32_t*)leftchanbuffer, (int32_t*)rightchanbuffer, sound_buf, num_samples);
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
    if (atomic_load_explicit(&audio_fingerprint_enabled, memory_order_acquire))
    {
       uint64_t hash = atomic_load_explicit(&audio_pcm_hash, memory_order_relaxed);
@@ -470,6 +479,7 @@ static void SNDLIBRETROUpdateAudio(u32 *leftchanbuffer, u32 *rightchanbuffer, u3
       atomic_fetch_add_explicit(&audio_pcm_samples, (uint64_t)num_samples * 2, memory_order_relaxed);
       atomic_fetch_add_explicit(&audio_pcm_nonzero, nonzero, memory_order_relaxed);
    }
+#endif
    audio_batch_cb(sound_buf, num_samples);
 
    audio_size -= num_samples;
@@ -545,18 +555,22 @@ VideoInterface_struct *VIDCoreList[] = {
 
 void YuiMsg(const char *format, ...)
 {
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
   char buf[512]; 
   va_list arglist;
   va_start( arglist, format );
   int rc = vsnprintf(buf, 512, format, arglist);
   va_end( arglist );
-  log_cb(RETRO_LOG_INFO, buf);
+  SATURN_DIAGNOSTIC_LOG(RETRO_LOG_INFO, buf);
+#endif
 }
 
 void YuiErrorMsg(const char *string)
 {
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
    if (log_cb)
-      log_cb(RETRO_LOG_ERROR, "Yabause: %s\n", string);
+      SATURN_DIAGNOSTIC_LOG(RETRO_LOG_ERROR, "Yabause: %s\n", string);
+#endif
 }
 
 static int first_ctx_reset = 1;
@@ -994,10 +1008,12 @@ void retro_init(void)
    saturn_scsp_enable_diagnostics(false);
    scsp_qa_frame_budget = 0;
 #endif
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
    atomic_store_explicit(&audio_fingerprint_enabled, false, memory_order_release);
    atomic_store_explicit(&audio_pcm_hash, 0, memory_order_relaxed);
    atomic_store_explicit(&audio_pcm_samples, 0, memory_order_relaxed);
    atomic_store_explicit(&audio_pcm_nonzero, 0, memory_order_relaxed);
+#endif
    struct retro_log_callback log;
    const char *dir = NULL;
 
@@ -1120,15 +1136,15 @@ bool retro_load_game(const struct retro_game_info *info)
    snprintf(bios_path, sizeof(bios_path), "%s%csaturn_bios.bin", g_system_dir, slash);
    if (does_file_exist(bios_path) != 1)
    {
-      log_cb(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
+      SATURN_DIAGNOSTIC_LOG(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
       snprintf(bios_path, sizeof(bios_path), "%s%csega_101.bin", g_system_dir, slash);
       if (does_file_exist(bios_path) != 1)
       {
-         log_cb(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
+         SATURN_DIAGNOSTIC_LOG(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
          snprintf(bios_path, sizeof(bios_path), "%s%cmpr-17933.bin", g_system_dir, slash);
          if (does_file_exist(bios_path) != 1)
          {
-            log_cb(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
+            SATURN_DIAGNOSTIC_LOG(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
          }
       }
    }
@@ -1139,12 +1155,12 @@ bool retro_load_game(const struct retro_game_info *info)
    if (does_file_exist(bios_path) != 1)
    {
       snprintf(boot_error, sizeof(boot_error), "Saturn BIOS required: saturn_bios.bin, sega_101.bin or mpr-17933.bin");
-      log_cb(RETRO_LOG_ERROR, "We are missing the bios, ABORTING\n");
+      SATURN_DIAGNOSTIC_LOG(RETRO_LOG_ERROR, "We are missing the bios, ABORTING\n");
       return false;
    }
    if (hle_bios_force)
    {
-      log_cb(RETRO_LOG_WARN, "HLE bios is enabled, this is for debugging purpose only, expect lots of issues\n");
+      SATURN_DIAGNOSTIC_LOG(RETRO_LOG_WARN, "HLE bios is enabled, this is for debugging purpose only, expect lots of issues\n");
    }
 
    snprintf(bup_path, sizeof(bup_path), "%s%cyabasanshiro%cbackup.bin", g_save_dir, slash, slash);

@@ -18,11 +18,11 @@ int main(){
   const bool failed=ErrorLog("recoverable core error %d",++evaluated);
   if(evaluated!=0||emissions!=0||!failed){std::fprintf(stderr,"ordinary release logs evaluated=%d emitted=%d failed=%d\n",evaluated,emissions,failed);return 1;}
   FatalLog("authored terminal initialization failure");
-  if(emissions!=1||last!="authored terminal initialization failure")return 2;
+  if(emissions!=0)return 2;
   FatalLog("authored repeated fatal");
-  if(emissions!=1)return 3;
+  if(emissions!=0)return 3;
   ResetFatalLog();
   FatalLog("authored recovered-session fatal");
-  if(emissions!=2)return 4;
+  if(emissions!=0)return 4;
   return 0;
 }

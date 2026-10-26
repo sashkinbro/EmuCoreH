@@ -299,6 +299,8 @@ std::shared_ptr<CLogger> CreateLogger(const Util::Config::Node &config);
 extern void FatalLog(const char *message);
 extern void ResetFatalLog();
 #if defined(MODEL3_RELEASE_SILENT_LOGS) && !defined(MODEL3_LOGGER_IMPLEMENTATION)
+#define FatalLog(...) ((void)0)
+#define ResetFatalLog(...) ((void)0)
 #define DebugLog(...) ((void)0)
 #define InfoLog(...) ((void)0)
 #define ErrorLog(...) (true)

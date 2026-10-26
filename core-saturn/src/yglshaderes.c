@@ -1,3 +1,4 @@
+#include "../release_diagnostics.h"
 /*
         Copyright 2019 devMiyax(smiyaxdev@gmail.com)
 
@@ -4776,7 +4777,7 @@ int YglBlitScanlineFilter(u32 sourceTexture, u32 draw_res_v, u32 staturn_res_v) 
     glCompileShader(vshader);
     glGetShaderiv(vshader, GL_COMPILE_STATUS, &compiled);
     if (compiled == GL_FALSE) {
-      printf("Compile error in vertex shader.\n");
+      SATURN_DIAGNOSTIC_PRINTF("Compile error in vertex shader.\n");
       Ygl_printShaderError(vshader);
       scanline_prg = -1;
       return -1;
@@ -4786,7 +4787,7 @@ int YglBlitScanlineFilter(u32 sourceTexture, u32 draw_res_v, u32 staturn_res_v) 
     glCompileShader(fshader);
     glGetShaderiv(fshader, GL_COMPILE_STATUS, &compiled);
     if (compiled == GL_FALSE) {
-      printf("Compile error in fragment shader.\n");
+      SATURN_DIAGNOSTIC_PRINTF("Compile error in fragment shader.\n");
       Ygl_printShaderError(fshader);
       scanline_prg = -1;
       return -1;
@@ -4797,7 +4798,7 @@ int YglBlitScanlineFilter(u32 sourceTexture, u32 draw_res_v, u32 staturn_res_v) 
     glLinkProgram(scanline_prg);
     glGetProgramiv(scanline_prg, GL_LINK_STATUS, &linked);
     if (linked == GL_FALSE) {
-      printf("Link error..\n");
+      SATURN_DIAGNOSTIC_PRINTF("Link error..\n");
       Ygl_printShaderError(scanline_prg);
       scanline_prg = -1;
       return -1;

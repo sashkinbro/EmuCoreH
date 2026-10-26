@@ -26,5 +26,21 @@ with tempfile.TemporaryDirectory(prefix="emucoreh-release-logs-") as directory:
             str(root / "app/src/test/cpp/release_logging_test.cpp"), "-o", str(binary)
         ], check=True, env=env)
         subprocess.run([str(binary)], check=True, env=env)
-        print("PASS", "release: no ordinary argument evaluation, one-shot errors, game IDs" if release
+        print("PASS", "release: zero diagnostic argument evaluation or output, functional game IDs" if release
               else "debug: diagnostics and game IDs retained")
+
+    # Compile the real release crash reporter: it must not install handlers or
+    # create a report even if a native caller invokes it directly.
+    crash_main = work / "crash_main.cpp"
+    crash_main.write_text('#include "crash_reporter.h"\nint main(int argc,char** argv) { '
+                          'emucoreh::crash::InstallCrashReporter(argv[1]); '
+                          'emucoreh::crash::LogNativeError("release sentinel"); }\n')
+    crash_binary = work / "crash_release.exe"
+    subprocess.run([compiler, "-std=c++17", "-O2", "-DNDEBUG",
+                    "-I" + str(root / "app/src/main/cpp"), str(crash_main),
+                    str(root / "app/src/main/cpp/crash_reporter.cpp"),
+                    "-o", str(crash_binary)], check=True, env=env)
+    report = work / "must-not-exist.log"
+    subprocess.run([str(crash_binary), str(report)], check=True, env=env)
+    assert not report.exists(), "Release native reporter wrote a crash file"
+    print("PASS release: actual native crash reporter creates no file")

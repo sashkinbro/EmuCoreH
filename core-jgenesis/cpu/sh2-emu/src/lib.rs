@@ -36,6 +36,7 @@ pub use disassemble::{
 };
 pub use instructions::OpcodeTable;
 use jgenesis_common::debug::DebugMemoryView;
+#[cfg(debug_assertions)]
 use std::env;
 use std::fmt::Debug;
 
@@ -73,6 +74,7 @@ pub struct Sh2 {
     trace_log_enabled: bool,
 }
 
+#[cfg(debug_assertions)]
 fn trace_log_enabled(name: &str) -> bool {
     match env::var("SH2_LOG") {
         Ok(log_name) => name == log_name,
@@ -95,6 +97,11 @@ impl<Bus: BusInterface> ExecutionBody<Bus> for Interpreter {
         false
     }
 }
+
+// Retain the serialized metadata default without reading diagnostic environment
+// variables in release. Logging/disassembly code is compiled out below.
+#[cfg(not(debug_assertions))]
+fn trace_log_enabled(_: &str) -> bool { true }
 
 impl Sh2 {
     #[must_use]
@@ -341,6 +348,7 @@ impl Sh2 {
 
         self.data_ctx = AccessContext::Data { pc, opcode };
 
+        #[cfg(debug_assertions)]
         if log::log_enabled!(log::Level::Trace) && self.trace_log_enabled {
             let mut disassembled = DisassembledInstruction::new();
             disassemble_into(pc, opcode, &mut disassembled);

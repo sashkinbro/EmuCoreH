@@ -1136,6 +1136,8 @@ public:
 	  GLint status;
 	  glGetShaderiv(result, GL_COMPILE_STATUS, &status);
 	  if (status == GL_FALSE) {
+
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
 		  GLint length;
 		  glGetShaderiv(result, GL_INFO_LOG_LENGTH, &length);
 		  GLchar *info = new GLchar[length];
@@ -1148,8 +1150,10 @@ public:
 				}
 				fclose(fp);
 			}
+
+#endif
 		  abort();
-		  delete[] info;
+
 	  }
 	  GLuint program = glCreateProgram();
 	  glAttachShader(program, result);
@@ -1157,6 +1161,8 @@ public:
 	  glDetachShader(program, result);
 	  glGetProgramiv(program, GL_LINK_STATUS, &status);
 	  if (status == GL_FALSE) {
+
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
 		  GLint length;
 		  glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
 		  GLchar *info = new GLchar[length];
@@ -1170,8 +1176,10 @@ public:
 				fclose(fp);
 			}
 		  YabThreadUSleep(1000000);  
+
+#endif
 		  abort();
-		  delete[] info;
+
 	  }
 	  return program;
   }

@@ -712,6 +712,10 @@ extern "C" void Vdp1FakeDrawCommands(u8 * ram, Vdp1 * regs)
 
 
 int Vdp1GenerateCCode() {
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+  return -1;
+#else
+
 
   FILE * regfp = fopen("v1reg.c", "w");
   fprintf(regfp, "short v1reg[] = { \n");
@@ -740,6 +744,8 @@ int Vdp1GenerateCCode() {
   fclose(ramfp);
 
   return 0;
+
+#endif
 }
 
 #if _DEBUG

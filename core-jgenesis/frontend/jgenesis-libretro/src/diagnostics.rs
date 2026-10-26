@@ -1,33 +1,21 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+// Shipping builds have no custom log/error counters or panic-hook installation.
+// Boot errors remain available through jgenesis_boot_error; the host/OS retains
+// its normal crash reporting policy.
+#[inline]
+pub fn reset_error_report() {}
 
-static ERROR_REPORTED: AtomicBool = AtomicBool::new(false);
+#[inline]
+pub fn install_panic_hook() {}
 
-pub fn reset_error_report() {
-    ERROR_REPORTED.store(false, Ordering::Relaxed);
-}
-
+#[inline]
 pub fn report_unrecoverable_error(message: &str) {
-    if cfg!(debug_assertions) || !ERROR_REPORTED.swap(true, Ordering::Relaxed) {
-        write_fatal(message);
-    }
-}
-
-pub fn install_panic_hook() {
+    #[cfg(debug_assertions)]
+    write_fatal(message);
     #[cfg(not(debug_assertions))]
-    {
-        static INSTALL: std::sync::Once = std::sync::Once::new();
-        static PANIC_REPORTED: AtomicBool = AtomicBool::new(false);
-        INSTALL.call_once(|| {
-            std::panic::set_hook(Box::new(|info| {
-                if !PANIC_REPORTED.swap(true, Ordering::Relaxed) {
-                    write_fatal(&format!("Fatal Rust panic: {info}"));
-                }
-            }));
-        });
-    }
+    let _ = message;
 }
 
-// Fatal reports deliberately bypass the log facade's release_max_level_off.
+#[cfg(debug_assertions)]
 fn write_fatal(message: &str) {
     #[cfg(target_os = "android")]
     {

@@ -75,7 +75,7 @@
 }
 
 # Routine diagnostics are DEBUG-guarded at their call sites. Keep this fallback
-# for library calls, but preserve println used only by the fatal crash reporter.
+# for library calls. App-owned diagnostics are removed at their call sites.
 -assumenosideeffects class android.util.Log {
     public static int v(...);
     public static int d(...);
@@ -83,4 +83,11 @@
     public static int w(...);
     public static int e(...);
     public static int wtf(...);
+}
+
+# Third-party stack trace diagnostics must not reach stderr in release.
+-assumenosideeffects class java.lang.Throwable {
+    public void printStackTrace();
+    public void printStackTrace(java.io.PrintStream);
+    public void printStackTrace(java.io.PrintWriter);
 }

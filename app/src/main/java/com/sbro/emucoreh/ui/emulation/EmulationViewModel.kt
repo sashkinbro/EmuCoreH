@@ -1442,7 +1442,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     allowBiosBoot = bootToBios
                 )
             } catch (error: Exception) {
-                com.sbro.emucoreh.core.CrashLogger.logError(TAG, "EmulatorBridge.startEmulation failed", error)
+                if (com.sbro.emucoreh.BuildConfig.DEBUG) com.sbro.emucoreh.core.CrashLogger.logError(TAG, "EmulatorBridge.startEmulation failed", error)
                 false
             }
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "EmulatorBridge.startEmulation returned $started path=$pathToLaunch")

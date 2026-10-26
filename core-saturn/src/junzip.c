@@ -1,3 +1,4 @@
+#include "../release_diagnostics.h"
 // JUnzip library by Joonas Pihlajamaa. See junzip.h for license and details.
 
 #include <stdio.h>
@@ -16,24 +17,24 @@ int jzReadEndRecord(JZFile *zip, JZEndRecord *endRecord) {
     JZEndRecord *er;
 
     if(zip->seek(zip, 0, SEEK_END)) {
-        fprintf(stderr, "Couldn't go to end of zip file!");
+        SATURN_DIAGNOSTIC_FPRINTF(stderr, "Couldn't go to end of zip file!");
         return Z_ERRNO;
     }
 
     if((fileSize = zip->tell(zip)) <= sizeof(JZEndRecord)) {
-        fprintf(stderr, "Too small file to be a zip!");
+        SATURN_DIAGNOSTIC_FPRINTF(stderr, "Too small file to be a zip!");
         return Z_ERRNO;
     }
 
     readBytes = (fileSize < sizeof(jzBuffer)) ? fileSize : sizeof(jzBuffer);
 
     if(zip->seek(zip, fileSize - readBytes, SEEK_SET)) {
-        fprintf(stderr, "Cannot seek in zip file!");
+        SATURN_DIAGNOSTIC_FPRINTF(stderr, "Cannot seek in zip file!");
         return Z_ERRNO;
     }
 
     if(zip->read(zip, jzBuffer, readBytes) < readBytes) {
-        fprintf(stderr, "Couldn't read end of zip file!");
+        SATURN_DIAGNOSTIC_FPRINTF(stderr, "Couldn't read end of zip file!");
         return Z_ERRNO;
     }
 
@@ -45,7 +46,7 @@ int jzReadEndRecord(JZFile *zip, JZEndRecord *endRecord) {
     }
 
     if(i < 0) {
-        fprintf(stderr, "End record signature not found in zip!");
+        SATURN_DIAGNOSTIC_FPRINTF(stderr, "End record signature not found in zip!");
         return Z_ERRNO;
     }
 
@@ -53,7 +54,7 @@ int jzReadEndRecord(JZFile *zip, JZEndRecord *endRecord) {
 
     if(endRecord->diskNumber || endRecord->centralDirectoryDiskNumber ||
             endRecord->numEntries != endRecord->numEntriesThisDisk) {
-        fprintf(stderr, "Multifile zips not supported!");
+        SATURN_DIAGNOSTIC_FPRINTF(stderr, "Multifile zips not supported!");
         return Z_ERRNO;
     }
 
@@ -68,30 +69,30 @@ int jzReadCentralDirectory(JZFile *zip, JZEndRecord *endRecord,
     int i;
 
     if(zip->seek(zip, endRecord->centralDirectoryOffset, SEEK_SET)) {
-        fprintf(stderr, "Cannot seek in zip file!");
+        SATURN_DIAGNOSTIC_FPRINTF(stderr, "Cannot seek in zip file!");
         return Z_ERRNO;
     }
 
     for(i=0; i<endRecord->numEntries; i++) {
         if(zip->read(zip, &fileHeader, sizeof(JZGlobalFileHeader)) <
                 sizeof(JZGlobalFileHeader)) {
-            fprintf(stderr, "Couldn't read file header %d!", i);
+            SATURN_DIAGNOSTIC_FPRINTF(stderr, "Couldn't read file header %d!", i);
             return Z_ERRNO;
         }
 
         if(fileHeader.signature != 0x02014B50) {
-            fprintf(stderr, "Invalid file header signature %d!", i);
+            SATURN_DIAGNOSTIC_FPRINTF(stderr, "Invalid file header signature %d!", i);
             return Z_ERRNO;
         }
 
         if(fileHeader.fileNameLength + 1 >= JZ_BUFFER_SIZE) {
-            fprintf(stderr, "Too long file name %d!", i);
+            SATURN_DIAGNOSTIC_FPRINTF(stderr, "Too long file name %d!", i);
             return Z_ERRNO;
         }
 
         if(zip->read(zip, jzBuffer, fileHeader.fileNameLength) <
                 fileHeader.fileNameLength) {
-            fprintf(stderr, "Couldn't read filename %d!", i);
+            SATURN_DIAGNOSTIC_FPRINTF(stderr, "Couldn't read filename %d!", i);
             return Z_ERRNO;
         }
 
@@ -99,7 +100,7 @@ int jzReadCentralDirectory(JZFile *zip, JZEndRecord *endRecord,
 
         if(zip->seek(zip, fileHeader.extraFieldLength, SEEK_CUR) ||
                 zip->seek(zip, fileHeader.fileCommentLength, SEEK_CUR)) {
-            fprintf(stderr, "Couldn't skip extra field or file comment %d", i);
+            SATURN_DIAGNOSTIC_FPRINTF(stderr, "Couldn't skip extra field or file comment %d", i);
             return Z_ERRNO;
         }
 

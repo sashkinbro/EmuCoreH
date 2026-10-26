@@ -1,3 +1,8 @@
+// Experimental backend selection/profiling is a diagnostic-only facility.
+// Do not allow an accidental release feature flag to ship counters or QA paths.
+#[cfg(all(feature = "jit-runtime", not(debug_assertions)))]
+compile_error!("Jgenesis QA CPU backends/profiling require debug assertions; release must use default features");
+
 mod cheats;
 mod content;
 mod diagnostics;

@@ -42,6 +42,7 @@ static GLuint Compile(GLenum type, const char* src)
   glGetShaderiv(sh, GL_COMPILE_STATUS, &ok);
   if (!ok)
   {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
     char log[2048];
     GLsizei n = 0;
     glGetShaderInfoLog(sh, (GLsizei)sizeof(log), &n, log);
@@ -49,6 +50,7 @@ static GLuint Compile(GLenum type, const char* src)
     ErrorLog("GlesPresenter: shader compile failed (%s):\n%s",
                  (type == GL_VERTEX_SHADER) ? "VS" : (type == GL_FRAGMENT_SHADER) ? "FS" : "UNKNOWN",
                  log);
+#endif
     glDeleteShader(sh);
     return 0;
   }
@@ -144,11 +146,13 @@ bool GlesPresenter::CreateProgram()
   glGetProgramiv(m_program, GL_LINK_STATUS, &ok);
   if (!ok)
   {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
     char log[2048];
     GLsizei n = 0;
     glGetProgramInfoLog(m_program, (GLsizei)sizeof(log), &n, log);
     log[(n >= (GLsizei)sizeof(log)) ? ((GLsizei)sizeof(log) - 1) : n] = '\0';
     ErrorLog("GlesPresenter: program link failed:\n%s", log);
+#endif
     glDeleteProgram(m_program);
     m_program = 0;
     return false;
@@ -214,11 +218,13 @@ bool GlesPresenter::CreateCrosshairProgram()
   glGetProgramiv(m_crossProgram, GL_LINK_STATUS, &ok);
   if (!ok)
   {
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
     char log[2048];
     GLsizei n = 0;
     glGetProgramInfoLog(m_crossProgram, (GLsizei)sizeof(log), &n, log);
     log[(n >= (GLsizei)sizeof(log)) ? ((GLsizei)sizeof(log) - 1) : n] = '\0';
     ErrorLog("GlesPresenter: crosshair program link failed:\n%s", log);
+#endif
     glDeleteProgram(m_crossProgram);
     m_crossProgram = 0;
     return false;

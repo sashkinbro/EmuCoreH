@@ -1,3 +1,4 @@
+#include "../release_diagnostics.h"
 /*  Copyright 2005-2006 Guillaume Duhamel
  *  Copyright 2005-2006 Theo Berkau
  *  Copyright 2011-2015 Shinya Miyamoto(devmiyax)
@@ -55,7 +56,7 @@ static YglCacheHash * YglgetNewCash(YglTextureManager * tm) {
   YglCacheHash * rtn;
 
   if (tm->CashLink_index >= HASHSIZE * 2){
-    printf("not enough cash");
+    SATURN_DIAGNOSTIC_PRINTF("not enough cash");
     return NULL;
   }
   rtn = &tm->CashLink[tm->CashLink_index];

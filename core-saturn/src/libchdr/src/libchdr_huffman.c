@@ -1,3 +1,4 @@
+#include "../../../release_diagnostics.h"
 /* license:BSD-3-Clause
  * copyright-holders:Aaron Giles
 ****************************************************************************
@@ -369,7 +370,7 @@ static int huffman_tree_node_compare(const void *item1, const void *item2)
 	if (node2->weight != node1->weight)
 		return node2->weight - node1->weight;
 	if (node2->bits - node1->bits == 0)
-		fprintf(stderr, "identical node sort keys, should not happen!\n");
+		SATURN_DIAGNOSTIC_FPRINTF(stderr, "identical node sort keys, should not happen!\n");
 	return (int)node1->bits - (int)node2->bits;
 }
 

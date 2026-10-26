@@ -17,6 +17,7 @@ abstract class BuildJGenesis @Inject constructor(
     abstract val rustSources: ConfigurableFileCollection
     @get:Internal abstract val sourceDirectory: DirectoryProperty
     @get:Internal abstract val ndkDirectory: DirectoryProperty
+    @get:Input abstract val enableDiagnostics: Property<Boolean>
     @get:Input abstract val rustToolchain: Property<String>
     @get:Input abstract val ndkVersion: Property<String>
     @get:Input abstract val hostTag: Property<String>
@@ -35,7 +36,7 @@ abstract class BuildJGenesis @Inject constructor(
             .filter { it.isNotBlank() }.joinToString(File.pathSeparator)
         processes.exec {
             workingDir(sourceDirectory)
-            commandLine("cargo", "+${rustToolchain.get()}", "build", "--locked", "--release", "--target", "aarch64-linux-android", "-p", "jgenesis-libretro")
+            commandLine("cargo", "+${rustToolchain.get()}", "build", "--locked", "--release", "--no-default-features", "--target", "aarch64-linux-android", "-p", "jgenesis-libretro")
             environment("PATH", path)
             environment("CARGO_TARGET_DIR", cargoTargetDirectory.get().asFile.absolutePath)
             environment("CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER", compiler.absolutePath)
@@ -44,7 +45,10 @@ abstract class BuildJGenesis @Inject constructor(
             // Android's arm64 ABI includes ARMv8-A devices without LSE, FP16 or
             // dot-product support. Keep the baseline ISA; a CPU scheduling target
             // such as cortex-a55 also enables optional instructions globally.
-            environment("RUSTFLAGS", "-C target-cpu=generic -C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384 -C link-arg=-Wl,-soname,libjgenesis_libretro.so")
+            // Keep optimized emulation for debug APKs, but isolate all diagnostic
+            // cfgs and artifacts from the shipping release DSO.
+            val debugAssertions = if (enableDiagnostics.get()) "yes" else "no"
+            environment("RUSTFLAGS", "-C debug-assertions=$debugAssertions -C target-cpu=generic -C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384 -C link-arg=-Wl,-soname,libjgenesis_libretro.so")
         }
         files.copy {
             from(cargoTargetDirectory.file("aarch64-linux-android/release/libjgenesis_libretro.so"))
@@ -68,22 +72,32 @@ android {
     defaultConfig { minSdk = 26; ndk { abiFilters += "arm64-v8a" } }
 }
 
-val buildRust = tasks.register<BuildJGenesis>("buildRust") {
+// Compatibility aggregate; normal Android variant builds depend only on their
+// own task, never on the other variant's diagnostics or cached native outputs.
+val buildRust = tasks.register("buildRust") {
     group = "build"
-    description = "Build the pinned jgenesis libretro core for arm64 Android with 16 KiB ELF pages"
-    sourceDirectory.set(layout.projectDirectory.dir("../core-jgenesis"))
-    rustSources.from(fileTree(sourceDirectory) { exclude("target/**", ".git/**"); include("**/*.rs", "**/*.toml", "Cargo.lock", "**/*.bin", "LICENSE", "UPSTREAM.txt", "README-ANDROID.md") })
-    ndkDirectory.set(androidComponents.sdkComponents.ndkDirectory)
-    ndkVersion.set(ndkRevision)
-    hostTag.set(hostTagValue)
-    rustToolchain.set(providers.gradleProperty("jgenesis.rustToolchain").orElse(if (windowsHost) "1.98.1-x86_64-pc-windows-gnu" else "1.98.1"))
-    hostToolsDirectory.set(providers.gradleProperty("jgenesis.hostToolsDir").orElse(if (windowsHost) "C:/msys64/ucrt64/bin" else ""))
-    cargoTargetDirectory.set(layout.buildDirectory.dir("rust"))
-    jniDirectory.set(layout.buildDirectory.dir("generated/jniLibs"))
-    assetsDirectory.set(layout.buildDirectory.dir("generated/assets"))
+    description = "Build isolated optimized Jgenesis cores for each Android variant"
 }
 
 androidComponents.onVariants { variant ->
-    variant.sources.jniLibs?.addGeneratedSourceDirectory(buildRust, BuildJGenesis::jniDirectory)
-    variant.sources.assets?.addGeneratedSourceDirectory(buildRust, BuildJGenesis::assetsDirectory)
+    val variantName = variant.name
+    val capitalizedName = variantName.replaceFirstChar { it.uppercaseChar() }
+    val buildVariantRust = tasks.register<BuildJGenesis>("build${capitalizedName}Rust") {
+        group = "build"
+        description = "Build the optimized $variantName jgenesis core for arm64 Android"
+        enableDiagnostics.set(variant.buildType == "debug")
+        sourceDirectory.set(layout.projectDirectory.dir("../core-jgenesis"))
+        rustSources.from(fileTree(sourceDirectory) { exclude("target/**", ".git/**"); include("**/*.rs", "**/*.toml", "Cargo.lock", "**/*.bin", "LICENSE", "UPSTREAM.txt", "README-ANDROID.md") })
+        ndkDirectory.set(androidComponents.sdkComponents.ndkDirectory)
+        ndkVersion.set(ndkRevision)
+        hostTag.set(hostTagValue)
+        rustToolchain.set(providers.gradleProperty("jgenesis.rustToolchain").orElse(if (windowsHost) "1.98.1-x86_64-pc-windows-gnu" else "1.98.1"))
+        hostToolsDirectory.set(providers.gradleProperty("jgenesis.hostToolsDir").orElse(if (windowsHost) "C:/msys64/ucrt64/bin" else ""))
+        cargoTargetDirectory.set(layout.buildDirectory.dir("rust/$variantName"))
+        jniDirectory.set(layout.buildDirectory.dir("generated/jniLibs/$variantName"))
+        assetsDirectory.set(layout.buildDirectory.dir("generated/assets/$variantName"))
+    }
+    buildRust.configure { dependsOn(buildVariantRust) }
+    variant.sources.jniLibs?.addGeneratedSourceDirectory(buildVariantRust, BuildJGenesis::jniDirectory)
+    variant.sources.assets?.addGeneratedSourceDirectory(buildVariantRust, BuildJGenesis::assetsDirectory)
 }

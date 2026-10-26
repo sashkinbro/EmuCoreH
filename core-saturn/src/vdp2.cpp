@@ -959,6 +959,7 @@ Vdp2 * Vdp2RestoreRegs(int line, Vdp2* lines) {
 int vdp1_frame = 0;
 int show_vdp1_frame = 0;
 u32 show_skipped_frame = 0;
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
 static void FPSDisplay(void)
 {
   static int fpsframecount = 0;
@@ -1023,6 +1024,8 @@ static void FPSDisplay(void)
 
 //////////////////////////////////////////////////////////////////////////////
 
+#endif
+
 void SpeedThrottleEnable(void) {
   throttlespeed = 1;
 }
@@ -1034,6 +1037,10 @@ void SpeedThrottleDisable(void) {
 }
 
 void dumpvram() {
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+
+#else
+
   FILE * fp = fopen("vdp2vram.bin", "wb");
   fwrite(Vdp2Regs, sizeof(Vdp2), 1, fp);
   fwrite(Vdp2Ram, 0x80000, 1, fp);
@@ -1043,9 +1050,15 @@ void dumpvram() {
   fwrite((void *)Vdp1Ram, 0x80000, 1, fp);
   fwrite(&Vdp1External, sizeof(Vdp1External_struct), 1, fp);
   fclose(fp);
+
+#endif
 }
 
 void restorevram() {
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+
+#else
+
   FILE * fp = fopen("vdp2vram.bin", "rb");
   fread(Vdp2Regs, sizeof(Vdp2), 1, fp);
   fread(Vdp2Ram, 0x80000, 1, fp);
@@ -1059,16 +1072,30 @@ void restorevram() {
   for (int i = 0; i < 0x1000; i += 2) {
     YglOnUpdateColorRamWord(i);
   }
+
+#endif
 }
 
 int g_vdp_debug_dmp = 0;
 
 void vdp2ReqDump() {
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+
+#else
+
   g_vdp_debug_dmp = 2;
+
+#endif
 }
 
 void vdp2ReqRestore() {
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+
+#else
+
   g_vdp_debug_dmp = 1;
+
+#endif
 }
 
 
@@ -1217,7 +1244,9 @@ void vdp2VBlankOUT(void) {
 #endif
   }
 
+#if !defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
    FPSDisplay();
+#endif
    //if ((Vdp1Regs->FBCR & 2) && (Vdp1Regs->TVMR & 8))
    //   Vdp1External.manualerase = 1;
 
@@ -2496,6 +2525,9 @@ void ss_main(void)
 
 */
 int Vdp2GenerateCCode() {
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+  return -1;
+#else
 
   FILE * regfp = fopen("vreg.c", "w");
   fprintf(regfp, "short vreg[] = { \n");
@@ -2544,4 +2576,6 @@ int Vdp2GenerateCCode() {
   fclose(cramfp);
 
   return 0;
+
+#endif
 }

@@ -284,7 +284,9 @@ struct GlRenderState {
 
 GlRenderState g_gl;
 
+#ifndef NDEBUG
 std::atomic<int> g_present_diag_count{0};
+#endif
 
 std::string ToString(JNIEnv* env, jstring value) {
     if (value == nullptr) return {};
@@ -633,7 +635,7 @@ void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
     if (fmt == nullptr) return;
 #ifdef NDEBUG
     // INFO is reserved for functional game-ID events from the bundled core.
-    if (level != RETRO_LOG_INFO && level != RETRO_LOG_ERROR) return;
+    if (level != RETRO_LOG_INFO) return;
 #endif
     char message[1024];
     va_list args;
@@ -662,11 +664,7 @@ void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
         }
     }
 
-#ifdef NDEBUG
-    // Each bundled core deduplicates failures at their source. Do not put a
-    // process-wide one-shot gate here: it would hide unrelated later failures.
-    if (level == RETRO_LOG_ERROR) __android_log_write(ANDROID_LOG_ERROR, CORE_LOG_TAG, message);
-#else
+#ifndef NDEBUG
     // Flycast runs its LogManager at debug verbosity and traces every MMIO
     // access and dynarec bookkeeping entry. Forwarding that to logcat floods
     // the ring buffer and evicts the frontend's own logs, so debug output
@@ -1059,10 +1057,14 @@ bool EnsureHardwareContext() {
         }
         return EnsureHardwareContextLocked();
     } catch (const std::exception& error) {
+#ifndef NDEBUG
         emucoreh::crash::LogNativeError((std::string("Hardware context setup failed: ") + error.what()).c_str());
+#endif
         LOGE("Hardware context setup threw: %s", error.what());
     } catch (...) {
+#ifndef NDEBUG
         emucoreh::crash::LogNativeError("Hardware context setup failed with an unknown exception");
+#endif
         LOGE("Hardware context setup threw an unknown exception");
     }
     return false;
@@ -1115,10 +1117,12 @@ void PresentHardwareFrame(GLsizei src_width, GLsizei src_height) {
                                                 : 16.0 / 9.0);
     const RectF dst = DisplayRectForMode(win_width, win_height, aspect);
 
+    #ifndef NDEBUG
     if (g_present_diag_count.fetch_add(1) < 3) {
         LOGI("Present %ux%u into %dx%d window, dst=(%.0f,%.0f,%.0f,%.0f)", src_width, src_height,
              win_width, win_height, dst.left, dst.top, dst.right, dst.bottom);
     }
+    #endif
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glViewport(0, 0, win_width, win_height);
@@ -1513,7 +1517,9 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeInit(JNIEnv* env, jobject, js
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeInstallCrashReporter(JNIEnv* env, jobject,
                                                                         jstring log_path) {
+#ifndef NDEBUG
     emucoreh::crash::InstallCrashReporter(ToString(env, log_path).c_str());
+#endif
 }
 
 JNIEXPORT jlong JNICALL
@@ -2018,46 +2024,67 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeLastBootError(JNIEnv* env, jo
 
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_resetModel3AudioFingerprint(JNIEnv*, jobject) {
+#ifndef NDEBUG
     if (g_core_id.load() != 2) return;
     void* handle = RetainCoreLibrary(2);
     auto reset = handle ? reinterpret_cast<void (*)()>(dlsym(handle, "supermodel_reset_audio_fingerprint")) : nullptr;
     if (reset) reset();
+#else
+#endif
 }
 
 JNIEXPORT jlong JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_model3AudioFingerprint(JNIEnv*, jobject) {
+#ifndef NDEBUG
     if (g_core_id.load() != 2) return 0;
     void* handle = RetainCoreLibrary(2);
     auto fingerprint = handle ? reinterpret_cast<uint64_t (*)()>(dlsym(handle, "supermodel_audio_fingerprint")) : nullptr;
     return fingerprint ? static_cast<jlong>(fingerprint()) : 0;
+#else
+    return 0;
+#endif
 }
 
 JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_resetSaturnAudioFingerprint(JNIEnv*, jobject) {
+#ifndef NDEBUG
     if (g_core_id.load() != 3) return;
     void* handle = RetainCoreLibrary(3);
     auto reset = handle ? reinterpret_cast<void (*)()>(dlsym(handle, "saturn_reset_audio_fingerprint")) : nullptr;
     if (reset) reset();
+#else
+#endif
 }
 
 JNIEXPORT jlong JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_saturnAudioFingerprint(JNIEnv*, jobject) {
+#ifndef NDEBUG
     if (g_core_id.load() != 3) return 0;
     void* handle = RetainCoreLibrary(3);
     auto read = handle ? reinterpret_cast<uint64_t (*)()>(dlsym(handle, "saturn_audio_fingerprint")) : nullptr;
     return read ? static_cast<jlong>(read()) : 0;
+#else
+    return 0;
+#endif
 }
 
 JNIEXPORT jlong JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_saturnAudioNonzeroSamples(JNIEnv*, jobject) {
+#ifndef NDEBUG
     if (g_core_id.load() != 3) return 0;
     void* handle = RetainCoreLibrary(3);
     auto read = handle ? reinterpret_cast<uint64_t (*)()>(dlsym(handle, "saturn_audio_nonzero_samples")) : nullptr;
     return read ? static_cast<jlong>(read()) : 0;
+#else
+    return 0;
+#endif
 }
 
 JNIEXPORT jstring JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_getDiagnostics(JNIEnv* env, jobject) {
+#ifdef NDEBUG
+    return env->NewStringUTF("{}");
+#else
     char buffer[256];
     std::snprintf(buffer, sizeof(buffer),
                   "{\"core\":\"%s\",\"initialized\":%d,\"game\":%d,\"renderer\":%d,\"w\":%u,\"h\":%u}",
@@ -2065,6 +2092,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_getDiagnostics(JNIEnv* env, jobject
                   g_frontend.core_initialized.load() ? 1 : 0, g_frontend.game_loaded.load() ? 1 : 0,
                   g_frontend.requested_renderer, g_frontend.frame_width, g_frontend.frame_height);
     return env->NewStringUTF(buffer);
+#endif
 }
 
 JNIEXPORT jint JNICALL

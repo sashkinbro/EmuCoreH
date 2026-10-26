@@ -1,3 +1,4 @@
+#include "../release_diagnostics.h"
 /*
  * Copyright 2004 Stephane Dallongeville
  * Copyright 2004-2007 Theo Berkau
@@ -1878,7 +1879,7 @@ static void scsp_diagnostic_log(const char *stage) {
 #ifdef ANDROID
   __android_log_print(ANDROID_LOG_INFO,"SaturnSCSPQA","%s %s",stage,saturn_scsp_debug_snapshot());
 #else
-  fprintf(stderr,"SaturnSCSPQA %s %s\n",stage,saturn_scsp_debug_snapshot());
+  SATURN_DIAGNOSTIC_FPRINTF(stderr,"SaturnSCSPQA %s %s\n",stage,saturn_scsp_debug_snapshot());
 #endif
 }
 #define SCSP_DIAGNOSTIC_LOG(stage) scsp_diagnostic_log(stage)

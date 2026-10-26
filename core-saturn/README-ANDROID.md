@@ -66,3 +66,9 @@ Verification on 2026-10-26: NDK29 release core linked without undefined symbols;
 ELF LOAD segments have 0x4000 alignment. The API contract passed on RG556 and
 TB710FU; the disk callback contract passed on TB710FU. These are native ABI and
 callback checks, not claims of game compatibility or full-speed emulation.
+
+Release diagnostic policy: every non-Debug CMake configuration compiles out console
+logging, the debug stream backend, PCM fingerprint loops/APIs, profiling and GPU/RAM
+file dump helpers. `saturnScspDiagnostics=true` is accepted only by Debug; CMake also
+rejects the opt-in for production configurations. Saves, backups, disc I/O and
+`saturn_boot_error()` remain functional. Debug retains diagnostic facilities.

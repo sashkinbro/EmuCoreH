@@ -1,3 +1,4 @@
+#include "../release_diagnostics.h"
 /*  Copyright 2019 devMiyax(smiyaxdev@gmail.com)
 
     This file is part of YabaSanshiro.
@@ -740,6 +741,10 @@ void YglTMAllocate(YglTextureManager * tm, YglTexture * output, unsigned int w, 
 
 //////////////////////////////////////////////////////////////////////////////
 int YglDumpFrameBuffer(const char * filename, int width, int height, char * buf ){
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+  return -1;
+#else
+
 
   FILE * fp = fopen(filename, "wb");
   int bsize = width*height * 3;
@@ -818,6 +823,8 @@ int YglDumpFrameBuffer(const char * filename, int width, int height, char * buf 
   free(pBitmap);
 
   return 0;
+
+#endif
 }
 
 void VIDOGLVdp1WriteFrameBuffer(u32 type, u32 addr, u32 val ) {
@@ -1527,7 +1534,7 @@ int YglInit(int width, int height, unsigned int depth) {
 #if !defined(__LIBRETRO__)
   // This line is causing a black screen on the libretro port
   glGetIntegerv(GL_FRAMEBUFFER_BINDING,&_Ygl->default_fbo);
-  printf("GL_FRAMEBUFFER_BINDING = %d",_Ygl->default_fbo );
+  SATURN_DIAGNOSTIC_PRINTF("GL_FRAMEBUFFER_BINDING = %d",_Ygl->default_fbo );
 #endif
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

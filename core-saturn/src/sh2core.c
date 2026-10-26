@@ -1,3 +1,4 @@
+#include "../release_diagnostics.h"
 /*  Copyright 2003-2005 Guillaume Duhamel
     Copyright 2004-2005, 2013 Theo Berkau
 
@@ -2143,7 +2144,7 @@ void DMAExec(void) {
    if (CurrentSH2->onchip.DMAOR & 0x6)
       return;
 
-   printf("DMAExec: CHCR0 = %d, CHCR1 = %d\n", (CurrentSH2->onchip.CHCR0 & 0x3), (CurrentSH2->onchip.CHCR1 & 0x3) );
+   SATURN_DIAGNOSTIC_PRINTF("DMAExec: CHCR0 = %d, CHCR1 = %d\n", (CurrentSH2->onchip.CHCR0 & 0x3), (CurrentSH2->onchip.CHCR1 & 0x3) );
 
    if ( ((CurrentSH2->onchip.CHCR0 & 0x3)==0x01)  && ((CurrentSH2->onchip.CHCR1 & 0x3)==0x01) ) { // both channel wants DMA
       if (CurrentSH2->onchip.DMAOR & 0x8) { // round robin priority

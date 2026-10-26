@@ -1,3 +1,4 @@
+#include "../release_diagnostics.h"
 /*  src/cd-libretro.c: Iso functions for Libretro
     Copyright 2004-2008, 2013 Theo Berkau
     Copyright 2005 Joost Peters
@@ -484,7 +485,7 @@ static int LoadBinCue(const char *cuefilename, RFILE *iso_file)
          matched = filestream_scanf(iso_file, " \"%[^\"]\"", temp_buffer);
          trackfp = OpenFile(temp_buffer, cuefilename);
          if (trackfp == NULL) {
-           printf("Can not open file %s\n", temp_buffer);
+           SATURN_DIAGNOSTIC_PRINTF("Can not open file %s\n", temp_buffer);
            free(temp_buffer);
            return -1;
          }
@@ -603,7 +604,7 @@ int infoFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void *u
    if (entry == NULL) exit(-1);
 
     if(zip->seek(zip, header->offset, SEEK_SET)) {
-        printf("Cannot seek in zip file!\n");
+        SATURN_DIAGNOSTIC_PRINTF("Cannot seek in zip file!\n");
         return 0; // abort
     }
 
@@ -614,7 +615,7 @@ int infoFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void *u
        if (last == NULL) last = strstr(filename, ".CUE");
        if (last != NULL) {
         if(jzReadLocalFileHeader(zip, header, name, sizeof(name))) {
-          printf("Couldn't read local file header!\n");
+          SATURN_DIAGNOSTIC_PRINTF("Couldn't read local file header!\n");
           exit(-1);
         }
         entry->zipBuffer = NULL;
@@ -646,7 +647,7 @@ int deflateFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void
     ZipEntry *entry = (ZipEntry*)user_data;
    if (entry == NULL) exit(-1);
     if(zip->seek(zip, header->offset, SEEK_SET)) {
-        printf("Cannot seek in zip file!\n");
+        SATURN_DIAGNOSTIC_PRINTF("Cannot seek in zip file!\n");
         return 0; // abort
     }
     if (entry->filename == NULL){
@@ -656,12 +657,12 @@ int deflateFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void
        if (last == NULL) last = strstr(filename, ".CUE");
        if (last != NULL) {
         if(jzReadLocalFileHeader(zip, header, name, sizeof(name))) {
-          printf("Couldn't read local file header!\n");
+          SATURN_DIAGNOSTIC_PRINTF("Couldn't read local file header!\n");
           exit(-1);
         }
         CDLOG("uncompressed %d %f %f\n", header->uncompressedSize, header->uncompressedSize/2448.0, header->uncompressedSize/2352.0);
         if((entry->zipBuffer = (u8*)malloc(header->uncompressedSize)) == NULL) {
-          printf("Couldn't allocate memory!\n");
+          SATURN_DIAGNOSTIC_PRINTF("Couldn't allocate memory!\n");
           exit(-1);
         }
         if (jzReadData(zip, header, entry->zipBuffer) == Z_OK)
@@ -680,12 +681,12 @@ int deflateFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void
       char* fileToSearch = entry->filename;
       if (strcmp(last, fileToSearch) == 0) {
         if(jzReadLocalFileHeader(zip, header, name, sizeof(name))) {
-          printf("Couldn't read local file header!\n");
+          SATURN_DIAGNOSTIC_PRINTF("Couldn't read local file header!\n");
           exit(-1);
         }
         CDLOG("uncompressed %d %f %f\n", header->uncompressedSize, header->uncompressedSize/2448.0, header->uncompressedSize/2352.0);
         if((entry->zipBuffer = (u8*)malloc(header->uncompressedSize)) == NULL) {
-          printf("Couldn't allocate memory!\n");
+          SATURN_DIAGNOSTIC_PRINTF("Couldn't allocate memory!\n");
           exit(-1);
         }
         if (jzReadData(zip, header, entry->zipBuffer) == Z_OK)
@@ -711,12 +712,12 @@ static ZipEntry* getZipFileLocalInfo(JZFile *zip, JZEndRecord* endRecord, char* 
      entry->filename = strdup(filename);
    if (deflate != 0) {
      if(jzReadCentralDirectory(zip, endRecord, deflateFile, entry)) {
-      printf("Couldn't read ZIP file central record.\n");
+      SATURN_DIAGNOSTIC_PRINTF("Couldn't read ZIP file central record.\n");
       return NULL;
      }
   } else {
      if(jzReadCentralDirectory(zip, endRecord, infoFile, entry)) {
-      printf("Couldn't read ZIP file central record.\n");
+      SATURN_DIAGNOSTIC_PRINTF("Couldn't read ZIP file central record.\n");
       return NULL;
      }
   }
@@ -750,7 +751,7 @@ static int LoadBinCueInZip(const char *filename, RFILE *fp)
   zip = jzfile_from_stdio_file(stream->fp);
 
   if(jzReadEndRecord(zip, endRecord)) {
-    printf("Couldn't read ZIP file end record.\n");
+    SATURN_DIAGNOSTIC_PRINTF("Couldn't read ZIP file end record.\n");
     return -1;
   }
 
@@ -1658,7 +1659,7 @@ static int ISOCDReadSectorFAD(u32 FAD, void *buffer) {
               if (currentTrack->isZip == 1) {
                 if (currentTrack->tr == NULL) {
                   //This should never happen, otherwise we might suffer some delay to deflation during game
-                  printf("%s was not defalted!!!\n", currentTrack->filename);
+                  SATURN_DIAGNOSTIC_PRINTF("%s was not defalted!!!\n", currentTrack->filename);
                   return 0;
                 }
               }

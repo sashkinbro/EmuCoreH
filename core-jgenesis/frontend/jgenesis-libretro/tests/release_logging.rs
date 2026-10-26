@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 mod diagnostics;
 
 #[test]
-fn release_logging_has_no_argument_side_effects_and_retains_one_shot_fatals() {
+fn release_logging_has_no_argument_side_effects_or_custom_reports() {
     if cfg!(debug_assertions) {
         return;
     }
@@ -18,11 +18,7 @@ fn release_logging_has_no_argument_side_effects_and_retains_one_shot_fatals() {
         .unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(!stderr.contains("initialized"), "{stderr}");
-    assert!(!stderr.contains("deinitialized"), "{stderr}");
-    assert_eq!(stderr.matches("retro_load_game received null game info").count(), 2, "{stderr}");
-    assert_eq!(stderr.matches("duplicate fatal operation probe").count(), 1, "{stderr}");
-    assert_eq!(stderr.matches("release fatal panic probe").count(), 1, "{stderr}");
+    assert!(stderr.is_empty(), "Release emitted custom diagnostic output: {stderr}");
 }
 
 #[test]
@@ -40,6 +36,10 @@ fn release_logging_probe() {
     assert_eq!(evaluations.load(Ordering::Relaxed), 0, "Release evaluated diagnostic arguments");
     assert_eq!(log::STATIC_MAX_LEVEL, log::LevelFilter::Off);
 
+    static PANIC_HOOK_CALLS: AtomicUsize = AtomicUsize::new(0);
+    let original_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(|_| { PANIC_HOOK_CALLS.fetch_add(1, Ordering::Relaxed); }));
+    diagnostics::install_panic_hook();
     diagnostics::reset_error_report();
     for _ in 0..2 {
         diagnostics::report_unrecoverable_error("duplicate fatal operation probe");
@@ -54,5 +54,8 @@ fn release_logging_probe() {
     for _ in 0..2 {
         assert!(std::panic::catch_unwind(|| panic!("release fatal panic probe")).is_err());
     }
+    assert_eq!(PANIC_HOOK_CALLS.load(Ordering::Relaxed), 2,
+        "Release must leave the application's panic hook untouched");
+    std::panic::set_hook(original_hook);
     jgenesis_libretro::retro_deinit();
 }

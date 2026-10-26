@@ -25,7 +25,7 @@ int main() {
         ERROR_LOG(BOOT, "%d", ++failure_args);
     }
 #ifdef NDEBUG
-    if (failure_args != 2 || android_messages != 1 || core_messages != 1) return 3;
+    if (failure_args != 0 || android_messages != 0 || core_messages != 0) return 3;
 #else
     if (failure_args != 6 || android_messages != 3 || core_messages != 3) return 4;
 #endif

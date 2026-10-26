@@ -51,6 +51,17 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
 //////////////////////////////////////////////////////////////////////////////
 
+#if defined(SATURN_RELEASE_SILENT_DIAGNOSTICS)
+Debug * MainLog;
+Debug * DebugInit(const char *n, DebugOutType t, char *s) { return NULL; }
+void DebugDeInit(Debug *d) {}
+void DebugChangeOutput(Debug *d, DebugOutType t, char *s) {}
+void DebugLog(const char *format, ...) {}
+void DebugPrintf(Debug *d, const char *file, u32 line, const char *format, ...) {}
+void LogStart(void) {}
+void LogStop(void) {}
+void LogChangeOutput(DebugOutType t, char *s) {}
+#else
 Debug * DebugInit(const char * n, DebugOutType t, char * s) {
 	Debug * d;
 
@@ -247,3 +258,5 @@ void LogChangeOutput(DebugOutType t, char * s) {
 
   DebugChangeOutput( MainLog, t, s );
 }
+
+#endif

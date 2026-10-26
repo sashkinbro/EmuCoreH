@@ -98,8 +98,10 @@ struct Host {
   unsigned graphics_scale=0;
   bool loaded=false;
   std::vector<int16_t> pcm;
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
   bool fingerprint_audio=false;
   uint64_t audio_fingerprint=14695981039346656037ULL;
+#endif
   Host() {
     config.Set("MultiThreaded",false);config.Set("GPUMultiThreaded",false);
     config.Set("EmulateSound",true);config.Set("EmulateDSB",true);
@@ -279,7 +281,11 @@ std::vector<unsigned char> capture_state(){
   data.insert(data.begin(),4,0);write32(data.data(),static_cast<uint32_t>(host->gear));return data;
 }
 }
-void model3_log(int level,const char* message){if(logger)logger(static_cast<retro_log_level>(level),"%s",message);}
+void model3_log(int level,const char* message){
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
+if(logger)logger(static_cast<retro_log_level>(level),"%s",message);
+#endif
+}
 bool model3_audio(unsigned n,INT16* lf,INT16* rf,INT16* lr,INT16* rr,bool flip){
   if(!host||n>8192)return true;
   auto& pcm=host->pcm;pcm.resize(size_t(n)*2);
@@ -290,11 +296,13 @@ bool model3_audio(unsigned n,INT16* lf,INT16* rf,INT16* lr,INT16* rr,bool flip){
     if(layout==Game::MONO)l=r=mix_channel(l,r);
     pcm[i*2]=flip?r:l;pcm[i*2+1]=flip?l:r;
   }
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
     if(host->fingerprint_audio){
       for(auto sample:pcm){const auto bits=static_cast<uint16_t>(sample);
         host->audio_fingerprint=(host->audio_fingerprint^(bits&255))*1099511628211ULL;
         host->audio_fingerprint=(host->audio_fingerprint^(bits>>8))*1099511628211ULL;}
     }
+#endif
     // All core work is synchronous. Never block the emulation worker on a full frontend ring.
   if(batch){size_t consumed=0;while(consumed<n){size_t accepted=batch(pcm.data()+consumed*2,n-consumed);if(accepted==0||accepted>n-consumed)break;consumed+=accepted;}}
   else if(sample)for(unsigned i=0;i<n;i++)sample(pcm[i*2],pcm[i*2+1]);return true;
@@ -402,6 +410,8 @@ RETRO_API size_t retro_get_memory_size(unsigned){return 0;}
 __attribute__((visibility("default"))) const char* supermodel_boot_error(){return error.c_str();}
 __attribute__((visibility("default"))) unsigned supermodel_input_flags(){return host&&host->loaded?host->game.inputs:0;}
 __attribute__((visibility("default"))) const char* supermodel_game_name(){return host&&host->loaded?host->game.name.c_str():"";}
+#if !defined(MODEL3_RELEASE_SILENT_LOGS)
 __attribute__((visibility("default"))) void supermodel_reset_audio_fingerprint(){if(host){host->fingerprint_audio=true;host->audio_fingerprint=14695981039346656037ULL;}}
 __attribute__((visibility("default"))) uint64_t supermodel_audio_fingerprint(){return host&&host->fingerprint_audio?host->audio_fingerprint:0;}
+#endif
 }
