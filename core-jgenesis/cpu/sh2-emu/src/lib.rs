@@ -80,7 +80,7 @@ fn trace_log_enabled(name: &str) -> bool {
 
 // Both backends share reset, DMA, delay-slot and interrupt scheduling.
 trait ExecutionBody<Bus: BusInterface> {
-    fn opcode(&mut self, gpr: &mut [u32; 16], pc: u32, opcode: u16) -> bool;
+    fn opcode(&mut self, cpu: &mut Sh2, bus: &mut Bus, opcode: u16) -> bool;
     fn block(&mut self, _cpu: &mut Sh2, _bus: &mut Bus, _ticks: u64) -> (u64, bool) {
         (0, false)
     }
@@ -89,7 +89,7 @@ trait ExecutionBody<Bus: BusInterface> {
 struct Interpreter;
 impl<Bus: BusInterface> ExecutionBody<Bus> for Interpreter {
     #[inline(always)]
-    fn opcode(&mut self, _: &mut [u32; 16], _: u32, _: u16) -> bool {
+    fn opcode(&mut self, _: &mut Sh2, _: &mut Bus, _: u16) -> bool {
         false
     }
 }
@@ -121,7 +121,48 @@ impl Sh2 {
     /// Will not execute any instructions if a reset is performed or an interrupt is handled.
     #[inline]
     pub fn execute<Bus: BusInterface>(&mut self, ticks: u64, bus: &mut Bus) {
-        self.execute_with_body(ticks, bus, &mut Interpreter);
+        #[cfg(not(feature = "jit-runtime"))]
+        {
+            self.execute_with_body(ticks, bus, &mut Interpreter)
+        }
+        #[cfg(feature = "jit-runtime")]
+        {
+            let cpu = if self.name == "Slave" {
+                jgenesis_common::jit::Cpu::SlaveSh2
+            } else {
+                jgenesis_common::jit::Cpu::MasterSh2
+            };
+            jgenesis_common::jit::with_cpu(cpu, || {
+                if !jgenesis_common::jit::enabled() {
+                    return self.execute_with_body(ticks, bus, &mut Interpreter);
+                }
+                #[cfg(feature = "jit-preview")]
+                jgenesis_common::jit::record_dispatch(jgenesis_common::jit::DispatchKind::Slice, 1);
+                let key = std::ptr::from_mut(self) as usize;
+                let epoch = jgenesis_common::jit::epoch();
+                // Remove before entering guest bus calls: a nested other-CPU execution
+                // can borrow the registry without borrowing an active executor.
+                // Move only a Box: a hot synchronization slice must not copy the
+                // complete code-cache owner into and out of the hash table.
+                let mut executor = PREVIEW_EXECUTORS.with_borrow_mut(|(generation, map)| {
+                    if *generation != epoch {
+                        map.clear();
+                        *generation = epoch;
+                    }
+                    map.remove(&key).unwrap_or_default()
+                });
+                let result = self.execute_with_native(ticks, bus, &mut executor);
+                PREVIEW_EXECUTORS.with_borrow_mut(|(generation, map)| {
+                    if *generation == epoch {
+                        if map.len() >= 8 {
+                            map.clear();
+                        }
+                        map.insert(key, executor);
+                    }
+                });
+                result
+            })
+        }
     }
 
     /// Experimental opt-in ARM64 bodies. Fetch, DMA, IRQs, delay slots and cycle accounting
@@ -251,9 +292,11 @@ impl Sh2 {
         bus: &mut Bus,
         body: &mut impl ExecutionBody<Bus>,
     ) {
-        let pc = self.registers.pc;
         let opcode = self.prepare_instruction(bus);
-        if !body.opcode(&mut self.registers.gpr, pc, opcode) {
+        let native = body.opcode(self, bus, opcode);
+        #[cfg(feature = "jit-preview")]
+        jgenesis_common::jit::record_opcode(opcode, native);
+        if !native {
             let opcode_table = Bus::opcode_table();
             opcode_table.decode(opcode)(self, opcode, bus);
         }
@@ -599,5 +642,42 @@ impl Sh2 {
     #[must_use]
     pub fn debug_cache_view(&mut self) -> impl DebugMemoryView {
         self.cache.debug_view()
+    }
+}
+
+// QA host code belongs to the runtime, never to serialized or cloned guest state.
+#[cfg(feature = "jit-runtime")]
+thread_local! {
+    static PREVIEW_EXECUTORS: std::cell::RefCell<(u64, rustc_hash::FxHashMap<usize, Box<crate::native::NativeExecutor>>)> =
+        std::cell::RefCell::new((u64::MAX, rustc_hash::FxHashMap::default()));
+}
+
+#[cfg(all(test, feature = "jit-runtime"))]
+mod runtime_tests {
+    use super::*;
+    use std::borrow::Borrow;
+
+    #[test]
+    fn recursive_cpu_registry_keeps_executor_storage_stable_between_slices() {
+        PREVIEW_EXECUTORS.with_borrow_mut(|(_, registry)| {
+            registry.clear();
+            registry.insert(1, Default::default());
+            let initial: *const crate::native::NativeExecutor =
+                std::ptr::from_ref(registry.get(&1).unwrap().borrow());
+            let executor = registry.remove(&1).unwrap();
+            let removed: *const crate::native::NativeExecutor =
+                std::ptr::from_ref(executor.borrow());
+            // A second CPU may populate and resize the registry while the first
+            // executor is running in a callback. Only its owner should move.
+            for cpu in 2..8 {
+                registry.insert(cpu, Default::default());
+            }
+            registry.insert(1, executor);
+            let returned: *const crate::native::NativeExecutor =
+                std::ptr::from_ref(registry.get(&1).unwrap().borrow());
+            assert_eq!(initial, removed);
+            assert_eq!(initial, returned);
+            registry.clear();
+        });
     }
 }

@@ -1,7 +1,7 @@
 mod cheats;
 mod content;
-mod disk;
 mod diagnostics;
+mod disk;
 mod frontend;
 mod libretro;
 mod options;
@@ -294,7 +294,9 @@ impl Core {
 
     fn set_cheat(&mut self, index: u32, enabled: bool, code: &str) {
         self.cheats.remove(&index);
-        if enabled { self.cheats.insert(index, code.to_owned()); }
+        if enabled {
+            self.cheats.insert(index, code.to_owned());
+        }
         self.apply_cheats();
     }
 
@@ -316,6 +318,14 @@ impl Core {
 
             let effect = match (&mut self.emulator, &inputs, &mut genesis_poller) {
                 (Emulator::Genesis(emulator), Inputs::Genesis(_), Some(poller)) => {
+                    #[cfg(feature = "jit-runtime")]
+                    let result = emulator.tick_native_batch(
+                        &mut self.frame,
+                        &mut self.audio,
+                        poller,
+                        &mut self.save_writer,
+                    );
+                    #[cfg(not(feature = "jit-runtime"))]
                     let result = emulator.tick(
                         &mut self.frame,
                         &mut self.audio,
@@ -642,12 +652,7 @@ fn load_core(path: &Path) -> Result<Core, String> {
         }
         Emulator::SmsGg(_) => String::new(),
     };
-    core_log_info!(
-        "Loaded {} content ({}), title='{}'",
-        console.label(),
-        path.display(),
-        title
-    );
+    core_log_info!("Loaded {} content ({}), title='{}'", console.label(), path.display(), title);
 
     Ok(Core::new(emulator, save_writer, console, path.to_path_buf()))
 }
@@ -788,6 +793,8 @@ pub extern "C" fn retro_init() {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn retro_deinit() {
+    #[cfg(feature = "jit-runtime")]
+    jgenesis_common::jit::reset();
     *lock(core_slot()) = None;
     core_log_info!("jgenesis libretro core deinitialized");
 }
@@ -837,6 +844,8 @@ pub extern "C" fn retro_load_game_special(
 #[unsafe(no_mangle)]
 pub extern "C" fn retro_load_game(info: *const retro_game_info) -> bool {
     clear_boot_error();
+    #[cfg(feature = "jit-runtime")]
+    jgenesis_common::jit::reset();
     *lock(core_slot()) = None;
 
     if info.is_null() {
@@ -868,11 +877,15 @@ pub extern "C" fn retro_load_game(info: *const retro_game_info) -> bool {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn retro_unload_game() {
+    #[cfg(feature = "jit-runtime")]
+    jgenesis_common::jit::reset();
     *lock(core_slot()) = None;
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn retro_reset() {
+    #[cfg(feature = "jit-runtime")]
+    jgenesis_common::jit::invalidate();
     let core = core_slot();
     let mut guard = lock(core);
     if let Some(core) = guard.as_mut() {
@@ -882,6 +895,8 @@ pub extern "C" fn retro_reset() {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn retro_run() {
+    #[cfg(feature = "jit-runtime")]
+    jgenesis_common::jit::set_enabled(options::jit_backend_native());
     let options_changed = options::changed();
     let environment = environment();
     let (frontend, video, audio_batch, audio_sample, input_poll, input_state) = {
@@ -1029,6 +1044,8 @@ pub extern "C" fn retro_serialize(data: *mut c_void, size: usize) -> bool {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn retro_unserialize(data: *const c_void, size: usize) -> bool {
+    #[cfg(feature = "jit-runtime")]
+    jgenesis_common::jit::invalidate();
     if data.is_null() || size == 0 {
         return false;
     }
@@ -1054,9 +1071,13 @@ pub extern "C" fn retro_cheat_reset() {
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn retro_cheat_set(index: u32, enabled: bool, code: *const c_char) {
-    if code.is_null() { return; }
+    if code.is_null() {
+        return;
+    }
     let code = unsafe { CStr::from_ptr(code) }.to_string_lossy();
-    if let Some(core) = lock(core_slot()).as_mut() { core.set_cheat(index, enabled, &code); }
+    if let Some(core) = lock(core_slot()).as_mut() {
+        core.set_cheat(index, enabled, &code);
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -1079,4 +1100,25 @@ pub extern "C" fn jgenesis_boot_error() -> *const c_char {
 #[unsafe(no_mangle)]
 pub extern "C" fn jgenesis_game_title() -> *const c_char {
     lock(core_slot()).as_ref().map_or(std::ptr::null(), |core| core.title.as_ptr())
+}
+
+/// QA only. Returns required capacity including NUL; copies only if capacity suffices.
+/// Call and query on the emulation thread between retro_run calls.
+#[cfg(feature = "jit-preview")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn jgenesis_jit_snapshot_json(output: *mut c_char, capacity: usize) -> usize {
+    let snapshot = jgenesis_common::jit::snapshot_json();
+    let required = snapshot.len() + 1;
+    if !output.is_null() && capacity >= required {
+        unsafe {
+            std::ptr::copy_nonoverlapping(snapshot.as_ptr(), output.cast::<u8>(), snapshot.len());
+            output.add(snapshot.len()).write(0);
+        }
+    }
+    required
+}
+#[cfg(feature = "jit-preview")]
+#[unsafe(no_mangle)]
+pub extern "C" fn jgenesis_jit_reset_counters() {
+    jgenesis_common::jit::clear_counters();
 }

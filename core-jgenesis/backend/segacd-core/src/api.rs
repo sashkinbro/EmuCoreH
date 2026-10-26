@@ -168,6 +168,34 @@ impl SegaCd {
             return;
         }
 
+        #[cfg(feature = "jit-runtime")]
+        if !DEBUG && jgenesis_common::jit::enabled() {
+            // Cells coordinate before/after callbacks without keeping a borrow
+            // across native bodies or cross-CPU bus/device callbacks.
+            let remaining = std::cell::Cell::new(sub_cpu_cycles);
+            let wait = std::cell::Cell::new(self.sub_cpu_wait_cycles);
+            while remaining.get() >= wait.get() {
+                self.sub_cpu.execute_native_batch(
+                    &mut self.bus,
+                    |_, bus| {
+                        bus.flush_buffered_sub_writes();
+                        remaining.set(remaining.get() - wait.get());
+                    },
+                    |_, bus, _, cycles| {
+                        wait.set(u64::from(cycles));
+                        !bus.word_ram().sub_performed_blocked_access()
+                            && remaining.get() >= wait.get()
+                    },
+                );
+                if self.bus.word_ram().sub_performed_blocked_access() {
+                    self.sub_cpu_wait_cycles = wait.get();
+                    return;
+                }
+            }
+            self.sub_cpu_wait_cycles = wait.get() - remaining.get();
+            return;
+        }
+
         while sub_cpu_cycles >= self.sub_cpu_wait_cycles {
             self.bus.flush_buffered_sub_writes();
 

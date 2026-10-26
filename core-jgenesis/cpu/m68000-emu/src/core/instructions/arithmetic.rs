@@ -476,8 +476,8 @@ impl<B: BusInterface> InstructionExecutor<'_, '_, B> {
             return Err(self.divide_by_zero_error(source));
         }
 
-        let quotient = operand_l / operand_r;
-        let remainder = operand_l % operand_r;
+        let quotient = operand_l.wrapping_div(operand_r);
+        let remainder = operand_l.wrapping_rem(operand_r);
 
         if quotient > i16::MAX.into() || quotient < i16::MIN.into() {
             self.cpu.registers.ccr = ConditionCodes {

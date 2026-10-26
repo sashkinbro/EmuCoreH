@@ -331,6 +331,88 @@ impl GenesisEmulator {
         })
     }
 
+    /// QA-only learned native block driver. Every completed CPU instruction
+    /// advances the existing Z80/VDP/CD/32X/audio schedule before the next body.
+    #[cfg(feature = "jit-runtime")]
+    pub fn tick_native_batch<R, A, I, S>(
+        &mut self,
+        renderer: &mut R,
+        audio_output: &mut A,
+        input_poller: &mut I,
+        save_writer: &mut S,
+    ) -> GenesisResult<R::Err, A::Err, S::Err>
+    where
+        R: Renderer,
+        A: AudioOutput,
+        I: InputPoller<GenesisInputs>,
+        S: SaveWriter,
+    {
+        if !jgenesis_common::jit::enabled() || self.bus.cycles.m68k_wait_cpu_cycles != 0 {
+            return self.tick_inner::<false, _, _, _, _>(
+                renderer,
+                audio_output,
+                input_poller,
+                save_writer,
+                None,
+            );
+        }
+        let mut result: Result<VdpTickEffect, GenesisError<R::Err, A::Err, S::Err>> =
+            Ok(VdpTickEffect::None);
+        let z80 = &mut self.z80;
+        let resampler = &mut self.audio_resampler;
+        self.m68k.execute_native_batch(
+            &mut self.bus,
+            |cpu, bus| {
+                if let Some(inputs) = input_poller.poll_if_changed() {
+                    bus.input.set_inputs(*inputs);
+                }
+                bus.m68k_opcode = cpu.next_opcode();
+            },
+            |_, bus, pc, cycles| {
+                let step = (|| {
+                    let elapsed = bus.cycles.record_68k_instruction(
+                        pc,
+                        cycles,
+                        false,
+                        bus.vdp.should_halt_cpu(),
+                    );
+                    while bus.cycles.should_tick_z80() {
+                        if !bus.cycles.z80_halt {
+                            z80.tick(bus);
+                        }
+                        bus.cycles.z80_cycle();
+                    }
+                    let effect =
+                        bus.tick_components::<false>(cycles, elapsed, false, resampler, None)?;
+                    resampler.output_samples(audio_output).map_err(GenesisError::Audio)?;
+                    Ok(effect)
+                })();
+                match step {
+                    Ok(VdpTickEffect::None) => bus.cycles.m68k_wait_cpu_cycles == 0,
+                    other => {
+                        result = other;
+                        false
+                    }
+                }
+            },
+        );
+        let effect = result?;
+        if effect == VdpTickEffect::FrameComplete {
+            if let Some(sega32x) = &mut self.bus.sega_32x
+                && sega32x.adapter_enabled()
+            {
+                sega32x.composite_frame(&mut self.bus.vdp);
+            }
+            self.render_frame(renderer).map_err(GenesisError::Render)?;
+            self.persist_save_files(save_writer).map_err(GenesisError::Save)?;
+        }
+        Ok(if effect == VdpTickEffect::FrameComplete {
+            TickEffect::FrameRendered
+        } else {
+            TickEffect::None
+        })
+    }
+
     /// Flush pending battery RAM when a frontend closes a session between frames.
     /// # Errors
     /// Propagates save writer errors.

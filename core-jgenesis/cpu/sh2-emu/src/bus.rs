@@ -93,6 +93,20 @@ impl OpSize {
     }
 }
 
+/// A bus explicitly opts in to a scoped native fetch/cycle fast path.
+/// Raw pointers remain live only while the caller exclusively borrows this bus.
+#[derive(Clone, Copy)]
+pub struct NativeBusView {
+    pub cycle_counter: *mut u64,
+    pub cycle_limit: *const u64,
+    /// Side-effect-free external fetch range, expressed in guest P1 addresses.
+    /// Storage contains native-endian u16 values, not guest byte order.
+    pub fetch_start: u32,
+    pub fetch_end: u32,
+    pub fetch_words: *const u16,
+    pub fetch_cycles: u64,
+}
+
 pub trait BusInterface: Sized {
     /// Debug view type; if not implemented, set to [`crate::debug::DummySh2Debugger`]
     type DebugView<'a>: Sh2Debugger
@@ -154,6 +168,21 @@ pub trait BusInterface: Sized {
     fn should_stop_execution(&self) -> bool;
 
     fn debug_view(&mut self) -> Option<Self::DebugView<'_>> {
+        None
+    }
+
+    /// # Safety
+    /// Returning Some promises that counter addition and `counter >= limit` are exactly
+    /// equivalent to increment_cycle_counter/should_stop_execution, with no omitted
+    /// side effects. The fetch range must have no MMIO, debugger, synchronization,
+    /// or read side effects beyond fetch_cycles. Pointers must remain stable through
+    /// every synchronous data-access callback during this borrow. Changes may happen
+    /// through those callbacks, but concurrent changes from other threads/observers
+    /// are forbidden; callback-free pure runs may hoist guards and combine additions.
+    /// The range bounds must be even, ordered, and cover valid native-u16 storage.
+    /// Counter/limit pointers must be aligned live u64 values. Debugging must remain
+    /// inactive throughout. The caller must not retain pointers after execution returns.
+    unsafe fn native_bus_view(&mut self) -> Option<NativeBusView> {
         None
     }
 

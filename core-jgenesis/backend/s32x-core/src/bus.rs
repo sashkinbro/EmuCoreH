@@ -770,6 +770,21 @@ impl BusInterface for Sh2Bus {
         self.cycle_counter >= self.cycle_limit
     }
 
+    unsafe fn native_bus_view(&mut self) -> Option<sh2_emu::bus::NativeBusView> {
+        // SDRAM reads only add ten cycles and read this fixed allocation. MMIO,
+        // cartridge and framebuffer regions never enter this descriptor. The other
+        // SH2 may synchronously modify RAM/counters; native code reloads every value.
+        let words = self.s32x_bus().sdram.as_ptr();
+        Some(sh2_emu::bus::NativeBusView {
+            cycle_counter: &mut self.cycle_counter,
+            cycle_limit: &self.cycle_limit,
+            fetch_start: 0x26000000,
+            fetch_end: 0x26040000,
+            fetch_words: words,
+            fetch_cycles: 1 + SH2_SDRAM_READ_CYCLES,
+        })
+    }
+
     sh2_emu::impl_sh2_opcode_table!(Sh2Bus);
 }
 

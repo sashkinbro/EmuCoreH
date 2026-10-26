@@ -1,4 +1,6 @@
 pub(crate) mod instructions;
+#[cfg(feature = "native-arm64")]
+mod native_bridge;
 
 use crate::core::instructions::Instruction;
 use crate::traits::BusInterface;
@@ -328,7 +330,7 @@ impl AddressingMode {
         )
     }
 
-    fn address_calculation_cycles(self, size: OpSize) -> u32 {
+    pub(crate) fn address_calculation_cycles(self, size: OpSize) -> u32 {
         use AddressingMode::{
             AbsoluteLong, AbsoluteShort, AddressDirect, AddressIndirect,
             AddressIndirectDisplacement, AddressIndirectIndexed, AddressIndirectPostincrement,
@@ -914,7 +916,7 @@ impl<'cpu, 'bus, B: BusInterface> InstructionExecutor<'cpu, 'bus, B> {
         Ok(())
     }
 
-    fn execute(mut self) -> u32 {
+    pub(super) fn begin_execute(&mut self) -> Option<u32> {
         self.cpu.registers.address_error = false;
         self.cpu.registers.last_instruction_was_muldiv = false;
 
@@ -923,10 +925,10 @@ impl<'cpu, 'bus, B: BusInterface> InstructionExecutor<'cpu, 'bus, B> {
             self.bus.acknowledge_interrupt(interrupt_level);
             self.cpu.registers.stopped = false;
 
-            return match self.handle_auto_vectored_interrupt(interrupt_level) {
+            return Some(match self.handle_auto_vectored_interrupt(interrupt_level) {
                 Ok(cycles) => cycles,
                 Err(exception) => self.handle_exception(exception),
-            };
+            });
         }
 
         // TODO properly handle non-maskable level 7 interrupts?
@@ -942,13 +944,19 @@ impl<'cpu, 'bus, B: BusInterface> InstructionExecutor<'cpu, 'bus, B> {
             // The 68000 takes about 10 cycles before it begins to acknowledge a received interrupt:
             //   https://gendev.spritesmind.net/forum/viewtopic.php?t=2202
             // mcd-verificator IRQ tests depend on this 10-cycle delay
-            return 10;
+            return Some(10);
         }
 
         if self.cpu.registers.stopped {
-            return 4;
+            return Some(4);
         }
 
+        None
+    }
+    fn execute(mut self) -> u32 {
+        if let Some(cycles) = self.begin_execute() {
+            return cycles;
+        }
         match self.do_execute() {
             Ok(cycles) => cycles,
             Err(exception) => self.handle_exception(exception),
@@ -1224,6 +1232,120 @@ impl M68000 {
         self.registers.prefetch
     }
 
+    #[inline]
+    pub fn execute_instruction<B: BusInterface>(&mut self, bus: &mut B) -> u32 {
+        #[cfg(not(feature = "jit-runtime"))]
+        {
+            self.execute_instruction_interpreter(bus)
+        }
+        #[cfg(feature = "jit-runtime")]
+        {
+            let cpu = if self.name == "Sub" {
+                jgenesis_common::jit::Cpu::SubM68k
+            } else {
+                jgenesis_common::jit::Cpu::MainM68k
+            };
+            jgenesis_common::jit::with_cpu(cpu, || {
+                if !jgenesis_common::jit::enabled() {
+                    return self.execute_instruction_interpreter(bus);
+                }
+                self.with_preview_executor(|cpu, native| {
+                    cpu.execute_instruction_with_native(bus, native)
+                })
+            })
+        }
+    }
+
+    #[cfg(feature = "jit-runtime")]
+    fn with_preview_executor<T>(
+        &mut self,
+        body: impl FnOnce(&mut Self, &mut crate::native::NativeExecutor) -> T,
+    ) -> T {
+        let key = std::ptr::from_mut(self) as usize;
+        let epoch = jgenesis_common::jit::epoch();
+        let mut executor = PREVIEW_EXECUTORS.with_borrow_mut(|(generation, map)| {
+            if *generation != epoch {
+                map.clear();
+                *generation = epoch;
+            }
+            map.remove(&key).unwrap_or_default()
+        });
+        let result = body(self, &mut executor);
+        PREVIEW_EXECUTORS.with_borrow_mut(|(generation, map)| {
+            if *generation == epoch {
+                if map.len() >= 8 {
+                    map.clear();
+                }
+                map.insert(key, executor);
+            }
+        });
+        result
+    }
+    /// QA batch path: learned blocks inline native instruction bodies, invoking
+    /// `after` after every instruction/event so external device timing stays exact.
+    #[cfg(feature = "jit-runtime")]
+    pub fn execute_native_batch<B, Before, After>(
+        &mut self,
+        bus: &mut B,
+        mut before: Before,
+        mut after: After,
+    ) -> u32
+    where
+        B: BusInterface,
+        Before: FnMut(&mut Self, &mut B),
+        After: FnMut(&mut Self, &mut B, u32, u32) -> bool,
+    {
+        let cpu = if self.name == "Sub" {
+            jgenesis_common::jit::Cpu::SubM68k
+        } else {
+            jgenesis_common::jit::Cpu::MainM68k
+        };
+        jgenesis_common::jit::with_cpu(cpu, || {
+            if !jgenesis_common::jit::enabled() {
+                before(self, bus);
+                let pc = self.pc();
+                let cycles = self.execute_instruction_interpreter(bus);
+                after(self, bus, pc, cycles);
+                return 1;
+            }
+            self.with_preview_executor(|cpu, native| {
+                let steps = native_bridge::block::run(cpu, bus, native, &mut before, &mut after);
+                if steps != 0 {
+                    return steps;
+                }
+                before(cpu, bus);
+                let pc = cpu.pc();
+                let cycles = cpu.execute_instruction_with_native(bus, native);
+                after(cpu, bus, pc, cycles);
+                1
+            })
+        })
+    }
+    /// QA-only explicit block entry for full-state differential tests. Returns
+    /// zero when no learned block can execute at the current PC/opcode.
+    #[cfg(feature = "jit-runtime")]
+    pub fn execute_block_with_native<B, Before, After>(
+        &mut self,
+        bus: &mut B,
+        native: &mut crate::native::NativeExecutor,
+        mut before: Before,
+        mut after: After,
+    ) -> u32
+    where
+        B: BusInterface,
+        Before: FnMut(&mut Self, &mut B),
+        After: FnMut(&mut Self, &mut B, u32, u32) -> bool,
+    {
+        let cpu = if self.name == "Sub" {
+            jgenesis_common::jit::Cpu::SubM68k
+        } else {
+            jgenesis_common::jit::Cpu::MainM68k
+        };
+        jgenesis_common::jit::with_cpu(cpu, || {
+            native_bridge::block::run(self, bus, native, &mut before, &mut after)
+        })
+    }
+
     /// Execute through the experimental ARM64 register translator when supported.
     /// The executor owns host code independently of CPU clones and savestates.
     /// All bus, prefetch, interrupt and exception handling uses the interpreter pipeline.
@@ -1246,7 +1368,7 @@ impl M68000 {
     }
 
     #[inline]
-    pub fn execute_instruction<B: BusInterface>(&mut self, bus: &mut B) -> u32 {
+    fn execute_instruction_interpreter<B: BusInterface>(&mut self, bus: &mut B) -> u32 {
         if bus.reset() {
             self.reset(bus);
             return RESET_CYCLES;
@@ -1258,4 +1380,11 @@ impl M68000 {
 
         InstructionExecutor::new(self, bus).execute()
     }
+}
+
+// QA host code belongs to the runtime, never to serialized or cloned guest state.
+#[cfg(feature = "jit-runtime")]
+thread_local! {
+    static PREVIEW_EXECUTORS: std::cell::RefCell<(u64, std::collections::HashMap<usize, crate::native::NativeExecutor>)> =
+        std::cell::RefCell::new((u64::MAX, std::collections::HashMap::new()));
 }

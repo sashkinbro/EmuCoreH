@@ -323,9 +323,8 @@ impl Instruction {
 }
 
 impl<B: BusInterface> InstructionExecutor<'_, '_, B> {
-    pub(super) fn do_execute(&mut self) -> ExecuteResult<u32> {
+    pub(super) fn prepare_decoded(&mut self) -> ExecuteResult<(u32, u16, Instruction)> {
         use Instruction::*;
-
         let initial_pc = self.cpu.registers.pc;
 
         self.bus.check_execute(initial_pc, self.cpu);
@@ -345,14 +344,51 @@ impl<B: BusInterface> InstructionExecutor<'_, '_, B> {
             MultiplyUnsigned(..) | MultiplySigned(..) | DivideUnsigned(..) | DivideSigned(..)
         );
 
+        Ok((initial_pc, opcode, instruction))
+    }
+    pub(super) fn do_execute(&mut self) -> ExecuteResult<u32> {
+        let (pc, opcode, instruction) = self.prepare_decoded()?;
+        self.execute_decoded(pc, opcode, instruction)
+    }
+    pub(super) fn execute_decoded(
+        &mut self,
+        initial_pc: u32,
+        opcode: u16,
+        instruction: Instruction,
+    ) -> ExecuteResult<u32> {
+        use Instruction::*;
+        #[cfg(not(feature = "jit-runtime"))]
+        let _ = initial_pc;
+        #[cfg(feature = "native-arm64")]
+        if let Some(native) = self.native.take() {
+            let result = self.try_native_memory(native, opcode);
+            #[cfg(feature = "jit-runtime")]
+            if let Some(result) = &result {
+                native.record_instruction(initial_pc, opcode, self.cpu.pc(), result.is_ok());
+            }
+            self.native = Some(native);
+            if let Some(result) = result {
+                #[cfg(feature = "jit-runtime")]
+                jgenesis_common::jit::record_opcode(opcode, true);
+                return result;
+            }
+        }
+
         #[cfg(feature = "native-arm64")]
         if let Some(native) = self.native.as_deref_mut() {
             let mut ccr = self.cpu.registers.ccr.into();
             if native.execute(&mut self.cpu.registers.data, &mut ccr, opcode) {
+                #[cfg(feature = "jit-runtime")]
+                jgenesis_common::jit::record_opcode(opcode, true);
                 self.cpu.registers.ccr = ccr.into();
+                #[cfg(feature = "jit-runtime")]
+                native.record_instruction(initial_pc, opcode, self.cpu.pc(), true);
                 return Ok(crate::native::instruction_cycles(opcode));
             }
         }
+
+        #[cfg(feature = "jit-runtime")]
+        jgenesis_common::jit::record_opcode(opcode, false);
 
         match instruction {
             Add { size: OpSize::Byte, source, dest, with_extend } => {
@@ -477,7 +513,7 @@ impl<B: BusInterface> InstructionExecutor<'_, '_, B> {
     }
 }
 
-fn unary_op_cycles(size: OpSize, dest: AddressingMode) -> u32 {
+pub(super) fn unary_op_cycles(size: OpSize, dest: AddressingMode) -> u32 {
     let mut cycles = match size {
         OpSize::Byte | OpSize::Word => 4,
         OpSize::LongWord => 8,
@@ -499,7 +535,7 @@ fn unary_op_cycles(size: OpSize, dest: AddressingMode) -> u32 {
 }
 
 #[inline]
-fn binary_op_cycles(size: OpSize, source: AddressingMode, dest: AddressingMode) -> u32 {
+pub(super) fn binary_op_cycles(size: OpSize, source: AddressingMode, dest: AddressingMode) -> u32 {
     let mut cycles = match size {
         OpSize::Byte | OpSize::Word => 4,
         OpSize::LongWord => 8,

@@ -23,3 +23,6 @@ pub const DEFAULT_LOG_FILTER: &str =
     any(target_os = "android", target_os = "linux")
 ))]
 pub mod native_code;
+
+#[cfg(feature = "jit-runtime")]
+pub mod jit;

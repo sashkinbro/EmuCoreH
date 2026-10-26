@@ -31,6 +31,12 @@ struct Mapping {
 }
 
 impl PublishedCode {
+    /// Page-rounded bytes owned by this mapping. Entries published together
+    /// share this extent, so a cache must charge their batch only once.
+    pub fn mapping_len(&self) -> usize {
+        self.mapping.len
+    }
+
     pub fn publish(code: &[u32]) -> Option<Self> {
         Self::publish_batch(&[code])?.pop()
     }

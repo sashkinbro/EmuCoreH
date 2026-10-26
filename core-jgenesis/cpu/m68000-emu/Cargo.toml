@@ -6,6 +6,8 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+jit-runtime = ["native-arm64", "jgenesis-common/jit-runtime"]
+jit-preview = ["jit-runtime", "jgenesis-common/jit-preview"]
 default = []
 # Experimental and explicitly selected through execute_instruction_with_native.
 native-arm64 = ["jgenesis-common/native-code"]

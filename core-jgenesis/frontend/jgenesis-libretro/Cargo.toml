@@ -8,7 +8,15 @@ publish = false
 name = "jgenesis_libretro"
 crate-type = ["cdylib", "rlib"]
 
+[features]
+default = []
+# QA only: runtime backend selection and opcode accounting.
+jit-runtime = ["genesis-core/jit-runtime", "m68000-emu/jit-runtime", "sh2-emu/jit-runtime", "jgenesis-common/jit-runtime"]
+jit-preview = ["jit-runtime", "m68000-emu/jit-preview", "sh2-emu/jit-preview", "jgenesis-common/jit-preview"]
+
 [dependencies]
+m68000-emu = { workspace = true, optional = true }
+sh2-emu = { workspace = true, optional = true }
 cdrom = { workspace = true }
 crc = { workspace = true }
 genesis-config = { workspace = true }

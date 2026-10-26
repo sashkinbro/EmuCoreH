@@ -718,3 +718,34 @@ fn cheats_execute_on_sms_gamegear_and_sg1000_ram_and_disable_cleanly() {
         std::fs::remove_dir_all(directory).unwrap();
     }
 }
+#[cfg(feature = "jit-preview")]
+#[test]
+fn qa_backend_runs_real_genesis_cpu_and_reports_executed_opcodes() {
+    let directory = std::env::temp_dir().join(format!("jgenesis-jit-qa-{}", std::process::id()));
+    let run = |native| {
+        jgenesis_common::jit::reset();
+        jgenesis_common::jit::set_enabled(native);
+        let mut writer = FsSaveWriter::new(directory.clone(), "qa".into());
+        let emulator = GenesisEmulator::create_with_32x_boot_roms(
+            GenesisHardware::Standalone, Some(genesis_rom()), None, None,
+            GenesisEmulatorConfig::default(), &mut writer, None,
+        ).unwrap();
+        let mut core = Core::new(Emulator::Genesis(emulator), writer, Console::Genesis, directory.join("qa.md"));
+        core.run_frame(Inputs::Genesis(GenesisInputs::default())).unwrap();
+        let report = jgenesis_common::jit::snapshot_json();
+        assert!(report.contains("\"cpu\":\"m68k-main\""));
+        // First actual instruction: MOVE.L immediate to the VDP address port.
+        assert!(report.contains("[9212,"), "{report}");
+        let required = unsafe { jgenesis_jit_snapshot_json(std::ptr::null_mut(), 0) };
+        let mut buffer = vec![0u8; required];
+        assert_eq!(unsafe { jgenesis_jit_snapshot_json(buffer.as_mut_ptr().cast(), buffer.len()) }, required);
+        assert_eq!(&buffer[..required - 1], report.as_bytes());
+        jgenesis_jit_reset_counters();
+        assert!(!jgenesis_common::jit::snapshot_json().contains("[9212,"));
+        core.frame.pixels.clone()
+    };
+    let interpreter = run(false);
+    let native = run(true);
+    assert_eq!(interpreter, native);
+    jgenesis_common::jit::set_enabled(false);
+}

@@ -432,3 +432,37 @@ fn tag_address(address: u32) -> u32 {
     // Cache entries are tagged using address bits 10-28
     (address & 0x1FFFFFFF) >> 10
 }
+
+/// Explicit native ABI; no generated code relies on CpuCache/Way Rust layout.
+#[cfg(all(
+    feature = "native-arm64",
+    target_arch = "aarch64",
+    target_endian = "little",
+    any(target_os = "android", target_os = "linux")
+))]
+pub(crate) struct NativeCacheView {
+    pub enabled: *const bool,
+    pub ram: *const u16,
+    pub lru: *mut u8,
+    pub tags: [*const u32; 4],
+    pub valid: [*const u64; 4],
+}
+#[cfg(all(
+    feature = "native-arm64",
+    target_arch = "aarch64",
+    target_endian = "little",
+    any(target_os = "android", target_os = "linux")
+))]
+impl CpuCache {
+    /// The owning Sh2 remains exclusively borrowed throughout generated execution.
+    /// Cache callbacks mutate these live values but never replace their allocations.
+    pub(crate) fn native_view(&mut self) -> NativeCacheView {
+        NativeCacheView {
+            enabled: &self.control.cache_enabled,
+            ram: self.ram.as_ptr(),
+            lru: self.lru_bits.as_mut_ptr(),
+            tags: std::array::from_fn(|way| self.ways[way].tags.as_ptr()),
+            valid: std::array::from_fn(|way| &self.ways[way].valid_bits as *const u64),
+        }
+    }
+}

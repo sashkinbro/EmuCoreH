@@ -8,6 +8,8 @@ edition = "2024"
 [features]
 default = []
 native-code = []
+jit-runtime = []
+jit-preview = ["jit-runtime"]
 clap = ["dep:clap"]
 serde = ["dep:serde"]
 

@@ -2,6 +2,8 @@ use super::*;
 use jgenesis_common::frontend::TimingMode;
 
 const OPTIONS: &[(&CStr, &CStr)] = &[
+    #[cfg(feature = "jit-runtime")]
+    (c"jgenesis_jit_backend", c"QA experimental CPU backend; interpreter|native"),
     (c"jgenesis_region", c"Region (restart); auto|americas|europe|japan"),
     (c"jgenesis_timing", c"Timing (restart); auto|ntsc|pal"),
     (c"jgenesis_remove_sprite_limit", c"Remove sprite limit; disabled|enabled"),
@@ -108,4 +110,9 @@ pub fn smsgg(console: Console) -> SmsGgEmulatorConfig {
     config.sms_crop_vertical_border = enabled(c"jgenesis_sms_crop_vertical_border", true);
     config.gg_use_sms_resolution = enabled(c"jgenesis_gg_sms_resolution", false);
     config
+}
+
+#[cfg(feature = "jit-runtime")]
+pub fn jit_backend_native() -> bool {
+    value(c"jgenesis_jit_backend").as_deref() == Some("native")
 }

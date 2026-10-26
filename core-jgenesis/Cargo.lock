@@ -2162,8 +2162,10 @@ dependencies = [
  "genesis-core",
  "jgenesis-common",
  "log",
+ "m68000-emu",
  "s32x-core",
  "segacd-core",
+ "sh2-emu",
  "smsgg-config",
  "smsgg-core",
  "zip",
@@ -4449,6 +4451,7 @@ dependencies = [
  "jgenesis-common",
  "log",
  "rand 0.10.1",
+ "rustc-hash 2.1.2",
 ]
 
 [[package]]

@@ -25,8 +25,11 @@ void digest_bytes(uint64_t& digest, const void* data, size_t size) {
   for (size_t i = 0; i < size; ++i) digest = (digest ^ bytes[i]) * 1099511628211ULL;
 }
 uint64_t capture_at = 0;
+uint64_t capture_before_at = 0;
 unsigned captured_width = 0, captured_height = 0;
+unsigned captured_before_width = 0, captured_before_height = 0;
 std::vector<uint8_t> captured_rgb;
+std::vector<uint8_t> captured_before_rgb;
 struct InputPulse { uint64_t frame; unsigned button; };
 std::vector<InputPulse> input_pulses;
 retro_pixel_format pixel_format = RETRO_PIXEL_FORMAT_XRGB8888;
@@ -72,12 +75,17 @@ void video(const void* data, unsigned width, unsigned height, size_t pitch) {
     for (unsigned y = 0; y < height; ++y)
       digest_bytes(video_digest, static_cast<const uint8_t*>(data) + y * pitch, row_size);
   }
-  if (video_frames == capture_at) {
-    captured_width = width; captured_height = height;
-    captured_rgb.resize(size_t(width) * height * 3);
+  if (video_frames == capture_at || video_frames == capture_before_at) {
+    if (video_frames == capture_before_at) {
+      captured_before_width = width; captured_before_height = height;
+    } else {
+      captured_width = width; captured_height = height;
+    }
+    auto& capture = video_frames == capture_before_at ? captured_before_rgb : captured_rgb;
+    capture.resize(size_t(width) * height * 3);
     for (unsigned y = 0; y < height; ++y) for (unsigned x = 0; x < width; ++x) {
       const auto* src = static_cast<const uint8_t*>(data) + y * pitch;
-      auto* dst = captured_rgb.data() + (size_t(y) * width + x) * 3;
+      auto* dst = capture.data() + (size_t(y) * width + x) * 3;
       if (pixel_format == RETRO_PIXEL_FORMAT_XRGB8888) {
         uint32_t pixel; std::memcpy(&pixel, src + x * 4, 4);
         dst[0] = pixel >> 16; dst[1] = pixel >> 8; dst[2] = pixel;
@@ -138,6 +146,12 @@ int main(int argc, char** argv) {
     char* end = nullptr;
     const long warmup = std::strtol(argv[5], &end, 10);
     if (!end || *end || warmup < 0 || warmup > 36000) throw std::runtime_error("Invalid warmup");
+    long sample_frames = 120;
+    if (const char* configured = std::getenv("JGENESIS_BENCH_SAMPLE_FRAMES")) {
+      sample_frames = std::strtol(configured, &end, 10);
+      if (!end || end == configured || *end || sample_frames < 1 || sample_frames > 36000)
+        throw std::runtime_error("Invalid sample frame count");
+    }
     for (int i = 6; i < argc; ++i) {
       const long frame = std::strtol(argv[i], &end, 10);
       if (!end || end == argv[i] || frame < 0 || frame >= warmup) throw std::runtime_error("Invalid input frame");
@@ -151,7 +165,8 @@ int main(int argc, char** argv) {
       } else if (*end) throw std::runtime_error("Invalid input pulse");
       input_pulses.push_back({uint64_t(frame), button});
     }
-    capture_at = uint64_t(warmup) + 360;
+    capture_before_at = uint64_t(warmup);
+    capture_at = uint64_t(warmup) + 3 * uint64_t(sample_frames);
     system_directory = argv[2]; save_directory = argv[3];
     std::filesystem::create_directories(save_directory);
     void* library = dlopen(argv[1], RTLD_NOW | RTLD_LOCAL);
@@ -193,7 +208,7 @@ int main(int argc, char** argv) {
     for (int sample = 0; sample < 3 && !stopped; ++sample) {
       const auto wall = std::chrono::steady_clock::now();
       const auto cpu = cpu_nanos();
-      constexpr int frames = 120;
+      const long frames = sample_frames;
       for (int i = 0; i < frames && !stopped; ++i) run();
       const auto cpu_elapsed = cpu_nanos() - cpu;
       const double wall_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - wall).count();
@@ -213,14 +228,19 @@ int main(int argc, char** argv) {
       std::fclose(file);
       if (written != size - 1) throw std::runtime_error("JIT profile truncated");
     }
-    if (!captured_rgb.empty()) {
-      FILE* file = std::fopen((save_directory + "/benchmark.ppm").c_str(), "wb");
+    const auto save_capture = [&](const char* name, const std::vector<uint8_t>& pixels,
+                                  unsigned width, unsigned height) {
+      if (pixels.empty()) return;
+      FILE* file = std::fopen((save_directory + name).c_str(), "wb");
       if (!file) throw std::runtime_error("Cannot save benchmark scene");
-      std::fprintf(file, "P6\n%u %u\n255\n", captured_width, captured_height);
-      const auto written = std::fwrite(captured_rgb.data(), 1, captured_rgb.size(), file);
+      std::fprintf(file, "P6\n%u %u\n255\n", width, height);
+      const auto written = std::fwrite(pixels.data(), 1, pixels.size(), file);
       std::fclose(file);
-      if (written != captured_rgb.size()) throw std::runtime_error("Scene capture truncated");
-    }
+      if (written != pixels.size()) throw std::runtime_error("Scene capture truncated");
+    };
+    save_capture("/benchmark.ppm", captured_rgb, captured_width, captured_height);
+    save_capture("/benchmark-before.ppm", captured_before_rgb,
+                 captured_before_width, captured_before_height);
     const auto state_size = symbol<size_t(*)()>(library, "retro_serialize_size")();
     if (!state_size || state_size > 128 * 1024 * 1024) throw std::runtime_error("Invalid final state size");
     std::vector<uint8_t> state(state_size);
