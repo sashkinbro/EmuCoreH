@@ -1108,10 +1108,11 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     else com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path))
                 val config = loadLaunchConfig()
                 if (currentTouchPlatform == EmulationPlatform.SEGA_CD ||
-                    currentTouchPlatform == EmulationPlatform.SEGA_32X) {
+                    currentTouchPlatform == EmulationPlatform.SEGA_32X || currentTouchPlatform.isSaturn) {
                     com.sbro.emucoreh.core.BiosImport.restoreSelections(
                         getApplication(), preferences.biosPaths.first(),
-                        force = if (currentTouchPlatform == EmulationPlatform.SEGA_32X)
+                        force = if (currentTouchPlatform.isSaturn) !com.sbro.emucoreh.core.SaturnBios.isInstalled(getApplication())
+                        else if (currentTouchPlatform == EmulationPlatform.SEGA_32X)
                             com.sbro.emucoreh.core.Sega32XBios.Part.entries.any {
                                 !com.sbro.emucoreh.core.Sega32XBios.isInstalled(getApplication(), it)
                             }
@@ -1165,6 +1166,9 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     else -> if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isModel3) {
                         runCatching { com.sbro.emucoreh.core.Model3ContentPreparer.prepare(getApplication(), path) }
                             .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Model 3 content", it) }.getOrNull()
+                    } else if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isSaturn) {
+                        runCatching { com.sbro.emucoreh.core.SaturnContentPreparer.prepare(getApplication(), path) }
+                            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Saturn content", it) }.getOrNull()
                     } else if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isSega) {
                         // The previous session (including a failed one) has been unloaded above.
                         // Copy SAF content before taking CoreRuntime's lifecycle lock, so a
@@ -1492,6 +1496,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     launchFailed = true,
                     statusMessage = null,
                     toastMessage = when {
+                        currentTouchPlatform.isSaturn && !com.sbro.emucoreh.core.SaturnBios.isInstalled(getApplication()) -> "saturn_bios_missing"
                         com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
                             ?.startsWith("SEGA_32X_BIOS_REQUIRED:") == true -> "sega_32x_bios_missing"
                         com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()

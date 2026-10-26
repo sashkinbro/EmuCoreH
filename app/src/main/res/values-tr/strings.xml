@@ -393,7 +393,7 @@
 Arcade: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="onboarding_games_title">Oyun klasörünü seç</string>
     <string name="onboarding_games_desc">Oyunlarınızı içeren klasörü seçin.</string>
     <string name="onboarding_status_required">Gerekli</string>
@@ -2317,4 +2317,22 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">Seçilen ön ayarlar kaldırılamadı.</string>
     <string name="controls_editor_groups">Gruplar</string>
     <string name="controls_editor_individual">Tek tek düğmeler</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">Desteklenen sistemler ve BIOS</string>
+    <string name="supported_systems_intro">Oyun klasörlerinizi aşağıdan ekleyin. Kendi BIOS dosyalarınızı BIOS bölümünden içe aktarın.</string>
+    <string name="supported_systems_no_bios_title">BIOS olmadan oynamaya hazır</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS isteğe bağlıdır: yerleşik BIOS emülasyonu, BIOS dosyası olmadan oynamanızı sağlar.</string>
+    <string name="supported_systems_required_title">Bu sistemler BIOS gerektirir</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD: oyunun bölgesine uygun BIOS.\n32X: üç BIOS dosyasının tamamı.\nSaturn: bir adet 512 KiB BIOS dosyası.</string>
+    <string name="supported_systems_arcade_body">Her sistem için uygun arcade BIOS setini içe aktarın.</string>
+    <string name="saturn_bios_missing">Saturn BIOS eksik veya geçersiz. Ayarlar, Kütüphane, BIOS bölümünü açıp kendi saturn_bios.bin, sega_101.bin veya mpr-17933.bin dosyanızı içe aktarın.</string>
+    <string name="saturn_sh2_core">SH-2 işlemci motoru</string>
+    <string name="saturn_dynarec">Dinamik yeniden derleyici</string>
+    <string name="saturn_interpreter">Yorumlayıcı</string>
+    <string name="saturn_frameskip">Otomatik kare atlama</string>
+    <string name="saturn_frameskip_help">Normal oyun hızını korumak için gerektiğinde görüntü karelerini atlar. Animasyonun tamamı için kapalı bırakın.</string>
+    <string name="saturn_addon_cart">RAM genişletme kartuşu</string>
+    <string name="saturn_cart_4m">4 MiB</string>
+    <string name="saturn_cart_1m">1 MiB</string>
 </resources>

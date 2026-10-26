@@ -6,6 +6,36 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TheGamesDbTest {
+    @Test fun saturnNameFallbackRequiresOneExactIdentityAndSkipsAnEarlierSequel() = withApi { client, _, reply ->
+        reply("/Platforms/ByPlatformName", 200,
+            """{"code":200,"data":{"platforms":[{"id":17,"name":"Sega Saturn"}]}}""")
+        val response = gameResponse("").replace("\"games\":[", "\"games\":[{\"id\":999,\"game_title\":\"Daytona USA 2\"},")
+        reply("/Games/ByGameName", 200, response)
+        assertEquals("Daytona USA", client.findByName("Daytona\u00a0USA (USA)", saturn = true)?.title)
+        assertNull(client.findByName("Daytona USA (Special Edition)", saturn = true))
+        assertNull(client.findByName("Daytona USA (Demo)", saturn = true))
+        assertNull(client.findByName("Daytona USA 999", saturn = true))
+    }
+
+    @Test fun saturnNameFallbackRejectsAmbiguousExactResults() = withApi { client, _, reply ->
+        reply("/Platforms/ByPlatformName", 200,
+            """{"code":200,"data":{"platforms":[{"id":17,"name":"Sega Saturn"}]}}""")
+        reply("/Games/ByGameName", 200,
+            gameResponse("").replace("\"games\":[", "\"games\":[{\"id\":999,\"game_title\":\"Daytona USA\"},"))
+        assertNull(client.findByName("Daytona USA", saturn = true))
+    }
+
+    @Test fun saturnFallbackUsesItsOwnPlatformAndNeverDreamcast() = withApi { client, requests, reply ->
+        reply("/Platforms/ByPlatformName", 200,
+            """{"code":200,"data":{"platforms":[{"id":17,"name":"Sega Saturn"},{"id":16,"name":"Sega Dreamcast"}]}}""")
+        reply("/Games/ByGameName", 200, gameResponse("MK-81200"))
+        assertNotNull(client.findByName("Daytona USA", saturn = true))
+        assertTrue(requests.first().contains("name=Saturn"))
+        assertTrue(requests.last().contains("filter%5Bplatform%5D=17"))
+        assertFalse(requests.any { it.contains("name=Dreamcast") })
+        client.findByName("Sega Rally", saturn = true)
+        assertEquals(1, requests.count { it.startsWith("/Platforms/") })
+    }
     private fun withApi(block: (TheGamesDbClient, MutableList<String>, (String, Int, String) -> Unit) -> Unit) {
         val requests = mutableListOf<String>()
         val replies = mutableMapOf<String, Pair<Int, String>>()

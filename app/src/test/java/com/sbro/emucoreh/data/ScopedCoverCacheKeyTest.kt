@@ -4,6 +4,11 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ScopedCoverCacheKeyTest {
+    @org.junit.Test fun saturnCoversDoNotReuseDreamcastCacheEntries() {
+        org.junit.Assert.assertNotEquals(scopedCoverCacheKey("daytona", "Dreamcast"), scopedCoverCacheKey("daytona", "Saturn"))
+        org.junit.Assert.assertFalse(coverCacheFileMatchesPlatform("daytona.jpg", "Saturn"))
+        org.junit.Assert.assertTrue(coverCacheFileMatchesPlatform(scopedCoverCacheKey("daytona.jpg", "Saturn"), "Saturn"))
+    }
     @Test fun sameTitleHasIndependentSegaCacheFilesAndLegacyDreamcastKeysStayStable() {
         assertEquals("sonic", scopedCoverCacheKey("sonic", null))
         assertEquals("sonic", scopedCoverCacheKey("sonic", "DREAMCAST"))

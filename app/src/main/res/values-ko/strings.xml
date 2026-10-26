@@ -393,7 +393,7 @@
 아케이드: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="onboarding_games_title">게임 폴더 선택</string>
     <string name="onboarding_games_desc">게임이 포함된 폴더를 선택하세요.</string>
     <string name="onboarding_status_required">필요함</string>
@@ -2316,4 +2316,22 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">선택한 프리셋을 삭제하지 못했습니다.</string>
     <string name="controls_editor_groups">그룹</string>
     <string name="controls_editor_individual">개별 버튼</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">지원 시스템 및 BIOS</string>
+    <string name="supported_systems_intro">아래에서 게임 폴더를 추가하세요. 보유한 BIOS 파일은 BIOS 항목에서 가져올 수 있습니다.</string>
+    <string name="supported_systems_no_bios_title">BIOS 없이 바로 플레이</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS는 선택 사항입니다. 내장 BIOS 에뮬레이션으로 BIOS 파일 없이 플레이할 수 있습니다.</string>
+    <string name="supported_systems_required_title">BIOS가 필요한 시스템</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD: 게임 지역에 맞는 BIOS.\n32X: BIOS 파일 3개 모두.\nSaturn: 512 KiB BIOS 파일 1개.</string>
+    <string name="supported_systems_arcade_body">각 시스템에 맞는 아케이드 BIOS 세트를 가져오세요.</string>
+    <string name="saturn_bios_missing">Saturn BIOS가 없거나 올바르지 않습니다. 설정, 라이브러리, BIOS를 열고 보유한 saturn_bios.bin, sega_101.bin 또는 mpr-17933.bin을 가져오세요.</string>
+    <string name="saturn_sh2_core">SH-2 CPU 실행 방식</string>
+    <string name="saturn_dynarec">동적 재컴파일러</string>
+    <string name="saturn_interpreter">인터프리터</string>
+    <string name="saturn_frameskip">자동 프레임 건너뛰기</string>
+    <string name="saturn_frameskip_help">정상 게임 속도를 유지하도록 필요할 때 영상 프레임을 건너뜁니다. 모든 애니메이션을 보려면 꺼 두세요.</string>
+    <string name="saturn_addon_cart">RAM 확장 카트리지</string>
+    <string name="saturn_cart_4m">4 MiB</string>
+    <string name="saturn_cart_1m">1 MiB</string>
 </resources>

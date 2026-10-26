@@ -29,9 +29,15 @@ class NativeCoreBridge {
     external fun probeSegaDisc(path: String): Int
     /** Duplicates a borrowed SAF descriptor; the caller retains ownership. */
     external fun probeSegaDiscDescriptor(descriptor: Int): Int
+    /** Read-only Saturn boot-header title and product code; supports CHD and borrowed FD paths. */
+    external fun saturnDiscMetadata(path: String): String?
     /** Opt-in QA fingerprint; disabled during ordinary gameplay. */
     external fun resetModel3AudioFingerprint()
     external fun model3AudioFingerprint(): Long
+    /** Opt-in Saturn QA counters, inactive during ordinary play. */
+    external fun resetSaturnAudioFingerprint()
+    external fun saturnAudioFingerprint(): Long
+    external fun saturnAudioNonzeroSamples(): Long
     external fun createSession(): Long
     external fun destroySession(handle: Long)
     external fun nativeSetOption(key: String, value: String)

@@ -19,12 +19,13 @@ internal fun gameMenuCustomizationTabAvailable(platform: EmulationPlatform, tab:
 
 /** Search must expose the same core capabilities as the settings rows it opens. */
 internal fun settingsSearchEntryAvailable(platform: EmulationPlatform, tab: String, title: Int): Boolean {
+    if (tab == "Saturn") return platform.isSaturn
     if (platform.coreId == 0) return true
     if (title == R.string.settings_upscale) return segaSettingsTabAvailable(tab) && platform.supportsInternalResolution
     if (!segaSettingsTabAvailable(tab) || title in flycastOnlySearchSettings) return false
     // Model 3 has no renderer choice; Supermodel is OpenGL-only. Sega does
     // expose the jgenesis output backend, so the row is only hidden here.
-    if (platform.isModel3 && title == R.string.settings_renderer) return false
+    if ((platform.isModel3 || platform.isSaturn) && title == R.string.settings_renderer) return false
     return platform.supportsAnalogControlSettings() || title !in analogSearchSettings
 }
 

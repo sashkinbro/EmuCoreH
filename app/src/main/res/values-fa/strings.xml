@@ -499,7 +499,7 @@
 آرکید: naomi.zip، naomi2.zip، awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin، bios_CD_E.bin، bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="onboarding_games_title">انتخاب پوشه بازی‌ها</string>
     <string name="onboarding_games_desc">پوشه‌ای را که حاوی بازی‌های شماست انتخاب کنید.</string>
     <string name="onboarding_status_required">الزامی است</string>
@@ -2332,4 +2332,22 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">پیش‌تنظیم‌های انتخاب‌شده حذف نشدند.</string>
     <string name="controls_editor_groups">گروه‌ها</string>
     <string name="controls_editor_individual">دکمه‌های جداگانه</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">سیستم‌های پشتیبانی‌شده و BIOS</string>
+    <string name="supported_systems_intro">پوشه‌های بازی را از پایین اضافه کنید. فایل‌های BIOS خود را در بخش BIOS وارد کنید.</string>
+    <string name="supported_systems_no_bios_title">آمادهٔ بازی بدون BIOS</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS اختیاری است: شبیه‌سازی داخلی BIOS امکان بازی بدون فایل BIOS را فراهم می‌کند.</string>
+    <string name="supported_systems_required_title">این سیستم‌ها به BIOS نیاز دارند</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD: فایل BIOS متناسب با منطقهٔ بازی.\n32X: هر سه فایل BIOS.\nSaturn: یک فایل BIOS با حجم ۵۱۲ کیبی‌بایت.</string>
+    <string name="supported_systems_arcade_body">مجموعهٔ BIOS آرکید متناسب با هر سیستم را وارد کنید.</string>
+    <string name="saturn_bios_missing">BIOS دستگاه Saturn موجود نیست یا معتبر نیست. تنظیمات، کتابخانه، BIOS را باز کنید و فایل saturn_bios.bin یا sega_101.bin یا mpr-17933.bin خود را وارد کنید.</string>
+    <string name="saturn_sh2_core">موتور پردازندهٔ SH-2</string>
+    <string name="saturn_dynarec">بازکامپایلر پویا</string>
+    <string name="saturn_interpreter">مفسر</string>
+    <string name="saturn_frameskip">رد کردن خودکار فریم‌ها</string>
+    <string name="saturn_frameskip_help">در صورت نیاز فریم‌های تصویر را رد می‌کند تا سرعت عادی بازی حفظ شود. برای پویانمایی کامل، غیرفعال بگذارید.</string>
+    <string name="saturn_addon_cart">کارتریج افزایش حافظهٔ رم</string>
+    <string name="saturn_cart_4m">۴ میبی‌بایت</string>
+    <string name="saturn_cart_1m">۱ میبی‌بایت</string>
 </resources>

@@ -44,6 +44,7 @@ internal fun platformLabel(platform: EmulationPlatform): String = stringResource
     EmulationPlatform.MODEL_3 -> R.string.home_platform_model_3
     EmulationPlatform.DREAMCAST -> R.string.sega_flycast_systems
     EmulationPlatform.GENESIS -> R.string.home_platform_genesis
+    EmulationPlatform.SATURN -> R.string.home_platform_saturn
     EmulationPlatform.SEGA_CD -> R.string.home_platform_sega_cd
     EmulationPlatform.SEGA_32X -> R.string.home_platform_sega_32x
     EmulationPlatform.MASTER_SYSTEM -> R.string.home_platform_master_system
@@ -91,19 +92,23 @@ internal fun SegaCoreOptionRows(
 ) {
     val context = LocalContext.current
     var version by remember { mutableIntStateOf(0) }
-    SegaCoreOptions.options(platform, liveOnly).filter { category == null || it.category == category }.forEach { option ->
+    val options = if (platform.isSaturn) com.sbro.emucoreh.core.SaturnCoreOptions.options(platform, liveOnly) else SegaCoreOptions.options(platform, liveOnly)
+    options.filter { category == null || it.category == category }.forEach { option ->
         val current = remember(platform, option.key, overrides, version) {
-            overrides[option.key] ?: SegaCoreOptions.value(context, option.key, platform) ?: option.defaultValue
+            overrides[option.key] ?: (if (platform.isSaturn) com.sbro.emucoreh.core.SaturnCoreOptions.value(context, option.key, platform) else SegaCoreOptions.value(context, option.key, platform)) ?: option.defaultValue
         }
         Text(stringResource(option.labelRes), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-        if (!liveOnly && option.key in setOf("jgenesis_region", "jgenesis_timing"))
+        if (platform.isSaturn && !com.sbro.emucoreh.core.SaturnCoreOptions.requiresRestart(option.key))
+            Text(stringResource(option.descriptionRes), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (!liveOnly && (option.key in setOf("jgenesis_region", "jgenesis_timing") || (platform.isSaturn && com.sbro.emucoreh.core.SaturnCoreOptions.requiresRestart(option.key))))
             Text(stringResource(R.string.sega_restart_required), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             option.choices.forEach { choice ->
                 FilterChip(selected = current == choice.value, colors = premiumFilterChipColors(), onClick = {
                     if (onChange != null) onChange(option.key, choice.value)
                     else {
-                        SegaCoreOptions.set(context, option.key, choice.value, platform)
+                        if (platform.isSaturn) com.sbro.emucoreh.core.SaturnCoreOptions.set(context, option.key, choice.value, platform)
+                        else SegaCoreOptions.set(context, option.key, choice.value, platform)
                         if (com.sbro.emucoreh.core.CoreRuntime.platform == platform) NativeApp.setCoreOption(option.key, choice.value)
                     }
                     version++

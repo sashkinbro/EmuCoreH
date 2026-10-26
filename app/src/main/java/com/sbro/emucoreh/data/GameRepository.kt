@@ -68,7 +68,7 @@ class GameRepository {
         private val nonAlphanumeric = Regex("[^a-z0-9]+")
 
         internal fun isStandaloneSegaBin(name: String, platform: EmulationPlatform, referencedByCue: Boolean): Boolean =
-            name.endsWith(".bin", true) && platform.isSega && !platform.supportsDisc && !referencedByCue
+            name.endsWith(".bin", true) && ((platform.isSega && !platform.supportsDisc) || platform.isSaturn) && !referencedByCue
 
         /**
          * A folder-per-game dump usually names its descriptor `disc.gdi` or
@@ -489,7 +489,7 @@ class GameRepository {
                         cachedGame.fileSize == entrySize &&
                         cachedGame.lastModified == lastModified &&
                         cachedGame.fileName == name &&
-                        !(cachedGame.platform == null && extension in setOf("chd", "cue", "m3u")) &&
+                        !(cachedGame.platform == null && extension in setOf("chd", "cue", "m3u", "iso", "bin")) &&
                         !cachedTitleIsGeneric &&
                         !cachedPlatformIsStale
                     if (canReuseCachedGame) {

@@ -9,6 +9,7 @@ import android.util.Log
 import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.GameFormats
 import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.SegaPlatformDetector
 import com.sbro.emucoreh.data.igdb.catalogPlatformName
 import com.sbro.emucoreh.core.NativeApp
@@ -296,7 +297,7 @@ class CoverArtRepository(context: Context) {
 
     private fun gamePlatform(game: GameItem): String = game.platform ?: SegaPlatformDetector.detectName(game.fileName).name
     private fun isSegaGame(game: GameItem): Boolean =
-        catalogPlatformName(gamePlatform(game)) in setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000", "Sega Model 3")
+        catalogPlatformName(gamePlatform(game)) in setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000", "Sega Model 3", "Saturn")
 
     fun downloadCover(game: GameItem, mode: CoverFetchMode = CoverFetchMode.FULL): String? {
         if (!isFetchBoxartEnabled()) {
@@ -372,6 +373,10 @@ class CoverArtRepository(context: Context) {
             val miss = coverMissFile(key)
             if (miss.isFile && System.currentTimeMillis() - miss.lastModified() < MISS_TTL_MS) return existingCover?.absolutePath
             val downloaded = downloadRepositoryCover(game, key, style, isLight)
+                ?: if (catalogPlatformName(gamePlatform(game)) == "Saturn") {
+                    val title = EmulatorBridge.cleanGameDisplayTitle(game.title, game.fileName)
+                    TheGamesDb.findByName(title, saturn = true)?.imageUrl?.let { downloadImage(it, key, "TheGamesDB Saturn") }
+                } else null
             if (downloaded != null) miss.delete() else miss.writeText("not-found at ${System.currentTimeMillis()}")
             return downloaded ?: existingCover?.absolutePath
         }

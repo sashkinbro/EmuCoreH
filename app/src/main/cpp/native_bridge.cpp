@@ -128,18 +128,18 @@ std::mutex g_core_load_mutex;
 // process-lifetime loader reference per DSO so their destructor addresses stay valid.
 // This also bounds loader references when the library is used only for disc probes.
 std::mutex g_core_library_mutex;
-void* g_core_libraries[3]{};
+void* g_core_libraries[4]{};
 
 const char* CoreLibraryName(int core_id) {
-    return core_id == 2 ? "libsupermodel_libretro.so" : core_id == 1 ? "libjgenesis_libretro.so" : "flycast_libretro.so";
+    return core_id == 3 ? "libsaturn_libretro.so" : core_id == 2 ? "libsupermodel_libretro.so" : core_id == 1 ? "libjgenesis_libretro.so" : "flycast_libretro.so";
 }
 
 const char* CoreDisplayName() {
-    return g_core_id.load() == 2 ? "Supermodel" : g_core_id.load() == 1 ? "jgenesis" : "Flycast";
+    return g_core_id.load() == 3 ? "YabaSanshiro" : g_core_id.load() == 2 ? "Supermodel" : g_core_id.load() == 1 ? "jgenesis" : "Flycast";
 }
 
 void* RetainCoreLibrary(int core_id) {
-    if (core_id < 0 || core_id > 2) return nullptr;
+    if (core_id < 0 || core_id > 3) return nullptr;
     std::lock_guard<std::mutex> lock(g_core_library_mutex);
     void*& handle = g_core_libraries[core_id];
     if (handle == nullptr) {
@@ -326,7 +326,7 @@ bool LoadCoreLocked() {
     g_core.set_lightgun_cursor_visible = reinterpret_cast<void (*)(bool)>(resolve("flycast_set_lightgun_cursor_visible"));
     g_core.set_cabinet_buttons = reinterpret_cast<void (*)(unsigned, unsigned)>(resolve("flycast_set_cabinet_buttons"));
     g_core.get_memory_data = reinterpret_cast<void* (*)(unsigned)>(resolve("retro_get_memory_data"));
-    g_core.boot_error = reinterpret_cast<const char* (*)()>(resolve(core_id == 2 ? "supermodel_boot_error" : core_id == 1 ? "jgenesis_boot_error" : "emucorea_boot_error"));
+    g_core.boot_error = reinterpret_cast<const char* (*)()>(resolve(core_id == 3 ? "saturn_boot_error" : core_id == 2 ? "supermodel_boot_error" : core_id == 1 ? "jgenesis_boot_error" : "emucorea_boot_error"));
     g_core.scrape_disc = reinterpret_cast<int (*)(const char*, const char*, char*, int, char*, int)>(
         resolve("emucoreh_scrape_disc"));
     g_core.get_memory_size = reinterpret_cast<size_t (*)(unsigned)>(resolve("retro_get_memory_size"));
@@ -375,8 +375,14 @@ bool HandleHardwareRender(retro_hw_render_callback* callback) {
     }
     if (callback->context_type != RETRO_HW_CONTEXT_OPENGLES2 &&
         callback->context_type != RETRO_HW_CONTEXT_OPENGLES3 &&
+        callback->context_type != RETRO_HW_CONTEXT_OPENGLES_VERSION &&
         callback->context_type != RETRO_HW_CONTEXT_OPENGL) {
         LOGW("Rejecting hardware render context type %d", static_cast<int>(callback->context_type));
+        return false;
+    }
+    if (callback->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION &&
+        (callback->version_major != 3 || callback->version_minor > 2)) {
+        LOGW("Unsupported GLES request %u.%u", callback->version_major, callback->version_minor);
         return false;
     }
 
@@ -900,8 +906,14 @@ bool CreateEglContext(ANativeWindow* window) {
     }
 
     if (g_gl.context == EGL_NO_CONTEXT) {
-        const EGLint context_attributes[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
-        g_gl.context = eglCreateContext(g_gl.display, g_gl.config, EGL_NO_CONTEXT, context_attributes);
+        const EGLint minor = g_gl.hw_registered && g_gl.hw.context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION
+            ? static_cast<EGLint>(g_gl.hw.version_minor) : 0;
+        const EGLint versioned_attributes[] = {EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
+                                               EGL_CONTEXT_MINOR_VERSION_KHR, minor, EGL_NONE};
+        const EGLint legacy_attributes[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
+        const bool explicit_version = g_gl.hw_registered && g_gl.hw.context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION;
+        g_gl.context = eglCreateContext(g_gl.display, g_gl.config, EGL_NO_CONTEXT,
+                                       explicit_version ? versioned_attributes : legacy_attributes);
         if (g_gl.context == EGL_NO_CONTEXT) {
             LOGE("eglCreateContext failed");
             return false;
@@ -923,6 +935,16 @@ bool CreateEglContext(ANativeWindow* window) {
         eglDestroySurface(g_gl.display, g_gl.surface);
         g_gl.surface = EGL_NO_SURFACE;
         return false;
+    }
+    if (g_gl.hw_registered && g_gl.hw.context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION) {
+        GLint major = 0, minor = 0;
+        glGetIntegerv(GL_MAJOR_VERSION, &major);
+        glGetIntegerv(GL_MINOR_VERSION, &minor);
+        if (major < static_cast<GLint>(g_gl.hw.version_major) ||
+            (major == static_cast<GLint>(g_gl.hw.version_major) && minor < static_cast<GLint>(g_gl.hw.version_minor))) {
+            LOGE("GLES %u.%u required; context is %d.%d", g_gl.hw.version_major, g_gl.hw.version_minor, major, minor);
+            return false;
+        }
     }
     return true;
 }
@@ -1319,10 +1341,11 @@ int16_t RetroInputState(unsigned port, unsigned device, unsigned index, unsigned
         if (pressed(7)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_LEFT;
         if (pressed(5)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
         if (pressed(12)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_X;  // Triangle
-        if (pressed(13)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_A;  // Circle
-        if (pressed(14)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_B;  // Cross
-        if (pressed(15)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_Y;  // Square
-        if (pressed(10)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_L;
+        const bool saturn = g_core_id.load() == 3;
+        if (pressed(13)) active |= 1u << (saturn ? RETRO_DEVICE_ID_JOYPAD_L : RETRO_DEVICE_ID_JOYPAD_A);  // C / Circle
+        if (pressed(14)) active |= 1u << (saturn ? RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B);  // B / Cross
+        if (pressed(15)) active |= 1u << (saturn ? RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_Y);  // A / Square
+        if (pressed(10)) active |= 1u << (saturn ? RETRO_DEVICE_ID_JOYPAD_Y : RETRO_DEVICE_ID_JOYPAD_L);  // X / L1
         if (pressed(11)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_R;
         // The Dreamcast pad's analog L/R triggers are read from the libretro
         // L2/R2 ids by the core (get_analog_trigger), with the digital mask as
@@ -1402,7 +1425,7 @@ size_t EmuCoreHGetMemorySize(unsigned id) {
 
 JNIEXPORT jboolean JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeSelectCore(JNIEnv*, jobject, jint core_id) {
-    if (core_id < 0 || core_id > 2) return JNI_FALSE;
+    if (core_id < 0 || core_id > 3) return JNI_FALSE;
     std::lock_guard<std::mutex> core_lock(g_frontend.core_mutex);
     if (g_core_id.load() == core_id) return LoadCoreLocked() ? JNI_TRUE : JNI_FALSE;
     // Kotlin joins the worker and destroys its session before reaching this boundary.
@@ -1438,8 +1461,11 @@ JNIEXPORT jint JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_probeSegaDiscDescriptor(JNIEnv*, jobject, jint descriptor) {
     if (descriptor < 0) return 0;
     void* handle = RetainCoreLibrary(1);
-    if (handle == nullptr) return 0;
-    auto probe = reinterpret_cast<int (*)(int)>(dlsym(handle, "jgenesis_probe_disc_fd"));
+    auto probe = handle ? reinterpret_cast<int (*)(int)>(dlsym(handle, "jgenesis_probe_disc_fd")) : nullptr;
+    const int result = probe != nullptr ? probe(descriptor) : 0;
+    if (result != 0) return result;
+    handle = RetainCoreLibrary(3);
+    probe = handle ? reinterpret_cast<int (*)(int)>(dlsym(handle, "saturn_probe_disc_fd")) : nullptr;
     return probe != nullptr ? probe(descriptor) : 0;
 }
 
@@ -1450,10 +1476,24 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_probeSegaDisc(JNIEnv* env, jobject,
     // Probe without touching the running core; its DSO remains mapped when this
     // coroutine/scanner thread later runs native thread-local destructors.
     void* handle = RetainCoreLibrary(1);
-    if (handle == nullptr) return 0;
-    auto probe = reinterpret_cast<int (*)(const char*)>(dlsym(handle, "jgenesis_probe_disc"));
+    auto probe = handle ? reinterpret_cast<int (*)(const char*)>(dlsym(handle, "jgenesis_probe_disc")) : nullptr;
     const int result = probe != nullptr ? probe(file.c_str()) : 0;
-    return result;
+    if (result != 0) return result;
+    handle = RetainCoreLibrary(3);
+    probe = handle ? reinterpret_cast<int (*)(const char*)>(dlsym(handle, "saturn_probe_disc")) : nullptr;
+    return probe != nullptr ? probe(file.c_str()) : 0;
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_saturnDiscMetadata(JNIEnv* env, jobject, jstring path) {
+    const std::string file = ToString(env, path);
+    if (file.empty()) return nullptr;
+    void* handle = RetainCoreLibrary(3);
+    using Metadata = int (*)(const char*, char*, size_t, char*, size_t);
+    auto metadata = handle ? reinterpret_cast<Metadata>(dlsym(handle, "saturn_disc_metadata")) : nullptr;
+    char title[113]{}, serial[11]{};
+    if (!metadata || metadata(file.c_str(), title, sizeof(title), serial, sizeof(serial)) != 2) return nullptr;
+    return env->NewStringUTF((std::string(title) + '\n' + serial).c_str());
 }
 
 JNIEXPORT void JNICALL
@@ -1992,6 +2032,30 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_model3AudioFingerprint(JNIEnv*, job
     return fingerprint ? static_cast<jlong>(fingerprint()) : 0;
 }
 
+JNIEXPORT void JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_resetSaturnAudioFingerprint(JNIEnv*, jobject) {
+    if (g_core_id.load() != 3) return;
+    void* handle = RetainCoreLibrary(3);
+    auto reset = handle ? reinterpret_cast<void (*)()>(dlsym(handle, "saturn_reset_audio_fingerprint")) : nullptr;
+    if (reset) reset();
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_saturnAudioFingerprint(JNIEnv*, jobject) {
+    if (g_core_id.load() != 3) return 0;
+    void* handle = RetainCoreLibrary(3);
+    auto read = handle ? reinterpret_cast<uint64_t (*)()>(dlsym(handle, "saturn_audio_fingerprint")) : nullptr;
+    return read ? static_cast<jlong>(read()) : 0;
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_saturnAudioNonzeroSamples(JNIEnv*, jobject) {
+    if (g_core_id.load() != 3) return 0;
+    void* handle = RetainCoreLibrary(3);
+    auto read = handle ? reinterpret_cast<uint64_t (*)()>(dlsym(handle, "saturn_audio_nonzero_samples")) : nullptr;
+    return read ? static_cast<jlong>(read()) : 0;
+}
+
 JNIEXPORT jstring JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_getDiagnostics(JNIEnv* env, jobject) {
     char buffer[256];
@@ -2079,7 +2143,7 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_nativeGameSerial(JNIEnv* env, jobje
 JNIEXPORT jboolean JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_hasDiscMedia(JNIEnv*, jobject, jlong handle) {
     if (g_core_id.load() == 2) return JNI_FALSE;
-    if (g_core_id.load() == 1) {
+    if (g_core_id.load() == 1 || g_core_id.load() == 3) {
         std::lock_guard<std::mutex> lock(g_frontend.mutex);
         return handle != 0 && g_frontend.game_loaded.load() &&
             g_frontend.disk_control.get_num_images != nullptr &&

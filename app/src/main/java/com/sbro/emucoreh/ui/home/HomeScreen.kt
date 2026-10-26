@@ -2085,6 +2085,7 @@ private fun libraryPlatformLabelRes(platform: LibraryPlatform): Int = when (plat
         LibraryPlatform.MODEL_3 -> R.string.home_platform_model_3
         LibraryPlatform.SYSTEM_SP -> R.string.home_platform_system_sp
         LibraryPlatform.GENESIS -> R.string.home_platform_genesis
+        LibraryPlatform.SATURN -> R.string.home_platform_saturn
         LibraryPlatform.SEGA_CD -> R.string.home_platform_sega_cd
         LibraryPlatform.SEGA_32X -> R.string.home_platform_sega_32x
         LibraryPlatform.MASTER_SYSTEM -> R.string.home_platform_master_system

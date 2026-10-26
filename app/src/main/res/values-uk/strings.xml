@@ -257,7 +257,7 @@
 Аркади: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="onboarding_games_title">Виберіть папку з іграми</string>
     <string name="onboarding_games_desc">Виберіть папку, яка містить ваші ігри.</string>
     <string name="onboarding_status_required">Обов\'язково</string>
@@ -2322,4 +2322,22 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">Не вдалося прибрати вибрані пресети.</string>
     <string name="controls_editor_groups">Групи</string>
     <string name="controls_editor_individual">Окремі кнопки</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">Підтримувані системи та BIOS</string>
+    <string name="supported_systems_intro">Додайте папки з іграми нижче. Власні файли BIOS імпортуйте в розділі BIOS.</string>
+    <string name="supported_systems_no_bios_title">Можна грати без BIOS</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS необов’язковий: вбудована емуляція BIOS дозволяє грати без окремого файла.</string>
+    <string name="supported_systems_required_title">Для цих систем потрібен BIOS</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD: BIOS відповідного регіону гри.\n32X: усі три файли BIOS.\nSaturn: один файл BIOS розміром 512 КіБ.</string>
+    <string name="supported_systems_arcade_body">Імпортуйте відповідний набір аркадного BIOS для кожної системи.</string>
+    <string name="saturn_bios_missing">BIOS Saturn відсутній або недійсний. Відкрийте Налаштування, Бібліотека, BIOS та імпортуйте власний saturn_bios.bin, sega_101.bin або mpr-17933.bin.</string>
+    <string name="saturn_sh2_core">Режим процесорів SH-2</string>
+    <string name="saturn_dynarec">Динамічна перекомпіляція</string>
+    <string name="saturn_interpreter">Інтерпретатор</string>
+    <string name="saturn_frameskip">Автоматичний пропуск кадрів</string>
+    <string name="saturn_frameskip_help">За потреби пропускає відеокадри, щоб гра працювала зі звичайною швидкістю. Вимкніть для повної анімації.</string>
+    <string name="saturn_addon_cart">Картридж розширення пам’яті</string>
+    <string name="saturn_cart_4m">4 МіБ</string>
+    <string name="saturn_cart_1m">1 МіБ</string>
 </resources>

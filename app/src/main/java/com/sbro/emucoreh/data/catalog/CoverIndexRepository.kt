@@ -83,7 +83,7 @@ class CoverIndexRepository(private val context: Context) {
     }
 
     private fun isSegaPlatform(platform: String): Boolean = catalogPlatformName(platform) in
-        setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000", "Sega Model 3")
+        setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000", "Sega Model 3", "Saturn")
 
     /**
      * Resolves an arcade cover URL by archive romset name (e.g. 18wheelr) or ROM unique ID.
@@ -142,6 +142,14 @@ class CoverIndexRepository(private val context: Context) {
         val path = learned.getString(learnedKey(norm, platform), null)
             ?: serials.optString(norm).takeIf { it.isNotBlank() }
             ?: return null
+        return path.substringAfterLast('/').substringBeforeLast('.').toLongOrNull()
+    }
+
+    /** Exact curated title key only; never derives a default from fuzzy matching. */
+    fun gameIdForExactTitle(title: String?, platform: String): Long? {
+        val key = normalizeTitle(title.orEmpty()).takeIf(String::isNotBlank) ?: return null
+        val path = loadForPlatform(platform)?.optJSONObject("titles")?.optString(key)
+            ?.takeIf(String::isNotBlank) ?: return null
         return path.substringAfterLast('/').substringBeforeLast('.').toLongOrNull()
     }
 
@@ -223,7 +231,7 @@ class CoverIndexRepository(private val context: Context) {
                 val stem = clean.substringAfterLast('/').substringBeforeLast('.')
                 val variant = if (isLight) "3d/light" else "3d"
                 val folder = clean.substringBefore('/')
-                if (folder in setOf("arcade", "covers", "genesis", "sega_cd", "32x", "master_system", "game_gear", "sg_1000", "model3"))
+                if (folder in setOf("arcade", "covers", "genesis", "sega_cd", "32x", "master_system", "game_gear", "sg_1000", "model3", "saturn"))
                     return "$BASE_URL/$folder/$variant/$stem$ext"
             }
             return "$BASE_URL/$clean"

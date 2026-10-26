@@ -621,12 +621,12 @@ object EmulatorBridge {
         }
 
         getContext()?.let { context ->
-            if (knownPlatform?.isSega == true ||
+            if (knownPlatform?.isSega == true || knownPlatform?.isSaturn == true ||
                 (knownPlatform == null && SegaPlatformDetector.detect(
                     context,
                     path,
                     knownDisplayName = contentDisplayName
-                ).isSega)
+                ).let { it.isSega || it.isSaturn })
             ) {
                 return SegaMetadataReader.read(context, path)?.let { metadata ->
                     metadata.copy(title = normalizeNativeGameTitle(metadata.title, inferredMetadata.title))

@@ -522,7 +522,7 @@
 Arkády: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="onboarding_games_title">Přidat složky s hrami</string>
     <string name="onboarding_games_desc">Přidejte jednu nebo více složek obsahujících vaše hry.</string>
     <string name="onboarding_games_selected_count">Vybrané složky: %1$d. Klepnutím přidáte další.</string>
@@ -2338,4 +2338,22 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">Vybrané předvolby se nepodařilo odebrat.</string>
     <string name="controls_editor_groups">Skupiny</string>
     <string name="controls_editor_individual">Jednotlivá tlačítka</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">Podporované systémy a BIOS</string>
+    <string name="supported_systems_intro">Níže přidejte složky s hrami. Vlastní soubory BIOS importujte v části BIOS.</string>
+    <string name="supported_systems_no_bios_title">Připraveno ke hraní bez BIOSu</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS je volitelný: vestavěná emulace BIOSu umožňuje hrát bez samostatného souboru.</string>
+    <string name="supported_systems_required_title">Tyto systémy vyžadují BIOS</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD: BIOS pro region hry.\n32X: všechny tři soubory BIOS.\nSaturn: jeden soubor BIOS o velikosti 512 KiB.</string>
+    <string name="supported_systems_arcade_body">Pro každý systém importujte odpovídající sadu arkádového BIOSu.</string>
+    <string name="saturn_bios_missing">BIOS Saturn chybí nebo je neplatný. Otevřete Nastavení, Knihovna, BIOS a importujte vlastní saturn_bios.bin, sega_101.bin nebo mpr-17933.bin.</string>
+    <string name="saturn_sh2_core">Režim procesorů SH-2</string>
+    <string name="saturn_dynarec">Dynamický rekompilátor</string>
+    <string name="saturn_interpreter">Interpret</string>
+    <string name="saturn_frameskip">Automatické přeskakování snímků</string>
+    <string name="saturn_frameskip_help">Podle potřeby přeskakuje obrazové snímky, aby hra běžela normální rychlostí. Pro úplnou animaci ponechte vypnuté.</string>
+    <string name="saturn_addon_cart">Rozšiřující paměťová cartridge</string>
+    <string name="saturn_cart_4m">4 MiB</string>
+    <string name="saturn_cart_1m">1 MiB</string>
 </resources>

@@ -6,13 +6,15 @@ import com.sbro.emucoreh.core.EmulationPlatform
 object SegaTouchLayouts {
     private val directions = linkedMapOf("dpad_up" to 19, "dpad_down" to 20, "dpad_left" to 21, "dpad_right" to 22)
     fun isSixButton(platform: EmulationPlatform): Boolean = platform in setOf(
-        EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X, EmulationPlatform.MODEL_3)
+        EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X, EmulationPlatform.MODEL_3, EmulationPlatform.SATURN)
 
     fun controlIds(platform: EmulationPlatform): Set<String> = buildSet {
         if (!platform.usesPlatformTouchLayouts) return@buildSet
         addAll(directions.keys)
         addAll(listOf("a", "b"))
-        if (isSixButton(platform)) addAll(listOf("x", "y", "l1", "r1", "select"))
+        if (isSixButton(platform)) addAll(listOf("x", "y", "l1", "r1"))
+        if (isSixButton(platform) && !platform.isSaturn) add("select")
+        if (platform.isSaturn) addAll(listOf("l2", "r2"))
         if (platform != EmulationPlatform.SG_1000) add("start")
         if (platform.isModel3) addAll(listOf("l2", "r2", "l3", "r3"))
     }
@@ -52,6 +54,7 @@ object SegaTouchLayouts {
             else -> null
         }
         return when (canonical) {
+            "l2" -> "L"; "r2" -> "R"
             "a" -> if (isSixButton(platform)) "B" else "1"
             "b" -> if (isSixButton(platform)) "C" else "2"
             "x" -> "A"; "y" -> "Y"; "l1" -> "X"; "r1" -> "Z"

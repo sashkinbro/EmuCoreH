@@ -451,7 +451,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         result.dreamcast,
                         result.arcade,
                         result.segaCd,
-                        result.sega32x
+                        result.sega32x,
+                        result.saturn
                     ),
                     android.widget.Toast.LENGTH_LONG
                 ).show()

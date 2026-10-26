@@ -4,6 +4,10 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PlayerGameIdentityTest {
+    @org.junit.Test fun saturnAndDreamcastGameTotalsRemainIndependent() {
+        org.junit.Assert.assertNotEquals(playerGameKey("MK-12345", "/game.chd", "Saturn"),
+            playerGameKey("MK-12345", "/game.chd", "Dreamcast"))
+    }
     @Test fun oldDreamcastAndArcadeKeysRemainUnchanged() {
         assertEquals("MK-51035", playerGameKey("mk-51035", "/dc/game.chd", null))
         assertEquals("MK-51035", playerGameKey("mk-51035", "/dc/game.chd", "DREAMCAST"))

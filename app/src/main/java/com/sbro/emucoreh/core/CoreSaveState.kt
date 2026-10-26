@@ -18,7 +18,7 @@ internal object CoreSaveState {
 
     fun unwrap(bytes: ByteArray, coreId: Int, expectedModel3Set: String? = null): ByteArray? {
         if (bytes.size < 4 || ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).int != MAGIC) {
-            return bytes.takeIf { coreId == 0 && !Model3SaveStatePayload.hasMagic(it) &&
+            return bytes.takeIf { coreId == 0 && !it.take(3).toByteArray().contentEquals("YSS".toByteArray(Charsets.US_ASCII)) && !Model3SaveStatePayload.hasMagic(it) &&
                 !it.take(8).toByteArray().contentEquals("JGLRSTA1".toByteArray(Charsets.US_ASCII)) }
         }
         if (bytes.size <= 8) return null

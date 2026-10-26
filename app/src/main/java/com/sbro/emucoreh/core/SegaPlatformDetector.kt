@@ -29,14 +29,14 @@ object SegaPlatformDetector {
     private fun detectFile(file: File, visited: MutableSet<String>, depth: Int): EmulationPlatform = runCatching {
         if (depth > MAX_DEPTH || !visited.add(file.canonicalPath)) return@runCatching EmulationPlatform.DREAMCAST
         val ext = extension(file.name)
-        if (ext in setOf("gdi", "cdi", "iso", "7z", "dat", "lst")) return@runCatching EmulationPlatform.DREAMCAST
+        if (ext in setOf("gdi", "cdi", "7z", "dat", "lst")) return@runCatching EmulationPlatform.DREAMCAST
         if (ext == "cue" || ext == "m3u") {
             if (file.length() > MAX_DESCRIPTOR_BYTES) return@runCatching EmulationPlatform.DREAMCAST
             val references = descriptorReferences(file.name, file.readText())
             for (reference in references) {
                 val target = safeLocalReference(file, reference) ?: continue
                 val detected = detectFile(target, visited, depth + 1)
-                if (detected == EmulationPlatform.SEGA_CD || (ext == "m3u" && detected.isSega)) return@runCatching detected
+                if (detected == EmulationPlatform.SEGA_CD || detected.isSaturn || (ext == "m3u" && detected.isSega)) return@runCatching detected
             }
             return@runCatching EmulationPlatform.DREAMCAST
         }
@@ -45,7 +45,7 @@ object SegaPlatformDetector {
         val detected = file.inputStream().use { detectHeader(file.name, it.readPrefix(HEADER_BYTES)) }
         if (ext == "chd" && !detected.isSega) {
             val probe = runCatching { NativeCoreBridge().probeSegaDisc(file.absolutePath) }.getOrDefault(0)
-            if (probe > 0) EmulationPlatform.SEGA_CD else detected
+            when (probe) { 1 -> EmulationPlatform.SEGA_CD; 2 -> EmulationPlatform.SATURN; else -> detected }
         } else detected
     }.getOrElse { detectName(file.name) }
 
@@ -62,7 +62,7 @@ object SegaPlatformDetector {
             ?: DocumentPathResolver.getDisplayName(context, path)
         val ext = extension(name)
         if (ext == "zip" && Model3Romsets.find(name) != null) return EmulationPlatform.MODEL_3
-        if (ext in setOf("gdi", "cdi", "iso", "7z", "dat", "lst")) return EmulationPlatform.DREAMCAST
+        if (ext in setOf("gdi", "cdi", "7z", "dat", "lst")) return EmulationPlatform.DREAMCAST
         // These hardware extensions already select the core; reading the file
         // header cannot change the result and costs a full SAF open per game.
         if (ext in setOf("32x", "sms", "gg", "sg")) return detectName(name)
@@ -73,7 +73,7 @@ object SegaPlatformDetector {
                 // reads. A SAF grant still authorizes the provider descriptor.
                 if (!direct.startsWith("content://") && file.isFile && file.canRead()) {
                     val detected = detectFile(file)
-                    if (detected.isSega) return detected
+                    if (detected.isSega || detected.isSaturn) return detected
                 }
             }
             val probe = runCatching {
@@ -81,7 +81,8 @@ object SegaPlatformDetector {
                     NativeCoreBridge().probeSegaDiscDescriptor(it.fd)
                 } ?: 0
             }.getOrDefault(0)
-            if (probe > 0) return EmulationPlatform.SEGA_CD
+            if (probe == 1) return EmulationPlatform.SEGA_CD
+            if (probe == 2) return EmulationPlatform.SATURN
         }
         return context.contentResolver.openInputStream(Uri.parse(path))?.use { stream ->
             when (ext) {
@@ -98,7 +99,7 @@ object SegaPlatformDetector {
                             visited,
                             depth + 1
                         )
-                        if (detected == EmulationPlatform.SEGA_CD || (ext == "m3u" && detected.isSega)) return@use detected
+                        if (detected == EmulationPlatform.SEGA_CD || detected.isSaturn || (ext == "m3u" && detected.isSega)) return@use detected
                     }
                     EmulationPlatform.DREAMCAST
                 }
@@ -119,11 +120,12 @@ object SegaPlatformDetector {
 
     fun detectHeader(name: String, bytes: ByteArray): EmulationPlatform {
         val ext = extension(name)
-        if (ext in setOf("gdi", "cdi", "iso", "7z", "dat", "lst")) return EmulationPlatform.DREAMCAST
+        if (ext in setOf("gdi", "cdi", "7z", "dat", "lst")) return EmulationPlatform.DREAMCAST
         if (listOf(0, 16).any { bytes.matches(it, "SEGA SEGAKATANA") }) return EmulationPlatform.DREAMCAST
+        if (listOf(0, 16).any { bytes.matches(it, "SEGA SEGASATURN") }) return EmulationPlatform.SATURN
         if (listOf(0, 16).any { bytes.matches(it, "SEGADISCSYSTEM") }) return EmulationPlatform.SEGA_CD
         // Never interpret arbitrary compressed/disc bytes as a cartridge ROM.
-        if (ext in setOf("chd", "cue", "m3u", "zip")) return EmulationPlatform.DREAMCAST
+        if (ext in setOf("iso", "chd", "cue", "m3u", "zip")) return EmulationPlatform.DREAMCAST
         // Explicit hardware extensions must agree with the core's cartridge loader.
         if (ext in setOf("32x", "sms", "gg", "sg")) return detectName(name)
         if (bytes.matches(0x100, "SEGA 32X") || bytes.matches(0x100, "SEGA GENESIS 32X") || has32XSecurityProgram(bytes)) return EmulationPlatform.SEGA_32X

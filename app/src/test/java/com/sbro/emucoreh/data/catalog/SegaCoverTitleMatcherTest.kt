@@ -5,6 +5,11 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SegaCoverTitleMatcherTest {
+    @Test fun saturnIsoRegionsAndDumpNamesKeepIndependentExactMatches() {
+        val saturn = JSONObject().put("panzer dragoon", "saturn/123.jpg")
+        assertEquals("saturn/123.jpg", SegaCoverTitleMatcher.resolve(saturn, null, "Panzer Dragoon (USA).iso"))
+        assertNull(SegaCoverTitleMatcher.resolve(saturn, null, "Panzer Dragoon II (USA).iso"))
+    }
     private val titles = JSONObject().put("the black onyx", "sg_1000/6099.jpg")
         .put("ninja princess", "sg_1000/6119.jpg").put("ultimate mortal kombat 3", "genesis/1621.jpg")
         .put("castle of illusion starring mickey mouse", "game_gear/13464.jpg")

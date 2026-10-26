@@ -609,6 +609,7 @@ private fun CatalogMessageCard(
 @Composable
 internal fun catalogPlatformLabel(platform: String): String = when (platform) {
     "Sega Model 3", "MODEL_3" -> stringResource(R.string.home_platform_model_3)
+    "Saturn", "SATURN", "Sega Saturn" -> stringResource(R.string.home_platform_saturn)
     "Genesis" -> stringResource(R.string.home_platform_genesis)
     "Sega CD" -> stringResource(R.string.home_platform_sega_cd)
     "32X" -> stringResource(R.string.home_platform_sega_32x)

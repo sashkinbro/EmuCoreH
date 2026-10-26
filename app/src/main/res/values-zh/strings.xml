@@ -417,7 +417,7 @@
 街机：naomi.zip、naomi2.zip、awbios.zip, segasp.zip
 Sega CD：bios_CD_U.bin、bios_CD_E.bin、bios_CD_J.bin（128 KiB）
 Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="emulation_quick_save_confirm_title">保存状态？</string>
     <string name="emulation_quick_save_confirm_desc">这将使用当前游戏状态覆盖插槽 %1$d。</string>
     <string name="emulation_quick_load_confirm_title">加载状态？</string>
@@ -2318,4 +2318,22 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">无法移除所选预设。</string>
     <string name="controls_editor_groups">分组</string>
     <string name="controls_editor_individual">单个按钮</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">支持的系统与 BIOS</string>
+    <string name="supported_systems_intro">在下方添加游戏文件夹。请在 BIOS 区域导入您自己的 BIOS 文件。</string>
+    <string name="supported_systems_no_bios_title">无需 BIOS，即可游玩</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS 为可选项：内置 BIOS 模拟功能可让您在没有 BIOS 文件的情况下游玩。</string>
+    <string name="supported_systems_required_title">以下系统需要 BIOS</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD：与游戏地区对应的 BIOS。\n32X：全部三个 BIOS 文件。\nSaturn：一个 512 KiB 的 BIOS 文件。</string>
+    <string name="supported_systems_arcade_body">请为每个系统导入对应的街机 BIOS 文件集。</string>
+    <string name="saturn_bios_missing">Saturn BIOS 缺失或无效。请打开“设置”、“游戏库”、“BIOS”，导入您自己的 saturn_bios.bin、sega_101.bin 或 mpr-17933.bin。</string>
+    <string name="saturn_sh2_core">SH-2 CPU 执行方式</string>
+    <string name="saturn_dynarec">动态重编译器</string>
+    <string name="saturn_interpreter">解释器</string>
+    <string name="saturn_frameskip">自动跳帧</string>
+    <string name="saturn_frameskip_help">必要时跳过画面帧，以维持游戏正常速度。如需完整动画，请保持关闭。</string>
+    <string name="saturn_addon_cart">RAM 扩展卡带</string>
+    <string name="saturn_cart_4m">4 MiB</string>
+    <string name="saturn_cart_1m">1 MiB</string>
 </resources>

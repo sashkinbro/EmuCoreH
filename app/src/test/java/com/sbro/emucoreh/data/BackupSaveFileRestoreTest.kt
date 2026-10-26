@@ -12,6 +12,24 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 class BackupSaveFileRestoreTest {
+    @Test fun saturnExtendedEightMiBBackupRoundTripsWithoutAcceptingOversizedFiles() {
+        val size = 8 * 1024 * 1024
+        assertEquals(size.toLong(), com.sbro.emucoreh.core.SaturnSaveFiles.MAX_BYTES)
+        val payload = ByteArray(size) { (it * 37).toByte() }
+        withTarget("backup.bin") { target ->
+            ZipInputStream(archive(payload).inputStream()).use { zip ->
+                requireNotNull(zip.nextEntry)
+                restoreBackupSaveFile(zip, target, com.sbro.emucoreh.core.SaturnSaveFiles.MAX_BYTES, allowEmpty = false)
+            }
+            assertArrayEquals(payload, target.readBytes())
+            val original = hash(target)
+            assertTrue(runCatching {
+                restoreBackupSaveFile(ByteArray(size + 1).inputStream(), target,
+                    com.sbro.emucoreh.core.SaturnSaveFiles.MAX_BYTES, allowEmpty = false)
+            }.isFailure)
+            assertEquals(original, hash(target))
+        }
+    }
     @Test fun corruptAndTruncatedZipEntriesPreserveInstalledSaveHashes() {
         val payload = ByteArray(4096) { (it * 37).toByte() }
         val archive = archive(payload)

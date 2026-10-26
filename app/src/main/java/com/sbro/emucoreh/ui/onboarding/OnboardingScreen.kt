@@ -1297,6 +1297,8 @@ private fun OnboardingSetupContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            com.sbro.emucoreh.ui.common.SupportedSystemsCard(Modifier.padding(horizontal = 8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             SetupCard(
                 icon = Icons.Rounded.FolderOpen,
                 title = stringResource(R.string.onboarding_games_title),

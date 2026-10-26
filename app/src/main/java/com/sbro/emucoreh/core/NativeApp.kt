@@ -497,6 +497,8 @@ object NativeApp {
         val platform = knownPlatform ?: SegaPlatformDetector.detect(context, path)
         val identity = if (platform.isModel3) {
             "M3-${path.sha256().take(16).uppercase()}"
+        } else if (platform.isSaturn) {
+            SaturnSaveFiles.stateIdentity(path)
         } else if (platform.isSega) {
             "JG-${platform.name}-${path.sha256().take(16).uppercase()}"
         } else extractDiscSerial(path) ?: path.sha256().take(16).uppercase()

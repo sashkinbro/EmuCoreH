@@ -31,6 +31,7 @@ private val SAVE_STATE_FILE_REGEX = Regex("""^(.+?)\.(\d{2})\.rstate$""", RegexO
 private const val SAVE_STATE_MAGIC = 0x54534345
 private const val CURRENT_SAVE_STATE_VERSION = 1
 private val SEGA_SAVE_STATE_IDENTITY_REGEX = Regex("^JG-(GENESIS|SEGA_CD|SEGA_32X|MASTER_SYSTEM|GAME_GEAR|SG_1000)-[A-F0-9]{16}$")
+private val SATURN_SAVE_STATE_IDENTITY_REGEX = Regex("^SS-[A-F0-9]{16}$")
 private val MODEL3_SAVE_STATE_IDENTITY_REGEX = Regex("^M3-(?:[A-F0-9]{16}|[A-Z0-9_]+)$")
 private const val MAX_IMPORT_FILE_BYTES = 1_073_741_824L
 private const val MAX_IMPORT_ARCHIVE_BYTES = 4_294_967_296L
@@ -96,6 +97,7 @@ internal fun saveStateFormatForVersion(version: Int?): SaveStateImportFormat {
 internal data class SaveStateImportHeader(val version: Int, val coreId: Int, val consoleTag: Int? = null, val model3Set: String? = null) {
     val platform: EmulationPlatform? get() = when (coreId) {
         0 -> EmulationPlatform.DREAMCAST
+        3 -> EmulationPlatform.SATURN
         2 -> EmulationPlatform.MODEL_3
         1 -> when (consoleTag) {
         0 -> EmulationPlatform.GENESIS
@@ -126,6 +128,9 @@ internal fun readSaveStateImportHeader(input: InputStream): SaveStateImportHeade
         val metadata = Model3SaveStatePayload.read(input) ?: return null
         return SaveStateImportHeader(2, 2, model3Set = metadata.setName)
     }
+    if (identity.contentEquals(byteArrayOf(3, 0, 0, 0))) {
+        return if (validSaturnStatePayload(input)) SaveStateImportHeader(2, 3) else null
+    }
     if (!identity.contentEquals(byteArrayOf(1, 0, 0, 0))) return null
     val suffix = ByteArray(10) // JGLRSTA1, console ID, at least one payload byte
     var offset = 0
@@ -136,6 +141,43 @@ internal fun readSaveStateImportHeader(input: InputStream): SaveStateImportHeade
     }
     if (!suffix.copyOfRange(0, 8).contentEquals("JGLRSTA1".toByteArray(Charsets.US_ASCII))) return null
     return SaveStateImportHeader(2, 1, suffix[8].toInt() and 0xff).takeIf { it.platform != null }
+}
+
+/** YSS size excludes its 12-byte v1 / 20-byte v2 header; Android cannot byte-swap states. */
+private fun validSaturnStatePayload(input: InputStream): Boolean {
+    fun readExactly(size: Int): ByteArray? {
+        val bytes = ByteArray(size)
+        var offset = 0
+        while (offset < size) {
+            val count = input.read(bytes, offset, size - offset)
+            if (count < 0) return null
+            if (count == 0) {
+                val byte = input.read()
+                if (byte < 0) return null
+                bytes[offset++] = byte.toByte()
+            } else offset += count
+        }
+        return bytes
+    }
+    val header = readExactly(12) ?: return false
+    if (!header.copyOfRange(0, 3).contentEquals("YSS".toByteArray(Charsets.US_ASCII)) || header[3] != 1.toByte()) return false
+    val words = java.nio.ByteBuffer.wrap(header).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+    val version = words.getInt(4)
+    val size = words.getInt(8)
+    if (version !in 1..2 || size !in 12..64 * 1024 * 1024) return false
+    if (version == 2 && readExactly(8) == null) return false
+    // Drain with bounded memory, checking the declared size against the entire stream.
+    val buffer = ByteArray(8192)
+    var remaining = size
+    while (remaining > 0) {
+        val count = input.read(buffer, 0, minOf(buffer.size, remaining))
+        if (count < 0) return false
+        if (count == 0) {
+            if (input.read() < 0) return false
+            remaining--
+        } else remaining -= count
+    }
+    return input.read() < 0
 }
 
 internal fun isSaveStateImportCompatible(
@@ -149,6 +191,9 @@ internal fun isSaveStateImportCompatible(
     val identity = SAVE_STATE_FILE_REGEX.matchEntire(cleanName)?.groupValues?.get(1)?.uppercase(Locale.ROOT)
     val namespaced = cleanName.startsWith("JG-", ignoreCase = true)
     val model3Namespaced = cleanName.startsWith("M3-", ignoreCase = true)
+    val saturnNamespaced = cleanName.startsWith("SS-", ignoreCase = true)
+    if (header.coreId == 3) return identity != null && SATURN_SAVE_STATE_IDENTITY_REGEX.matches(identity)
+    if (saturnNamespaced) return false
     if (header.coreId == 0) return !namespaced && !model3Namespaced
     if (header.coreId == 2) {
         if (namespaced || header.model3Set == null) return false
@@ -213,7 +258,7 @@ private fun String?.normalizeSaveStateSerialKey(): String? {
     val cleanSerial = trim().uppercase(Locale.ROOT)
     // Hashes can themselves contain four letters followed by five digits; never
     // let the legacy product-code normalizer truncate a Sega identity.
-    if (SEGA_SAVE_STATE_IDENTITY_REGEX.matches(cleanSerial) || MODEL3_SAVE_STATE_IDENTITY_REGEX.matches(cleanSerial)) return cleanSerial
+    if (SATURN_SAVE_STATE_IDENTITY_REGEX.matches(cleanSerial) || SEGA_SAVE_STATE_IDENTITY_REGEX.matches(cleanSerial) || MODEL3_SAVE_STATE_IDENTITY_REGEX.matches(cleanSerial)) return cleanSerial
     val regex = Regex("([A-Z]{4})[^A-Z0-9]*([0-9]{3})[^A-Z0-9]*([0-9]{2})")
     val altRegex = Regex("([A-Z]{4})[^A-Z0-9]*([0-9]{5})")
     regex.find(cleanSerial)?.let { match ->
@@ -558,6 +603,11 @@ class SaveStateRepository(private val context: Context) {
                 return@forEach
             }
             val parsed = parseExternalSaveStateName(raw.fileName)
+            if (header.coreId == 3 && !gamePath.isNullOrBlank() &&
+                parsed?.serial != com.sbro.emucoreh.core.SaturnSaveFiles.stateIdentity(gamePath)) {
+                skipped++
+                return@forEach
+            }
             if (header.coreId == 0 && normalizedGameSerial != null && parsed?.serial != null && parsed.serial != normalizedGameSerial) {
                 skipped++
                 return@forEach

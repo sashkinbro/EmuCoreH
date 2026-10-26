@@ -1,0 +1,25 @@
+YabaSanshiro / Yabause Saturn emulator
+https://github.com/libretro/yabause/tree/yabasanshiro
+GPL-2.0-or-later (individual source notices retained); GPL text: LICENSE.
+Copyright the individual authors named in each source file.
+
+Musashi 3.4: Copyright 1998-2001 Karl Stenerud; MIT-style grant.
+See licenses/Musashi.txt and src/musashi source headers.
+
+libretro-common and libretro ABI: individual MIT licenses and copyright notices
+are retained in source. See licenses/libretro-common.txt.
+
+libchdr: BSD-3-Clause; Copyright Romain Tisserand.
+See licenses/libchdr.txt.
+
+FLAC decoder 1.3.3: BSD-3-Clause; Josh Coalson and Xiph.Org Foundation.
+Only decoder library sources selected in sources.cmake are compiled.
+See licenses/FLAC-Xiph.txt. FLAC command-line tools are not compiled.
+
+LZMA SDK 19.00: public domain; see licenses/LZMA.txt.
+zlib 1.2.11: zlib license; Jean-loup Gailly and Mark Adler.
+See licenses/zlib.txt.
+JUnzip: public domain; Joonas Pihlajamaa. See licenses/JUnzip.txt.
+
+Full source notices remain authoritative for each file; the build has no
+noncommercial-only dependency. No original game data or BIOS is bundled.

@@ -266,7 +266,7 @@ internal object CoreRuntime {
         val detectedPlatform = if (biosOnly) EmulationPlatform.DREAMCAST else SegaPlatformDetector.detect(app, gamePath)
         val requestedCore = when {
             // Supermodel's renderer is OpenGL ES only.
-            detectedPlatform.isModel3 -> RendererDefaults.CORE_OPENGL
+            detectedPlatform.isModel3 || detectedPlatform.isSaturn -> RendererDefaults.CORE_OPENGL
             // jgenesis has no core-side GPU rasterizer, but both of our GPU
             // output backends can present its software frames. Legacy
             // "Software" preferences from Flycast map to the OpenGL output.
@@ -282,7 +282,7 @@ internal object CoreRuntime {
 
         shutdownSession()
         platform = detectedPlatform
-        val root = File(app.filesDir, when (platform.coreId) { 1 -> "jgenesis"; 2 -> "supermodel"; else -> "flycast" })
+        val root = File(app.filesDir, when (platform.coreId) { 1 -> "jgenesis"; 2 -> "supermodel"; 3 -> "saturn"; else -> "flycast" })
         systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath
         if (platform.isModel3) {
             val definitions = File(systemDirectory, "supermodel/Games.xml")
@@ -293,6 +293,8 @@ internal object CoreRuntime {
         }
         saveDirectory = (if (platform.isSega) {
             File(EmulatorStorage.runtimeDirectories(app, dataRootOverride).root, "saves/jgenesis/${platform.name.lowercase(Locale.ROOT)}")
+        } else if (platform.isSaturn) {
+            File(EmulatorStorage.runtimeDirectories(app, dataRootOverride).root, "saves/saturn")
         } else if (platform.isModel3) {
             File(EmulatorStorage.runtimeDirectories(app, dataRootOverride).root, "saves")
         } else File(root, "save")).apply { mkdirs() }.absolutePath
@@ -394,6 +396,19 @@ internal object CoreRuntime {
                     bridge.nativeSetOption(option.key, value)
                 }
             }
+        } else if (platform.isSaturn) {
+            pushAspectRatio(displayAspectRatioPreference() ?: ASPECT_RATIO_AUTO)
+            pushShaderEffect()
+            pushShaderPreset()
+            bridge.nativeSetOption("yabasanshiro_force_hle_bios", "disabled")
+            context?.let { app ->
+                val values = SaturnCoreOptions.persistedEntries(app) + launchCoreOptions
+                SaturnCoreOptions.options().forEach { option ->
+                    val value = values[option.key]?.takeIf { candidate -> option.choices.any { it.value == candidate } }
+                        ?: option.defaultValue
+                    bridge.nativeSetOption(option.key, value)
+                }
+            }
         } else if (platform.isModel3) {
             pushAspectRatio(displayAspectRatioPreference() ?: ASPECT_RATIO_AUTO)
             pushShaderEffect()
@@ -402,7 +417,7 @@ internal object CoreRuntime {
         } else applyStartOptions(coreRenderer)
         val handle = bridge.createSession()
         if (handle == 0L) {
-            if (platform.isSega) context?.let(JGenesisContentPreparer::releasePreparedContent)
+            if (platform.isSega || platform.isSaturn) context?.let(JGenesisContentPreparer::releasePreparedContent)
             if (platform.isModel3) context?.let(Model3ContentPreparer::releasePreparedContent)
             return@withLock false
         }
@@ -422,7 +437,7 @@ internal object CoreRuntime {
             }
         } else if (loadDisc(handle, gamePath) != 0) {
             bridge.destroySession(handle)
-            if (platform.isSega) context?.let(JGenesisContentPreparer::releasePreparedContent)
+            if (platform.isSega || platform.isSaturn) context?.let(JGenesisContentPreparer::releasePreparedContent)
             if (platform.isModel3) context?.let(Model3ContentPreparer::releasePreparedContent)
             return@withLock false
         }
@@ -478,6 +493,8 @@ internal object CoreRuntime {
     fun setCoreOption(key: String, value: String) {
         if (key.startsWith("jgenesis_")) {
             context?.let { SegaCoreOptions.set(it, key, value) }
+        } else if (key.startsWith("yabasanshiro_")) {
+            context?.let { SaturnCoreOptions.set(it, key, value) }
         } else CoreOptionStore.set(key, value)
         applyCoreOption(key, value)
     }
@@ -494,6 +511,8 @@ internal object CoreRuntime {
     fun coreOptionValue(key: String): String? =
         if (key.startsWith("jgenesis_")) context?.let { SegaCoreOptions.value(it, key) }
             ?: SegaCoreOptions.options(platform).firstOrNull { it.key == key }?.defaultValue
+        else if (key.startsWith("yabasanshiro_")) context?.let { SaturnCoreOptions.value(it, key) }
+            ?: SaturnCoreOptions.options().firstOrNull { it.key == key }?.defaultValue
         else CoreOptionStore.value(key) ?: FlycastCoreOptions.option(key)?.defaultValue
 
     /**
@@ -502,6 +521,10 @@ internal object CoreRuntime {
      */
     fun applyCoreOption(key: String, value: String) {
         if (platform.isModel3) return
+        if (platform.isSaturn) {
+            if (key.startsWith("yabasanshiro_") && !SaturnCoreOptions.requiresRestart(key)) bridge.nativeSetOption(key, value)
+            return
+        }
         if (platform.isSega != key.startsWith("jgenesis_")) return
         bridge.nativeSetOption(key, value)
     }
@@ -583,7 +606,7 @@ internal object CoreRuntime {
     }
 
     private fun shutdownSession() {
-        val releaseSegaContent = platform.isSega && session != 0L
+        val releaseSegaContent = (platform.isSega || platform.isSaturn) && session != 0L
         val releaseModel3Content = platform.isModel3 && session != 0L
         val activeWorker = worker
         check(activeWorker !== Thread.currentThread()) {
@@ -639,7 +662,7 @@ internal object CoreRuntime {
         if (!platform.supportsDisc) return false
         if (!isSupportedDiscPath(path, replacementOnly = true)) return false
         val app = context ?: return false
-        val preparedPath = if (platform.isSega) {
+        val preparedPath = if (platform.isSega || platform.isSaturn) {
             runCatching { JGenesisContentPreparer.prepare(app, path) }.getOrNull() ?: return false
         } else if (path.startsWith("content://")) {
             SafStorageBridge.prepare(app, path) ?: return false
@@ -729,14 +752,14 @@ internal object CoreRuntime {
     @Volatile private var lastCheatFilePath: String? = null
 
     fun loadCheats(path: String) {
-        if (platform.isModel3) return
+        if (platform.isModel3 || platform.isSaturn) return
         lastCheatFilePath = path
         sessionLock.withLock { runCatching { bridge.loadCheats(path) } }
     }
 
     fun clearCheats() {
         lastCheatFilePath = null
-        if (platform.isModel3) return
+        if (platform.isModel3 || platform.isSaturn) return
         sessionLock.withLock { runCatching { bridge.clearCheats() } }
     }
 
@@ -934,6 +957,8 @@ internal object CoreRuntime {
         val speed = timing?.speedPercent ?: (fps / targetFps * 100.0)
         val renderer = if (platform.isSega) {
             "jgenesis ${RendererDefaults.coreRendererName(activeCoreRenderer)}"
+        } else if (platform.isSaturn) {
+            "YabaSanshiro"
         } else if (platform.isModel3) {
             "Supermodel"
         } else {
@@ -1218,6 +1243,11 @@ internal object CoreRuntime {
         val path = if (platform.isModel3) {
             runCatching { Model3ContentPreparer.prepare(app, gamePath) }
                 .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Model 3 content", it) }.getOrNull() ?: return -1
+        } else if (platform.isSaturn) {
+            runCatching {
+                SaturnBios.requireInstalled(app)
+                JGenesisContentPreparer.prepare(app, gamePath)
+            }.onFailure { reportFailure(it.message ?: "Unable to prepare Saturn content", it) }.getOrNull() ?: return -1
         } else if (platform.isSega) {
             runCatching { JGenesisContentPreparer.prepare(app, gamePath) }
                 .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Sega content", it) }.getOrNull() ?: return -1

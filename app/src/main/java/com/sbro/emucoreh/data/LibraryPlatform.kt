@@ -13,6 +13,7 @@ enum class LibraryPlatform {
     MODEL_3,
     GENESIS,
     SEGA_CD,
+    SATURN,
     SEGA_32X,
     MASTER_SYSTEM,
     GAME_GEAR,
@@ -63,7 +64,7 @@ object LibraryPlatformResolver {
             entriesByName[normalized]?.let { return it }
         }
         val sega = SegaPlatformDetector.detectName(game.fileName)
-        if (sega.isSega || sega.isModel3) return entriesByName.getValue(sega.name)
+        if (sega.isSega || sega.isModel3 || sega.isSaturn) return entriesByName.getValue(sega.name)
         val extension = game.fileName.substringAfterLast('.', "").lowercase(Locale.ROOT)
         // Arcade GD-ROMs launch through their archives; a same-named disc is Dreamcast.
         if (extension !in arcadeExtensions) return LibraryPlatform.DREAMCAST

@@ -11,19 +11,27 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.unit.Density
 import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
 import com.sbro.emucoreh.ui.theme.EmuCoreHTheme
+import com.sbro.emucoreh.R
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import java.util.Locale
+import java.io.File
 
 /** Exercises actual onboarding pages; never completes setup or changes user preferences. */
 class OnboardingLocalizationInstrumentedTest {
@@ -68,7 +76,34 @@ class OnboardingLocalizationInstrumentedTest {
                 assertTrue("$language page$page navigation top", navigation.top >= root.top - 1f)
                 assertTrue("$language page$page navigation bottom", navigation.bottom <= root.bottom + 1f)
                 assertTrue("$language page$page content must scroll", compose.onAllNodes(hasScrollAction()).fetchSemanticsNodes().isNotEmpty())
+                if (page == 4) {
+                    // This is the real folder setup page; catch duplicate guides and a picker
+                    // pushed beyond reach by long translations or accessibility font scaling.
+                    compose.onAllNodesWithTag("supported_systems_card").assertCountEquals(1)
+                    val translated = app.createConfigurationContext(Configuration(app.resources.configuration).apply {
+                        setLocale(Locale.forLanguageTag(language))
+                    }).resources
+                    compose.onNodeWithText(translated.getString(R.string.supported_systems_title))
+                        .performScrollTo().assertIsDisplayed()
+                    if (language in setOf("en", "uk")) captureSetup(language, "guide-top")
+                    compose.onNodeWithText(translated.getString(R.string.supported_systems_required_body))
+                        .performScrollTo().assertIsDisplayed()
+                    if (language in setOf("en", "uk")) captureSetup(language, "guide-bios")
+                    compose.onNodeWithText(translated.getString(R.string.onboarding_games_title))
+                        .performScrollTo().assertIsDisplayed()
+                    compose.onNodeWithTag("onboarding_navigation").assertIsDisplayed()
+                    if (language in setOf("en", "uk")) captureSetup(language, "folder-picker")
+                }
             }
+        }
+    }
+
+    private fun captureSetup(language: String, section: String) {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val directory = File(context.getExternalFilesDir(null), "qa-supported-systems").apply { mkdirs() }
+        File(directory, "$language-large-text-$section.png").outputStream().use { output ->
+            assertTrue(compose.onRoot().captureToImage().asAndroidBitmap()
+                .compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output))
         }
     }
 }

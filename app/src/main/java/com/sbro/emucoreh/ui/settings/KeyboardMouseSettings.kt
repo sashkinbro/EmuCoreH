@@ -239,7 +239,7 @@ private fun KeyboardMouseSettingsContent(
                     AppPreferences.MOUSE_WHEEL_LEFT_STICK to stringResource(R.string.settings_mouse_wheel_left_stick),
                     AppPreferences.MOUSE_WHEEL_RIGHT_STICK to stringResource(R.string.settings_mouse_wheel_right_stick),
                     AppPreferences.MOUSE_WHEEL_SHOULDERS to stringResource(R.string.settings_mouse_wheel_shoulders)
-                ).filter { !platform.isSega || it.first in setOf(AppPreferences.MOUSE_WHEEL_OFF, AppPreferences.MOUSE_WHEEL_DPAD) ||
+                ).filter { (!platform.isSega && !platform.isSaturn) || it.first in setOf(AppPreferences.MOUSE_WHEEL_OFF, AppPreferences.MOUSE_WHEEL_DPAD) ||
                     (platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X) && it.first == AppPreferences.MOUSE_WHEEL_SHOULDERS) },
                 selectedValue = settings.mouseWheelMode,
                 onSelect = { mode ->
@@ -258,7 +258,7 @@ private fun KeyboardMouseSettingsContent(
                     }
                 )
             }
-            if (!platform.isSega) ChoiceSection(
+            if ((!platform.isSega && !platform.isSaturn)) ChoiceSection(
                 title = stringResource(R.string.settings_mouse_aim_mode),
                 options = listOf(
                     AppPreferences.MOUSE_AIM_OFF to stringResource(R.string.settings_mouse_aim_off),
@@ -271,7 +271,7 @@ private fun KeyboardMouseSettingsContent(
                 },
                 helpText = stringResource(R.string.settings_mouse_aim_mode_desc)
             )
-            if (!platform.isSega && settings.mouseAimMode != KeyboardMouseBindings.MOUSE_AIM_OFF) {
+            if ((!platform.isSega && !platform.isSaturn) && settings.mouseAimMode != KeyboardMouseBindings.MOUSE_AIM_OFF) {
                 KeyboardMouseSliderItem(
                     title = stringResource(R.string.settings_mouse_sensitivity),
                     value = settings.mouseSensitivity,

@@ -9,6 +9,34 @@ import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
 class StringsLocalizationTest {
+    @Test fun saturnSettingsLabelsHaveFullLocaleCoverage() {
+        val res = resolveResDir()
+        val english = readStrings(File(res, "values/strings.xml"))
+        val keys = english.keys.filter { it.startsWith("saturn_") }
+        val files = res.listFiles().orEmpty().map { File(it, "strings.xml") }.filter(File::isFile)
+        for (file in files) {
+            val localized = readStrings(file)
+            for (key in keys) assertTrue("Missing $key in ${file.parentFile.name}", !localized[key].isNullOrBlank())
+        }
+    }
+    @Test fun supportedSystemsGuideAndSaturnErrorsAreTranslatedInEveryLocale() {
+        val res = resolveResDir()
+        val english = readStrings(File(res, "values/strings.xml"))
+        val keys = english.keys.filter { it.startsWith("supported_systems_") || it == "saturn_bios_missing" }
+        assertEquals(9, keys.size)
+        val files = res.listFiles().orEmpty().map { File(it, "strings.xml") }.filter(File::isFile)
+        assertEquals(18, files.size)
+        for (file in files) {
+            val strings = readStrings(file)
+            for (key in keys) {
+                val translated = strings[key]
+                assertTrue("Missing $key in ${file.parentFile.name}", !translated.isNullOrBlank())
+                if (file.parentFile.name != "values" && key != "supported_systems_no_bios_body") {
+                    assertTrue("English fallback $key in ${file.parentFile.name}", translated != english[key])
+                }
+            }
+        }
+    }
     private val requiredKeys = listOf(
         "settings_keyboard_mouse_section",
         "settings_keyboard_input",

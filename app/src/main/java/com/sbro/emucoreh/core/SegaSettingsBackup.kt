@@ -7,8 +7,8 @@ import org.json.JSONObject
 object SegaSettingsBackup {
     fun export(context: Context): JSONObject = JSONObject().apply {
         put("coreOptions", JSONObject().apply {
-            EmulationPlatform.entries.filter { it.isSega }.forEach { platform ->
-                put(platform.name, JSONObject(SegaCoreOptions.persistedEntries(context, platform)))
+            EmulationPlatform.entries.filter { it.isSega || it.isSaturn }.forEach { platform ->
+                put(platform.name, JSONObject(if (platform.isSaturn) SaturnCoreOptions.persistedEntries(context, platform) else SegaCoreOptions.persistedEntries(context, platform)))
             }
         })
         put("touchLayouts", com.sbro.emucoreh.data.SegaTouchLayoutPreferences(context).exportJson())
@@ -25,6 +25,7 @@ object SegaSettingsBackup {
 
     fun resetAll(context: Context) {
         SegaCoreOptions.resetAll(context)
+        SaturnCoreOptions.resetAll(context)
         SegaControlProfiles.resetAll(context)
         com.sbro.emucoreh.data.SegaTouchLayoutPreferences(context).restoreJson(JSONObject())
     }
@@ -33,9 +34,10 @@ object SegaSettingsBackup {
         if (json == null) return
         com.sbro.emucoreh.data.SegaTouchLayoutPreferences(context).restoreJson(json.optJSONObject("touchLayouts"))
         json.optJSONObject("coreOptions")?.let { options ->
-            EmulationPlatform.entries.filter { it.isSega }.forEach { platform ->
+            EmulationPlatform.entries.filter { it.isSega || it.isSaturn }.forEach { platform ->
                 options.optJSONObject(platform.name)?.let { values ->
-                    values.keys().forEach { key -> SegaCoreOptions.set(context, key, values.optString(key), platform) }
+                    values.keys().forEach { key -> if (platform.isSaturn) SaturnCoreOptions.set(context, key, values.optString(key), platform)
+                        else SegaCoreOptions.set(context, key, values.optString(key), platform) }
                 }
             }
         }

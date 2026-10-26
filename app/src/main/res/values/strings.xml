@@ -520,13 +520,13 @@
     <string name="settings_mediatek_notice_message">MediaTek support is still experimental. Crashes, visual artifacts, and unstable behavior may occur while we continue improving compatibility and performance.\n\nIf you experience graphics issues, try OpenGL with ANGLE enabled. If the issues persist, use the Software renderer.</string>
     <string name="onboarding_title">Get ready to play</string>
     <string name="onboarding_subtitle">Choose your game folders and grant file access.</string>
-    <string name="onboarding_bios_desc">Select one folder with your BIOS files. Tap again to add another folder; valid Dreamcast, arcade, Sega CD, and 32X files are installed together.</string>
+    <string name="onboarding_bios_desc">Select one folder with your BIOS files. Tap again to add another folder; valid Dreamcast, arcade, Saturn, Sega CD, and 32X files are installed together.</string>
     <string name="onboarding_bios_optional">Optional, but recommended</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
 Arcade: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="onboarding_games_title">Add game folders</string>
     <string name="onboarding_games_desc">Add one or more folders that contain your games.</string>
     <string name="onboarding_games_selected_count">%1$d folders selected. Tap to add another.</string>
@@ -2300,7 +2300,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="sega_32x_bios_m68k">68000 BIOS</string>
     <string name="sega_32x_bios_description">Import your own three 32X BIOS files. All three are required and each file is validated before installation.</string>
     <string name="sega_32x_bios_title">Sega 32X BIOS</string>
-    <string name="formats_sega_body">Mega Drive, 32X, Master System, Game Gear and SG-1000 ROMs; Sega CD CUE/BIN and CHD discs. ZIP supports one cartridge ROM. Sega CD and 32X require your own BIOS files.</string>
+    <string name="formats_sega_body">Mega Drive, 32X, Master System, Game Gear and SG-1000 ROMs; Sega CD CUE/BIN and CHD discs; Saturn CUE/BIN, ISO and CHD discs. ZIP supports one cartridge ROM. Saturn, Sega CD and 32X require your own BIOS files.</string>
     <string name="sega_region">Region</string>
     <string name="sega_timing">Video timing</string>
     <string name="sega_restart_required">Takes effect after restarting the game.</string>
@@ -2342,4 +2342,22 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">Could not remove the selected presets.</string>
     <string name="controls_editor_groups">Groups</string>
     <string name="controls_editor_individual">Individual buttons</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="saturn_bios_missing">Saturn BIOS is missing or invalid. Open Settings, Library, BIOS and import your own saturn_bios.bin, sega_101.bin or mpr-17933.bin.</string>
+    <string name="supported_systems_title">Supported systems &amp; BIOS</string>
+    <string name="supported_systems_intro">Add your game folders below. Import your own BIOS files in the BIOS section.</string>
+    <string name="supported_systems_no_bios_title">Ready without a BIOS</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS optional: built-in BIOS emulation lets you play without a BIOS file.</string>
+    <string name="supported_systems_required_title">These systems need a BIOS</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD: BIOS for the game region.\n32X: all three BIOS files.\nSaturn: one 512 KiB BIOS file.</string>
+    <string name="supported_systems_arcade_body">Import the matching arcade BIOS set for each system.</string>
+    <string name="saturn_sh2_core">SH-2 CPU engine</string>
+    <string name="saturn_dynarec">Dynamic recompiler</string>
+    <string name="saturn_interpreter">Interpreter</string>
+    <string name="saturn_frameskip">Automatic frame skipping</string>
+    <string name="saturn_frameskip_help">Skip video frames when needed to keep the game running at normal speed. Leave disabled for complete animation.</string>
+    <string name="saturn_addon_cart">Expansion RAM cartridge</string>
+    <string name="saturn_cart_4m">4 MiB</string>
+    <string name="saturn_cart_1m">1 MiB</string>
 </resources>

@@ -24,6 +24,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import com.sbro.emucoreh.data.igdb.SaturnTitleIdentity
 
 /**
  * Kotlin port of Flycast's TheGamesDb box art scraper
@@ -82,14 +83,33 @@ internal class TheGamesDbClient(private val baseUrl: String = "https://api.thega
         return results
     }
 
-    fun findByName(name: String, arcade: Boolean = false): GameInfo? {
+    fun findByName(name: String, arcade: Boolean = false, saturn: Boolean = false): GameInfo? {
         if (name.isBlank()) return null
-        val platform = fetchPlatforms() ?: return null
-        val platformId = if (arcade) platform.arcade else platform.dreamcast
+        val platformId = if (saturn) fetchSaturnPlatform() ?: return null else {
+            val platform = fetchPlatforms() ?: return null
+            if (arcade) platform.arcade else platform.dreamcast
+        }
         if (platformId == 0) return null
         val url = makeUrl("Games/ByGameName") + "&fields=overview&include=boxart&filter%5Bplatform%5D=" +
             platformId + "&name=" + urlEncode(name)
-        return fetchGameInfo(url)
+        return fetchGameInfo(url, expectedSaturnTitle = name.takeIf { saturn })
+    }
+
+    @Volatile private var saturnPlatformId = 0
+
+    @Synchronized
+    private fun fetchSaturnPlatform(): Int? {
+        if (saturnPlatformId != 0) return saturnPlatformId
+        val response = httpGet(makeUrl("Platforms/ByPlatformName") + "&name=Saturn") ?: return null
+        val platforms = response.optJSONObject("data")?.optJSONArray("platforms") ?: return null
+        for (index in 0 until platforms.length()) {
+            val entry = platforms.optJSONObject(index) ?: continue
+            if (entry.optString("name").equals("Sega Saturn", true)) {
+                val id = entry.optInt("id")
+                if (id > 0) { saturnPlatformId = id; return id }
+            }
+        }
+        return null
     }
 
     private data class Platforms(val dreamcast: Int, val arcade: Int)
@@ -121,13 +141,19 @@ internal class TheGamesDbClient(private val baseUrl: String = "https://api.thega
         return Platforms(dreamcast, arcade)
     }
 
-    private fun fetchGameInfo(url: String, uniqueId: String = ""): GameInfo? {
+    private fun fetchGameInfo(url: String, uniqueId: String = "", expectedSaturnTitle: String? = null): GameInfo? {
         val response = httpGet(url) ?: return null
-        return parseGameInfo(response, uniqueId)
+        return parseGameInfo(response, uniqueId, expectedSaturnTitle)
     }
 
-    private fun parseGameInfo(response: JSONObject, uniqueId: String = ""): GameInfo? {
-        val games = gameEntries(response)
+    private fun parseGameInfo(response: JSONObject, uniqueId: String = "", expectedSaturnTitle: String? = null): GameInfo? {
+        val entries = gameEntries(response)
+        val games = if (expectedSaturnTitle == null) entries else {
+            val expected = SaturnTitleIdentity.normalize(expectedSaturnTitle)
+            val exact = entries.filter { it.optInt("id") > 0 && expected.isNotBlank() &&
+                SaturnTitleIdentity.normalize(it.optString("game_title")) == expected }.distinctBy { it.optInt("id") }
+            listOf(exact.singleOrNull() ?: return null)
+        }
         val boxart = runCatching { response.getJSONObject("include").optJSONObject("boxart") }
             .getOrNull()
         for (game in games) {
@@ -260,7 +286,7 @@ internal class TheGamesDbClient(private val baseUrl: String = "https://api.thega
 internal object TheGamesDb {
     private val client = TheGamesDbClient()
     fun findByUniqueId(uniqueId: String) = client.findByUniqueId(uniqueId)
-    fun findByName(name: String, arcade: Boolean = false) = client.findByName(name, arcade)
+    fun findByName(name: String, arcade: Boolean = false, saturn: Boolean = false) = client.findByName(name, arcade, saturn)
     fun findByUniqueIds(uniqueIds: List<String>) = client.findByUniqueIds(uniqueIds)
 }
 

@@ -393,7 +393,7 @@
 アーケード: naomi.zip、naomi2.zip、awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin、bios_CD_E.bin、bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="onboarding_games_title">ゲームフォルダを選択</string>
     <string name="onboarding_games_desc">ゲームが含まれているフォルダを選択します。</string>
     <string name="onboarding_status_required">必須</string>
@@ -2316,4 +2316,22 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">選択したプリセットを削除できませんでした。</string>
     <string name="controls_editor_groups">グループ</string>
     <string name="controls_editor_individual">個別ボタン</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">対応システムとBIOS</string>
+    <string name="supported_systems_intro">下からゲームフォルダーを追加してください。お持ちのBIOSファイルはBIOS欄から取り込めます。</string>
+    <string name="supported_systems_no_bios_title">BIOSなしで遊べるシステム</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOSは任意です。内蔵のBIOSエミュレーションにより、BIOSファイルなしで遊べます。</string>
+    <string name="supported_systems_required_title">BIOSが必要なシステム</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD：ゲームの地域に対応するBIOS。\n32X：3つすべてのBIOSファイル。\nSaturn：512 KiBのBIOSファイル1つ。</string>
+    <string name="supported_systems_arcade_body">各システムに対応するアーケードBIOSセットを取り込んでください。</string>
+    <string name="saturn_bios_missing">SaturnのBIOSがないか、無効です。「設定」→「ライブラリ」→「BIOS」を開き、お持ちのsaturn_bios.bin、sega_101.bin、またはmpr-17933.binを取り込んでください。</string>
+    <string name="saturn_sh2_core">SH-2 CPUの実行方式</string>
+    <string name="saturn_dynarec">動的再コンパイル</string>
+    <string name="saturn_interpreter">インタープリター</string>
+    <string name="saturn_frameskip">自動フレームスキップ</string>
+    <string name="saturn_frameskip_help">通常のゲーム速度を維持するため、必要に応じて映像フレームを省略します。すべてのアニメーションを表示するには無効のままにしてください。</string>
+    <string name="saturn_addon_cart">拡張RAMカートリッジ</string>
+    <string name="saturn_cart_4m">4 MiB</string>
+    <string name="saturn_cart_1m">1 MiB</string>
 </resources>

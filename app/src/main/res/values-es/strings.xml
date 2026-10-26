@@ -417,7 +417,7 @@
 Arcade: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="emulation_quick_save_confirm_title">¿Guardar estado?</string>
     <string name="emulation_quick_save_confirm_desc">Esto sobrescribirá la ranura %1$d con el estado actual del juego.</string>
     <string name="emulation_quick_load_confirm_title">¿Cargar estado?</string>
@@ -2319,4 +2319,22 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">No se pudieron quitar los preajustes seleccionados.</string>
     <string name="controls_editor_groups">Grupos</string>
     <string name="controls_editor_individual">Botones individuales</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">Sistemas compatibles y BIOS</string>
+    <string name="supported_systems_intro">Añade tus carpetas de juegos abajo. Importa tus propios archivos BIOS en la sección BIOS.</string>
+    <string name="supported_systems_no_bios_title">Listos para jugar sin BIOS</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS opcional: la emulación de BIOS integrada permite jugar sin un archivo BIOS.</string>
+    <string name="supported_systems_required_title">Estos sistemas necesitan BIOS</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD: BIOS de la región del juego.\n32X: los tres archivos BIOS.\nSaturn: un archivo BIOS de 512 KiB.</string>
+    <string name="supported_systems_arcade_body">Importa el conjunto de BIOS arcade correspondiente a cada sistema.</string>
+    <string name="saturn_bios_missing">Falta el BIOS de Saturn o no es válido. Abre Ajustes, Biblioteca, BIOS e importa tu propio saturn_bios.bin, sega_101.bin o mpr-17933.bin.</string>
+    <string name="saturn_sh2_core">Motor de CPU SH-2</string>
+    <string name="saturn_dynarec">Recompilador dinámico</string>
+    <string name="saturn_interpreter">Intérprete</string>
+    <string name="saturn_frameskip">Salto automático de fotogramas</string>
+    <string name="saturn_frameskip_help">Omite fotogramas cuando sea necesario para mantener la velocidad normal del juego. Déjalo desactivado para ver toda la animación.</string>
+    <string name="saturn_addon_cart">Cartucho de expansión de RAM</string>
+    <string name="saturn_cart_4m">4 MiB</string>
+    <string name="saturn_cart_1m">1 MiB</string>
 </resources>

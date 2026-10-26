@@ -7,6 +7,11 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SegaPlatformDetectorTest {
+    @Test fun saturnRawAndCookedDiscHeadersChooseIndependentCore() {
+        for (offset in listOf(0, 16)) for (extension in listOf("bin", "iso")) {
+            assertEquals("SATURN", SegaPlatformDetector.detectHeader("disc.$extension", header(offset, "SEGA SEGASATURN")).name)
+        }
+    }
     @Test fun explicitThirtyTwoXExtensionSelectsExpansionForGenesisCompatibleHeaders() {
         assertEquals(EmulationPlatform.SEGA_32X,
             SegaPlatformDetector.detectHeader("smoke.32x", header(0x100, "SEGA MEGA DRIVE")))

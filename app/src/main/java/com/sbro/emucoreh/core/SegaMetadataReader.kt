@@ -16,7 +16,16 @@ object SegaMetadataReader {
         val saf = path.startsWith("content://")
         val name = if (saf) DocumentPathResolver.getDisplayName(context, path) else File(path).name
         val extension = name.substringAfterLast('.').lowercase(Locale.ROOT)
-        if (extension == "chd") return null
+        if (extension == "chd") {
+            val metadata = if (saf) context.contentResolver.openFileDescriptor(Uri.parse(path), "r")?.use { descriptor ->
+                NativeCoreBridge().saturnDiscMetadata("/proc/self/fd/${descriptor.fd}")
+            } else NativeCoreBridge().saturnDiscMetadata(path)
+            return metadata?.let { value ->
+                val fields = value.split('\n', limit = 2)
+                GameMetadata(fields.firstOrNull()?.trim()?.takeIf(String::isNotBlank) ?: File(name).nameWithoutExtension,
+                    fields.getOrNull(1)?.trim()?.take(10)?.takeIf(String::isNotBlank))
+            }
+        }
         val input = if (saf) context.contentResolver.openInputStream(Uri.parse(path)) else File(path).inputStream()
         return input?.use { stream ->
             if (extension == "cue" || extension == "m3u") {
@@ -45,6 +54,10 @@ object SegaMetadataReader {
 
     fun parseHeader(name: String, source: ByteArray): GameMetadata? {
         val platform = SegaPlatformDetector.detectHeader(name, source)
+        if (platform.isSaturn) {
+            val offset = if (source.startsAt(16, "SEGA SEGASATURN")) 16 else 0
+            return GameMetadata(source.ascii(offset + 0x60, 112) ?: File(name).nameWithoutExtension, source.ascii(offset + 0x20, 10))
+        }
         if (platform !in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_32X, EmulationPlatform.SEGA_CD)) return null
         var bytes = source
         var offset = if (source.startsAt(16, "SEGADISCSYSTEM")) 16 else 0

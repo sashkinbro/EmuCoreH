@@ -1014,7 +1014,7 @@ private fun GameSettingsTabContent(
                         onResetToDefault = { onDraftChange(draft.copy(displayCrop = defaultProfile.displayCrop)) }
                     )
                     CoreOptionManagerRows(
-                        options = when { platform.isSega -> com.sbro.emucoreh.core.SegaCoreOptions.options(platform).filter { it.category == "video" }; platform.coreId == 0 -> FlycastCoreOptions.videoOptions(); else -> emptyList() },
+                        options = when { platform.isSaturn -> com.sbro.emucoreh.core.SaturnCoreOptions.options(platform).filter { it.category == "video" }; platform.isSega -> com.sbro.emucoreh.core.SegaCoreOptions.options(platform).filter { it.category == "video" }; platform.coreId == 0 -> FlycastCoreOptions.videoOptions(); else -> emptyList() },
                         draft = draft,
                         onDraftChange = onDraftChange
                     )
@@ -1096,8 +1096,8 @@ private fun GameSettingsTabContent(
                     )
                 }
 
-                if (!platform.isModel3) EditorSection(title = stringResource(R.string.settings_core_cpu)) {
-                    if (platform.isSega) SegaCoreOptionRows(platform, overrides = draft.coreOptions, category = "system",
+                if (platform.coreId == 0 || platform.isSega || platform.isSaturn) EditorSection(title = stringResource(R.string.settings_core_cpu)) {
+                    if (platform.isSega || platform.isSaturn) SegaCoreOptionRows(platform, overrides = draft.coreOptions, category = "system",
                         onChange = { key, value -> onDraftChange(draft.copy(coreOptions = draft.coreOptions + (key to value))) })
                     else if (platform.coreId == 0) CoreOptionManagerRows(
                         options = FlycastCoreOptions.systemOptions(),
@@ -1240,7 +1240,7 @@ private fun GameSettingsTabContent(
                         horizontalPadding = GameSettingsSectionContentPadding,
                         fullBleedPadding = GameSettingsSectionContentPadding
                     )
-                    if (!platform.isSega) {
+                    if ((!platform.isSega && !platform.isSaturn)) {
                     ToggleRow(
                         title = stringResource(R.string.settings_touchscreen_left_stick),
                         checked = draft.touchscreenLeftStick,
@@ -1271,7 +1271,7 @@ private fun GameSettingsTabContent(
                             }
                         )
                     }
-                    if (!platform.isSega) {
+                    if ((!platform.isSega && !platform.isSaturn)) {
                     ToggleRow(
                         title = stringResource(R.string.settings_touchscreen_right_stick),
                         checked = draft.touchscreenRightStick,
@@ -1423,7 +1423,7 @@ private fun GameSettingsTabContent(
                         helpText = stringResource(R.string.settings_help_gamepad_left_stick_sensitivity),
                         onResetToDefault = { onDraftChange(draft.copy(gamepadLeftStickSensitivity = defaultProfile.gamepadLeftStickSensitivity)) }
                     )
-                    if (!platform.isSega) {
+                    if ((!platform.isSega && !platform.isSaturn)) {
                     SliderRow(
                         title = stringResource(R.string.settings_gamepad_right_stick_sensitivity),
                         value = draft.gamepadRightStickSensitivity.toFloat(),
@@ -1510,6 +1510,7 @@ private fun CoreOptionManagerRows(
         val values = option.choices.map { it.value }
         val current = draft.coreOptions[option.key]
             ?: (if (option.key.startsWith("jgenesis_")) com.sbro.emucoreh.core.SegaCoreOptions.value(context, option.key, platform)
+                else if (option.key.startsWith("yabasanshiro_")) com.sbro.emucoreh.core.SaturnCoreOptions.value(context, option.key)
                 else CoreOptionStore.value(option.key))
             ?: option.defaultValue
         val index = values.indexOf(current).let { if (it >= 0) it else 0 }

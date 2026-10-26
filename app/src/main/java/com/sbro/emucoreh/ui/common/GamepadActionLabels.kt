@@ -80,7 +80,7 @@ fun gamepadActionLabel(actionId: String, arcade: Boolean = false, platform: Emul
         "r3" -> stringResource(R.string.settings_gamepad_action_test)
         else -> stringResource(gamepadActionLabelRes(actionId))
     }
-    if (platform.isSega) {
+    if (platform.isSega || platform.isSaturn) {
         val twoButtons = platform in setOf(EmulationPlatform.MASTER_SYSTEM, EmulationPlatform.GAME_GEAR, EmulationPlatform.SG_1000)
         return when (actionId) {
             "cross" -> if (twoButtons) "1" else "B"
@@ -89,6 +89,8 @@ fun gamepadActionLabel(actionId: String, arcade: Boolean = false, platform: Emul
             "triangle" -> "Y"
             "l1" -> "X"
             "r1" -> "Z"
+            "l2" -> "L"
+            "r2" -> "R"
             "select" -> stringResource(R.string.sega_mode)
             "start" -> if (platform == EmulationPlatform.MASTER_SYSTEM || platform == EmulationPlatform.SG_1000)
                 stringResource(R.string.sega_pause) else stringResource(R.string.settings_gamepad_action_start)

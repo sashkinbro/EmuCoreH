@@ -6,6 +6,7 @@ import java.util.Locale
 fun catalogPlatformName(platform: String?): String = when (platform?.trim()?.uppercase(Locale.ROOT)) {
     null, "DREAMCAST" -> "Dreamcast"
     "GENESIS", "MEGA DRIVE", "SEGA MEGA DRIVE/GENESIS" -> "Genesis"
+    "SATURN", "SEGA SATURN" -> "Saturn"
     "SEGA_CD", "SEGA CD" -> "Sega CD"
     "SEGA_32X", "SEGA 32X", "32X" -> "32X"
     "MASTER_SYSTEM", "MASTER SYSTEM" -> "Master System"

@@ -19,9 +19,12 @@ class BundledCoreMetadataTest {
         val jgenesisName = Regex("LIBRARY_NAME:.*?b\"([^\"\\\\]+)")
             .find(jgenesis)?.groupValues?.get(1) ?: error("Missing jgenesis library name")
         val supermodel = File(root, "core-supermodel/libretro/libretro.cpp").readText()
-        val supermodelName = Regex("\"([^\"]+) \\(Super3\\)\",\"[^\"]+\"")
+        val supermodelName = Regex("\\*info=\\{\"([^\"]+)\",\"[^\"]+\"")
             .find(supermodel)?.groupValues?.get(1) ?: error("Missing Supermodel library name")
-        assertEquals(listOf(flycastName, jgenesisName, supermodelName).joinToString(" · "),
+        val saturn = File(root, "core-saturn/src/libretro/libretro.c").readText()
+        val saturnName = Regex("info->library_name\\s*=\\s*\"([^\"]+)\"")
+            .find(saturn)?.groupValues?.get(1) ?: error("Missing Saturn library name")
+        assertEquals(listOf(flycastName, jgenesisName, supermodelName, saturnName).joinToString("/"),
             BundledCoreMetadata.DISPLAY_VERSION)
         assertTrue(BundledCoreMetadata.DISPLAY_VERSION.length <= 40)
         assertFalse(BundledCoreMetadata.DISPLAY_VERSION.contains("v0.0.0-0-g000000000"))

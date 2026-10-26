@@ -71,6 +71,12 @@ class SettingsBackupRepository(
                 val root = com.sbro.emucoreh.core.SegaSaveFiles.directory(context, preferences.getEmulatorDataPathSync())
                 com.sbro.emucoreh.core.SegaSaveFiles.isBackupPath(file.relativeTo(root).invariantSeparatorsPath)
             }
+            zip.writeDirectory("saturn-saves", com.sbro.emucoreh.core.SaturnSaveFiles.directory(
+                context, preferences.getEmulatorDataPathSync())) { file ->
+                val root = com.sbro.emucoreh.core.SaturnSaveFiles.directory(context, preferences.getEmulatorDataPathSync())
+                com.sbro.emucoreh.core.SaturnSaveFiles.isBackupPath(file.relativeTo(root).invariantSeparatorsPath) &&
+                    file.length() in 1..com.sbro.emucoreh.core.SaturnSaveFiles.MAX_BYTES
+            }
             com.sbro.emucoreh.core.Model3SaveFiles.backupFiles(
                 com.sbro.emucoreh.core.Model3SaveFiles.directory(context, preferences.getEmulatorDataPathSync())
             ).forEach { (relative, file) -> zip.writeFileEntry("model3-nvram/$relative", file) }
@@ -130,6 +136,13 @@ class SettingsBackupRepository(
                             val target = File(root, relative).canonicalFile
                             require(target.path.startsWith(root.path + File.separator)) { "Invalid battery-save path" }
                             restoreBackupSaveFile(zip, target, 16L * 1024 * 1024, allowEmpty = false)
+                        } else if (entry.name.startsWith("saturn-saves/") && !entry.isDirectory) {
+                            val relative = entry.name.removePrefix("saturn-saves/")
+                            require(com.sbro.emucoreh.core.SaturnSaveFiles.isBackupPath(relative)) { "Invalid Saturn backup path" }
+                            val root = com.sbro.emucoreh.core.SaturnSaveFiles.directory(context, preferences.getEmulatorDataPathSync()).canonicalFile
+                            val target = File(root, relative).canonicalFile
+                            require(target.path.startsWith(root.path + File.separator)) { "Invalid Saturn backup path" }
+                            restoreBackupSaveFile(zip, target, com.sbro.emucoreh.core.SaturnSaveFiles.MAX_BYTES, allowEmpty = false)
                         } else if (entry.name.startsWith("model3-nvram/") && !entry.isDirectory) {
                             com.sbro.emucoreh.core.Model3SaveFiles.restore(zip,
                                 com.sbro.emucoreh.core.Model3SaveFiles.directory(context, preferences.getEmulatorDataPathSync()),

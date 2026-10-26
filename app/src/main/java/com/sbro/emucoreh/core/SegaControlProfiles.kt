@@ -9,6 +9,7 @@ object SegaControlProfiles {
         if (platform.isModel3) return action in setOf("cross", "circle", "square", "triangle", "l1", "r1", "l2", "r2", "l3", "r3", "select", "start", "dpad_up", "dpad_down", "dpad_left", "dpad_right", "quick_save", "quick_load", "fast_forward",
             "left_stick_up", "left_stick_down", "left_stick_left", "left_stick_right",
             "right_stick_up", "right_stick_down", "right_stick_left", "right_stick_right")
+        if (platform.isSaturn) return action in setOf("cross", "circle", "square", "triangle", "l1", "r1", "l2", "r2", "start", "dpad_up", "dpad_down", "dpad_left", "dpad_right", "quick_save", "quick_load", "fast_forward")
         if (!platform.usesPlatformTouchLayouts) return true
         if (action in setOf("cross", "circle", "dpad_up", "dpad_down", "dpad_left", "dpad_right", "quick_save", "quick_load", "fast_forward")) return true
         if (action == "start") return platform != EmulationPlatform.SG_1000

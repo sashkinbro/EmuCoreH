@@ -156,15 +156,24 @@ class IgdbCatalogRepository(private val context: Context) {
         }
 
         val candidateTitles = listOfNotNull(title)
-            .map(::normalizeIdentityTitle)
+            .map { if (catalogPlatform == "Saturn") SaturnTitleIdentity.normalize(it) else normalizeIdentityTitle(it) }
             .filter { it.isNotBlank() }
             .distinct()
-        findExactTitleId(db, candidateTitles, catalogPlatform)?.let { id ->
+        val exactTitleIds = findExactTitleIds(db, candidateTitles, catalogPlatform)
+        if (exactTitleIds.isNotEmpty()) {
+            val id = if (catalogPlatform == "Saturn") {
+                val indexedId = candidateTitles.firstNotNullOfOrNull { candidate ->
+                    CoverIndexRepository(context).gameIdForExactTitle(candidate, catalogPlatform)
+                }
+                SaturnTitleIdentity.resolveExactCandidates(exactTitleIds, indexedId)
+            } else exactTitleIds.singleOrNull()
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Catalog match by exact title: $title -> $id")
+            // An ambiguous alias must not fall through to an arbitrary fuzzy match.
             return id
         }
         // Every supported Model 3 set has reviewed aliases; never guess another edition or sequel.
         if (catalogPlatform == "Sega Model 3") return null
+        if (catalogPlatform == "Saturn" && title != null && !SaturnTitleIdentity.permitsFuzzy(title)) return null
         findFuzzyTitleId(db, candidateTitles, catalogPlatform)?.let { id ->
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.d(TAG, "Catalog match by fuzzy title: $title -> $id")
             return id
@@ -209,18 +218,29 @@ class IgdbCatalogRepository(private val context: Context) {
         return null
     }
 
-    private fun findExactTitleId(db: SQLiteDatabase, titles: List<String>, platform: String): Long? {
+    private fun findExactTitleIds(db: SQLiteDatabase, titles: List<String>, platform: String): Set<Long> {
         titles.forEach { title ->
             db.rawQuery(
                 """SELECT g.igdb_id FROM games g JOIN game_platforms p ON p.igdb_id=g.igdb_id
-                    WHERE p.platform=? AND (g.normalized_name=? OR EXISTS(SELECT 1 FROM game_aliases a
-                        WHERE a.igdb_id=g.igdb_id AND a.platform=? AND a.normalized_name=?)) LIMIT 1""",
-                arrayOf(platform, title, platform, title)
+                    WHERE p.platform=? AND g.normalized_name=? LIMIT 2""",
+                arrayOf(platform, title)
             ).use { cursor ->
-                if (cursor.moveToFirst()) return cursor.getLong(0)
+                val ids = linkedSetOf<Long>()
+                while (cursor.moveToNext()) ids += cursor.getLong(0)
+                // A canonical title takes precedence over another game's alias.
+                if (ids.isNotEmpty()) return ids
+            }
+            db.rawQuery(
+                """SELECT DISTINCT a.igdb_id FROM game_aliases a JOIN game_platforms p ON p.igdb_id=a.igdb_id
+                    WHERE p.platform=? AND a.platform=? AND a.normalized_name=? LIMIT 2""",
+                arrayOf(platform, platform, title)
+            ).use { cursor ->
+                val ids = linkedSetOf<Long>()
+                while (cursor.moveToNext()) ids += cursor.getLong(0)
+                if (ids.isNotEmpty()) return ids
             }
         }
-        return null
+        return emptySet()
     }
 
     private fun findFuzzyTitleId(db: SQLiteDatabase, titles: List<String>, platform: String): Long? {
@@ -232,10 +252,13 @@ class IgdbCatalogRepository(private val context: Context) {
             while (cursor.moveToNext()) {
                 val catalogTitle = cursor.getString(1)
                 titles.forEach { candidateTitle ->
-                    val score = catalogTitleSimilarity(candidateTitle, catalogTitle)
+                    val score = if (platform == "Saturn") SaturnTitleIdentity.similarity(candidateTitle, catalogTitle)
+                        else catalogTitleSimilarity(candidateTitle, catalogTitle)
                     if (score > bestScore) {
                         bestScore = score
                         bestId = cursor.getLong(0)
+                    } else if (platform == "Saturn" && score == bestScore && score > 0.0 && bestId != cursor.getLong(0)) {
+                        bestId = null
                     }
                 }
             }

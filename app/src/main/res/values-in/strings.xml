@@ -499,7 +499,7 @@
 Arkade: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="onboarding_games_title">Pilih folder game</string>
     <string name="onboarding_games_desc">Pilih folder yang berisi game Anda.</string>
     <string name="onboarding_status_required">Wajib</string>
@@ -2331,4 +2331,22 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">Tidak dapat menghapus preset yang dipilih.</string>
     <string name="controls_editor_groups">Grup</string>
     <string name="controls_editor_individual">Tombol individual</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">Sistem yang didukung dan BIOS</string>
+    <string name="supported_systems_intro">Tambahkan folder game di bawah. Impor file BIOS milik Anda di bagian BIOS.</string>
+    <string name="supported_systems_no_bios_title">Siap dimainkan tanpa BIOS</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS opsional: emulasi BIOS bawaan memungkinkan Anda bermain tanpa file BIOS.</string>
+    <string name="supported_systems_required_title">Sistem ini memerlukan BIOS</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD: BIOS sesuai wilayah game.\n32X: ketiga file BIOS.\nSaturn: satu file BIOS berukuran 512 KiB.</string>
+    <string name="supported_systems_arcade_body">Impor set BIOS arcade yang sesuai untuk setiap sistem.</string>
+    <string name="saturn_bios_missing">BIOS Saturn tidak ada atau tidak valid. Buka Setelan, Koleksi, BIOS lalu impor saturn_bios.bin, sega_101.bin, atau mpr-17933.bin milik Anda.</string>
+    <string name="saturn_sh2_core">Mesin CPU SH-2</string>
+    <string name="saturn_dynarec">Rekompilator dinamis</string>
+    <string name="saturn_interpreter">Interpreter</string>
+    <string name="saturn_frameskip">Pelewatan bingkai otomatis</string>
+    <string name="saturn_frameskip_help">Lewati bingkai video bila diperlukan agar game berjalan pada kecepatan normal. Biarkan nonaktif untuk animasi lengkap.</string>
+    <string name="saturn_addon_cart">Kartrid ekspansi RAM</string>
+    <string name="saturn_cart_4m">4 MiB</string>
+    <string name="saturn_cart_1m">1 MiB</string>
 </resources>

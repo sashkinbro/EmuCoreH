@@ -13,6 +13,6 @@ internal fun playerGameKey(serial: String?, gamePath: String, platform: String?)
     val identity = serialKey ?: "P_" + MessageDigest.getInstance("SHA-256").digest(gamePath.toByteArray())
         .joinToString("") { "%02x".format(it) }.take(32)
     val system = catalogPlatformName(platform)
-    return if (system in setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000"))
+    return if (system in setOf("Genesis", "Sega CD", "32X", "Master System", "Game Gear", "SG-1000", "Saturn"))
         "S_${system.uppercase(Locale.ROOT).replace(Regex("[^A-Z0-9]"), "_")}_$identity" else identity
 }

@@ -20,7 +20,7 @@ class GameLibraryCacheRepository(context: Context) {
         // v11: folder-title/platform hints and hidden GDI/CUE tracks; older
         // displayable snapshots refresh in the background instead of keeping
         // track files and shared `disc.gdi` titles in the library.
-        private const val CACHE_SCHEMA_VERSION = 11
+        private const val CACHE_SCHEMA_VERSION = 12
 
         fun libraryKey(paths: List<String>): String =
             paths.map(String::trim).filter(String::isNotBlank).distinct().joinToString("\u001F")
@@ -76,6 +76,9 @@ class GameLibraryCacheRepository(context: Context) {
                         }
                         add(
                             decoded.copy(
+                                platform = if (schema < 12 &&
+                                    fileName.substringAfterLast('.', "").lowercase(java.util.Locale.ROOT) in setOf("chd", "cue", "m3u", "iso", "bin") &&
+                                    decoded.platform in setOf(null, "DREAMCAST")) null else decoded.platform,
                                 title = title,
                                 fileName = fileName,
                                 coverArtPath = decoded.coverArtPath?.takeUnless(customCovers::isMissingCustomCover),

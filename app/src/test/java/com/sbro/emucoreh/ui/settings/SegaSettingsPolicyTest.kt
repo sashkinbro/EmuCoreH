@@ -9,7 +9,7 @@ import org.junit.Test
 class SegaSettingsPolicyTest {
     @Test fun customizationOffersSupportedCheatsWithoutEnablingAchievements() {
         for (platform in EmulationPlatform.entries) {
-            assertEquals("Cheats availability for $platform", !platform.isModel3,
+            assertEquals("Cheats availability for $platform", !platform.isModel3 && !platform.isSaturn,
                 gameMenuCustomizationTabAvailable(platform, GameMenuTabId.CHEATS))
             assertEquals("Achievements availability for $platform", platform.coreId == 0,
                 gameMenuCustomizationTabAvailable(platform, GameMenuTabId.ACHIEVEMENTS))

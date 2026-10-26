@@ -1322,6 +1322,7 @@ fun EmulationScreen(
                 "load_failed" -> stringResource(R.string.emulation_load_failed)
                 "sega_ds_collection_unsupported" -> stringResource(R.string.sega_ds_collection_unsupported)
                 "sega_aleste_collection_unsupported" -> stringResource(R.string.sega_aleste_collection_unsupported)
+                "saturn_bios_missing" -> stringResource(R.string.saturn_bios_missing)
                 "sega_bios_missing" -> stringResource(R.string.sega_bios_missing)
                 "sega_32x_bios_missing" -> stringResource(R.string.sega_32x_bios_missing)
                 "bios_missing" -> stringResource(R.string.emulation_bios_missing)
@@ -1641,9 +1642,9 @@ fun EmulationScreen(
                     invertRightStickHorizontal = uiState.invertRightStickHorizontal,
                     rightStickUpToR2 = uiState.gamepadRightStickUpToR2,
                     rightStickDownToL2 = uiState.gamepadRightStickDownToL2,
-                    touchscreenRightStick = !platform.isSega && uiState.touchscreenRightStick && overlayPadIndex !in gunPorts,
+                    touchscreenRightStick = !platform.isSega && !platform.isSaturn && uiState.touchscreenRightStick && overlayPadIndex !in gunPorts,
                     touchscreenRightStickSensitivity = uiState.touchscreenRightStickSensitivity / 100f,
-                    touchscreenLeftStick = !platform.isSega && uiState.touchscreenLeftStick && overlayPadIndex !in gunPorts,
+                    touchscreenLeftStick = !platform.isSega && !platform.isSaturn && uiState.touchscreenLeftStick && overlayPadIndex !in gunPorts,
                     touchscreenLeftStickSensitivity = uiState.touchscreenLeftStickSensitivity / 100f,
                     touchHaptics = uiState.touchHaptics,
                     touchHapticsPreset = uiState.touchHapticsPreset,
@@ -2366,9 +2367,9 @@ private fun LocalMultiplayerTouchZone(
             invertRightStickHorizontal = uiState.invertRightStickHorizontal,
             rightStickUpToR2 = uiState.gamepadRightStickUpToR2,
             rightStickDownToL2 = uiState.gamepadRightStickDownToL2,
-            touchscreenRightStick = !platform.isSega && uiState.touchscreenRightStick && padIndex !in gunPorts,
+            touchscreenRightStick = !platform.isSega && !platform.isSaturn && uiState.touchscreenRightStick && padIndex !in gunPorts,
             touchscreenRightStickSensitivity = uiState.touchscreenRightStickSensitivity / 100f,
-            touchscreenLeftStick = !platform.isSega && uiState.touchscreenLeftStick && padIndex !in gunPorts,
+            touchscreenLeftStick = !platform.isSega && !platform.isSaturn && uiState.touchscreenLeftStick && padIndex !in gunPorts,
             touchscreenLeftStickSensitivity = uiState.touchscreenLeftStickSensitivity / 100f,
             touchHaptics = uiState.touchHaptics,
             touchHapticsPreset = uiState.touchHapticsPreset,
@@ -3366,7 +3367,7 @@ private fun EmulationSidebarMenu(
             .filterNot(uiState.hiddenGameMenuTabs::contains)
             .map(GameMenuTabId::toEmulationMenuTab)
             .filter { platform.coreId == 0 || it != EmulationMenuTab.Achievements }
-            .filter { !platform.isModel3 || it != EmulationMenuTab.Cheats }
+            .filter { (platform.coreId == 0 || platform.isSega) || it != EmulationMenuTab.Cheats }
             .ifEmpty { listOf(EmulationMenuTab.Session) }
     }
     LaunchedEffect(menuTabs, selectedMenuTab) {
@@ -4037,7 +4038,7 @@ private fun EmulationSidebarMenu(
                         )
                         }
 
-                        if (!platform.isSega) {
+                        if ((!platform.isSega && !platform.isSaturn)) {
                         LiveSliderRow(
                             title = stringResource(R.string.settings_left_stick_sensitivity),
                             valueLabelForValue = { "$it%" },
@@ -4050,7 +4051,7 @@ private fun EmulationSidebarMenu(
                         )
                         }
 
-                        if (!platform.isSega) {
+                        if ((!platform.isSega && !platform.isSaturn)) {
                         LiveSliderRow(
                             title = stringResource(R.string.settings_right_stick_sensitivity),
                             valueLabelForValue = { "$it%" },
@@ -4079,7 +4080,7 @@ private fun EmulationSidebarMenu(
                             onResetToDefault = { onSetInvertLeftStickHorizontal(false) }
                         )
 
-                        if (!platform.isSega) {
+                        if ((!platform.isSega && !platform.isSaturn)) {
                         SettingsToggle(
                             title = stringResource(R.string.settings_invert_right_stick),
                             checked = uiState.invertRightStick,
@@ -4137,7 +4138,7 @@ private fun EmulationSidebarMenu(
                             onResetToDefault = { onSetGamepadLeftStickSensitivity(AppPreferences.DEFAULT_GAMEPAD_STICK_SENSITIVITY) }
                         )
 
-                        if (!platform.isSega) {
+                        if ((!platform.isSega && !platform.isSaturn)) {
                         LiveSliderRow(
                             title = stringResource(R.string.settings_gamepad_right_stick_sensitivity),
                             valueLabelForValue = { "$it%" },
@@ -4151,7 +4152,7 @@ private fun EmulationSidebarMenu(
                         )
                         }
 
-                        if (!platform.isSega) {
+                        if ((!platform.isSega && !platform.isSaturn)) {
                         SettingsToggle(
                             title = stringResource(R.string.settings_touchscreen_left_stick),
                             checked = uiState.touchscreenLeftStick,
@@ -4180,7 +4181,7 @@ private fun EmulationSidebarMenu(
                             )
                         }
 
-                        if (!platform.isSega) {
+                        if ((!platform.isSega && !platform.isSaturn)) {
                         SettingsToggle(
                             title = stringResource(R.string.settings_touchscreen_right_stick),
                             checked = uiState.touchscreenRightStick,
@@ -4476,7 +4477,7 @@ private fun EmulationSidebarMenu(
                         )
 
                         CoreOptionRows(
-                            options = when { platform.isSega -> SegaCoreOptions.options(platform, liveOnly = true).filter { it.category == "video" }; platform.coreId == 0 -> FlycastCoreOptions.gameMenuGraphicsOptions(); else -> emptyList() },
+                            options = when { platform.isSaturn -> com.sbro.emucoreh.core.SaturnCoreOptions.options(platform, liveOnly = true).filter { it.category == "video" }; platform.isSega -> SegaCoreOptions.options(platform, liveOnly = true).filter { it.category == "video" }; platform.coreId == 0 -> FlycastCoreOptions.gameMenuGraphicsOptions(); else -> emptyList() },
                             version = coreOptionsVersion,
                             perGameOverrides = uiState.perGameCoreOptions,
                             onValueChange = onCoreOptionChange

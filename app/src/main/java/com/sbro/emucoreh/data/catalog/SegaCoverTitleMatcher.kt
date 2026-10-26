@@ -5,11 +5,13 @@ import org.json.JSONObject
 
 /** Sega-only dump-name cleanup; legacy Dreamcast matching is intentionally independent. */
 internal object SegaCoverTitleMatcher {
-    private val extension = Regex("(?i)\\.(?:md|gen|smd|32x|sms|gg|sg|bin|cue|chd|m3u|zip)$")
+    private val extension = Regex("(?i)\\.(?:md|gen|smd|32x|sms|gg|sg|bin|cue|iso|chd|m3u|zip)$")
     private val trailingTag = Regex("[\\s_]*(?:\\(([^()]*)\\)|\\[([^\\[\\]]*)])[\\s_]*$")
     private val translation = Regex("(?i)(?:t[+-].*|tr(?:anslated|anslation)?(?:[ +:_-].*)?)")
     private val dumpFlag = Regex("(?i)(?:!|s|[abcfhopt]\\d*[a-z]?|[abcfhopt][+-].*)")
     private val articleBeforeSubtitle = Regex("(?i)^(.+?),\\s*(the|an|a)(\\s*[-:]\\s*.+)$")
+    private val pressingCode = Regex("(?i)\\d{1,3}(?:[ms]\\d{0,2})?")
+    private val parenthesizedTag = Regex("\\(([^()]*)\\)")
     private val extraTags = setOf("aftermarket", "unl", "unlicensed", "enhanced", "translated", "translation",
         "aleste collection", "sonic classic collection", "game gear micro")
 
@@ -25,13 +27,17 @@ internal object SegaCoverTitleMatcher {
                 // Let the legacy parser remove known region/revision tags before
                 // removing Sega translation and provenance tags behind them.
                 val known = text.lowercase(Locale.ROOT) in extraTags || translation.matches(text) ||
-                    (tag.groupValues[2].isNotEmpty() && dumpFlag.matches(text))
+                    (tag.groupValues[2].isNotEmpty() && dumpFlag.matches(text)) ||
+                    (pressingCode.matches(text) && parenthesizedTag.findAll(remaining).any { previous ->
+                        CoverIndexRepository.normalizeTitle(previous.groupValues[1]).split(' ')
+                            .all { it in regionsAndLanguages }
+                    })
                 if (known) {
                     cleaned = remaining
                 } else {
                     val normalized = CoverIndexRepository.normalizeTitle(text)
                     val regionOrLanguage = normalized.split(' ').all { it in regionsAndLanguages }
-                    val revision = Regex("(?i)(?:rev(?:ision)?[ ._-]*[a-z0-9]+|(?:19|20)\\d{2})").matches(text)
+                    val revision = Regex("(?i)(?:rev(?:ision)?[ ._-]*[a-z0-9]+|(?:disc|disk|cd)\\s*\\d+(?:\\s*(?:of|/)\\s*\\d+)?|(?:19|20)\\d{2})").matches(text)
                     if (!regionOrLanguage && !revision) break
                     cleaned = remaining
                 }
@@ -42,6 +48,9 @@ internal object SegaCoverTitleMatcher {
     }
 
     private fun exact(titles: JSONObject, value: String): String? {
+        // Real Sega titles include D and Z; only accept their explicit index key.
+        val normalized = CoverIndexRepository.normalizeTitle(value)
+        if (normalized.length == 1) titles.optString(normalized).takeIf(String::isNotBlank)?.let { return it }
         CoverTitleMatcher.resolve(titles, value, false)?.let { return it }
         val article = articleBeforeSubtitle.matchEntire(value) ?: return null
         return CoverTitleMatcher.resolve(titles, "${article.groupValues[2]} ${article.groupValues[1]}${article.groupValues[3]}", false)

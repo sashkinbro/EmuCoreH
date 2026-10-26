@@ -11,9 +11,10 @@ data class BiosInstallResult(
     val dreamcast: Int = 0,
     val arcade: Int = 0,
     val segaCd: Int = 0,
-    val sega32x: Int = 0
+    val sega32x: Int = 0,
+    val saturn: Int = 0
 ) {
-    val total: Int get() = dreamcast + arcade + segaCd + sega32x
+    val total: Int get() = dreamcast + arcade + segaCd + sega32x + saturn
     val installed: Boolean get() = total > 0
 }
 
@@ -24,7 +25,7 @@ object BiosImport {
     private val arcadeExtensions = setOf("zip", "7z")
 
     fun hasAnyBios(context: Context): Boolean =
-        DreamcastBios.hasAnyBios(flycastSystemDir(context)) ||
+        SaturnBios.isInstalled(context) || DreamcastBios.hasAnyBios(flycastSystemDir(context)) ||
             SegaCdBios.Region.entries.any { SegaCdBios.isInstalled(context, it) } ||
             Sega32XBios.Part.entries.any { Sega32XBios.isInstalled(context, it) }
 
@@ -34,7 +35,7 @@ object BiosImport {
         val selections = paths.distinct().filter(String::isNotBlank)
         if (selections.isEmpty()) return
         val migration = MessageDigest.getInstance("SHA-256")
-            .digest(("header-import-v1\u0000" + selections.sorted().joinToString("\u0000")).toByteArray())
+            .digest(("header-import-v2-saturn\u0000" + selections.sorted().joinToString("\u0000")).toByteArray())
             .joinToString("") { "%02x".format(it) }
         val preferences = context.getSharedPreferences("bios_import_migrations", Context.MODE_PRIVATE)
         if (!force && preferences.getString("completed", null) == migration) return
@@ -123,6 +124,10 @@ object BiosImport {
         segaSystemDir: String,
         counts: Counts
     ) {
+        if (SaturnBios.installDetected(context, uri, size)) {
+            counts.saturn++
+            return
+        }
         Sega32XBios.partForFileName(name)?.let { part ->
             if (Sega32XBios.installTo(context, uri, part, File(segaSystemDir))) counts.sega32x++
             return
@@ -154,8 +159,9 @@ object BiosImport {
         var arcade = 0
         var segaCd = 0
         var sega32x = 0
+        var saturn = 0
 
-        fun result() = BiosInstallResult(dreamcast, arcade, segaCd, sega32x)
+        fun result() = BiosInstallResult(dreamcast, arcade, segaCd, sega32x, saturn)
     }
 
     private class Budget {

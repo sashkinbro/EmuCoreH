@@ -396,7 +396,7 @@ object GamepadManager {
     }
 
     fun setLightGunPorts(activePadIndices: Set<Int>, aimSource: Int = 0) {
-        val ports = if (activePlatform.isSega) emptySet() else
+        val ports = if (activePlatform.isSega || activePlatform.isSaturn) emptySet() else
             activePadIndices.filterTo(mutableSetOf()) { it in 0 until MAX_PAD_SLOTS }
         val source = aimSource.coerceIn(0, AppPreferences.LIGHT_GUN_AIM_MAX)
         if (lightGunPorts == ports && lightGunAimSource == source) return
@@ -789,7 +789,7 @@ object GamepadManager {
         val leftY = processStickAxis(event.getAxisValue(MotionEvent.AXIS_Y), leftStickSensitivity)
             .let { if (invertLeftStick) -it else it }
         val useLeftStickForGun = padIndex in lightGunPorts && lightGunAimSource == 1
-        if (!activePlatform.isSega && !useLeftStickForGun && (leftX != state.prevLeftX || leftY != state.prevLeftY)) {
+        if (!(activePlatform.isSega || activePlatform.isSaturn) && !useLeftStickForGun && (leftX != state.prevLeftX || leftY != state.prevLeftY)) {
             dispatchAnalogStick(
                 padIndex = padIndex,
                 x = leftX,
@@ -829,7 +829,7 @@ object GamepadManager {
         selectLightGunStick(lightGunPorts, padIndex, lightGunAimSource, leftX to leftY, rightX to rightY)?.let { vector ->
             _lightGunStickByPad.value = _lightGunStickByPad.value + (padIndex to vector)
         }
-        if (!activePlatform.isSega && !useRightStickForGun && (rightX != state.prevRightX || rightStickY != state.prevRightY)) {
+        if (!(activePlatform.isSega || activePlatform.isSaturn) && !useRightStickForGun && (rightX != state.prevRightX || rightStickY != state.prevRightY)) {
             dispatchAnalogStick(
                 padIndex = padIndex,
                 x = rightX,
@@ -867,7 +867,7 @@ object GamepadManager {
 
         val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
         val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
-        if (activePlatform.isSega) {
+        if (activePlatform.isSega || activePlatform.isSaturn) {
             val previous = segaDpadDirections(state.prevLeftX, state.prevLeftY, state.prevHatX, state.prevHatY)
             val directions = segaDpadDirections(leftX, leftY, hatX, hatY)
             for (key in previous - directions) dispatchDpadDirection(padIndex, key, false)
@@ -900,7 +900,7 @@ object GamepadManager {
      * emulated pad and true is returned so the caller suppresses the dispatch.
      */
     private fun updateDpadLightGunDirection(padIndex: Int, padKey: Int, pressed: Boolean): Boolean {
-        if (activePlatform.isSega) return false
+        if (activePlatform.isSega || activePlatform.isSaturn) return false
         val bit = when (padKey) {
             PadKey.Up -> DPAD_DIRECTION_UP
             PadKey.Down -> DPAD_DIRECTION_DOWN
@@ -1191,7 +1191,7 @@ object GamepadManager {
     }
 
     private fun remapTriggerPadKeyForRightStick(padKey: Int): Int {
-        if (activePlatform.isModel3) return padKey
+        if (activePlatform.isModel3 || activePlatform.isSaturn) return padKey
         return when (padKey) {
             PadKey.L2 -> if (rightStickDownToL2) PadKey.RightStickDown else PadKey.L2
             PadKey.R2 -> if (rightStickUpToR2) PadKey.RightStickUp else PadKey.R2

@@ -78,6 +78,8 @@ class Model3SettingsBackupInstrumentedTest {
     }
 
     private fun installProfiles() {
+        com.sbro.emucoreh.core.SaturnCoreOptions.set(context, "yabasanshiro_frameskip", "enabled")
+        com.sbro.emucoreh.core.SaturnCoreOptions.set(context, "yabasanshiro_resolution_mode", "2x")
         SegaControlProfiles.save(context, EmulationPlatform.MODEL_3, model3)
         SegaControlProfiles.save(context, EmulationPlatform.GENESIS, genesis)
         context.getSharedPreferences("legacy-layout-proof", 0).edit().putString("layout", "untouched").commit()
@@ -87,11 +89,14 @@ class Model3SettingsBackupInstrumentedTest {
     // Avoid importing unrelated process-wide DataStore settings in this isolated profile test.
     private fun verifySharedRestore(settings: JSONObject) {
         val nested = settings.getJSONObject("segaSettings")
+        assertEquals("enabled", nested.getJSONObject("coreOptions").getJSONObject("SATURN").getString("yabasanshiro_frameskip"))
         assertTrue(nested.getJSONObject("gamepadProfiles").has(EmulationPlatform.MODEL_3.name))
         assertFalse(nested.getJSONObject("coreOptions").has(EmulationPlatform.MODEL_3.name))
         SegaSettingsBackup.resetAll(context)
         assertTrue(SegaControlProfiles.load(context, EmulationPlatform.MODEL_3).isEmpty())
         SegaSettingsBackup.restore(context, nested)
+        assertEquals("enabled", com.sbro.emucoreh.core.SaturnCoreOptions.value(context, "yabasanshiro_frameskip"))
+        assertEquals("2x", com.sbro.emucoreh.core.SaturnCoreOptions.value(context, "yabasanshiro_resolution_mode"))
         assertEquals(model3, SegaControlProfiles.load(context, EmulationPlatform.MODEL_3))
         assertEquals(genesis, SegaControlProfiles.load(context, EmulationPlatform.GENESIS))
         assertEquals("untouched", context.getSharedPreferences("legacy-layout-proof", 0).getString("layout", null))

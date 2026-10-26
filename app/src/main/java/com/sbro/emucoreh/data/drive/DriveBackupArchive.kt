@@ -52,6 +52,7 @@ class DriveBackupArchive(private val context: Context) {
             "memory-cards" to File(EmulatorStorage.flycastSystemDir(context), "dc").apply { mkdirs() },
             "save-states" to EmulatorStorage.saveStatesDir(context, path),
             "battery-saves" to com.sbro.emucoreh.core.SegaSaveFiles.directory(context, path),
+            "saturn-saves" to com.sbro.emucoreh.core.SaturnSaveFiles.directory(context, path),
             "model3-nvram" to com.sbro.emucoreh.core.Model3SaveFiles.directory(context, path),
             "cheat-files" to EmulatorStorage.importedCheatsDir(context),
             "patches" to EmulatorStorage.patchesDir(context, path),
@@ -69,6 +70,7 @@ class DriveBackupArchive(private val context: Context) {
         return when (parts[0]) {
             "memory-cards" -> parts.size == 2 && parts[1].endsWith(".bin", true)
             "battery-saves" -> com.sbro.emucoreh.core.SegaSaveFiles.isBackupPath(name.substringAfter('/'))
+            "saturn-saves" -> com.sbro.emucoreh.core.SaturnSaveFiles.isBackupPath(name.substringAfter('/'))
             "model3-nvram" -> com.sbro.emucoreh.core.Model3SaveFiles.isBackupPath(name.substringAfter('/'))
             "save-states" -> parts.size == 2 &&
                 (name.endsWith(".rstate", true) || name.endsWith(".png", true))
@@ -109,7 +111,8 @@ class DriveBackupArchive(private val context: Context) {
                 if (source.isFile && !Files.isSymbolicLink(source.toPath())) {
                     val name = "$prefix/${source.relativeTo(root).invariantSeparatorsPath}"
                     if (allowed(name) && source.canonicalPath.startsWith(root.canonicalPath + File.separator) &&
-                        (prefix != "model3-nvram" || source.length() in 1..com.sbro.emucoreh.core.Model3SaveFiles.MAX_NVRAM_BYTES)) sources[name] = source
+                        (prefix != "model3-nvram" || source.length() in 1..com.sbro.emucoreh.core.Model3SaveFiles.MAX_NVRAM_BYTES) &&
+                        (prefix != "saturn-saves" || source.length() in 1..com.sbro.emucoreh.core.SaturnSaveFiles.MAX_BYTES)) sources[name] = source
                 }
             }
         }
@@ -168,6 +171,7 @@ class DriveBackupArchive(private val context: Context) {
                     if (!allowed(name) || !seen.add(name)) invalid()
                     val size = spec.getLong("size")
                     if (size < 0 || size > Long.MAX_VALUE - total) invalid()
+                    if (name.startsWith("saturn-saves/") && size !in 1..com.sbro.emucoreh.core.SaturnSaveFiles.MAX_BYTES) invalid()
                     if (name.startsWith("model3-nvram/") && size !in 1..com.sbro.emucoreh.core.Model3SaveFiles.MAX_NVRAM_BYTES) invalid()
                     if (name in JSON_FILES && size > MAX_JSON_BYTES) invalid()
                     total += size
@@ -218,7 +222,7 @@ class DriveBackupArchive(private val context: Context) {
             val prefix = name.substringBefore('/')
             val category = when (prefix) {
                 "side-artwork", "covers" -> "customization"
-                "battery-saves", "model3-nvram" -> "memory-cards"
+                "battery-saves", "model3-nvram", "saturn-saves" -> "memory-cards"
                 else -> prefix
             }
             if (category !in categories || prefix !in currentRoots) continue

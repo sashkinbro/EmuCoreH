@@ -54,8 +54,8 @@ internal fun segaTouchLayout(
 private fun segaConsoleTouchLayout(
     platform: EmulationPlatform, width: Float, height: Float, scale: Float
 ): List<SegaTouchButtonBounds> {
-    val six = platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X)
-    val systems = if (six) listOf(109, 108) else if (platform == EmulationPlatform.SG_1000) emptyList() else listOf(108)
+    val six = platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X, EmulationPlatform.SATURN)
+    val systems = if (platform.isSaturn) listOf(108) else if (six) listOf(109, 108) else if (platform == EmulationPlatform.SG_1000) emptyList() else listOf(108)
     val diameter = minOf(64f * scale.coerceIn(.5f, 1.5f), width / (if (six) 5.7f else 4.6f), height / 3.9f)
     val step = diameter * .72f
     val arrow = diameter * .7f
@@ -84,6 +84,10 @@ private fun segaConsoleTouchLayout(
             val row = index / (if (six) 3 else 2)
             button(key, faceLeft + column * diameter * 1.1f,
                 faceBottom - diameter - (if (six && row == 0) diameter * 1.1f else 0f) - column * diameter * .18f)
+        }
+        if (platform.isSaturn) {
+            button(104, 0f, 0f, diameter * .7f)
+            button(105, width - diameter * .7f, 0f, diameter * .7f)
         }
         systems.forEachIndexed { index, key ->
             add(SegaTouchButtonBounds(key, (width - systemRowWidth) / 2f + index * (systemWidth + systemGap),

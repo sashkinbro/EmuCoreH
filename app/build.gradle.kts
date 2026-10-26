@@ -175,6 +175,7 @@ dependencies {
     implementation(project(":core-android"))
     implementation(project(":core-jgenesis-android"))
     implementation(project(":core-supermodel-android"))
+    implementation(project(":core-saturn-android"))
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.google.identity)

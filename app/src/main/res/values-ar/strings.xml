@@ -393,7 +393,7 @@
 الأركيد: naomi.zip، naomi2.zip، awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin، bios_CD_E.bin، bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="onboarding_games_title">اختر مجلد الألعاب</string>
     <string name="onboarding_games_desc">حدد المجلد الذي يحتوي على ألعابك.</string>
     <string name="onboarding_status_required">مطلوب</string>
@@ -2325,4 +2325,22 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">تعذرت إزالة الإعدادات المسبقة المحددة.</string>
     <string name="controls_editor_groups">مجموعات</string>
     <string name="controls_editor_individual">أزرار منفردة</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">الأنظمة المدعومة وBIOS</string>
+    <string name="supported_systems_intro">أضف مجلدات ألعابك أدناه. استورد ملفات BIOS الخاصة بك من قسم BIOS.</string>
+    <string name="supported_systems_no_bios_title">جاهزة للعب دون BIOS</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS اختياري: تتيح محاكاة BIOS المدمجة اللعب دون ملف BIOS.</string>
+    <string name="supported_systems_required_title">تتطلب هذه الأنظمة BIOS</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD: ملف BIOS المطابق لمنطقة اللعبة.\n32X: ملفات BIOS الثلاثة جميعها.\nSaturn: ملف BIOS واحد بحجم 512 KiB.</string>
+    <string name="supported_systems_arcade_body">استورد مجموعة BIOS الآركيد المطابقة لكل نظام.</string>
+    <string name="saturn_bios_missing">ملف BIOS لجهاز Saturn مفقود أو غير صالح. افتح الإعدادات، المكتبة، BIOS واستورد ملف saturn_bios.bin أو sega_101.bin أو mpr-17933.bin الخاص بك.</string>
+    <string name="saturn_sh2_core">محرك معالج SH-2</string>
+    <string name="saturn_dynarec">إعادة الترجمة الديناميكية</string>
+    <string name="saturn_interpreter">المفسّر</string>
+    <string name="saturn_frameskip">تخطي الإطارات تلقائيًا</string>
+    <string name="saturn_frameskip_help">يتخطى إطارات الفيديو عند الحاجة للحفاظ على سرعة اللعب العادية. اتركه معطلًا لعرض الرسوم المتحركة كاملة.</string>
+    <string name="saturn_addon_cart">خرطوشة توسيع الذاكرة</string>
+    <string name="saturn_cart_4m">4 MiB</string>
+    <string name="saturn_cart_1m">1 MiB</string>
 </resources>

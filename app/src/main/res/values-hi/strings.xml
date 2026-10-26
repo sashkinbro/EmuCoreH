@@ -353,7 +353,7 @@
 आर्केड: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
 Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
-    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d</string>
+    <string name="bios_import_result">BIOS: Dreamcast %1$d · Arcade %2$d · Sega CD %3$d · Sega 32X %4$d · Saturn %5$d</string>
     <string name="onboarding_games_title">गेम्स फ़ोल्डर चुनें</string>
     <string name="onboarding_games_desc">वह फ़ोल्डर चुनें जिसमें आपके गेम्स हैं।</string>
     <string name="onboarding_status_required">आवश्यक</string>
@@ -2317,4 +2317,22 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_presets_remove_failed">चुने हुए प्रीसेट नहीं हटाए जा सके।</string>
     <string name="controls_editor_groups">समूह</string>
     <string name="controls_editor_individual">अलग-अलग बटन</string>
+    <string name="home_platform_saturn">Saturn</string>
+    <string name="supported_systems_title">समर्थित सिस्टम और BIOS</string>
+    <string name="supported_systems_intro">नीचे अपने गेम फ़ोल्डर जोड़ें। BIOS अनुभाग में अपनी BIOS फ़ाइलें आयात करें।</string>
+    <string name="supported_systems_no_bios_title">BIOS के बिना खेलने के लिए तैयार</string>
+    <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
+    <string name="supported_systems_dreamcast_body">BIOS वैकल्पिक है: अंतर्निहित BIOS अनुकरण से आप BIOS फ़ाइल के बिना खेल सकते हैं।</string>
+    <string name="supported_systems_required_title">इन सिस्टम के लिए BIOS चाहिए</string>
+    <string name="supported_systems_required_body">Sega CD / Mega-CD: गेम के क्षेत्र के अनुसार BIOS।\n32X: तीनों BIOS फ़ाइलें।\nSaturn: एक 512 KiB BIOS फ़ाइल।</string>
+    <string name="supported_systems_arcade_body">हर सिस्टम के लिए उपयुक्त आर्केड BIOS सेट आयात करें।</string>
+    <string name="saturn_bios_missing">Saturn BIOS मौजूद नहीं है या अमान्य है। सेटिंग्स, लाइब्रेरी, BIOS खोलें और अपनी saturn_bios.bin, sega_101.bin या mpr-17933.bin आयात करें।</string>
+    <string name="saturn_sh2_core">SH-2 CPU इंजन</string>
+    <string name="saturn_dynarec">डायनेमिक रीकंपाइलर</string>
+    <string name="saturn_interpreter">इंटरप्रेटर</string>
+    <string name="saturn_frameskip">अपने-आप फ़्रेम छोड़ना</string>
+    <string name="saturn_frameskip_help">गेम की सामान्य गति बनाए रखने के लिए ज़रूरत पर वीडियो फ़्रेम छोड़ें। पूरा ऐनिमेशन देखने के लिए बंद रखें।</string>
+    <string name="saturn_addon_cart">RAM विस्तार कार्ट्रिज</string>
+    <string name="saturn_cart_4m">4 MiB</string>
+    <string name="saturn_cart_1m">1 MiB</string>
 </resources>
