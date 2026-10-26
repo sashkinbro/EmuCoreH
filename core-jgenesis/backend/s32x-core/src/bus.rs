@@ -1,6 +1,8 @@
 //! 32X memory mapping for the 68000 and SH-2s
 
 pub mod debug;
+#[cfg(test)]
+mod comm_tests;
 
 use crate::pwm::PwmChip;
 use crate::registers::{Access, SystemRegisters};
@@ -312,27 +314,26 @@ impl Sh2Bus {
         }
     }
 
+    #[inline(always)]
+    fn read_system_register<const SIZE: u8>(&mut self, address: u32) -> u32 {
+        self.cycle_counter += if SIZE == OpSize::LONGWORD { 2 } else { 1 };
+        log::trace!("SH-2 {:?} read {} {address:08X}", self.which, OpSize::display::<SIZE>());
+        self.maybe_sync_other_cpu(address);
+        let which = self.which;
+        sh2_read_register::<SIZE>(address, |address| {
+            let bus = self.s32x_bus();
+            bus.registers.sh2_read(address, which, &bus.vdp)
+        })
+    }
+
     // $00000000-$01FFFFFF: Boot ROM, 32X registers, 32X CRAM
     fn read_00<const SIZE: u8>(&mut self, address: u32, ctx: AccessContext) -> u32 {
+        if (0x4000..=0x402F).contains(&address) {
+            return self.read_system_register::<SIZE>(address);
+        }
         self.cycle_counter += if SIZE == OpSize::LONGWORD { 2 } else { 1 };
 
         match address {
-            0x4000..=0x402F => {
-                // 32X system registers
-                log::trace!(
-                    "SH-2 {:?} read {} {address:08X}",
-                    self.which,
-                    OpSize::display::<SIZE>()
-                );
-
-                self.maybe_sync_other_cpu(address);
-
-                let which = self.which;
-                sh2_read_register::<SIZE>(address, |address| {
-                    let bus = self.s32x_bus();
-                    bus.registers.sh2_read(address, which, &bus.vdp)
-                })
-            }
             0x4030..=0x403F => {
                 // 32X PWM registers
                 log::trace!(
@@ -636,6 +637,13 @@ impl BusInterface for Sh2Bus {
 
     #[inline]
     fn read<const SIZE: u8>(&mut self, address: u32, ctx: AccessContext) -> u32 {
+        // Communication polling keeps its normal cycle charge and peer sync;
+        // the typed path avoids only the generic region function-pointer call.
+        if SIZE <= OpSize::LONGWORD && (0x4020..0x4030).contains(&address) {
+            return self.read_system_register::<SIZE>(address);
+        }
+        #[cfg(test)]
+        comm_tests::TABLE_DISPATCHES.set(comm_tests::TABLE_DISPATCHES.get() + 1);
         const BYTE_FNS: [fn(&mut Sh2Bus, u32, AccessContext) -> u32; 4] = [
             |bus, address, ctx| bus.read_00::<{ OpSize::BYTE }>(address, ctx),
             |bus, address, _ctx| bus.read_02::<{ OpSize::BYTE }>(address),
