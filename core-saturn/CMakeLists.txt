@@ -19,10 +19,11 @@ target_compile_definitions(saturn_libretro PRIVATE
   HAVE_CHD _7ZIP_ST SIZEOF_DOUBLE=8 SIZEOF_VOID_P=8
   PACKAGE="mednafen" STDC_HEADERS __STDC_LIMIT_MACROS __STDC_CONSTANT_MACROS
   MPC_FIXED_POINT HAVE_UNISTD_H)
-target_compile_options(saturn_libretro PRIVATE -O3 -fvisibility=hidden -fno-strict-aliasing
+target_compile_options(saturn_libretro PRIVATE -O3 -flto=thin -mtune=cortex-a76
+  -fvisibility=hidden -fno-strict-aliasing
   -Wno-sign-compare -Wno-unused-variable -Wno-unused-function -Wno-uninitialized
   -Wno-strict-aliasing)
-target_link_options(saturn_libretro PRIVATE
+target_link_options(saturn_libretro PRIVATE -flto=thin
   "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384"
   "-Wl,--no-undefined" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/link.T")
 target_link_libraries(saturn_libretro PRIVATE log android m)
