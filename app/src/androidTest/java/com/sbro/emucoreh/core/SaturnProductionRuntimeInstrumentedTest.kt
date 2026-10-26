@@ -90,7 +90,8 @@ class SaturnProductionRuntimeInstrumentedTest {
             val state = File(root, "$name.rstate")
             assertTrue("Save on the production GL worker", CoreRuntime.saveState(state.path))
             val pausedState = state.readBytes()
-            assertNotNull("Saturn envelope", CoreSaveState.unwrap(pausedState, 3))
+            val payload = requireNotNull(CoreSaveState.unwrap(pausedState, 3)) { "Beetle Saturn envelope" }
+            assertEquals("MDFNSVST", String(payload, 0, 8, Charsets.US_ASCII))
             val check = File(root, "$name-check.rstate")
             SystemClock.sleep(150)
             assertTrue(CoreRuntime.saveState(check.path))
@@ -98,42 +99,18 @@ class SaturnProductionRuntimeInstrumentedTest {
             assertTrue("Load on the production GL worker", CoreRuntime.loadState(state.path))
             SystemClock.sleep(150)
             assertTrue(CoreRuntime.saveState(check.path))
-            // YabLoadStateStream presents its thumbnail twice via YuiSwapBuffers;
-            // presentation callbacks therefore cannot count emulated guest frames.
             assertArrayEquals("Paused restore does not advance guest state", pausedState, check.readBytes())
-            // A known unsupported CS2 dialect must fail before the earlier CART
-            // chunk can mutate the machine. Change a cartridge RAM byte too.
+            // A state from another Beetle Saturn core version must be rejected before
+            // any guest state is replaced.
             val unsupported = pausedState.copyOf()
             val words = ByteBuffer.wrap(unsupported).order(ByteOrder.LITTLE_ENDIAN)
-            val firstChunk = 12 + 20 // App core envelope, then YSS v2 header.
-            assertEquals("CART", String(unsupported, firstChunk, 4, Charsets.US_ASCII))
-            assertTrue(words.getInt(firstChunk + 8) > 64)
-            unsupported[firstChunk + 12 + 32] = (unsupported[firstChunk + 12 + 32].toInt() xor 1).toByte()
-            val cdChunk = firstChunk + 12 + words.getInt(firstChunk + 8)
-            assertEquals("CS2 ", String(unsupported, cdChunk, 4, Charsets.US_ASCII))
-            words.putInt(cdChunk + 4, 3)
+            val stateOffset = 12 // App core envelope, then the Mednafen header.
+            assertEquals("MDFNSVST", String(unsupported, stateOffset, 8, Charsets.US_ASCII))
+            words.putInt(stateOffset + 16, SaturnSaveFiles.STATE_VERSION xor 1)
             val unsupportedFile = File(root, "$name-unsupported.rstate").apply { writeBytes(unsupported) }
             assertFalse("Unsupported state must be rejected", CoreRuntime.loadState(unsupportedFile.path))
             assertTrue(CoreRuntime.saveState(check.path))
-            assertArrayEquals("Rejected state must not partially replace cartridge RAM", pausedState, check.readBytes())
-            val originalWords = ByteBuffer.wrap(pausedState).order(ByteOrder.LITTLE_ENDIAN)
-            var chunk = firstChunk
-            repeat(4) { chunk += 12 + originalWords.getInt(chunk + 8) }
-            assertEquals("SCSP", String(pausedState, chunk, 4, Charsets.US_ASCII))
-            assertEquals(6, originalWords.getInt(chunk + 4))
-            val mode = originalWords.getInt(chunk + 12)
-            assertEquals("Production uses deterministic synchronous SCSP", 3, mode)
-            for (oldVersion in listOf(false, true)) {
-                val incompatible = pausedState.copyOf()
-                val changed = ByteBuffer.wrap(incompatible).order(ByteOrder.LITTLE_ENDIAN)
-                incompatible[firstChunk + 12 + 32] = (incompatible[firstChunk + 12 + 32].toInt() xor 1).toByte()
-                if (oldVersion) changed.putInt(chunk + 4, 5)
-                else changed.putInt(chunk + 12, mode xor 1)
-                unsupportedFile.writeBytes(incompatible)
-                assertFalse("Wrong sound mode or untagged v5 must fail before restore", CoreRuntime.loadState(unsupportedFile.path))
-                assertTrue(CoreRuntime.saveState(check.path))
-                assertArrayEquals("Sound mode rejection must leave all guest state unchanged", pausedState, check.readBytes())
-            }
+            assertArrayEquals("Rejected state must not mutate guest state", pausedState, check.readBytes())
         }
 
         try {
@@ -147,9 +124,9 @@ class SaturnProductionRuntimeInstrumentedTest {
             assertTrue("Validated user BIOS import", SaturnBios.installDetected(context, Uri.fromFile(bios), bios.length()))
             assertTrue(SaturnBios.isInstalled(context))
 
-            SaturnCoreOptions.set(context, "yabasanshiro_frameskip", "enabled")
-            CoreRuntime.launchCoreOptions = mapOf("yabasanshiro_frameskip" to "disabled")
-            assertEquals("enabled", CoreRuntime.coreOptionValue("yabasanshiro_frameskip"))
+            SaturnCoreOptions.set(context, "beetle_saturn_midsync", "enabled")
+            CoreRuntime.launchCoreOptions = mapOf("beetle_saturn_midsync" to "disabled")
+            assertEquals("enabled", CoreRuntime.coreOptionValue("beetle_saturn_midsync"))
             var target = reader()
             CoreRuntime.attachSurface(target.surface, 640, 480)
             var first = presented.get()
@@ -157,8 +134,8 @@ class SaturnProductionRuntimeInstrumentedTest {
             assertEquals(EmulationPlatform.SATURN, CoreRuntime.platform)
             awaitFrames(first)
             assertEquals(game.absolutePath, CoreRuntime.launchIdentityPath)
-            assertEquals("enabled", SaturnCoreOptions.value(context, "yabasanshiro_frameskip"))
-            assertEquals("disabled", CoreRuntime.launchCoreOptions["yabasanshiro_frameskip"])
+            assertEquals("enabled", SaturnCoreOptions.value(context, "beetle_saturn_midsync"))
+            assertEquals("disabled", CoreRuntime.launchCoreOptions["beetle_saturn_midsync"])
             pauseAndRoundTrip("local")
 
             CoreRuntime.detachSurface()
@@ -175,7 +152,7 @@ class SaturnProductionRuntimeInstrumentedTest {
             first = presented.get()
             assertTrue(CoreRuntime.start(game.path, biosOnly = false))
             awaitFrames(first)
-            assertEquals("enabled", CoreRuntime.coreOptionValue("yabasanshiro_frameskip"))
+            assertEquals("enabled", CoreRuntime.coreOptionValue("beetle_saturn_midsync"))
             CoreRuntime.shutdown()
 
             assumeTrue("Space for one temporary SAF image", shared.usableSpace > game.length() + 64L * 1024 * 1024)
@@ -185,7 +162,7 @@ class SaturnProductionRuntimeInstrumentedTest {
             val prepared = File(JGenesisContentPreparer.prepare(context, uri.toString()))
             assertTrue("SAF media remains in isolated cache", prepared.canonicalPath.startsWith(context.cacheDir.canonicalPath + File.separator))
             assertEquals(game.length(), prepared.length())
-            CoreRuntime.launchCoreOptions = mapOf("yabasanshiro_frameskip" to "disabled")
+            CoreRuntime.launchCoreOptions = mapOf("beetle_saturn_midsync" to "disabled")
             first = presented.get()
             assertTrue("Production SAF launch: ${CoreRuntime.failure.value}", CoreRuntime.start(uri.toString(), biosOnly = false))
             assertEquals(EmulationPlatform.SATURN, CoreRuntime.platform)
@@ -197,7 +174,7 @@ class SaturnProductionRuntimeInstrumentedTest {
 
             SaturnCoreOptions.resetAll(context)
             CoreRuntime.launchCoreOptions = emptyMap()
-            assertEquals("disabled", CoreRuntime.coreOptionValue("yabasanshiro_frameskip"))
+            assertEquals("disabled", CoreRuntime.coreOptionValue("beetle_saturn_midsync"))
         } finally {
             CoreRuntime.shutdown()
             CoreRuntime.detachSurface()

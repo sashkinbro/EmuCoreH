@@ -88,7 +88,7 @@ class SaturnRuntimeInstrumentedTest {
             repeat(3) {
                 assertTrue(bridge.nativeSelectCore(3))
                 assertEquals(1, bridge.apiVersion())
-                assertTrue(bridge.getSystemInfo().contains("YabaSanshiro"))
+                assertTrue(bridge.getSystemInfo().contains("Beetle Saturn"))
                 val system = File(root, "empty-system").apply { mkdirs() }
                 val saves = File(root, "save").apply { mkdirs() }
                 bridge.nativeInit(system.path, saves.path, root.path)
@@ -108,6 +108,84 @@ class SaturnRuntimeInstrumentedTest {
         } finally {
             bridge.nativeSelectCore(0)
             CoreRuntime.initialize(context)
+        }
+    }
+
+    @Test fun ownerBiosBootsWithoutDiscAndStateRoundTrips() {
+        val bios = InstrumentationRegistry.getArguments().getString("saturnQaBios")?.let(::File)
+        assumeTrue("Supply readable saturnQaBios", bios?.isFile == true && bios.canRead())
+        requireNotNull(bios)
+        val root = File(context.getExternalFilesDir(null), "saturn-bios-only-qa").apply { mkdirs() }
+        val system = File(root, "system").apply { mkdirs() }
+        val saves = File(root, "save").apply { mkdirs() }
+        bios.copyTo(File(system, "saturn_bios.bin"), overwrite = true)
+        val consumer = HandlerThread("Saturn-bios-pixels").apply { start() }
+        val presented = AtomicInteger()
+        val latest = AtomicReference<ByteArray>()
+        val reader = ImageReader.newInstance(640, 480, PixelFormat.RGBA_8888, 3).apply {
+            setOnImageAvailableListener({ source ->
+                source.acquireLatestImage()?.use { image ->
+                    presented.incrementAndGet()
+                    val plane = image.planes[0]
+                    val rgba = ByteArray(image.width * image.height * 4)
+                    val buffer = plane.buffer.duplicate()
+                    for (row in 0 until image.height) {
+                        buffer.position(row * plane.rowStride)
+                        buffer.get(rgba, row * image.width * 4, image.width * 4)
+                    }
+                    latest.set(rgba)
+                }
+            }, Handler(consumer.looper))
+        }
+        CoreRuntime.shutdown()
+        try {
+            assertTrue(bridge.nativeSelectCore(3))
+            bridge.nativeInit(system.path, saves.path, root.path)
+            bridge.nativeSetOption("beetle_saturn_cart", "Auto Detect")
+            bridge.nativeSetOption("beetle_saturn_region", "Auto Detect")
+            bridge.resetAudioQueue()
+            val output = NativeAudioOutput()
+            val handle = bridge.createSession()
+            try {
+                output.play()
+                assertEquals(0, bridge.setSurface(handle, reader.surface, RendererDefaults.CORE_OPENGL))
+                assertEquals("BIOS boot: ${bridge.nativeLastBootError()}", 0, bridge.loadBiosOnly(handle))
+                assertTrue("GLES context", bridge.ensureHardwareContext())
+                repeat(180) { bridge.runFrame(handle) }
+                assertTrue("BIOS video frames", presented.get() > 0)
+                val rgba = requireNotNull(latest.get()) { "No BIOS frame pixels" }
+                val visible = (0 until rgba.size step 64).any { offset ->
+                    (rgba[offset].toInt() and 255) > 16 ||
+                        (rgba[offset + 1].toInt() and 255) > 16 ||
+                        (rgba[offset + 2].toInt() and 255) > 16
+                }
+                val bitmap = Bitmap.createBitmap(640, 480, Bitmap.Config.ARGB_8888)
+                try {
+                    bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(rgba))
+                    File(root, "bios.png").outputStream().use {
+                        assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+                    }
+                } finally {
+                    bitmap.recycle()
+                }
+                assertTrue("BIOS picture is not black", visible)
+                val state = File(root, "bios.rstate")
+                assertEquals("Save BIOS state: ${bridge.nativeLastBootError()}", 0, bridge.saveState(handle, state.path))
+                assertTrue(state.length() > 1024)
+                assertEquals(0, bridge.loadState(handle, state.path))
+                repeat(2) { bridge.runFrame(handle) }
+                assertNull(CoreRuntime.failure.value)
+            } finally {
+                bridge.destroySession(handle)
+                output.release()
+            }
+        } finally {
+            bridge.nativeSelectCore(0)
+            CoreRuntime.initialize(context)
+            reader.setOnImageAvailableListener(null, null)
+            reader.close()
+            consumer.quitSafely()
+            consumer.join(3000)
         }
     }
 
@@ -176,8 +254,7 @@ class SaturnRuntimeInstrumentedTest {
                 latest.set(null)
                 assertTrue(bridge.nativeSelectCore(3))
                 bridge.nativeInit(system.path, saves.path, root.path)
-                bridge.nativeSetOption("yabasanshiro_frameskip", "disabled")
-                bridge.nativeSetOption("yabasanshiro_sh2coretype", "dynarec")
+                bridge.nativeSetOption("beetle_saturn_midsync", "disabled")
                 bridge.resetAudioQueue()
                 val output = NativeAudioOutput()
                 var target = reader()

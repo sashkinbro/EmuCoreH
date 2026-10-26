@@ -265,7 +265,7 @@ import com.sbro.emucoreh.ui.theme.neon.neonShape
 import com.sbro.emucoreh.ui.theme.neon.neonShapeCorners
 
 private enum class SettingsTab {
-    General, Graphics, Controls, Emulation, Saturn, Network, Audio, Library, Customization, GameMenu, Updates, Pro, Arcade, About
+    General, Graphics, Controls, Emulation, Network, Audio, Library, Customization, GameMenu, Updates, Pro, Arcade, About
 }
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -416,7 +416,7 @@ fun SettingsScreen(
     var selectedPlatformName by rememberSaveable { mutableStateOf(if (initialTab.equals("saturn", true)) EmulationPlatform.SATURN.name else com.sbro.emucoreh.core.CoreRuntime.platform.name) }
     val selectedPlatform = EmulationPlatform.valueOf(selectedPlatformName)
     val settingsTabs = remember(selectedPlatform) {
-        SettingsTab.entries.filter { (it != SettingsTab.Saturn || selectedPlatform.isSaturn) && (selectedPlatform.coreId == 0 || segaSettingsTabAvailable(it.name)) }
+        SettingsTab.entries.filter { selectedPlatform.coreId == 0 || segaSettingsTabAvailable(it.name) }
     }
     LaunchedEffect(settingsTabs) {
         if (selectedTab !in settingsTabs) selectedTab = SettingsTab.Emulation
@@ -1128,11 +1128,6 @@ private fun SettingsContent(
                     onOpen = onSearchResultSelected
                 )
             } else when (selectedTab) {
-                SettingsTab.Saturn -> {
-                    SettingsSection(title = stringResource(R.string.home_platform_saturn)) {
-                        SegaCoreOptionRows(EmulationPlatform.SATURN)
-                    }
-                }
                 SettingsTab.General -> {
                     SettingsSection(title = stringResource(R.string.settings_general_tab)) {
                         SettingsItem(
@@ -2008,7 +2003,9 @@ private fun SettingsContent(
                         }
                         else -> DocumentPathResolver.getFallbackDisplayName(uiState.emulatorDataPath)
                     }
-                    com.sbro.emucoreh.ui.common.SupportedSystemsCard()
+                    com.sbro.emucoreh.ui.common.SupportedSystemsCard(
+                        Modifier.padding(horizontal = ScreenHorizontalPadding)
+                    )
                     SettingsSection(title = stringResource(R.string.settings_paths)) {
                         SettingsItem(
                             icon = Icons.Rounded.FolderOpen,
@@ -2104,7 +2101,11 @@ private fun SettingsContent(
                 }
 
                 SettingsTab.Graphics -> {
-                    if (platform.isSega) SegaCoreOptionRows(platform, category = "video")
+                    if (platform.isSega || platform.isSaturn) {
+                        SettingsSection(title = platformLabel(platform)) {
+                            SegaCoreOptionRows(platform, category = "video")
+                        }
+                    }
                     SettingsSection(title = stringResource(R.string.settings_graphics_tab)) {
                         if (platform.coreId == 0 || platform.isSega) {
                         val rendererOptions = if (platform.isSega) {
@@ -2294,7 +2295,7 @@ private fun SettingsContent(
                         }
                     }
 
-                    if (platform.isSega) {
+                    if (platform.isSega || platform.isSaturn) {
                         SettingsSection(title = platformLabel(platform)) {
                             SegaCoreOptionRows(platform, category = "system")
                         }
@@ -4433,11 +4434,11 @@ private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
         return SettingsSearchEntry(tab = tab, title = stringResource(titleRes), summary = tab.label(), titleRes = titleRes)
     }
     return listOfNotNull(
-        entry(SettingsTab.Saturn, R.string.saturn_sh2_core),
-        entry(SettingsTab.Saturn, R.string.saturn_frameskip),
-        entry(SettingsTab.Saturn, R.string.saturn_addon_cart),
-        entry(SettingsTab.Saturn, R.string.flycast_opt_language_label),
-        entry(SettingsTab.Saturn, R.string.settings_upscale),
+        entry(SettingsTab.Emulation, R.string.saturn_addon_cart),
+        entry(SettingsTab.Emulation, R.string.sega_region),
+        entry(SettingsTab.Emulation, R.string.flycast_opt_language_label),
+        entry(SettingsTab.Graphics, R.string.saturn_cd_image_cache),
+        entry(SettingsTab.Emulation, R.string.saturn_midsync),
         entry(SettingsTab.General, R.string.settings_language),
         entry(SettingsTab.General, R.string.settings_tv_interface),
         entry(SettingsTab.General, R.string.settings_theme),
@@ -5825,7 +5826,7 @@ internal fun CoreOptionSettingsRows(
 }
 
 @Composable
-private fun CoreStringChoiceSection(
+internal fun CoreStringChoiceSection(
     title: String,
     options: List<Pair<String, String>>,
     selectedValue: String,
@@ -6418,7 +6419,6 @@ private fun SettingsTab.label(): String {
         SettingsTab.GameMenu -> stringResource(R.string.settings_game_menu_tab)
         SettingsTab.Audio -> stringResource(R.string.settings_audio_tab)
         SettingsTab.Controls -> stringResource(R.string.settings_controls_tab)
-        SettingsTab.Saturn -> stringResource(R.string.home_platform_saturn)
         SettingsTab.Emulation -> stringResource(R.string.settings_emulation_tab)
         SettingsTab.Network -> stringResource(R.string.settings_network_tab)
         SettingsTab.Library -> stringResource(R.string.settings_library_tab)
@@ -6437,7 +6437,6 @@ private fun SettingsTab.icon(): ImageVector {
         SettingsTab.GameMenu -> Icons.Rounded.MoreVert
         SettingsTab.Audio -> Icons.AutoMirrored.Rounded.VolumeUp
         SettingsTab.Controls -> Icons.Rounded.Gamepad
-        SettingsTab.Saturn -> Icons.Rounded.Memory
         SettingsTab.Emulation -> Icons.Rounded.Speed
         SettingsTab.Network -> Icons.Rounded.Link
         SettingsTab.Library -> Icons.Rounded.FolderOpen
@@ -6457,7 +6456,7 @@ private fun String.toSettingsTab(): SettingsTab {
         "graphics", "video", "renderer", "display" -> SettingsTab.Graphics
         "paths", "files", "memorycards", "memory_cards", "memory-cards", "memcards", "covers",
         "cover-art", "cover_art", "data_transfer", "transfer", "backup", "data-transfer", "library" -> SettingsTab.Library
-        "saturn" -> SettingsTab.Saturn
+        "saturn" -> SettingsTab.Emulation
         "performance", "emulation" -> SettingsTab.Emulation
         "network", "wlan", "adhoc" -> SettingsTab.Network
         "updates", "update", "app_update", "app-update" -> SettingsTab.Updates

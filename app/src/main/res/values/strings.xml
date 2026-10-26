@@ -2356,6 +2356,17 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="saturn_frameskip">Automatic frame skipping</string>
     <string name="saturn_frameskip_help">Skip video frames when needed to keep the game running at normal speed. Leave disabled for complete animation.</string>
     <string name="saturn_addon_cart">Expansion RAM cartridge</string>
+    <string name="saturn_cart_backup">Backup Memory</string>
     <string name="saturn_cart_4m">4 MiB</string>
     <string name="saturn_cart_1m">1 MiB</string>
+    <string name="saturn_region_north_america">North America</string>
+    <string name="saturn_region_south_korea">South Korea</string>
+    <string name="saturn_region_asia_ntsc">Asia (NTSC)</string>
+    <string name="saturn_region_asia_pal">Asia (PAL)</string>
+    <string name="saturn_region_brazil">Brazil</string>
+    <string name="saturn_region_latin_america">Latin America</string>
+    <string name="saturn_cd_image_cache">CD image cache</string>
+    <string name="saturn_cd_image_cache_desc">Loads the complete disc image into memory at startup. This can shorten loading times at the cost of more RAM and a slower launch.</string>
+    <string name="saturn_midsync">Mid-frame input synchronization</string>
+    <string name="saturn_midsync_desc">Samples input in the middle of the frame to reduce latency. This increases CPU load and is not needed on most devices.</string>
 </resources>

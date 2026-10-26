@@ -143,7 +143,7 @@ internal fun readSaveStateImportHeader(input: InputStream): SaveStateImportHeade
     return SaveStateImportHeader(2, 1, suffix[8].toInt() and 0xff).takeIf { it.platform != null }
 }
 
-/** YSS size excludes its 12-byte v1 / 20-byte v2 header; Android cannot byte-swap states. */
+/** Mednafen container: "MDFNSVST", core version at 16 and total state size at 20 (little endian). */
 private fun validSaturnStatePayload(input: InputStream): Boolean {
     fun readExactly(size: Int): ByteArray? {
         val bytes = ByteArray(size)
@@ -159,16 +159,15 @@ private fun validSaturnStatePayload(input: InputStream): Boolean {
         }
         return bytes
     }
-    val header = readExactly(12) ?: return false
-    if (!header.copyOfRange(0, 3).contentEquals("YSS".toByteArray(Charsets.US_ASCII)) || header[3] != 1.toByte()) return false
+    val header = readExactly(32) ?: return false
+    if (!header.copyOfRange(0, 8).contentEquals("MDFNSVST".toByteArray(Charsets.US_ASCII))) return false
     val words = java.nio.ByteBuffer.wrap(header).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-    val version = words.getInt(4)
-    val size = words.getInt(8)
-    if (version !in 1..2 || size !in 12..64 * 1024 * 1024) return false
-    if (version == 2 && readExactly(8) == null) return false
+    val version = words.getInt(16)
+    val size = words.getInt(20)
+    if (version != com.sbro.emucoreh.core.SaturnSaveFiles.STATE_VERSION || size !in 32..64 * 1024 * 1024) return false
     // Drain with bounded memory, checking the declared size against the entire stream.
     val buffer = ByteArray(8192)
-    var remaining = size
+    var remaining = size - 32
     while (remaining > 0) {
         val count = input.read(buffer, 0, minOf(buffer.size, remaining))
         if (count < 0) return false

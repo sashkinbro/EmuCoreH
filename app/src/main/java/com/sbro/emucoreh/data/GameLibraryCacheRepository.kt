@@ -20,7 +20,7 @@ class GameLibraryCacheRepository(context: Context) {
         // v11: folder-title/platform hints and hidden GDI/CUE tracks; older
         // displayable snapshots refresh in the background instead of keeping
         // track files and shared `disc.gdi` titles in the library.
-        private const val CACHE_SCHEMA_VERSION = 12
+        private const val CACHE_SCHEMA_VERSION = 13
 
         fun libraryKey(paths: List<String>): String =
             paths.map(String::trim).filter(String::isNotBlank).distinct().joinToString("\u001F")

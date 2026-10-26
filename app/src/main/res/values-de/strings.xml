@@ -2335,4 +2335,15 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="saturn_addon_cart">RAM-Erweiterungsmodul</string>
     <string name="saturn_cart_4m">4 MiB</string>
     <string name="saturn_cart_1m">1 MiB</string>
+    <string name="saturn_midsync">Eingabesynchronisierung zur Frame-Mitte</string>
+    <string name="saturn_midsync_desc">Liest Eingaben in der Frame-Mitte, um die Latenz zu senken. Das erhöht die CPU-Last und ist auf den meisten Geräten nicht nötig.</string>
+    <string name="saturn_region_latin_america">Lateinamerika</string>
+    <string name="saturn_region_asia_ntsc">Asien (NTSC)</string>
+    <string name="saturn_cd_image_cache">CD-Image-Cache</string>
+    <string name="saturn_region_north_america">Nordamerika</string>
+    <string name="saturn_region_brazil">Brasilien</string>
+    <string name="saturn_cart_backup">Sicherungsspeicher</string>
+    <string name="saturn_cd_image_cache_desc">Lädt das komplette Disc-Image beim Start in den Speicher. Das kann Ladezeiten verkürzen, kostet aber mehr RAM und einen langsameren Start.</string>
+    <string name="saturn_region_south_korea">Südkorea</string>
+    <string name="saturn_region_asia_pal">Asien (PAL)</string>
 </resources>

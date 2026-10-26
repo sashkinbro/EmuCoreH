@@ -1,4 +1,0 @@
-/**
- * JUnzip library by Joonas Pihlajamaa (firstname.lastname@iki.fi).
- * Released into public domain. https://github.com/jokkebk/JUnzip
- */

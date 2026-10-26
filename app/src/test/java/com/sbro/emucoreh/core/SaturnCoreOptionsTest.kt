@@ -4,17 +4,22 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SaturnCoreOptionsTest {
-    @Test fun conservativeDefaultsAndOnlyActuallyLiveOptionsAreExposed() {
+    @Test fun beetleDefaultsAndOnlyActuallyLiveOptionsAreExposed() {
         val options = SaturnCoreOptions.options().associateBy { it.key }
-        assertEquals("disabled", options.getValue("yabasanshiro_frameskip").defaultValue)
-        assertEquals("dynarec", options.getValue("yabasanshiro_sh2coretype").defaultValue)
-        assertEquals("original", options.getValue("yabasanshiro_resolution_mode").defaultValue)
-        assertEquals(setOf("original", "2x", "4x"), options.getValue("yabasanshiro_resolution_mode").choices.map { it.value }.toSet())
-        assertEquals(listOf("yabasanshiro_frameskip"), SaturnCoreOptions.options(liveOnly = true).map { it.key })
-        assertTrue(SaturnCoreOptions.requiresRestart("yabasanshiro_sh2coretype"))
-        assertFalse(SaturnCoreOptions.requiresRestart("yabasanshiro_frameskip"))
+        assertEquals("Auto Detect", options.getValue("beetle_saturn_cart").defaultValue)
+        assertEquals("Auto Detect", options.getValue("beetle_saturn_region").defaultValue)
+        assertEquals("english", options.getValue("beetle_saturn_autortc_lang").defaultValue)
+        assertEquals("disabled", options.getValue("beetle_saturn_cdimagecache").defaultValue)
+        assertEquals("disabled", options.getValue("beetle_saturn_midsync").defaultValue)
+        assertEquals(listOf("beetle_saturn_midsync"), SaturnCoreOptions.options(liveOnly = true).map { it.key })
+        assertTrue(SaturnCoreOptions.requiresRestart("beetle_saturn_cart"))
+        assertTrue(SaturnCoreOptions.requiresRestart("beetle_saturn_region"))
+        assertTrue(SaturnCoreOptions.requiresRestart("beetle_saturn_autortc_lang"))
+        assertTrue(SaturnCoreOptions.requiresRestart("beetle_saturn_cdimagecache"))
+        assertFalse(SaturnCoreOptions.requiresRestart("beetle_saturn_midsync"))
         assertTrue(SaturnCoreOptions.options(EmulationPlatform.GENESIS).isEmpty())
         assertFalse(options.containsKey("yabasanshiro_force_hle_bios"))
+        assertFalse(options.containsKey("yabasanshiro_frameskip"))
         for (option in options.values) assertTrue(option.choices.any { it.value == option.defaultValue })
     }
 }

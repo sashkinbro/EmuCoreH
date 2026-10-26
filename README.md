@@ -4,7 +4,7 @@
 [![Support EmuCoreH on Patreon](https://img.shields.io/badge/Patreon-Support%20EmuCoreH-ff424d?logo=patreon&logoColor=white)](https://www.patreon.com/c/emucore/membership)
 [![Join the EmuCoreH Discord](https://img.shields.io/badge/Discord-Join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.com/invite/c5EBeNRpz2)
 
-EmuCoreH is a Sega game library, launcher, and emulator frontend for Android. Its Compose interface includes [Flycast](https://github.com/flyinghead/flycast) for Dreamcast and arcade systems, [jgenesis](https://github.com/jsgroth/jgenesis) for Mega Drive / Genesis, Sega CD, Sega 32X, Master System, Game Gear, and SG-1000, [Supermodel](https://github.com/trzy/Supermodel) through the [Super3 Android port](https://github.com/izzy2lost/Super3) for Sega Model 3, and the pinned [YabaSanshiro libretro core](https://github.com/libretro/yabause/tree/yabasanshiro) for Saturn. All four cores are built with the app; no separate core download is required.
+EmuCoreH is a Sega game library, launcher, and emulator frontend for Android. Its Compose interface includes [Flycast](https://github.com/flyinghead/flycast) for Dreamcast and arcade systems, [jgenesis](https://github.com/jsgroth/jgenesis) for Mega Drive / Genesis, Sega CD, Sega 32X, Master System, Game Gear, and SG-1000, [Supermodel](https://github.com/trzy/Supermodel) through the [Super3 Android port](https://github.com/izzy2lost/Super3) for Sega Model 3, and the pinned [Beetle Saturn libretro core](https://github.com/libretro-mirrors/beetle-saturn-libretro) for Saturn. All four cores are built with the app; no separate core download is required.
 
 Website: [emucoreh.web.app](https://emucoreh.web.app/)
 
@@ -17,7 +17,7 @@ The project is under active development. Use your own legally obtained games. Fl
 ## Highlights
 
 - Four bundled emulation cores for ARM64 Android devices
-- Flycast Vulkan, OpenGL ES, and software rendering; jgenesis software video presented through OpenGL ES; Model 3 OpenGL ES 3 and Saturn OpenGL ES 3.1 rendering
+- Flycast Vulkan, OpenGL ES, and software rendering; jgenesis software video presented through OpenGL ES; Model 3 OpenGL ES 3 and Saturn software video presented through OpenGL ES
 - Platform-aware game library, catalog, cover art, search, filters, and per-game settings
 - Home hub with shelves, recently played titles, and quick resume
 - In-game overlay with rendering, speed, and save state controls, opened with the Back gesture
@@ -32,14 +32,14 @@ The project is under active development. Use your own legally obtained games. Fl
 
 ## What This Repository Contains
 
-This repository contains the Android application, Kotlin UI, C++ JNI frontend, vendored Flycast, jgenesis, Supermodel / Super3, and pinned YabaSanshiro sources, and their Android build modules. Games, user save data, account credentials, and BIOS dumps are not included. 32X startup firmware is not distributed; see the [jgenesis integration notes](core-jgenesis/README-ANDROID.md). Saturn requires an imported user-owned BIOS; source provenance, build instructions, and the local save-state dialect are documented in the [Saturn integration notes](core-saturn/README-ANDROID.md).
+This repository contains the Android application, Kotlin UI, C++ JNI frontend, vendored Flycast, jgenesis, Supermodel / Super3, and pinned Beetle Saturn sources, and their Android build modules. Games, user save data, account credentials, and BIOS dumps are not included. 32X startup firmware is not distributed; see the [jgenesis integration notes](core-jgenesis/README-ANDROID.md). Saturn requires an imported user-owned BIOS; source provenance, build instructions, and the local save-state dialect are documented in the [Saturn integration notes](core-saturn/README-ANDROID.md).
 
 ## Tech Stack
 
 - Kotlin + Jetpack Compose
 - Android DataStore and Room
 - JNI bridge to native C++ built with CMake and the Android NDK
-- Independently loaded Flycast, Rust jgenesis, Supermodel, and YabaSanshiro libretro libraries, driven by the app's frontend
+- Independently loaded Flycast, Rust jgenesis, Supermodel, and Beetle Saturn libretro libraries, driven by the app's frontend
 - Vulkan and OpenGL ES rendering paths with a shader chain runtime
 - RetroAchievements integration through rcheevos
 - Optional Discord Social SDK integration
@@ -106,7 +106,7 @@ Discord support is built when a compatible Discord Social SDK directory is suppl
 - `core-jgenesis-android/` Gradle module that builds and packages jgenesis
 - `core-supermodel/` Vendored Supermodel / Super3 sources and the Android libretro adapter
 - `core-supermodel-android/` Gradle module that builds and packages Model 3 support
-- `core-saturn/` Pinned YabaSanshiro libretro source, ARM64 dynarec, GLES 3.1 renderer, and source notices
+- `core-saturn/` Pinned Beetle Saturn (Mednafen) libretro source, software renderer, and source notices
 - `core-saturn-android/` Gradle module that builds and packages Saturn support
 - `app/src/main/assets/catalog/` Bundled platform-aware game catalog and cover indexes
 - `tools/` Local release, catalog, and cover tooling (not part of the app build)
@@ -118,7 +118,7 @@ Discord support is built when a compatible Discord Social SDK directory is suppl
 | Dreamcast | Flycast | GDI, CHD, CDI, CUE/BIN, ISO, M3U |
 | Naomi, Naomi 2, Atomiswave, System SP | Flycast | Compatible ROM sets: ZIP, 7Z, DAT, LST, supported raw dumps |
 | Sega Model 3 | Supermodel / Super3 | Recognized ZIP ROM sets matching the bundled Games.xml definitions; required parent ZIPs for clone sets |
-| Sega Saturn | YabaSanshiro | CHD, CUE with referenced tracks, ISO, recognized BIN discs, M3U playlists |
+| Sega Saturn | Beetle Saturn | CHD, CUE with referenced tracks, CCD, ISO, recognized BIN discs, TOC, M3U playlists |
 | Mega Drive / Genesis | jgenesis | MD, GEN, SMD, recognized BIN cartridges, single-ROM ZIP |
 | Sega 32X | jgenesis | 32X, recognized BIN cartridges, single-ROM ZIP |
 | Sega CD | jgenesis | CHD, CUE with every referenced track; M3U playlists |
@@ -160,7 +160,7 @@ Model 3 uses Select/Coin, Start, L3/Service, R3/Test, and game-specific action b
 
 Each Sega system has independent default touch and gamepad profiles. The shared controls editor supports the selected platform's buttons and saves global system layouts separately from per-game overrides. Global system options, per-game settings, and the in-game menu expose the options supported by the selected system. Sega saves and core settings are isolated from Flycast data. Game Gear defaults to its original screen proportions in Auto aspect mode.
 
-Saturn uses A/B/C, X/Y/Z, L/R and Start with its own touch/gamepad profile, firmware directory and save-state namespace. Its renderer requires OpenGL ES 3.1. Internal backup RAM is included in local and Drive backups. Firmware and retail game compatibility require verification with user-supplied content; a successful build alone does not establish full-speed compatibility.
+Saturn uses A/B/C, X/Y/Z, L/R and Start with its own touch/gamepad profile, firmware directory and save-state namespace. The core renders software frames that the app presents through its OpenGL ES surface. Internal backup RAM, RTC data and cartridge NV are included in local and Drive backups. Firmware and retail game compatibility require verification with user-supplied content; a successful build alone does not establish full-speed compatibility.
 
 ## Notes
 
@@ -173,9 +173,9 @@ The root [LICENSE](LICENSE) contains Flycast's upstream GPL-2.0 text. Flycast an
 
 Supermodel / Super3 is separately licensed under [GPL-3.0](core-supermodel/LICENSE). The Android port is pinned to [Super3 commit c410f82](https://github.com/izzy2lost/Super3/tree/c410f82f771b33094b8c1cdbf96ef7c74ec9cff1); source provenance and local changes are recorded in [UPSTREAM.txt](core-supermodel/UPSTREAM.txt), with integration details in [README-ANDROID.md](core-supermodel/README-ANDROID.md). Its [third-party notices](core-supermodel/THIRD-PARTY-NOTICES.txt), component licenses, and source notices are preserved, and the Android package includes the license and provenance files. No game or BIOS rights are granted by the emulator license.
 
-Saturn uses the GPL-2.0-or-later YabaSanshiro libretro source at revision `09ed8e5b2e97e7a848ea2514545c34c7b809e399`. The local module is built under GPL-3.0; its [source provenance](core-saturn/UPSTREAM.txt), [third-party notices](core-saturn/THIRD-PARTY-NOTICES.txt) and [Android notes](core-saturn/README-ANDROID.md) accompany the vendored source. Commercial redistribution requires satisfying the applicable license and corresponding-source obligations.
+Saturn uses the GPL-2.0-or-later Beetle Saturn (Mednafen) libretro source at revision `dd18f9c477106263b3b7b050f4970d331ff7b23a`. The local module is built under GPL-3.0; its [source provenance](core-saturn/UPSTREAM.txt), [third-party notices](core-saturn/THIRD-PARTY-NOTICES.txt) and [Android notes](core-saturn/README-ANDROID.md) accompany the vendored source. Commercial redistribution requires satisfying the applicable license and corresponding-source obligations.
 
-Thanks to the Flycast, jgenesis, Supermodel, and Super3 contributors, the RetroAchievements team for rcheevos, and IGDB for game metadata.
+Thanks to the Flycast, jgenesis, Supermodel, Super3, and Beetle Saturn/Mednafen contributors, the RetroAchievements team for rcheevos, and IGDB for game metadata.
 
 EmuCoreH is independent of Sega, Flycast, jgenesis, Supermodel, Super3, IGDB, Discord, and RetroAchievements. System names and game artwork belong to their respective owners.
 

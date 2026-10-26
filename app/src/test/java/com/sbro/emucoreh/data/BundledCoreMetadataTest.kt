@@ -21,8 +21,8 @@ class BundledCoreMetadataTest {
         val supermodel = File(root, "core-supermodel/libretro/libretro.cpp").readText()
         val supermodelName = Regex("\\*info=\\{\"([^\"]+)\",\"[^\"]+\"")
             .find(supermodel)?.groupValues?.get(1) ?: error("Missing Supermodel library name")
-        val saturn = File(root, "core-saturn/src/libretro/libretro.c").readText()
-        val saturnName = Regex("info->library_name\\s*=\\s*\"([^\"]+)\"")
+        val saturn = File(root, "core-saturn/libretro.cpp").readText()
+        val saturnName = Regex("#define MEDNAFEN_CORE_NAME\\s+\"([^\"]+)\"")
             .find(saturn)?.groupValues?.get(1) ?: error("Missing Saturn library name")
         assertEquals(listOf(flycastName, jgenesisName, supermodelName, saturnName).joinToString("/"),
             BundledCoreMetadata.DISPLAY_VERSION)

@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Gamepad
+import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -97,24 +99,29 @@ internal fun SegaCoreOptionRows(
         val current = remember(platform, option.key, overrides, version) {
             overrides[option.key] ?: (if (platform.isSaturn) com.sbro.emucoreh.core.SaturnCoreOptions.value(context, option.key, platform) else SegaCoreOptions.value(context, option.key, platform)) ?: option.defaultValue
         }
-        Text(stringResource(option.labelRes), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-        if (platform.isSaturn && !com.sbro.emucoreh.core.SaturnCoreOptions.requiresRestart(option.key))
-            Text(stringResource(option.descriptionRes), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (!liveOnly && (option.key in setOf("jgenesis_region", "jgenesis_timing") || (platform.isSaturn && com.sbro.emucoreh.core.SaturnCoreOptions.requiresRestart(option.key))))
-            Text(stringResource(R.string.sega_restart_required), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            option.choices.forEach { choice ->
-                FilterChip(selected = current == choice.value, colors = premiumFilterChipColors(), onClick = {
-                    if (onChange != null) onChange(option.key, choice.value)
-                    else {
-                        if (platform.isSaturn) com.sbro.emucoreh.core.SaturnCoreOptions.set(context, option.key, choice.value, platform)
-                        else SegaCoreOptions.set(context, option.key, choice.value, platform)
-                        if (com.sbro.emucoreh.core.CoreRuntime.platform == platform) NativeApp.setCoreOption(option.key, choice.value)
-                    }
-                    version++
-                }, label = { Text(stringResource(choice.labelRes)) })
+        val help = buildList {
+            val description = stringResource(option.descriptionRes)
+            if (description.isNotBlank()) add(description)
+            if (!liveOnly && (option.key in setOf("jgenesis_region", "jgenesis_timing") ||
+                    (platform.isSaturn && com.sbro.emucoreh.core.SaturnCoreOptions.requiresRestart(option.key)))) {
+                add(stringResource(R.string.sega_restart_required))
             }
-        }
+        }.distinct().joinToString("\n\n")
+        CoreStringChoiceSection(
+            title = stringResource(option.labelRes),
+            options = option.choices.map { choice -> choice.value to stringResource(choice.labelRes) },
+            selectedValue = current,
+            onSelect = { value ->
+                if (onChange != null) onChange(option.key, value)
+                else {
+                    if (platform.isSaturn) com.sbro.emucoreh.core.SaturnCoreOptions.set(context, option.key, value, platform)
+                    else SegaCoreOptions.set(context, option.key, value, platform)
+                    if (com.sbro.emucoreh.core.CoreRuntime.platform == platform) NativeApp.setCoreOption(option.key, value)
+                }
+                version++
+            },
+            helpText = help.ifBlank { null }
+        )
     }
 }
 
@@ -123,11 +130,23 @@ internal fun SegaGlobalGamepadSettings(platform: EmulationPlatform) {
     val context = LocalContext.current
     var overrides by remember(platform) { mutableStateOf(com.sbro.emucoreh.core.SegaControlProfiles.load(context, platform)) }
     var showMapping by remember(platform) { mutableStateOf(false) }
-    Button(onClick = { showMapping = true }) { Text(stringResource(R.string.settings_gamepad_mapping_configure)) }
-    if (overrides.isNotEmpty()) Button(onClick = {
-        overrides = emptyMap()
-        com.sbro.emucoreh.core.SegaControlProfiles.save(context, platform, overrides)
-    }) { Text(stringResource(R.string.settings_gamepad_mapping_reset_title)) }
+    SettingsItem(
+        icon = Icons.Rounded.Gamepad,
+        label = stringResource(R.string.settings_gamepad_mapping_configure),
+        value = stringResource(R.string.settings_gamepad_mapping_title),
+        onClick = { showMapping = true }
+    )
+    if (overrides.isNotEmpty()) {
+        SettingsItem(
+            icon = Icons.Rounded.RestartAlt,
+            label = stringResource(R.string.settings_gamepad_mapping_reset_title),
+            value = stringResource(R.string.settings_gamepad_mapping_reset_desc),
+            onClick = {
+                overrides = emptyMap()
+                com.sbro.emucoreh.core.SegaControlProfiles.save(context, platform, overrides)
+            }
+        )
+    }
     if (showMapping) PerGameGamepadMappingDialog(platform = platform,
         globalBindingsByPad = com.sbro.emucoreh.core.SegaControlProfiles.resolve(platform, emptyMap()),
         bindingsByPad = overrides,

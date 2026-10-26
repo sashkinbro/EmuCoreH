@@ -31,7 +31,7 @@ class SaturnBackupInstrumentedTest {
             val snapshot = File(root, "valid.zip")
             writeSnapshot(snapshot, payload)
             archive.extract(snapshot)
-            val restored = File(archive.workDir, "extracted/saturn-saves/yabasanshiro/backup.bin")
+            val restored = File(archive.workDir, "extracted/saturn-saves/Panzer Dragoon.bkr")
             assertArrayEquals(payload, restored.readBytes())
             val oversized = File(root, "oversized.zip")
             writeSnapshot(oversized, payload + byteArrayOf(0))
@@ -44,7 +44,7 @@ class SaturnBackupInstrumentedTest {
             "settings.json" to "{}".toByteArray(),
             "per-game.json" to "{}".toByteArray(),
             "cheats.json" to "{}".toByteArray(),
-            "saturn-saves/yabasanshiro/backup.bin" to payload
+            "saturn-saves/Panzer Dragoon.bkr" to payload
         )
         val manifest = JSONObject().put("format", DriveBackupArchive.FORMAT).put("schema", 1)
             .put("files", JSONArray().apply {

@@ -19,7 +19,7 @@ internal fun gameMenuCustomizationTabAvailable(platform: EmulationPlatform, tab:
 
 /** Search must expose the same core capabilities as the settings rows it opens. */
 internal fun settingsSearchEntryAvailable(platform: EmulationPlatform, tab: String, title: Int): Boolean {
-    if (tab == "Saturn") return platform.isSaturn
+    if (title in saturnSearchSettings) return platform.isSaturn
     if (platform.coreId == 0) return true
     if (title == R.string.settings_upscale) return segaSettingsTabAvailable(tab) && platform.supportsInternalResolution
     if (!segaSettingsTabAvailable(tab) || title in flycastOnlySearchSettings) return false
@@ -28,6 +28,12 @@ internal fun settingsSearchEntryAvailable(platform: EmulationPlatform, tab: Stri
     if ((platform.isModel3 || platform.isSaturn) && title == R.string.settings_renderer) return false
     return platform.supportsAnalogControlSettings() || title !in analogSearchSettings
 }
+
+private val saturnSearchSettings = setOf(
+    R.string.saturn_addon_cart,
+    R.string.saturn_cd_image_cache,
+    R.string.saturn_midsync
+)
 
 private val analogSearchSettings = setOf(
     R.string.settings_touchscreen_right_stick, R.string.settings_touchscreen_right_stick_sensitivity,

@@ -2347,4 +2347,15 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="saturn_addon_cart">Kartrid ekspansi RAM</string>
     <string name="saturn_cart_4m">4 MiB</string>
     <string name="saturn_cart_1m">1 MiB</string>
+    <string name="saturn_midsync">Sinkronisasi input pertengahan frame</string>
+    <string name="saturn_midsync_desc">Mengambil sampel input di tengah frame untuk mengurangi latensi. Ini meningkatkan beban CPU dan tidak diperlukan di sebagian besar perangkat.</string>
+    <string name="saturn_region_latin_america">Amerika Latin</string>
+    <string name="saturn_region_asia_ntsc">Asia (NTSC)</string>
+    <string name="saturn_cd_image_cache">Cache gambar disk</string>
+    <string name="saturn_region_north_america">Amerika Utara</string>
+    <string name="saturn_region_brazil">Brasil</string>
+    <string name="saturn_cart_backup">Memori Cadangan</string>
+    <string name="saturn_cd_image_cache_desc">Memuat seluruh gambar disk ke memori saat mulai. Ini dapat mempercepat waktu muat tetapi memakai lebih banyak RAM dan memperlambat startup.</string>
+    <string name="saturn_region_south_korea">Korea Selatan</string>
+    <string name="saturn_region_asia_pal">Asia (PAL)</string>
 </resources>

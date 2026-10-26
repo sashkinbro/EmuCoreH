@@ -69,6 +69,20 @@ class SegaTouchLayoutTest {
         val sg = segaTouchLayout(EmulationPlatform.SG_1000, 400f, 300f, 1f)
         assertEquals(setOf(19, 20, 21, 22, 96, 97), sg.map { it.keyCode }.toSet())
     }
+    @Test fun saturnShouldersFollowTheDreamcastShoulderRow() {
+        val landscape = segaTouchLayout(EmulationPlatform.SATURN, 800f, 400f, 1f).associateBy { it.keyCode }
+        val left = landscape.getValue(104)
+        val right = landscape.getValue(105)
+        val topFace = landscape.values.filter { it.keyCode in setOf(96, 97, 99, 100, 102, 103) }.minOf { it.y }
+        assertEquals(left.y, right.y, 0.001f)
+        assertTrue("Saturn shoulders are not at the screen edge", left.y > 0f)
+        assertTrue("Saturn shoulders sit above the play cluster", left.y + left.height <= topFace)
+
+        val portrait = segaTouchLayout(EmulationPlatform.SATURN, 400f, 800f, 1f).associateBy { it.keyCode }
+        assertEquals(0f, portrait.getValue(104).y, 0.001f)
+        assertEquals(0f, portrait.getValue(105).y, 0.001f)
+    }
+
     @Test fun startAndModeDefaultToTheBottomInBothOrientations() {
         for (platform in EmulationPlatform.entries.filter { it.isSega }) {
             for ((width, height) in listOf(296f to 544f, 711f to 327f)) {

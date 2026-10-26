@@ -2354,4 +2354,15 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="saturn_addon_cart">Rozšiřující paměťová cartridge</string>
     <string name="saturn_cart_4m">4 MiB</string>
     <string name="saturn_cart_1m">1 MiB</string>
+    <string name="saturn_midsync">Synchronizace vstupu uprostřed snímku</string>
+    <string name="saturn_midsync_desc">Vzorkuje vstup uprostřed snímku pro snížení latence. Zvyšuje zatížení CPU a na většině zařízení není potřeba.</string>
+    <string name="saturn_region_latin_america">Latinská Amerika</string>
+    <string name="saturn_region_asia_ntsc">Asie (NTSC)</string>
+    <string name="saturn_cd_image_cache">Mezipaměť obrazu disku</string>
+    <string name="saturn_region_north_america">Severní Amerika</string>
+    <string name="saturn_region_brazil">Brazílie</string>
+    <string name="saturn_cart_backup">Záložní paměť</string>
+    <string name="saturn_cd_image_cache_desc">Načte celý obraz disku při spuštění do paměti. Může zkrátit načítání, ale spotřebuje více RAM a zpomalí start.</string>
+    <string name="saturn_region_south_korea">Jižní Korea</string>
+    <string name="saturn_region_asia_pal">Asie (PAL)</string>
 </resources>

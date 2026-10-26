@@ -2333,4 +2333,15 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="saturn_addon_cart">RAM genişletme kartuşu</string>
     <string name="saturn_cart_4m">4 MiB</string>
     <string name="saturn_cart_1m">1 MiB</string>
+    <string name="saturn_midsync">Kare ortası giriş eşitlemesi</string>
+    <string name="saturn_midsync_desc">Gecikmeyi azaltmak için girişi karenin ortasında örnekler. CPU yükünü artırır ve çoğu cihazda gerekli değildir.</string>
+    <string name="saturn_region_latin_america">Latin Amerika</string>
+    <string name="saturn_region_asia_ntsc">Asya (NTSC)</string>
+    <string name="saturn_cd_image_cache">CD görüntü önbelleği</string>
+    <string name="saturn_region_north_america">Kuzey Amerika</string>
+    <string name="saturn_region_brazil">Brezilya</string>
+    <string name="saturn_cart_backup">Yedek Bellek</string>
+    <string name="saturn_cd_image_cache_desc">Başlangıçta tüm disk görüntüsünü belleğe yükler. Yükleme sürelerini kısaltabilir ancak daha fazla RAM kullanır ve açılışı yavaşlatır.</string>
+    <string name="saturn_region_south_korea">Güney Kore</string>
+    <string name="saturn_region_asia_pal">Asya (PAL)</string>
 </resources>

@@ -150,6 +150,7 @@ internal object CoreRuntime {
     fun initialize(context: Context) {
         this.context = context.applicationContext
         if (!hasSession()) JGenesisContentPreparer.cleanupAbandonedContent(context)
+        if (!hasSession()) SaturnContentPreparer.cleanupAbandonedContent(context)
         if (!hasSession()) Model3ContentPreparer.cleanupAbandonedContent(context)
         val root = File(context.filesDir, "flycast")
         systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath
@@ -400,7 +401,6 @@ internal object CoreRuntime {
             pushAspectRatio(displayAspectRatioPreference() ?: ASPECT_RATIO_AUTO)
             pushShaderEffect()
             pushShaderPreset()
-            bridge.nativeSetOption("yabasanshiro_force_hle_bios", "disabled")
             context?.let { app ->
                 val values = SaturnCoreOptions.persistedEntries(app) + launchCoreOptions
                 SaturnCoreOptions.options().forEach { option ->
@@ -417,7 +417,8 @@ internal object CoreRuntime {
         } else applyStartOptions(coreRenderer)
         val handle = bridge.createSession()
         if (handle == 0L) {
-            if (platform.isSega || platform.isSaturn) context?.let(JGenesisContentPreparer::releasePreparedContent)
+            if (platform.isSaturn) context?.let(SaturnContentPreparer::releasePreparedContent)
+            else if (platform.isSega) context?.let(JGenesisContentPreparer::releasePreparedContent)
             if (platform.isModel3) context?.let(Model3ContentPreparer::releasePreparedContent)
             return@withLock false
         }
@@ -437,7 +438,8 @@ internal object CoreRuntime {
             }
         } else if (loadDisc(handle, gamePath) != 0) {
             bridge.destroySession(handle)
-            if (platform.isSega || platform.isSaturn) context?.let(JGenesisContentPreparer::releasePreparedContent)
+            if (platform.isSaturn) context?.let(SaturnContentPreparer::releasePreparedContent)
+            else if (platform.isSega) context?.let(JGenesisContentPreparer::releasePreparedContent)
             if (platform.isModel3) context?.let(Model3ContentPreparer::releasePreparedContent)
             return@withLock false
         }
@@ -493,7 +495,7 @@ internal object CoreRuntime {
     fun setCoreOption(key: String, value: String) {
         if (key.startsWith("jgenesis_")) {
             context?.let { SegaCoreOptions.set(it, key, value) }
-        } else if (key.startsWith("yabasanshiro_")) {
+        } else if (key.startsWith("beetle_saturn_")) {
             context?.let { SaturnCoreOptions.set(it, key, value) }
         } else CoreOptionStore.set(key, value)
         applyCoreOption(key, value)
@@ -511,7 +513,7 @@ internal object CoreRuntime {
     fun coreOptionValue(key: String): String? =
         if (key.startsWith("jgenesis_")) context?.let { SegaCoreOptions.value(it, key) }
             ?: SegaCoreOptions.options(platform).firstOrNull { it.key == key }?.defaultValue
-        else if (key.startsWith("yabasanshiro_")) context?.let { SaturnCoreOptions.value(it, key) }
+        else if (key.startsWith("beetle_saturn_")) context?.let { SaturnCoreOptions.value(it, key) }
             ?: SaturnCoreOptions.options().firstOrNull { it.key == key }?.defaultValue
         else CoreOptionStore.value(key) ?: FlycastCoreOptions.option(key)?.defaultValue
 
@@ -522,7 +524,7 @@ internal object CoreRuntime {
     fun applyCoreOption(key: String, value: String) {
         if (platform.isModel3) return
         if (platform.isSaturn) {
-            if (key.startsWith("yabasanshiro_") && !SaturnCoreOptions.requiresRestart(key)) bridge.nativeSetOption(key, value)
+            if (key.startsWith("beetle_saturn_") && !SaturnCoreOptions.requiresRestart(key)) bridge.nativeSetOption(key, value)
             return
         }
         if (platform.isSega != key.startsWith("jgenesis_")) return
@@ -646,7 +648,10 @@ internal object CoreRuntime {
                     session = 0L
                 }
             }
-            if (releaseSegaContent) context?.let(JGenesisContentPreparer::releasePreparedContent)
+            if (releaseSegaContent) context?.let {
+                if (platform.isSaturn) SaturnContentPreparer.releasePreparedContent(it)
+                else JGenesisContentPreparer.releasePreparedContent(it)
+            }
             if (releaseModel3Content) context?.let(Model3ContentPreparer::releasePreparedContent)
             paused = false
             renderedFirstFrame = false
@@ -662,7 +667,9 @@ internal object CoreRuntime {
         if (!platform.supportsDisc) return false
         if (!isSupportedDiscPath(path, replacementOnly = true)) return false
         val app = context ?: return false
-        val preparedPath = if (platform.isSega || platform.isSaturn) {
+        val preparedPath = if (platform.isSaturn) {
+            runCatching { SaturnContentPreparer.prepare(app, path) }.getOrNull() ?: return false
+        } else if (platform.isSega) {
             runCatching { JGenesisContentPreparer.prepare(app, path) }.getOrNull() ?: return false
         } else if (path.startsWith("content://")) {
             SafStorageBridge.prepare(app, path) ?: return false
@@ -960,7 +967,7 @@ internal object CoreRuntime {
         val renderer = if (platform.isSega) {
             "jgenesis ${RendererDefaults.coreRendererName(activeCoreRenderer)}"
         } else if (platform.isSaturn) {
-            "YabaSanshiro"
+            "Beetle Saturn"
         } else if (platform.isModel3) {
             "Supermodel"
         } else {
@@ -1253,7 +1260,7 @@ internal object CoreRuntime {
         } else if (platform.isSaturn) {
             runCatching {
                 SaturnBios.requireInstalled(app)
-                JGenesisContentPreparer.prepare(app, gamePath)
+                SaturnContentPreparer.prepare(app, gamePath)
             }.onFailure { reportFailure(it.message ?: "Unable to prepare Saturn content", it) }.getOrNull() ?: return -1
         } else if (platform.isSega) {
             runCatching { JGenesisContentPreparer.prepare(app, gamePath) }

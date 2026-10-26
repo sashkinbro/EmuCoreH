@@ -2332,4 +2332,15 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="saturn_addon_cart">拡張RAMカートリッジ</string>
     <string name="saturn_cart_4m">4 MiB</string>
     <string name="saturn_cart_1m">1 MiB</string>
+    <string name="saturn_midsync">フレーム中間の入力同期</string>
+    <string name="saturn_midsync_desc">遅延を減らすためにフレーム中間で入力をサンプリングします。CPU負荷が増加し、ほとんどのデバイスでは不要です。</string>
+    <string name="saturn_region_latin_america">ラテンアメリカ</string>
+    <string name="saturn_region_asia_ntsc">アジア (NTSC)</string>
+    <string name="saturn_cd_image_cache">CDイメージキャッシュ</string>
+    <string name="saturn_region_north_america">北アメリカ</string>
+    <string name="saturn_region_brazil">ブラジル</string>
+    <string name="saturn_cart_backup">バックアップメモリ</string>
+    <string name="saturn_cd_image_cache_desc">起動時にディスクイメージ全体をメモリに読み込みます。読み込み時間を短縮できますが、より多くのRAMを使用し、起動が遅くなります。</string>
+    <string name="saturn_region_south_korea">韓国</string>
+    <string name="saturn_region_asia_pal">アジア (PAL)</string>
 </resources>

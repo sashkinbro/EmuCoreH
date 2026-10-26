@@ -1,74 +1,37 @@
-Sega Saturn / YabaSanshiro Android libretro core
+Sega Saturn / Beetle Saturn Android libretro core
 
-Source: https://github.com/libretro/yabause/tree/yabasanshiro
-Pinned commit: 09ed8e5b2e97e7a848ea2514545c34c7b809e399
+Source: https://github.com/libretro-mirrors/beetle-saturn-libretro
+Pinned commit: dd18f9c477106263b3b7b050f4970d331ff7b23a
 Retrieved: 2026-10-26
 
-Vendored input: libretro source/dependencies, the root Saturn translation units
-selected by the upstream Android.mk ARM64 configuration, required headers,
-Musashi generated sources and generator inputs, ARM64 SH2 dynarec and shaders.
-No upstream Android application, account/payment code, ROM, BIOS, game asset,
+Vendored input: the standalone Mednafen Saturn libretro core, its bundled
+libretro-common, Tremor, libchdr, LZMA SDK and zlib sources, and the upstream
+license notices. No upstream Android application, ROM, BIOS, game asset,
 prebuilt emulator library or repository metadata is included.
 
-Compiled emulator and dynarec files carry GPL-2.0-or-later grants. The local
-adapter/build modifications are GPL-3.0-only. This records only the native
-module licensing, not a license declaration for the application as a whole.
-GPL permits commercial distribution subject to its distribution obligations;
-public repository visibility alone does not satisfy all those obligations.
-Do not substitute source from newer standalone YabaSanshiro application releases
-without separately checking their license and terms. The upstream application's
-website terms contain commercial-use restrictions; they are not incorporated
-into this pinned source port. Source notices in this exact revision govern the
-vendored files. No noncommercial condition was found in the compiled inputs.
+Compiled emulator and dependency files carry their upstream grants: the core
+and Mednafen are GPL-2.0-or-later, libretro-common is MIT, Tremor and libchdr
+are BSD-3-Clause, dr_flac is public domain or MIT-0, LZMA SDK is public domain
+and zlib is zlib-licensed. The local Android adapter/build changes are
+GPL-3.0-only. This records only the native module licensing, not a license
+declaration for the application as a whole.
 
 Local modifications:
-- CMakeLists.txt/sources.cmake: explicit reproducible NDK29 ARM64/GLES3.1 build,
-  static C++ runtime and 16 KiB ELF alignment; no network build download.
-- src/libretro/libretro.c: init failure reporting, repeated load/context lifecycle,
-  no GL recreation during unload, bounds-safe state copies and controller index;
-  opt-in QA fingerprint and sample counters for stereo PCM sent to the frontend.
-- src/ygles.c: renderer deinitialization is idempotent after context destruction;
-  release host image buffers.
-- src/yglshaderes.c: release lazy shader programs and reset cached GL object
-  names before a later session creates a different GLES context.
-- src/vidogl.c: join rotation worker before freeing renderer memory.
-- src/sh2_dynarec_devmiyax: bound repeated initialization to one reusable executable mapping;
-  reset block ownership and release per-session SH2 objects at deinitialization.
-- src/cs2.c: propagate failed image open, enabling frontend disc-swap rollback;
-  CS2 chunk v4 preserves exact command/sector scheduler counters, delayed IRQ,
-  active directory cursors and sector work buffer.
-  Keep the transfer partition index synchronized for GET/GET-DELETE/PUT and
-  reconstruct its live pointer after restore, including fresh sessions.
-- src/m68kmusashi.c: replace empty save/load stubs with pointer-free CPU scalar,
-  pending interrupt, prefetch and cycle state; host callbacks remain untouched.
-- src/scsp.c: local SCSP chunk v6 preserves pending PCM/CDDA buffers, output
-  cursors, fractional cycles and the new SCSP pipeline after register rebuild;
-  v5 includes active DSP delayed memory/multiply/shifter state and the
-  sound-CPU-visible slot monitor registers.
-  v6 prefixes the execution mode (async-new=2/sync-new=3), rejects the opposite
-  mode/old backend before sound CPU restore, and rejects experimental v5 states.
-- state_validation.c: structural/version preflight also checks the v6 mode
-  before any subsystem loader can mutate CPU/RAM state.
-- src/sh2core.c and DynarecSh2.h/.cpp: SH2 chunk v5 preserves block cycle
-  overshoot, dynarec timing, watchdog counters and sleep state; initialize
-  previously indeterminate single-step control.
-- src/sh2_dynarec_devmiyax/DynarecSh2CInterface.cpp: preserve the actual pending
-  interrupt count, clear unused serialized entries, and bound interrupt arrays.
-  The common state reader validates interrupt counts for either CPU backend.
-- state_validation.c: preflight local chunk versions and boundaries before
-  restoring components, so unsupported older states cannot partially load.
-- src/memory.c: local OTHR chunk v2 restores exact fixed-point timing after
-  legacy timing recalculation. Earlier incomplete Saturn states are rejected.
-- disc_control.c: libretro tray/media callbacks; preserve running machine state.
-- src/memory.c: memory-backed save buffers replace Android-inaccessible tmpfile;
-  propagate stream allocation and close errors; zero-initialize the legacy
-  thumbnail field in GLES builds and bound its dimensions before allocation.
-  Seek to the final stream length after patching headers so open_memstream
-  preserves the complete state. Load rejects invalid thumbnail dimensions and
-  truncated pixel data.
-- disc_probe.c: independent raw-disc/CHD header probes including Android FDs.
-- src/libretro/link.T: export Saturn probe and boot-error helper ABI.
+- CMakeLists.txt/sources.cmake: explicit reproducible NDK29 ARM64 build with
+  the upstream jni/Android.mk feature set, static C++ runtime and 16 KiB ELF
+  alignment; no network build download.
+- libretro.cpp: accept the frontend's validated saturn_bios.bin in addition to
+  the region-specific sega_101.bin/mpr-17933.bin names; report actionable
+  saturn_boot_error() diagnostics for a missing/invalid BIOS and load failure;
+  make state serialization fail cleanly before a game is loaded and reset the
+  cached state size between sessions.
+- disc.cpp: implement runtime image removal/replacement through the libretro
+  disk-control callbacks so the frontend tray menu can add and swap discs
+  without restarting the core.
+- link.T: export the Saturn probe, metadata and boot-error helpers.
+- disc_probe.c: independent raw-disc/CHD header probes including Android FDs;
+  no emulator initialization for disc identification.
 
-Runtime libraries: Android GLESv3/log/android/libc/libm/libdl; NDK libc++ static.
-Keep the full corresponding source, generator inputs, license notices and build
-scripts available with distribution. No BIOS or game software is supplied.
+Runtime libraries: log, android, libc, libm, libdl; NDK libc++ static.
+Keep the full corresponding source, license notices and build scripts
+available with distribution. No BIOS or game software is supplied.

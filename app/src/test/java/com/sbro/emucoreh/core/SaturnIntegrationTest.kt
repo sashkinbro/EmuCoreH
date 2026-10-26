@@ -40,8 +40,11 @@ class SaturnIntegrationTest {
     }
 
     @Test fun backupAllowsOnlyActualInternalRamAndNeverFirmwareOrTraversal() {
-        assertTrue(SaturnSaveFiles.isBackupPath("yabasanshiro/backup.bin"))
-        for (path in listOf("../system/saturn_bios.bin", "saturn_bios.bin", "yabasanshiro/../backup.bin", "yabasanshiro\\backup.bin")) {
+        assertTrue(SaturnSaveFiles.isBackupPath("Panzer Dragoon.bkr"))
+        assertTrue(SaturnSaveFiles.isBackupPath("Panzer Dragoon.smpc"))
+        assertTrue(SaturnSaveFiles.isBackupPath("Panzer Dragoon.bcr"))
+        for (path in listOf("../system/saturn_bios.bin", "saturn_bios.bin", "game/backup.bkr",
+            "game\\backup.bkr", ".hidden.bkr", "backup.bin", "backup.bkr.exe")) {
             assertFalse(path, SaturnSaveFiles.isBackupPath(path))
         }
     }

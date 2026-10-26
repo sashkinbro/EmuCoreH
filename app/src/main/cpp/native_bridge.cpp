@@ -135,7 +135,7 @@ const char* CoreLibraryName(int core_id) {
 }
 
 const char* CoreDisplayName() {
-    return g_core_id.load() == 3 ? "YabaSanshiro" : g_core_id.load() == 2 ? "Supermodel" : g_core_id.load() == 1 ? "jgenesis" : "Flycast";
+    return g_core_id.load() == 3 ? "Beetle Saturn" : g_core_id.load() == 2 ? "Supermodel" : g_core_id.load() == 1 ? "jgenesis" : "Flycast";
 }
 
 void* RetainCoreLibrary(int core_id) {
@@ -230,6 +230,16 @@ struct FrontendState {
     std::atomic<int64_t> video_frames{0};
 
     std::atomic<int> frame_skip{0};
+
+#ifndef NDEBUG
+    // Saturn QA audio fingerprint, mirroring the former native helper. It hashes
+    // the interleaved signed 16-bit PCM bytes exactly as they reach the frontend.
+    std::mutex saturn_audio_mutex;
+    uint64_t saturn_audio_hash = 14695981039346656037ull;
+    uint64_t saturn_audio_samples = 0;
+    uint64_t saturn_audio_nonzero = 0;
+    bool saturn_audio_fingerprint_enabled = false;
+#endif
 
     std::atomic<int> crop_left{0};
     std::atomic<int> crop_top{0};
@@ -758,6 +768,26 @@ void RetroAudioSampleBatch(const int16_t* data, size_t frames) {
 }
 
 size_t RetroAudioSampleBatchWrapper(const int16_t* data, size_t frames) {
+#ifndef NDEBUG
+    if (g_core_id.load() == 3 && data != nullptr && frames > 0) {
+        std::lock_guard<std::mutex> lock(g_frontend.saturn_audio_mutex);
+        if (g_frontend.saturn_audio_fingerprint_enabled) {
+            uint64_t hash = g_frontend.saturn_audio_hash;
+            uint64_t nonzero = g_frontend.saturn_audio_nonzero;
+            for (size_t i = 0; i < frames * 2; i++) {
+                const uint16_t sample = static_cast<uint16_t>(data[i]);
+                hash ^= static_cast<uint8_t>(sample & 0xFF);
+                hash *= 1099511628211ull;
+                hash ^= static_cast<uint8_t>((sample >> 8) & 0xFF);
+                hash *= 1099511628211ull;
+                if (sample != 0) nonzero++;
+            }
+            g_frontend.saturn_audio_hash = hash;
+            g_frontend.saturn_audio_nonzero = nonzero;
+            g_frontend.saturn_audio_samples += frames * 2;
+        }
+    }
+#endif
     RetroAudioSampleBatch(data, frames);
     return frames;
 }
@@ -934,6 +964,11 @@ bool CreateEglContext(ANativeWindow* window) {
         g_gl.surface = EGL_NO_SURFACE;
         return false;
     }
+    // Never let eglSwapBuffers stall the emulation worker on the display's
+    // vsync. The compositor still presents at the panel rate, while a missed
+    // deadline no longer drags the guest below 100% speed. The in-app frame
+    // limiter in CoreRuntime owns pacing.
+    eglSwapInterval(g_gl.display, 0);
     if (g_gl.hw_registered && g_gl.hw.context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION) {
         GLint major = 0, minor = 0;
         glGetIntegerv(GL_MAJOR_VERSION, &major);
@@ -974,7 +1009,10 @@ bool CreatePresentFramebuffer() {
     glBindTexture(GL_TEXTURE_2D, g_gl.fbo_texture);
     // EXT_texture_format_BGRA8888 uploads require matching BGRA storage on
     // GLES. Uploading BGRA into RGBA8 is rejected by drivers such as Mali.
-    const bool software_bgra = g_core_id.load() == 1 && BgraTextureUploadSupported();
+    // Saturn and jgenesis are software-only cores, so their frame texture uses
+    // the same format as PresentSoftwareFrame's direct upload path.
+    const int core_id = g_core_id.load();
+    const bool software_bgra = (core_id == 1 || core_id == 3) && BgraTextureUploadSupported();
     glTexImage2D(GL_TEXTURE_2D, 0, software_bgra ? GL_BGRA_EXT : GL_RGBA8,
                  width, height, 0, software_bgra ? GL_BGRA_EXT : GL_RGBA,
                  GL_UNSIGNED_BYTE, nullptr);
@@ -1346,11 +1384,11 @@ int16_t RetroInputState(unsigned port, unsigned device, unsigned index, unsigned
         if (pressed(5)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
         if (pressed(12)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_X;  // Triangle
         const bool saturn = g_core_id.load() == 3;
-        if (pressed(13)) active |= 1u << (saturn ? RETRO_DEVICE_ID_JOYPAD_L : RETRO_DEVICE_ID_JOYPAD_A);  // C / Circle
+        if (pressed(13)) active |= 1u << (saturn ? RETRO_DEVICE_ID_JOYPAD_R : RETRO_DEVICE_ID_JOYPAD_A);  // C / Circle
         if (pressed(14)) active |= 1u << (saturn ? RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B);  // B / Cross
         if (pressed(15)) active |= 1u << (saturn ? RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_Y);  // A / Square
         if (pressed(10)) active |= 1u << (saturn ? RETRO_DEVICE_ID_JOYPAD_Y : RETRO_DEVICE_ID_JOYPAD_L);  // X / L1
-        if (pressed(11)) active |= 1u << RETRO_DEVICE_ID_JOYPAD_R;
+        if (pressed(11)) active |= 1u << (saturn ? RETRO_DEVICE_ID_JOYPAD_L : RETRO_DEVICE_ID_JOYPAD_R);  // Z / R1
         // The Dreamcast pad's analog L/R triggers are read from the libretro
         // L2/R2 ids by the core (get_analog_trigger), with the digital mask as
         // fallback.
@@ -1553,6 +1591,12 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_destroySession(JNIEnv*, jobject, jl
     std::lock_guard<std::mutex> lock(g_frontend.core_mutex);
     ClearSoftwareFrameSnapshot();
     g_frontend.time_control.store(0);
+#ifndef NDEBUG
+    {
+        std::lock_guard<std::mutex> lock(g_frontend.saturn_audio_mutex);
+        g_frontend.saturn_audio_fingerprint_enabled = false;
+    }
+#endif
     for (auto& triggers : g_frontend.model3_triggers) triggers.store(0);
     for (int port = 0; port < 2; ++port) {
         g_frontend.rumble_strong[port].store(0);
@@ -2049,10 +2093,11 @@ JNIEXPORT void JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_resetSaturnAudioFingerprint(JNIEnv*, jobject) {
 #ifndef NDEBUG
     if (g_core_id.load() != 3) return;
-    void* handle = RetainCoreLibrary(3);
-    auto reset = handle ? reinterpret_cast<void (*)()>(dlsym(handle, "saturn_reset_audio_fingerprint")) : nullptr;
-    if (reset) reset();
-#else
+    std::lock_guard<std::mutex> lock(g_frontend.saturn_audio_mutex);
+    g_frontend.saturn_audio_hash = 14695981039346656037ull;
+    g_frontend.saturn_audio_samples = 0;
+    g_frontend.saturn_audio_nonzero = 0;
+    g_frontend.saturn_audio_fingerprint_enabled = true;
 #endif
 }
 
@@ -2060,9 +2105,8 @@ JNIEXPORT jlong JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_saturnAudioFingerprint(JNIEnv*, jobject) {
 #ifndef NDEBUG
     if (g_core_id.load() != 3) return 0;
-    void* handle = RetainCoreLibrary(3);
-    auto read = handle ? reinterpret_cast<uint64_t (*)()>(dlsym(handle, "saturn_audio_fingerprint")) : nullptr;
-    return read ? static_cast<jlong>(read()) : 0;
+    std::lock_guard<std::mutex> lock(g_frontend.saturn_audio_mutex);
+    return static_cast<jlong>(g_frontend.saturn_audio_hash);
 #else
     return 0;
 #endif
@@ -2072,9 +2116,8 @@ JNIEXPORT jlong JNICALL
 Java_com_sbro_emucoreh_core_NativeCoreBridge_saturnAudioNonzeroSamples(JNIEnv*, jobject) {
 #ifndef NDEBUG
     if (g_core_id.load() != 3) return 0;
-    void* handle = RetainCoreLibrary(3);
-    auto read = handle ? reinterpret_cast<uint64_t (*)()>(dlsym(handle, "saturn_audio_nonzero_samples")) : nullptr;
-    return read ? static_cast<jlong>(read()) : 0;
+    std::lock_guard<std::mutex> lock(g_frontend.saturn_audio_mutex);
+    return static_cast<jlong>(g_frontend.saturn_audio_nonzero);
 #else
     return 0;
 #endif

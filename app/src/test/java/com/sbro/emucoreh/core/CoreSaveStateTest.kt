@@ -10,6 +10,9 @@ class CoreSaveStateTest {
         val encoded = CoreSaveState.wrap(saturn, 3)
         assertArrayEquals(saturn, CoreSaveState.unwrap(encoded, 3))
         for (core in 0..2) assertNull(CoreSaveState.unwrap(encoded, core))
+        val mednafen = ByteArray(64).also { "MDFNSVST".toByteArray().copyInto(it) }
+        assertNull(CoreSaveState.unwrap(mednafen, 0))
+        assertArrayEquals(mednafen, CoreSaveState.unwrap(CoreSaveState.wrap(mednafen, 3), 3))
     }
     private val payload = byteArrayOf(1, 7, 3, 9)
 

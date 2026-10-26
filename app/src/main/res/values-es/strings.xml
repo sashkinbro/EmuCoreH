@@ -2335,4 +2335,15 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="saturn_addon_cart">Cartucho de expansión de RAM</string>
     <string name="saturn_cart_4m">4 MiB</string>
     <string name="saturn_cart_1m">1 MiB</string>
+    <string name="saturn_midsync">Sincronización de entrada a mitad de fotograma</string>
+    <string name="saturn_midsync_desc">Muestrea la entrada a mitad del fotograma para reducir la latencia. Aumenta la carga de CPU y no es necesario en la mayoría de dispositivos.</string>
+    <string name="saturn_region_latin_america">Latinoamérica</string>
+    <string name="saturn_region_asia_ntsc">Asia (NTSC)</string>
+    <string name="saturn_cd_image_cache">Caché de imagen de disco</string>
+    <string name="saturn_region_north_america">Norteamérica</string>
+    <string name="saturn_region_brazil">Brasil</string>
+    <string name="saturn_cart_backup">Memoria de respaldo</string>
+    <string name="saturn_cd_image_cache_desc">Carga la imagen completa del disco en memoria al iniciar. Puede acortar los tiempos de carga a costa de más RAM y un inicio más lento.</string>
+    <string name="saturn_region_south_korea">Corea del Sur</string>
+    <string name="saturn_region_asia_pal">Asia (PAL)</string>
 </resources>

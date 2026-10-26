@@ -88,8 +88,19 @@ private fun segaConsoleTouchLayout(
                 faceBottom - diameter - (if (six && row == 0) diameter * 1.1f else 0f) - column * diameter * .18f)
         }
         if (platform.isSaturn) {
-            button(104, 0f, 0f, diameter * .7f)
-            button(105, width - diameter * .7f, 0f, diameter * .7f)
+            val shoulder = diameter * .7f
+            val shoulderGap = diameter * .12f
+            val faceColumns = if (six) 3 else 2
+            val faceTop = faceBottom - diameter - (if (six) diameter * 1.1f else 0f) -
+                (faceColumns - 1) * diameter * .18f
+            val primaryTop = minOf(crossTop, faceTop)
+            // Match the Dreamcast shoulder row: in landscape the L/R buttons sit
+            // just above the play cluster; portrait keeps them at the safe top.
+            val shoulderTop = if (width >= height) {
+                (primaryTop - shoulderGap - shoulder).coerceAtLeast(0f)
+            } else 0f
+            button(104, 0f, shoulderTop, shoulder)
+            button(105, width - shoulder, shoulderTop, shoulder)
         }
         systems.forEachIndexed { index, key ->
             add(SegaTouchButtonBounds(key, (width - systemRowWidth) / 2f + index * (systemWidth + systemGap),

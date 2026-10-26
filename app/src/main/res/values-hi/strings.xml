@@ -2333,4 +2333,15 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="saturn_addon_cart">RAM विस्तार कार्ट्रिज</string>
     <string name="saturn_cart_4m">4 MiB</string>
     <string name="saturn_cart_1m">1 MiB</string>
+    <string name="saturn_midsync">मिड-फ्रेम इनपुट सिंक्रोनाइज़ेशन</string>
+    <string name="saturn_midsync_desc">विलंबता कम करने के लिए फ्रेम के बीच में इनपुट सैंपल करता है। इससे CPU लोड बढ़ता है और ज़्यादातर डिवाइस पर इसकी ज़रूरत नहीं होती।</string>
+    <string name="saturn_region_latin_america">लैटिन अमेरिका</string>
+    <string name="saturn_region_asia_ntsc">एशिया (NTSC)</string>
+    <string name="saturn_cd_image_cache">डिस्क इमेज कैश</string>
+    <string name="saturn_region_north_america">उत्तर अमेरिका</string>
+    <string name="saturn_region_brazil">ब्राज़ील</string>
+    <string name="saturn_cart_backup">बैकअप मेमोरी</string>
+    <string name="saturn_cd_image_cache_desc">शुरू होने पर पूरी डिस्क इमेज को मेमोरी में लोड करता है। इससे लोडिंग समय कम हो सकता है, लेकिन अधिक RAM लगती है और स्टार्टअप धीमा होता है।</string>
+    <string name="saturn_region_south_korea">दक्षिण कोरिया</string>
+    <string name="saturn_region_asia_pal">एशिया (PAL)</string>
 </resources>

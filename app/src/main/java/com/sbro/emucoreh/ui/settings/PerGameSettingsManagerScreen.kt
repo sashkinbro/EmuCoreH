@@ -1510,7 +1510,7 @@ private fun CoreOptionManagerRows(
         val values = option.choices.map { it.value }
         val current = draft.coreOptions[option.key]
             ?: (if (option.key.startsWith("jgenesis_")) com.sbro.emucoreh.core.SegaCoreOptions.value(context, option.key, platform)
-                else if (option.key.startsWith("yabasanshiro_")) com.sbro.emucoreh.core.SaturnCoreOptions.value(context, option.key)
+                else if (option.key.startsWith("beetle_saturn_")) com.sbro.emucoreh.core.SaturnCoreOptions.value(context, option.key)
                 else CoreOptionStore.value(option.key))
             ?: option.defaultValue
         val index = values.indexOf(current).let { if (it >= 0) it else 0 }

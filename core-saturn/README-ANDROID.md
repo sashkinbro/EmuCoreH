@@ -1,74 +1,40 @@
 # Saturn native core
 
-Pinned YabaSanshiro libretro core, Android ARM64, GLES 3.1 and SH2 dynarec.
+Pinned Beetle Saturn (Mednafen) libretro core, Android ARM64.
 The Gradle module `core-saturn-android` builds `libsaturn_libretro.so` using
 NDK 29.0.14206865 and CMake 3.30.5. All sources are local and pinned; consult
 UPSTREAM.txt and THIRD-PARTY-NOTICES.txt before updating them.
 
-Provide a user-owned Saturn BIOS in the frontend system directory under
-`saturn_bios.bin`, `sega_101.bin`, or `mpr-17933.bin`. HLE BIOS is disabled.
-Supported disc inputs are CUE/BIN, ISO, MDS/MDF, CCD/IMG and CHD. Multidisc
-selection uses local libretro tray callbacks and the app disc menu. The native
-port extends upstream with a bounded 128-disc list and reports insertion errors
-so the frontend can roll back to the previous disc. PAL regions select 50 Hz,
-NTSC regions select 60 Hz, both with 4:3 display aspect.
+Provide a user-owned Saturn BIOS in the frontend system directory. The app
+installs its validated image as `saturn_bios.bin`; the core also accepts the
+upstream `sega_101.bin` (Japan/Asia NTSC) and `mpr-17933.bin` (North America,
+Europe and other regions) names, preferring the region-specific file when both
+exist. HLE BIOS is not available. Supported disc inputs are CUE/BIN, CCD/IMG,
+CHD, TOC and M3U. Multidisc selection uses the libretro disk-control interface
+and the app disc menu; this port implements runtime add/replace/remove so a
+tray swap does not relaunch the emulator. PAL regions select 50 Hz, NTSC
+regions select 60 Hz, both with 4:3 display aspect.
 
-Calls, graphics callbacks and state operations must use the frontend emulation
-thread with the appropriate GLES context current. Context destruction precedes
-unload safely. GL recreation restores the renderer while preserving emulated
-CPU/RAM state. State buffers are available after the first emulated frame;
-the upstream format advertises single-session serialization limitations.
-The local state dialect keeps the YSS v2 envelope, with CS2 chunk v4, SH2 chunk v5, SCSP chunk v6 and
-OTHR chunk v2. SCSP v6 starts with a 32-bit execution-mode identity: 2 means
-asynchronous new SCSP, 3 means synchronous new SCSP. The other flags/old backend
-and opposite execution mode are rejected by whole-state preflight before CPU/RAM
-restore, and again by the SCSP loader before Musashi restore. SCSP v6 retains
-the DSP delayed read/write, multiply and shift pipeline added in v5.
-Experimental v5 development states had no mode identity and are deliberately
-incompatible; make fresh saves with the current core and selected mode.
-Musashi host callback
-and cycle-table pointers are retained from the live core, never serialized.
+The core renders software frames in XRGB8888 (up to 704x576). The frontend
+uploads each frame to its OpenGL ES or Vulkan presentation surface, so no
+core-side GL context is required. Calls, input, audio callbacks and state
+operations must use the frontend emulation thread.
+
+Backup RAM and RTC data use the upstream per-content names in the frontend
+save directory: `<content>.bkr` and `<content>.smpc`. Cartridge NV data uses
+`<content>.<ext>` when the selected cartridge has battery-backed storage.
+Shared internal/backup memory is disabled by default.
+
+Save states use Mednafen's `MDFNSVST` container with core version 0x00102202
+(Beetle Saturn v1.22.2). States from another Saturn core, another core version
+or another BIOS are rejected. The BIOS SHA-256 is stored in each state.
 
 Additional ABI: `saturn_boot_error()` gives the last initialization error;
 `saturn_probe_disc(path)` / `saturn_probe_disc_fd(fd)` return 2 for a Saturn
-disc signature and 0 otherwise. Probes use independent handles and preserve
-the caller's FD cursor. No emulator is initialized for disc identification.
+disc signature and 0 otherwise; `saturn_disc_metadata(...)` returns the boot
+header title and product code. Probes use independent handles and preserve the
+caller's FD cursor. No emulator is initialized for disc identification.
 
-Optional QA audio ABI: `void saturn_reset_audio_fingerprint()` starts a fresh
-FNV-1a 64-bit hash of the interleaved signed 16-bit stereo PCM bytes passed to
-the frontend, with each sample hashed low byte first. `uint64_t
-saturn_audio_fingerprint()`, `saturn_audio_samples()` and
-`saturn_audio_nonzero_samples()` read the hash, total individual-channel sample
-count and nonzero individual-channel sample count. Reset/read between frames
-while no audio callback is running. Diagnostics remain disabled until explicitly
-reset and are disabled again by `retro_init`; ordinary sessions do not hash PCM.
-
-Optional QA builds: `-PsaturnScspDiagnostics=true` compiles bounded worker
-phase/counter logging under the `SaturnSCSPQA` logcat tag. It activates only
-after the audio fingerprint reset and logs at state operations and the first
-24 emulated frames after each reset. Omit the property to compile out the
-worker telemetry. Production uses the synchronous new-SCSP path so sound CPU
-and sample generation follow the emulation thread's saved fractional timeline.
-`-PsaturnSynchronousScsp=false` enables the legacy asynchronous path for QA
-comparisons. Compare fresh saves made by the selected mode; cross-mode state
-files are rejected rather than silently normalized.
-
-`tests/api_contract.c` is an Android native smoke test (link with libdl).
-Pass the built core's path as its sole argument. It checks pre-frame state
-rejection, missing probe inputs and independent raw-disc/FD identification.
-The temporary probe disc contains only a self-authored format header.
-
-`tests/disk_contract.c` links against `disc_control.c` with mocked tray calls.
-Pass any readable file as its sole argument. It verifies tray-open constraints,
-media replacement and failure rollback without loading copyrighted game data.
-
-Verification on 2026-10-26: NDK29 release core linked without undefined symbols;
-ELF LOAD segments have 0x4000 alignment. The API contract passed on RG556 and
-TB710FU; the disk callback contract passed on TB710FU. These are native ABI and
-callback checks, not claims of game compatibility or full-speed emulation.
-
-Release diagnostic policy: every non-Debug CMake configuration compiles out console
-logging, the debug stream backend, PCM fingerprint loops/APIs, profiling and GPU/RAM
-file dump helpers. `saturnScspDiagnostics=true` is accepted only by Debug; CMake also
-rejects the opt-in for production configurations. Saves, backups, disc I/O and
-`saturn_boot_error()` remain functional. Debug retains diagnostic facilities.
+The upstream option table is available under the `beetle_saturn_` prefix.
+The frontend exposes cartridge, region, BIOS language, CD image cache and
+mid-frame input synchronization options.

@@ -54,7 +54,7 @@ class CrossCoreRetailLifecycleInstrumentedTest {
                     bridge.nativeSetOption("reicast_linked_vmu_storage", "disabled")
                     bridge.nativeSetOption("reicast_internal_resolution", "640x480")
                 }
-                if (core == 3) bridge.nativeSetOption("yabasanshiro_frameskip", "disabled")
+                if (core == 3) bridge.nativeSetOption("beetle_saturn_midsync", "disabled")
                 val presented = AtomicInteger()
                 ImageReader.newInstance(640, 480, PixelFormat.RGBA_8888, 3).use { reader ->
                     reader.setOnImageAvailableListener({ source -> source.acquireLatestImage()?.use { presented.incrementAndGet() } }, Handler(consumer.looper))

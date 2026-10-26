@@ -2348,4 +2348,15 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="saturn_addon_cart">کارتریج افزایش حافظهٔ رم</string>
     <string name="saturn_cart_4m">۴ میبی‌بایت</string>
     <string name="saturn_cart_1m">۱ میبی‌بایت</string>
+    <string name="saturn_midsync">همگام‌سازی ورودی در میانه فریم</string>
+    <string name="saturn_midsync_desc">ورودی را در میانه فریم نمونه‌برداری می‌کند تا تأخیر کاهش یابد. بار پردازنده را افزایش می‌دهد و در بیشتر دستگاه‌ها لازم نیست.</string>
+    <string name="saturn_region_latin_america">آمریکای لاتین</string>
+    <string name="saturn_region_asia_ntsc">آسیا (NTSC)</string>
+    <string name="saturn_cd_image_cache">حافظه نهان تصویر دیسک</string>
+    <string name="saturn_region_north_america">آمریکای شمالی</string>
+    <string name="saturn_region_brazil">برزیل</string>
+    <string name="saturn_cart_backup">حافظه پشتیبان</string>
+    <string name="saturn_cd_image_cache_desc">تصویر کامل دیسک را هنگام شروع در حافظه بارگذاری می‌کند. ممکن است زمان بارگذاری را کوتاه کند اما حافظه بیشتری مصرف می‌کند و شروع را کندتر می‌کند.</string>
+    <string name="saturn_region_south_korea">کره جنوبی</string>
+    <string name="saturn_region_asia_pal">آسیا (PAL)</string>
 </resources>

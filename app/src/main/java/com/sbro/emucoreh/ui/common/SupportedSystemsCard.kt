@@ -27,11 +27,11 @@ import com.sbro.emucoreh.ui.theme.neon.neonShape
 fun SupportedSystemsCard(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxWidth().testTag("supported_systems_card"),
-        shape = neonShape(22.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .52f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .22f))
+        shape = neonShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .3f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
     ) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Icon(Icons.Rounded.Gamepad, contentDescription = null,
                     modifier = Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)

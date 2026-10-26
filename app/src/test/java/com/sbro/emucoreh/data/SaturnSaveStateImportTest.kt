@@ -2,18 +2,22 @@ package com.sbro.emucoreh.data
 
 import com.sbro.emucoreh.core.CoreSaveState
 import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.core.SaturnSaveFiles
 import org.junit.Assert.*
 import org.junit.Test
 
 class SaturnSaveStateImportTest {
-    private fun payload(version: Int = 2): ByteArray = java.nio.ByteBuffer.allocate(if (version == 2) 36 else 28)
-        .order(java.nio.ByteOrder.LITTLE_ENDIAN).apply {
-            put("YSS".toByteArray()); put(1.toByte()); putInt(version); putInt(16)
-            if (version == 2) { putInt(0); putInt(0) }
-            put(ByteArray(16))
-        }.array()
+    private fun payload(version: Int = SaturnSaveFiles.STATE_VERSION, size: Int = 64): ByteArray {
+        val bytes = ByteArray(size)
+        "MDFNSVST".toByteArray(Charsets.US_ASCII).copyInto(bytes)
+        java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).apply {
+            putInt(16, version)
+            putInt(20, size)
+        }
+        return bytes
+    }
 
-    @Test fun importsSaturnEnvelopeUnderItsOwnNamespaceAndRejectsOtherCores() {
+    @Test fun importsBeetleSaturnEnvelopeUnderItsOwnNamespaceAndRejectsOtherCores() {
         val bytes = CoreSaveState.wrap(payload(), 3)
         val header = readSaveStateImportHeader(bytes.inputStream())!!
         val name = "SS-ABCD123456789012.01.rstate"
@@ -32,14 +36,19 @@ class SaturnSaveStateImportTest {
         val mutations = listOf(
             ByteArray(100),
             payload().apply { this[0] = 0 },
-            payload().apply { this[3] = 0 },
-            payload().apply { this[4] = 3 },
-            payload().apply { this[8] = 0 },
-            payload().apply { this[8] = 17 },
+            payload().apply { this[16] = 3 },
+            payload().apply { this[20] = 0 },
+            payload().apply { this[20] = 17 },
             payload() + byteArrayOf(0)
         )
         for (bytes in mutations) assertNull(readSaveStateImportHeader(CoreSaveState.wrap(bytes, 3).inputStream()))
-        assertNotNull(readSaveStateImportHeader(CoreSaveState.wrap(payload(1), 3).inputStream()))
+    }
+
+    @Test fun rejectsStatesFromAnotherCoreVersion() {
+        val old = CoreSaveState.wrap(payload(version = 0x00102201), 3)
+        assertNull(readSaveStateImportHeader(old.inputStream()))
+        val current = CoreSaveState.wrap(payload(version = SaturnSaveFiles.STATE_VERSION), 3)
+        assertNotNull(readSaveStateImportHeader(current.inputStream()))
     }
 
     @Test fun supportsShortReadProviders() {
