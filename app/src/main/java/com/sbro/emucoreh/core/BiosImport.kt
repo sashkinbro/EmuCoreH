@@ -5,7 +5,6 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
-import java.security.MessageDigest
 
 data class BiosInstallResult(
     val dreamcast: Int = 0,
@@ -32,34 +31,37 @@ object BiosImport {
     /** Re-import persisted user selections after upgrades and when dumps are added to a folder. */
     @Synchronized
     fun restoreSelections(context: Context, paths: List<String>, force: Boolean = false) {
-        val selections = paths.distinct().filter(String::isNotBlank)
-        if (selections.isEmpty()) return
-        val migration = MessageDigest.getInstance("SHA-256")
-            .digest(("header-import-v2-saturn\u0000" + selections.sorted().joinToString("\u0000")).toByteArray())
-            .joinToString("") { "%02x".format(it) }
-        val preferences = context.getSharedPreferences("bios_import_migrations", Context.MODE_PRIVATE)
-        if (!force && preferences.getString("completed", null) == migration) return
-        var accessible = true
-        selections.forEach { path ->
+        importHistory(context).restore(paths, force) { path ->
             val uri = Uri.parse(path)
             val canRead = runCatching {
                 if (DocumentsContract.isTreeUri(uri)) DocumentFile.fromTreeUri(context, uri)?.canRead() == true
                 else context.contentResolver.openFileDescriptor(uri, "r")?.use { true } == true
             }.getOrDefault(false)
-            if (canRead) runCatching { installSelection(context, uri) } else accessible = false
+            if (canRead) installSelection(context, uri)
+            canRead
         }
-        // An unavailable provider must be retried; a completed migration must not
-        // recursively copy the same selected firmware on every cold launch.
-        if (accessible) preferences.edit().putString("completed", migration).apply()
     }
 
-    fun installSelection(context: Context, uri: Uri): BiosInstallResult =
-        installSelection(
+    @Synchronized
+    fun installSelection(context: Context, uri: Uri): BiosInstallResult {
+        val result = installSelection(
             context,
             uri,
             EmulatorStorage.flycastSystemDir(context).absolutePath,
             Sega32XBios.directory(context).absolutePath
         )
+        // Persist before addBiosPath wakes either onboarding or home collectors.
+        if (result.installed) importHistory(context).recordImported(uri.toString())
+        return result
+    }
+
+    private fun importHistory(context: Context): BiosImportHistory {
+        val preferences = context.getSharedPreferences("bios_import_migrations", Context.MODE_PRIVATE)
+        return BiosImportHistory(
+            read = { preferences.getString(it, null) },
+            write = { key, value -> preferences.edit().putString(key, value).apply() }
+        )
+    }
 
     internal fun installSelection(
         context: Context,

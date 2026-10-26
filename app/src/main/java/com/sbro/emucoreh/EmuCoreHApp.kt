@@ -2,6 +2,9 @@ package com.sbro.emucoreh
 
 import android.app.Application
 import android.os.Build
+import android.os.SystemClock
+import android.os.Trace
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.sbro.emucoreh.core.AppAnalytics
 import com.sbro.emucoreh.core.AppIconManager
@@ -28,7 +31,7 @@ class EmuCoreHApp : Application() {
         // The Discord SDK helper must not initialize the emulator-side application graph.
         if (getProcessName().endsWith(":discord")) return
         // CrashLogger must be the very first thing — it catches crashes in all subsequent init steps
-        CrashLogger.init(this)
+        startupStep("crash_logger") { CrashLogger.init(this) }
         if (DriveBackupArchive.hasPendingRecovery(this)) applicationScope.launch {
             try { BackupSessionGate.whileStopped { DriveBackupArchive(this@EmuCoreHApp).recoverPending() } }
             catch (cancelled: CancellationException) { throw cancelled }
@@ -39,10 +42,24 @@ class EmuCoreHApp : Application() {
                 }
             }
         }
-        AppAnalytics.initialize(this)
-        AppIconManager.applyProIcon(this, AppPreferences(this).getProUnlockedSync())
-        DriveBackupWork.resumePending(this)
-        EmulatorBridge.initializeOnce(this)
-        DiscordIntegration.initialize(this)
+        startupStep("analytics") { AppAnalytics.initialize(this) }
+        startupStep("app_icon") { AppIconManager.applyProIcon(this, AppPreferences(this).getProUnlockedSync()) }
+        startupStep("pending_backup") { DriveBackupWork.resumePending(this) }
+        startupStep("emulator_bridge") { EmulatorBridge.initializeOnce(this) }
+        startupStep("discord") { DiscordIntegration.initialize(this) }
+    }
+
+    private inline fun startupStep(name: String, block: () -> Unit) {
+        if (!BuildConfig.DEBUG) {
+            block()
+            return
+        }
+        val started = SystemClock.elapsedRealtimeNanos()
+        Trace.beginSection("AppStartup:$name")
+        try { block() }
+        finally {
+            Trace.endSection()
+            Log.i("AppStartup", "$name elapsedMs=${(SystemClock.elapsedRealtimeNanos() - started) / 1_000_000}")
+        }
     }
 }

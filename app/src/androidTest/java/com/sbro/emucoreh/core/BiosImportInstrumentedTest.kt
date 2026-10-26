@@ -1,6 +1,9 @@
 package com.sbro.emucoreh.core
 
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.SharedPreferences
+import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -13,6 +16,40 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BiosImportInstrumentedTest {
+    @Test fun selectedBiosIsNotOpenedAgainWhenOnboardingHandsOffToHome() {
+        val base = ApplicationProvider.getApplicationContext<Context>()
+        val prefix = "bios-import-handoff-${System.nanoTime()}"
+        val root = File(base.cacheDir, prefix).apply { mkdirs() }
+        val context = object : ContextWrapper(base) {
+            override fun getFilesDir() = File(root, "files").apply { mkdirs() }
+            override fun getExternalFilesDir(type: String?) = File(root, "external").apply { mkdirs() }
+            override fun getSharedPreferences(name: String, mode: Int): SharedPreferences =
+                base.getSharedPreferences("$prefix-$name", mode)
+        }
+        try {
+            val source = File(root, "bios_CD_U.bin").apply {
+                writeBytes(ByteArray(SegaCdBios.SIZE).apply {
+                    "SEGA MEGA DRIVE ".toByteArray().copyInto(this, 0x100)
+                    "CD2 BOOT ROM".toByteArray().copyInto(this, 0x120)
+                    this[0x1f0] = 'U'.code.toByte()
+                })
+            }
+            val uri = Uri.fromFile(source)
+            assertEquals(1, BiosImport.installSelection(context, uri).segaCd)
+            // A second provider open now fails. Completed handoff proves no reopen
+            // was needed, including after a new history instance reads disk prefs.
+            assertTrue(source.delete())
+            repeat(2) { BiosImport.restoreSelections(context, listOf(uri.toString())) }
+            assertEquals(BiosImportHistory.selectionKey(listOf(uri.toString())),
+                context.getSharedPreferences("bios_import_migrations", Context.MODE_PRIVATE)
+                    .getString("completed", null))
+            assertTrue(File(SegaCdBios.directory(context), "bios_CD_U.bin").isFile)
+        } finally {
+            base.deleteSharedPreferences("$prefix-bios_import_migrations")
+            root.deleteRecursively()
+        }
+    }
+
     @Test fun descriptiveSegaCdNamesAreImportedByTheirActualRegion() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val root = File(context.cacheDir, "bios-import-descriptive-qa").apply { mkdirs() }

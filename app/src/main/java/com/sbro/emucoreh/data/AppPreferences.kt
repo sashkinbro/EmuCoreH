@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -1363,11 +1364,26 @@ class AppPreferences(private val context: Context) {
     private fun readLegacyCoverArtStyle(prefs: Preferences): Int =
         prefs[COVER_ART_STYLE] ?: prefs[LEGACY_COVER_ART_STYLE] ?: 1
 
-    fun isThemeLightSync(): Boolean {
-        return when (getThemeModeSync()) {
+    /** One consistent DataStore snapshot for batch cover resolution; call from background work. */
+    fun coverDisplaySettingsForConfiguration(uiModes: Flow<Int>): Flow<CoverDisplaySettings> =
+        coverSettingsOnConfiguration(context.dataStore.data, uiModes) { prefs ->
+            CoverDisplaySettings(readFetchBoxart(prefs), readCoverArtStyle(prefs), readThemeIsLight(prefs))
+        }.flowOn(kotlinx.coroutines.Dispatchers.IO)
+
+    suspend fun readCoverDisplaySettings(): CoverDisplaySettings {
+        val prefs = context.dataStore.data.first()
+        return CoverDisplaySettings(readFetchBoxart(prefs), readCoverArtStyle(prefs), readThemeIsLight(prefs))
+    }
+
+    fun isThemeLightSync(): Boolean = kotlinx.coroutines.runBlocking {
+        readThemeIsLight(context.dataStore.data.first())
+    }
+
+    private fun readThemeIsLight(prefs: Preferences): Boolean {
+        return when (readThemeMode(prefs)) {
             ThemeMode.LIGHT -> true
             ThemeMode.DARK, ThemeMode.PRO, ThemeMode.NEON -> false
-            ThemeMode.CUSTOM -> !getCustomThemeSync().dark
+            ThemeMode.CUSTOM -> !(readCustomThemeLibrary(prefs).activeTheme()?.config ?: CustomThemeConfig.Default).dark
             ThemeMode.SYSTEM -> {
                 val systemUiMode = android.content.res.Resources.getSystem().configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
                 if (systemUiMode == android.content.res.Configuration.UI_MODE_NIGHT_YES) {

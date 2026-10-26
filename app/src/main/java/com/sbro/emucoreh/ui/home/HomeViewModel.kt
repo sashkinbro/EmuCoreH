@@ -126,9 +126,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val preferences = AppPreferences(application)
     private val homeBackgroundRepository = HomeBackgroundRepository(application)
     private val proPurchaseManager = ProPurchaseManager.getInstance(application)
-    private var allGames: List<GameItem> = emptyList()
-    private var coverResolutionGames: List<GameItem>? = null
-    private var coverResolutionSettings: CoverDisplaySettings? = null
+    @Volatile private var allGames: List<GameItem> = emptyList()
+    private val coverPublisher = HomeCoverPublisher<GameItem>(viewModelScope)
+    private var currentCoverSettings: CoverDisplaySettings? = null
+    private val coverUiMode = MutableStateFlow(
+        application.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+    )
     private var recentEntries: List<RecentGameEntry> = emptyList()
     private var coverSyncJob: Job? = null
     private var coverRetryJob: Job? = null
@@ -385,6 +388,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     libraryViewMode = resolvedMode,
                     lastStandardLibraryViewMode = lastStandardMode
                 )
+            }
+        }
+        viewModelScope.launch {
+            preferences.coverDisplaySettingsForConfiguration(coverUiMode).collect { settings ->
+                currentCoverSettings = settings
+                publishVisibleGames()
             }
         }
         viewModelScope.launch {
@@ -800,41 +809,63 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         updateBootstrapState()
     }
 
+    fun onCoverUiModeChanged(uiMode: Int) {
+        coverUiMode.value = uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+    }
+
     private fun publishVisibleGames() {
-        val covers = CoverArtRepository(getApplication())
-        val coverSettings = covers.displayCoverSettings()
-        // Cover lookup touches the filesystem and preferences. Filter, sort and
-        // search republish the same list, so resolve each list only once.
-        if (coverResolutionGames !== allGames || coverResolutionSettings != coverSettings) {
-            allGames = allGames.map { original ->
-                val game = if (covers.isMismatchedManagedCover(original.coverArtPath, original.platform))
-                    original.copy(coverArtPath = null) else original
-                val selected = covers.displayCoverPath(
-                    game.serial,
-                    game.title,
-                    game.coverArtPath,
-                    platform = game.platform,
-                    settings = coverSettings
-                )
-                when {
-                    selected == game.coverArtPath -> game
-                    selected != null -> game.copy(coverArtPath = selected)
-                    // Resolution failed: keep the previous path. The background
-                    // cover sync repairs missing files, so a transient miss must
-                    // not erase the artwork from every screen.
-                    else -> game
-                }
-            }
-            coverResolutionGames = allGames
-            coverResolutionSettings = coverSettings
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+            viewModelScope.launch { publishVisibleGames() }
+            return
         }
+        val source = allGames
+        val root = currentLibraryRoot
+        val fetchBoxart = currentFetchBoxart
+        val coverSettings = currentCoverSettings
+        coverPublisher.publish(
+            source = source,
+            libraryKey = Triple(root, fetchBoxart, coverSettings),
+            publishCached = ::publishProjectedGames,
+            resolve = { games ->
+                val covers = CoverArtRepository(getApplication())
+                val settings = coverSettings ?: covers.displayCoverSettingsAsync()
+                games.map { original ->
+                    currentCoroutineContext().ensureActive()
+                    val game = if (covers.isMismatchedManagedCover(original.coverArtPath, original.platform))
+                        original.copy(coverArtPath = null) else original
+                    val selected = covers.displayCoverPath(game.serial, game.title, game.coverArtPath,
+                        platform = game.platform, settings = settings)
+                    when {
+                        selected == game.coverArtPath -> game
+                        selected != null -> game.copy(coverArtPath = selected)
+                        else -> game
+                    }
+                }
+            },
+            publishResolved = { resolved ->
+                val accepted = synchronized(this@HomeViewModel) {
+                    if (allGames !== source || currentLibraryRoot != root || currentFetchBoxart != fetchBoxart ||
+                        currentCoverSettings != coverSettings) false
+                    else {
+                        allGames = resolved
+                        true
+                    }
+                }
+                if (accepted) publishProjectedGames(resolved)
+                accepted
+            }
+        )
+    }
+
+    /** Pure list projection: showing a cached library never waits for cover preferences or files. */
+    private fun publishProjectedGames(games: List<GameItem>) {
         val storedState = _uiState.value
         // The same game is resolved for availability, filtering and sorting.
-        val platformByPath = HashMap<String, LibraryPlatform>(allGames.size)
+        val platformByPath = HashMap<String, LibraryPlatform>(games.size)
         fun platformOf(game: GameItem): LibraryPlatform = platformByPath.getOrPut(game.path) {
             LibraryPlatformResolver.resolve(game, arcadeCatalog::find)
         }
-        val presentPlatforms = allGames.filterNot { game ->
+        val presentPlatforms = games.filterNot { game ->
             BiosValidator.isLikelyBiosLibraryEntry(game.fileName, game.title, game.serial)
         }.mapTo(mutableSetOf()) { platformOf(it) }
         val availablePlatforms = LibraryPlatform.entries.filter { it in presentPlatforms }
@@ -842,7 +873,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             platformFilters = pruneHomePlatformFilters(storedState.platformFilters, presentPlatforms)
         )
         val query = normalizeSearchToken(state.searchQuery)
-        val platformGames = allGames.filter { game ->
+        val platformGames = games.filter { game ->
             state.platformFilters.isEmpty() || matchesHomePlatformFilters(
                 state.platformFilters, platformOf(game)
             )

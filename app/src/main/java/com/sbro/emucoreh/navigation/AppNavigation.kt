@@ -30,7 +30,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -217,18 +216,13 @@ fun AppNavigation(
 ) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
-    val preferences = AppPreferences(context)
-    val saveStateRepository = SaveStateRepository(context)
-    val startupDestination by produceState<StartupDestination?>(
-        initialValue = null,
-        key1 = preferences,
-        key2 = launchIntentVersion
-    ) {
-        value = combine(
+    val preferences = remember(context) { AppPreferences(context) }
+    val saveStateRepository = remember(context) { SaveStateRepository(context) }
+    val startupDestination by rememberStartupDestination(context, launchIntentVersion) {
+        combine(
             preferences.onboardingCompleted,
-            preferences.biosPath,
             preferences.gamePaths
-        ) { onboardingCompleted, biosPath, gamePaths ->
+        ) { onboardingCompleted, gamePaths ->
             val hasGameFolder = withContext(Dispatchers.IO) {
                 SetupValidator.isAnyGameFolderPresentForStartup(context, gamePaths)
             }

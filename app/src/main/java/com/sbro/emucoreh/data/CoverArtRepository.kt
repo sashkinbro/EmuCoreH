@@ -205,14 +205,9 @@ class CoverArtRepository(context: Context) {
      * that was already resolved: the caller keeps showing the previous cover
      * while the background sync re-downloads it.
      */
-    fun displayCoverSettings(): CoverDisplaySettings {
-        val prefs = AppPreferences(context)
-        return CoverDisplaySettings(
-            enabled = prefs.getFetchBoxartSync(),
-            style = prefs.getCoverArtStyleSync(),
-            isLight = prefs.isThemeLightSync()
-        )
-    }
+    fun displayCoverSettings(): CoverDisplaySettings = kotlinx.coroutines.runBlocking { displayCoverSettingsAsync() }
+
+    suspend fun displayCoverSettingsAsync(): CoverDisplaySettings = AppPreferences(context).readCoverDisplaySettings()
 
     fun displayCoverPath(serial: String?, title: String?, candidate: String?, platform: String? = null): String? =
         displayCoverPath(serial, title, candidate, platform, displayCoverSettings())

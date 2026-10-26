@@ -193,6 +193,9 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val configuration = LocalConfiguration.current
+    LaunchedEffect(configuration.uiMode) {
+        viewModel.onCoverUiModeChanged(configuration.uiMode)
+    }
     val density = LocalDensity.current
     val windowSize = LocalWindowInfo.current.containerSize
     val windowMetrics = resolveHomeWindowMetrics(
