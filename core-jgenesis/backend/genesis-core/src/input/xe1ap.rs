@@ -155,6 +155,7 @@ impl Xe1apState {
         }
     }
 
+    #[inline(never)]
     pub fn tick(&mut self, mut m68k_cycles: u32, pins: &mut Pins) {
         if self.transfer_state == Xe1apTransferState::Idle {
             return;
