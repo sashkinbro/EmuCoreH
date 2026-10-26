@@ -3,6 +3,11 @@ use crate::bus::OpSize;
 use std::cell::Cell;
 
 thread_local! { static TABLE_ACQUISITIONS: Cell<usize> = const { Cell::new(0) }; }
+thread_local! { static TABLE_DISPATCHES: Cell<usize> = const { Cell::new(0) }; }
+
+pub(super) fn record_table_dispatch() {
+    TABLE_DISPATCHES.set(TABLE_DISPATCHES.get() + 1);
+}
 
 #[derive(Clone)]
 struct Bus {
@@ -85,9 +90,21 @@ fn interpreter_slice_acquires_immutable_decode_table_once() {
 struct Reference;
 impl ExecutionBody<Bus> for Reference {
     fn opcode(&mut self, cpu: &mut Sh2, bus: &mut Bus, opcode: u16) -> bool {
-        Bus::opcode_table().decode(opcode)(cpu, opcode, bus);
+        crate::instructions::decode_reference(opcode)(cpu, opcode, bus);
         true
     }
+}
+
+#[test]
+fn common_interpreter_families_avoid_indirect_table_dispatch() {
+    for opcode in [0xC517, 0xC801, 0x6238, 0x89FE] {
+        TABLE_DISPATCHES.set(0);
+        cpu().execute(8, &mut bus(opcode));
+        assert_eq!(TABLE_DISPATCHES.get(), 0, "opcode={opcode:04X}");
+    }
+    TABLE_DISPATCHES.set(0);
+    cpu().execute(8, &mut bus(0xE101));
+    assert_eq!(TABLE_DISPATCHES.get(), 8, "other families retain the table fallback");
 }
 
 #[test]
@@ -109,6 +126,49 @@ fn every_opcode_preserves_full_cpu_state_bus_order_and_cycle_oracle() {
             );
             assert_eq!(actual_bus.events, expected_bus.events, "opcode={opcode:04X} T={flag}");
             assert_eq!(actual_bus.cycles, expected_bus.cycles, "opcode={opcode:04X} T={flag}");
+        }
+    }
+}
+
+#[test]
+fn direct_families_preserve_delay_targets_cached_data_and_slice_prefixes() {
+    for value in 0u16..256 {
+        let opcodes = [
+            0xC500 | value,
+            0xC800 | value,
+            0x8900 | value,
+            0x6008 | ((value & 0xF0) << 4) | ((value & 0x0F) << 4),
+        ];
+        for opcode in opcodes {
+            for flag in [false, true] {
+                for delayed in [false, true] {
+                    for ticks in [1, 2, 8] {
+                        let mut actual = cpu();
+                        actual.registers.sr.t = flag;
+                        actual.registers.gbr = 0x06004000 | u32::from(flag);
+                        actual.registers.next_op_in_delay_slot = delayed;
+                        if delayed {
+                            actual.registers.next_pc = 0x20000200;
+                        }
+                        if flag {
+                            actual.cache.write_control(1);
+                        }
+                        let mut expected = actual.clone();
+                        let mut actual_bus = bus(opcode);
+                        let mut expected_bus = actual_bus.clone();
+                        expected.execute_with_body(ticks, &mut expected_bus, &mut Reference);
+                        actual.execute(ticks, &mut actual_bus);
+                        let config = bincode::config::standard();
+                        assert_eq!(
+                            bincode::encode_to_vec(&actual, config).unwrap(),
+                            bincode::encode_to_vec(&expected, config).unwrap(),
+                            "opcode={opcode:04X} T={flag} delayed={delayed} ticks={ticks}"
+                        );
+                        assert_eq!(actual_bus.events, expected_bus.events);
+                        assert_eq!(actual_bus.cycles, expected_bus.cycles);
+                    }
+                }
+            }
         }
     }
 }

@@ -304,9 +304,28 @@ impl Sh2 {
         #[cfg(feature = "jit-preview")]
         jgenesis_common::jit::record_opcode(opcode, native);
         if !native {
-            opcode_table.decode(opcode)(self, opcode, bus);
+            self.execute_interpreter_opcode(opcode, bus, opcode_table);
         }
         bus.increment_cycle_counter(1);
+    }
+
+    #[inline(always)]
+    fn execute_interpreter_opcode<Bus: BusInterface>(
+        &mut self,
+        opcode: u16,
+        bus: &mut Bus,
+        opcode_table: &OpcodeTable<Bus>,
+    ) {
+        // Reuse the ordinary interpreter methods for common polling/ALU families,
+        // avoiding the table call and the secondary 8/C-family decode wrapper.
+        // Fetch, delay slots, IRQ sampling and cycle accounting stay in the shell.
+        match opcode & 0xFF00 {
+            0xC500 => self.mov_w_disp_gbr_r0(opcode, bus),
+            0xC800 => self.tst_imm_r0(opcode),
+            0x8900 => self.bt(opcode, bus),
+            _ if opcode & 0xF00F == 0x6008 => self.swap_b(opcode),
+            _ => opcode_table.decode(opcode)(self, opcode, bus),
+        }
     }
 
     #[inline(always)]

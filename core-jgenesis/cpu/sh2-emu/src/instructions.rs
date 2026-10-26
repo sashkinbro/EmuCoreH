@@ -35,6 +35,8 @@ impl<Bus: BusInterface> OpcodeTable<Bus> {
     }
 
     pub(crate) fn decode(&self, opcode: u16) -> OpcodeFn<Bus> {
+        #[cfg(test)]
+        crate::interpreter_tests::record_table_dispatch();
         self.0[((opcode & 0xFF) | ((opcode & 0xF000) >> 4)) as usize]
     }
 }
@@ -240,6 +242,11 @@ fn decode_inner<Bus: BusInterface>(opcode: u16) -> OpcodeFn<Bus> {
             },
         },
     }
+}
+
+#[cfg(test)]
+pub(crate) fn decode_reference<Bus: BusInterface>(opcode: u16) -> OpcodeFn<Bus> {
+    decode_inner(opcode)
 }
 
 #[inline(always)]
