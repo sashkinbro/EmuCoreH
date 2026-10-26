@@ -549,6 +549,12 @@ impl Vdp {
         let active_display_pixels =
             self.latched_registers.horizontal_display_size.active_display_pixels();
 
+        // Rebuild for each segment so midline CRAM writes are reflected immediately.
+        // Short suffixes retain direct conversion to avoid the palette setup cost.
+        let normal_palette = (!self.latched_registers.shadow_highlight_flag
+            && fb_end_col - fb_start_col >= 64)
+            .then(|| resolve_normal_palette(&self.cram, &self.color_tables));
+
         for frame_buffer_col in fb_start_col..fb_end_col {
             let pixel = frame_buffer_col as i16 - fb_pixel_offset;
 
@@ -575,17 +581,21 @@ impl Vdp {
                 determine_pixel_color::<false>(self.debug_register, pixel_color_args)
             };
 
-            let pixel_color = colors::lookup(&self.cram, pixel_cram_idx);
-
-            set_in_frame_buffer(
-                &mut self.frame_buffer,
-                frame_buffer_row,
-                frame_buffer_col,
-                pixel_color,
-                color_modifier,
-                screen_width,
-                &self.color_tables,
-            );
+            if let Some(palette) = &normal_palette {
+                self.frame_buffer[(frame_buffer_row * screen_width + frame_buffer_col) as usize] =
+                    palette[pixel_cram_idx as usize];
+            } else {
+                let pixel_color = colors::lookup(&self.cram, pixel_cram_idx);
+                set_in_frame_buffer(
+                    &mut self.frame_buffer,
+                    frame_buffer_row,
+                    frame_buffer_col,
+                    pixel_color,
+                    color_modifier,
+                    screen_width,
+                    &self.color_tables,
+                );
+            }
         }
     }
 
@@ -883,6 +893,58 @@ pub(super) fn set_in_frame_buffer(
     let rgb_color = colors::gen_to_rgba(r, g, b, a, modifier, color_tables);
 
     frame_buffer[(row * screen_width + col) as usize] = rgb_color;
+}
+
+fn resolve_normal_palette(cram: &vdp::Cram, color_tables: &ColorTables) -> [Color; 64] {
+    array::from_fn(|idx| {
+        let color = colors::lookup(cram, idx as u8);
+        colors::gen_to_rgba(
+            ((color >> 1) & 7) as u8,
+            ((color >> 5) & 7) as u8,
+            ((color >> 9) & 7) as u8,
+            (color >> 15) as u8,
+            ColorModifier::None,
+            color_tables,
+        )
+    })
+}
+
+#[cfg(test)]
+mod normal_palette_tests {
+    use super::*;
+
+    #[test]
+    fn normal_palette_matches_existing_pixel_conversion_for_every_color_and_index() {
+        let mut frame: Box<[Color; vdp::FRAME_BUFFER_LEN]> =
+            vec![Color::TRANSPARENT; vdp::FRAME_BUFFER_LEN].into_boxed_slice().try_into().unwrap();
+        for tables in [
+            ColorTables::LINEAR,
+            ColorTables::NON_LINEAR,
+            ColorTables::LINEAR_DARK,
+            ColorTables::NON_LINEAR_DARK,
+        ] {
+            for word in 0..=u16::MAX {
+                let cram =
+                    array::from_fn(|idx| word.wrapping_add((idx as u16).wrapping_mul(0x0101)));
+                let actual = resolve_normal_palette(&cram, &tables);
+                for idx in 0..64u8 {
+                    set_in_frame_buffer(
+                        &mut frame,
+                        0,
+                        idx.into(),
+                        colors::lookup(&cram, idx),
+                        ColorModifier::None,
+                        64,
+                        &tables,
+                    );
+                    assert_eq!(
+                        actual[idx as usize], frame[idx as usize],
+                        "word={word:04X} index={idx}"
+                    );
+                }
+            }
+        }
+    }
 }
 
 fn read_v_scroll(
