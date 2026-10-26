@@ -36,6 +36,21 @@ pub trait BusInterface {
     /// Poll the RESET line; setting this resets and halts the Z80
     fn reset(&self) -> bool;
 
+    /// Optional pure instruction-fetch view for an explicitly scheduled native window.
+    ///
+    /// Return None unless, for the entire `t_cycles` interval, instruction fetches
+    /// from the returned contiguous slice have no observable effects, RESET,
+    /// BUSREQ, INT and NMI remain constant, no device needs an intermediate CPU
+    /// boundary, and no debugger execution hooks are active. The slice starts at
+    /// `address`, represents the currently selected bank, and must stop at the
+    /// address-space wrap or any region failing these conditions. Execution uses
+    /// only register-only instructions, so no guest writes occur within a window.
+    /// The default declines batching; existing bus implementations stay exact.
+    #[cfg(feature = "native-z80")]
+    fn native_code_window(&self, _address: u16, _t_cycles: u32) -> Option<&[u8]> {
+        None
+    }
+
     fn debug_view(&mut self) -> Option<Self::DebugView<'_>> {
         None
     }

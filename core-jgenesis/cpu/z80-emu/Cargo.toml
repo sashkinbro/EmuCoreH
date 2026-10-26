@@ -8,6 +8,7 @@ edition = "2024"
 [features]
 default = []
 bincode = ["dep:bincode"]
+native-z80 = ["jgenesis-common/native-code"]
 
 [dependencies]
 jgenesis-common = { workspace = true }

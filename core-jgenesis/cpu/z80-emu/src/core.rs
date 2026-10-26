@@ -2,6 +2,8 @@ use crate::traits::{BusInterface, InterruptLine};
 use jgenesis_common::num::{GetBit, U16Ext};
 
 mod instructions;
+#[cfg(feature = "native-z80")]
+pub mod native;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
