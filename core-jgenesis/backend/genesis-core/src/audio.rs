@@ -238,6 +238,11 @@ impl GenesisAudioResampler {
     // Should never panic, the unwraps are guarded by length checks
     #[allow(clippy::missing_panics_doc)]
     pub fn output_samples<A: AudioOutput>(&mut self, audio_output: &mut A) -> Result<(), A::Err> {
+        // Most CPU steps produce no YM samples, so avoid checking the remaining queues then.
+        if self.ym2612_resampler.output_buffer_len() == 0 {
+            return Ok(());
+        }
+
         let sample_count = [
             self.ym2612_resampler.output_buffer_len(),
             self.psg_resampler.output_buffer_len(),
