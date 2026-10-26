@@ -770,6 +770,11 @@ impl BusInterface for Sh2Bus {
         self.cycle_counter >= self.cycle_limit
     }
 
+    #[inline(always)]
+    fn prefers_native_single_step(&self) -> bool {
+        self.cycle_limit.saturating_sub(self.cycle_counter) <= 1
+    }
+
     unsafe fn native_bus_view(&mut self) -> Option<sh2_emu::bus::NativeBusView> {
         // SDRAM reads only add ten cycles and read this fixed allocation. MMIO,
         // cartridge and framebuffer regions never enter this descriptor. The other

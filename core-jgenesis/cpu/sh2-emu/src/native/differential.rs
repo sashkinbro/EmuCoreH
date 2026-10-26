@@ -1052,6 +1052,9 @@ impl BusInterface for DirectBus {
             fetch_cycles: 2,
         })
     }
+    fn prefers_native_single_step(&self) -> bool {
+        self.limit.saturating_sub(self.cycles) <= 1
+    }
     crate::impl_sh2_opcode_table!(DirectBus);
 }
 fn compare_direct(
@@ -1123,6 +1126,20 @@ fn uncached_p0_fast_fetch_misses_use_warmed_guarded_native_blocks() {
     if cfg!(all(target_arch = "aarch64", any(target_os = "android", target_os = "linux"))) {
         assert_eq!(native.block_instructions() - before, 4);
     }
+}
+
+#[test]
+fn one_cycle_device_windows_use_native_leaf_without_block_setup() {
+    let mut initial = cpu();
+    initial.trace_log_enabled = false;
+    let mut bus = DirectBus::new();
+    bus.program(&[0xE101, 0x7101, 0x6213, 0x3120]);
+    let mut native = NativeExecutor::default();
+    compare_direct(&initial, &bus, 4, &mut native);
+    let before = native.block_instructions();
+    bus.limit = 1;
+    compare_direct(&initial, &bus, 4, &mut native);
+    assert_eq!(native.block_instructions(), before);
 }
 
 #[test]

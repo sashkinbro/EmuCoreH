@@ -639,6 +639,9 @@ impl<Bus: crate::bus::BusInterface> crate::ExecutionBody<Bus> for NativeExecutor
             any(target_os = "android", target_os = "linux")
         ))]
         if !self.disabled && !self.blocks_disabled {
+            if ticks == 1 || bus.prefers_native_single_step() {
+                return (0, false);
+            }
             if let Some(result) = fast::run(self, cpu, bus, ticks) {
                 if result.0 != 0 || result.1 {
                     return result;

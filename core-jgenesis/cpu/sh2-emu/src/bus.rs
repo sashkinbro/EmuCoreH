@@ -171,6 +171,13 @@ pub trait BusInterface: Sized {
         None
     }
 
+    /// A side-effect-free performance hint. A short device deadline can make
+    /// one native instruction cheaper than setting up a guarded block. The
+    /// interpreter's normal fetch/cycle/stop shell is still used in either case.
+    fn prefers_native_single_step(&self) -> bool {
+        false
+    }
+
     /// # Safety
     /// Returning Some promises that counter addition and `counter >= limit` are exactly
     /// equivalent to increment_cycle_counter/should_stop_execution, with no omitted
