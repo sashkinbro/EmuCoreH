@@ -53,6 +53,11 @@ extern "C" {
   u64 getM68KCounter() {
     return m68k_counter;
   }
+#if defined(SATURN_ENABLE_SCSP_DIAGNOSTICS)
+  u64 getM68KDoneCounter() {
+    return m68k_counter_done;
+  }
+#endif
 
   void syncM68K() {
     int timeout = 0;

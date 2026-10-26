@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdatomic.h>
+#if defined(SATURN_ENABLE_SCSP_DIAGNOSTICS) && defined(ANDROID)
+#include <android/log.h>
+#endif
 
 #ifdef _MSC_VER
 #define snprintf _snprintf
@@ -371,8 +374,17 @@ static atomic_bool audio_fingerprint_enabled;
 static atomic_uint_fast64_t audio_pcm_hash;
 static atomic_uint_fast64_t audio_pcm_samples;
 static atomic_uint_fast64_t audio_pcm_nonzero;
+#if defined(SATURN_ENABLE_SCSP_DIAGNOSTICS)
+extern void saturn_scsp_enable_diagnostics(bool enabled);
+extern const char *saturn_scsp_debug_snapshot(void);
+static unsigned scsp_qa_frame_budget;
+#endif
 RETRO_API void saturn_reset_audio_fingerprint(void)
 {
+#if defined(SATURN_ENABLE_SCSP_DIAGNOSTICS)
+   saturn_scsp_enable_diagnostics(true);
+   scsp_qa_frame_budget = 24;
+#endif
    atomic_store_explicit(&audio_fingerprint_enabled, false, memory_order_release);
    atomic_store_explicit(&audio_pcm_hash, UINT64_C(14695981039346656037), memory_order_relaxed);
    atomic_store_explicit(&audio_pcm_samples, 0, memory_order_relaxed);
@@ -978,6 +990,10 @@ static void extract_basename(char *buf, const char *path, size_t size)
 
 void retro_init(void)
 {
+#if defined(SATURN_ENABLE_SCSP_DIAGNOSTICS)
+   saturn_scsp_enable_diagnostics(false);
+   scsp_qa_frame_budget = 0;
+#endif
    atomic_store_explicit(&audio_fingerprint_enabled, false, memory_order_release);
    atomic_store_explicit(&audio_pcm_hash, 0, memory_order_relaxed);
    atomic_store_explicit(&audio_pcm_samples, 0, memory_order_relaxed);
@@ -1436,6 +1452,11 @@ void retro_run(void)
    bool fastforward = false;
    bool updated  = false;
    if (!core_initialized || !renderer_running) return;
+#if defined(SATURN_ENABLE_SCSP_DIAGNOSTICS)
+   const bool scsp_qa_frame = scsp_qa_frame_budget > 0;
+   uint64_t scsp_qa_before = scsp_qa_frame ? saturn_audio_samples() : 0;
+   u32 scsp_qa_space_before = audio_size;
+#endif
    rendering_started = true;
    one_frame_rendered = false;
 
@@ -1465,6 +1486,18 @@ void retro_run(void)
    if(!one_frame_rendered)
       video_cb(NULL, current_width, current_height, 0);
 
+#if defined(SATURN_ENABLE_SCSP_DIAGNOSTICS)
+   if (scsp_qa_frame) {
+      --scsp_qa_frame_budget;
+#ifdef ANDROID
+      __android_log_print(ANDROID_LOG_INFO,"SaturnSCSPQA",
+         "retro-frame remaining=%u samples=%llu total=%llu space-before=%u space-after=%u %s",
+         scsp_qa_frame_budget,(unsigned long long)(saturn_audio_samples()-scsp_qa_before),
+         (unsigned long long)saturn_audio_samples(),scsp_qa_space_before,audio_size,
+         saturn_scsp_debug_snapshot());
+#endif
+   }
+#endif
    //reset_global_gl_state();
 }
 

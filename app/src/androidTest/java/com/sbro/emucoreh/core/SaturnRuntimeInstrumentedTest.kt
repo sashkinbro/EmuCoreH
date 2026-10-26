@@ -191,10 +191,14 @@ class SaturnRuntimeInstrumentedTest {
                         assertTrue("Readable owner QA seed state", seedState.isFile && seedState.canRead())
                         bridge.runFrame(handle)
                         assertEquals("Restore owner QA seed", 0, bridge.loadState(handle, seedState.path))
+                        if (diagnostics) assertEquals(0, bridge.saveState(handle,
+                            File(root, "seed-restored-immediate-$launch.state").path))
                     }
                     bridge.resetSaturnAudioFingerprint()
                     assertFalse("Cannot switch running core", bridge.nativeSelectCore(1))
                     if (script != null) Log.i("SaturnRuntimeQA", "Input script ${game.name} launch$launch: $scriptArgument")
+                    val framesStarted = android.os.SystemClock.elapsedRealtimeNanos()
+                    val cpuStarted = android.os.Process.getElapsedCpuTime()
                     repeat(frames) { frame ->
                         val buttons = script?.let { inputMask(it, frame) }
                             ?: if (frame % 120 in 60..61) 0xffff xor (1 shl 3) else 0xffff
@@ -215,6 +219,9 @@ class SaturnRuntimeInstrumentedTest {
                             output.play()
                         }
                     }
+                    Log.i("SaturnRuntimeQA", "Timing ${game.name} launch$launch frames=$frames " +
+                        "wallMs=${(android.os.SystemClock.elapsedRealtimeNanos() - framesStarted) / 1_000_000} " +
+                        "processCpuMs=${android.os.Process.getElapsedCpuTime() - cpuStarted}")
                     assertTrue("Video frames on launch $launch", presented.get() > 0)
                     assertTrue("Visible rendered content on launch $launch", visible.get())
                     assertTrue("Nonzero PCM samples on launch $launch", bridge.saturnAudioNonzeroSamples() > 0)

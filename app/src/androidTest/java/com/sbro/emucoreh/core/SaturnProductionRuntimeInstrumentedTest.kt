@@ -116,6 +116,24 @@ class SaturnProductionRuntimeInstrumentedTest {
             assertFalse("Unsupported state must be rejected", CoreRuntime.loadState(unsupportedFile.path))
             assertTrue(CoreRuntime.saveState(check.path))
             assertArrayEquals("Rejected state must not partially replace cartridge RAM", pausedState, check.readBytes())
+            val originalWords = ByteBuffer.wrap(pausedState).order(ByteOrder.LITTLE_ENDIAN)
+            var chunk = firstChunk
+            repeat(4) { chunk += 12 + originalWords.getInt(chunk + 8) }
+            assertEquals("SCSP", String(pausedState, chunk, 4, Charsets.US_ASCII))
+            assertEquals(6, originalWords.getInt(chunk + 4))
+            val mode = originalWords.getInt(chunk + 12)
+            assertEquals("Production uses deterministic synchronous SCSP", 3, mode)
+            for (oldVersion in listOf(false, true)) {
+                val incompatible = pausedState.copyOf()
+                val changed = ByteBuffer.wrap(incompatible).order(ByteOrder.LITTLE_ENDIAN)
+                incompatible[firstChunk + 12 + 32] = (incompatible[firstChunk + 12 + 32].toInt() xor 1).toByte()
+                if (oldVersion) changed.putInt(chunk + 4, 5)
+                else changed.putInt(chunk + 12, mode xor 1)
+                unsupportedFile.writeBytes(incompatible)
+                assertFalse("Wrong sound mode or untagged v5 must fail before restore", CoreRuntime.loadState(unsupportedFile.path))
+                assertTrue(CoreRuntime.saveState(check.path))
+                assertArrayEquals("Sound mode rejection must leave all guest state unchanged", pausedState, check.readBytes())
+            }
         }
 
         try {

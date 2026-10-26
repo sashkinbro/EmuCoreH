@@ -117,6 +117,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #include "scu.h"
 #include "yabause.h"
 #include "scsp.h"
+#include "../state_validation.h"
 #include "scspdsp.h"
 #include "threads.h"
 
@@ -1824,6 +1825,68 @@ static int scsp_volume = 100;
 static int thread_running = 0;
 static int scsp_sample_count = 0;
 static int scsp_checktime = 0;
+
+#if defined(SATURN_ENABLE_SCSP_DIAGNOSTICS)
+#include <stdatomic.h>
+#include <stdbool.h>
+#ifdef ANDROID
+#include <android/log.h>
+#endif
+extern u64 getM68KDoneCounter(void);
+static atomic_bool scsp_diagnostic_enabled;
+static atomic_uint_fast64_t scsp_diag_sequence, scsp_diag_phase, scsp_diag_frame;
+static atomic_uint_fast64_t scsp_diag_pre, scsp_diag_inc, scsp_diag_pcm_pos;
+__attribute__((visibility("default"))) void saturn_scsp_enable_diagnostics(bool enabled) {
+  atomic_store_explicit(&scsp_diagnostic_enabled, enabled, memory_order_release);
+}
+static void scsp_record_phase(unsigned phase, int frame, u64 pre, u64 inc) {
+  if (!atomic_load_explicit(&scsp_diagnostic_enabled, memory_order_relaxed)) return;
+  atomic_fetch_add_explicit(&scsp_diag_sequence, 1, memory_order_acq_rel);
+  atomic_store_explicit(&scsp_diag_phase, phase, memory_order_relaxed);
+  atomic_store_explicit(&scsp_diag_frame, frame, memory_order_relaxed);
+  atomic_store_explicit(&scsp_diag_pre, pre, memory_order_relaxed);
+  atomic_store_explicit(&scsp_diag_inc, inc, memory_order_relaxed);
+  atomic_store_explicit(&scsp_diag_pcm_pos, new_scsp_outbuf_pos, memory_order_relaxed);
+  atomic_fetch_add_explicit(&scsp_diag_sequence, 1, memory_order_release);
+}
+#define SCSP_RECORD_PHASE(phase,frame,pre,inc) scsp_record_phase(phase,frame,pre,inc)
+__attribute__((visibility("default"))) const char *saturn_scsp_debug_snapshot(void) {
+  static char result[512];
+  u64 seq=0, after=0, phase=0, frame=0, pre=0, inc=0, pcm=0;
+  /* Bound retries: telemetry must never stall emulation. stable=false marks
+   * an observation overlapping a worker checkpoint, rather than hiding it. */
+  for (unsigned attempt=0; attempt<8; ++attempt) {
+    seq=atomic_load_explicit(&scsp_diag_sequence,memory_order_acquire);
+    phase=atomic_load_explicit(&scsp_diag_phase,memory_order_relaxed);
+    frame=atomic_load_explicit(&scsp_diag_frame,memory_order_relaxed);
+    pre=atomic_load_explicit(&scsp_diag_pre,memory_order_relaxed);
+    inc=atomic_load_explicit(&scsp_diag_inc,memory_order_relaxed);
+    pcm=atomic_load_explicit(&scsp_diag_pcm_pos,memory_order_relaxed);
+    atomic_thread_fence(memory_order_acquire);
+    after=atomic_load_explicit(&scsp_diag_sequence,memory_order_acquire);
+    if(seq==after && !(seq&1)) break;
+  }
+  snprintf(result,sizeof(result),"{\"stable\":%s,\"sequence\":%llu,\"phase\":%llu,\"frame\":%llu,\"pre\":%llu,\"inc\":%llu,\"pcm_pos\":%llu,\"requested\":%llu,\"done\":%llu,\"lock\":%d,\"qstart\":%d,\"qfinish\":%d}",
+    seq==after && !(seq&1)?"true":"false",(unsigned long long)after,(unsigned long long)phase,(unsigned long long)frame,
+    (unsigned long long)pre,(unsigned long long)inc,(unsigned long long)pcm,
+    (unsigned long long)getM68KCounter(),(unsigned long long)getM68KDoneCounter(),g_scsp_lock,
+    q_scsp_frame_start?YaGetQueueSize(q_scsp_frame_start):-1,q_scsp_finish?YaGetQueueSize(q_scsp_finish):-1);
+  return result;
+}
+static void scsp_diagnostic_log(const char *stage) {
+  if (!atomic_load_explicit(&scsp_diagnostic_enabled,memory_order_relaxed)) return;
+#ifdef ANDROID
+  __android_log_print(ANDROID_LOG_INFO,"SaturnSCSPQA","%s %s",stage,saturn_scsp_debug_snapshot());
+#else
+  fprintf(stderr,"SaturnSCSPQA %s %s\n",stage,saturn_scsp_debug_snapshot());
+#endif
+}
+#define SCSP_DIAGNOSTIC_LOG(stage) scsp_diagnostic_log(stage)
+#else
+#define SCSP_RECORD_PHASE(phase,frame,pre,inc) ((void)0)
+#define SCSP_DIAGNOSTIC_LOG(stage) ((void)0)
+#endif
+
 ////////////////////////////////////////////////////////////////
 // Misc
 
@@ -2705,6 +2768,8 @@ static u16 scsp_slot_get_w(u32 s, u32 a)
 static void
 scsp_set_b (u32 a, u8 d)
 {
+  /* Byte accesses share the same aliasing as scsp_get_b. */
+  a &= 0x3F;
   if ((a != 0x408) && (a != 0x41D))
     {
       //SCSPLOG("scsp : reg %.2X = %.2X\n", a & 0x3F, d);
@@ -2873,6 +2938,9 @@ scsp_set_b (u32 a, u8 d)
 static void
 scsp_set_w (u32 a, u16 d)
 {
+  /* Match scsp_get_w: control-register addresses alias within 0x40 bytes.
+   * Normalize before indexing the mirror, not only inside the switch. */
+  a &= 0x3E;
   if ((a != 0x418) && (a != 0x41A) && (a != 0x422))
     {
       //SCSPLOG("scsp : reg w %.2X = %.4X\n", a & 0x3E, d);
@@ -5467,6 +5535,7 @@ void new_scsp_update_samples(s32 *bufL, s32 *bufR, int scspsoundlen)
 void ScspLockThread() {
   g_scsp_lock = 1;
   YabThreadUSleep(16666*2);
+  SCSP_DIAGNOSTIC_LOG("lock-return");
 }
 
 void ScspUnLockThread() {
@@ -5523,7 +5592,9 @@ void ScspAsynMainCpuTime( void * p ){
   now = 0;
   before = 0;
   while (thread_running){
+    if (g_scsp_lock) SCSP_RECORD_PHASE(1,frame,pre_m68k_cycle,m68k_inc);
     while (g_scsp_lock) { YabThreadUSleep(1000); }
+    SCSP_RECORD_PHASE(2,frame,pre_m68k_cycle,m68k_inc);
     u64 m68k_done_counter = 0;
     u64 m68k_integer_part = 0;
     u64 m68k_cycle = 0;
@@ -5536,6 +5607,7 @@ void ScspAsynMainCpuTime( void * p ){
     m68k_inc += m68k_cycle;
     pre_m68k_cycle = m68k_integer_part;
 
+    SCSP_RECORD_PHASE(3,frame,pre_m68k_cycle,m68k_inc);
     // Sync 44100KHz
     while (m68k_inc >= samplecnt) {
       m68k_inc = m68k_inc - samplecnt;
@@ -5556,11 +5628,14 @@ void ScspAsynMainCpuTime( void * p ){
         ScspInternalVars->scsptiming1 = scsplines;
         ScspExecAsync();
 
+        SCSP_RECORD_PHASE(4,frame,pre_m68k_cycle,m68k_inc);
         YabAddEventQueue( q_scsp_finish , 0);
         pre_m68k_cycle = 0;
         m68k_inc = 0;
         //LOG("[SCSP] WAIT SH2");
+        SCSP_RECORD_PHASE(5,frame,pre_m68k_cycle,m68k_inc);
         YabWaitEventQueue(q_scsp_frame_start);
+        SCSP_RECORD_PHASE(6,frame,pre_m68k_cycle,m68k_inc);
         now = YabauseGetTicks() * 1000000000 / yabsys.tickfreq;
         //LOG(" SCSPTIME = %d/16666666 %d/735", (s32)(now - before), hzcheck);
         hzcheck = 0;
@@ -5569,7 +5644,9 @@ void ScspAsynMainCpuTime( void * p ){
       }
     }
     setM68kDoneCounter(pre_m68k_cycle);
+    SCSP_RECORD_PHASE(7,frame,pre_m68k_cycle,m68k_inc);
   }
+  SCSP_RECORD_PHASE(8,frame,pre_m68k_cycle,m68k_inc);
   YabThreadWake(YAB_THREAD_SCSP);
 }
 
@@ -6037,13 +6114,17 @@ M68KClearCodeBreakpoints ()
 int
 SoundSaveState (FILE *fp)
 {
+  SCSP_DIAGNOSTIC_LOG("save-enter");
   int i;
   u32 temp;
   int offset;
   u8 nextphase;
   IOCheck_struct check = { 0, 0 };
 
-  offset = StateWriteHeader (fp, "SCSP", 5);
+  if (use_new_scsp != 1) return -1;
+  offset = StateWriteHeader (fp, "SCSP", 6);
+  const u32 audio_mode = saturn_state_current_audio_mode();
+  ywrite(&check, (void*)&audio_mode, sizeof(audio_mode), 1, fp);
 
   // Save 68k registers first
   ywrite (&check, (void *)&IsM68KRunning, 1, 1, fp);
@@ -6351,13 +6432,18 @@ SoundSaveState (FILE *fp)
 int
 SoundLoadState (FILE *fp, int version, int size)
 {
+  SCSP_DIAGNOSTIC_LOG("load-enter");
   int i, i2;
   u32 temp;
   u8 nextphase;
   IOCheck_struct check = { 0, 0 };
   
 
-  if (version != 5) return -1; /* Older states omit the sound CPU/pipeline. */
+  /* Reject incompatible mode before changing any CPU, RAM or sound state. */
+  u32 audio_mode = 0;
+  if (version != 6 || size < 4 ||
+      fread(&audio_mode, sizeof(audio_mode), 1, fp) != 1 ||
+      audio_mode != saturn_state_current_audio_mode()) return -1;
   // Read 68k registers first
   yread(&check, (void *)&IsM68KRunning, 1, 1, fp);
   yread(&check, (void *)&savedcycles, sizeof(u32), 1, fp);
@@ -6716,6 +6802,7 @@ SoundLoadState (FILE *fp, int version, int size)
   yread(&check, &scsp.eg, sizeof(scsp.eg), 1, fp);
   if (check.done != check.size) return -1;
 
+  SCSP_DIAGNOSTIC_LOG("load-exit");
   return size;
 }
 

@@ -41,10 +41,14 @@ Local modifications:
   reconstruct its live pointer after restore, including fresh sessions.
 - src/m68kmusashi.c: replace empty save/load stubs with pointer-free CPU scalar,
   pending interrupt, prefetch and cycle state; host callbacks remain untouched.
-- src/scsp.c: local SCSP chunk v5 preserves pending PCM/CDDA buffers, output
+- src/scsp.c: local SCSP chunk v6 preserves pending PCM/CDDA buffers, output
   cursors, fractional cycles and the new SCSP pipeline after register rebuild;
   v5 includes active DSP delayed memory/multiply/shifter state and the
   sound-CPU-visible slot monitor registers.
+  v6 prefixes the execution mode (async-new=2/sync-new=3), rejects the opposite
+  mode/old backend before sound CPU restore, and rejects experimental v5 states.
+- state_validation.c: structural/version preflight also checks the v6 mode
+  before any subsystem loader can mutate CPU/RAM state.
 - src/sh2core.c and DynarecSh2.h/.cpp: SH2 chunk v5 preserves block cycle
   overshoot, dynarec timing, watchdog counters and sleep state; initialize
   previously indeterminate single-step control.

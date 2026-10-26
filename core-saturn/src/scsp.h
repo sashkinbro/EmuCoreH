@@ -93,9 +93,13 @@ typedef struct
 
 #define MAX_BREAKPOINTS 10
 
-//#if defined(ARCH_IS_LINUX)
+/* The build selects the synchronous branch consistently in every source file.
+ * The legacy asynchronous branch remains available for controlled QA builds. */
+#if defined(SATURN_SYNCHRONOUS_SCSP) && SATURN_SYNCHRONOUS_SCSP
+#undef ASYNC_SCSP
+#else
 #define ASYNC_SCSP
-//#endif
+#endif
 
 typedef struct
 {

@@ -18,10 +18,15 @@ thread with the appropriate GLES context current. Context destruction precedes
 unload safely. GL recreation restores the renderer while preserving emulated
 CPU/RAM state. State buffers are available after the first emulated frame;
 the upstream format advertises single-session serialization limitations.
-The local state dialect keeps the YSS v2 envelope, with CS2 chunk v4, SH2 chunk v5, SCSP chunk v5 and
-OTHR chunk v2. SCSP v5 additionally preserves the DSP delayed read/write,
-multiply and shift pipeline used by active sound effects. Older incomplete SCSP
-states are rejected. Musashi host callback
+The local state dialect keeps the YSS v2 envelope, with CS2 chunk v4, SH2 chunk v5, SCSP chunk v6 and
+OTHR chunk v2. SCSP v6 starts with a 32-bit execution-mode identity: 2 means
+asynchronous new SCSP, 3 means synchronous new SCSP. The other flags/old backend
+and opposite execution mode are rejected by whole-state preflight before CPU/RAM
+restore, and again by the SCSP loader before Musashi restore. SCSP v6 retains
+the DSP delayed read/write, multiply and shift pipeline added in v5.
+Experimental v5 development states had no mode identity and are deliberately
+incompatible; make fresh saves with the current core and selected mode.
+Musashi host callback
 and cycle-table pointers are retained from the live core, never serialized.
 
 Additional ABI: `saturn_boot_error()` gives the last initialization error;
@@ -37,6 +42,16 @@ saturn_audio_fingerprint()`, `saturn_audio_samples()` and
 count and nonzero individual-channel sample count. Reset/read between frames
 while no audio callback is running. Diagnostics remain disabled until explicitly
 reset and are disabled again by `retro_init`; ordinary sessions do not hash PCM.
+
+Optional QA builds: `-PsaturnScspDiagnostics=true` compiles bounded worker
+phase/counter logging under the `SaturnSCSPQA` logcat tag. It activates only
+after the audio fingerprint reset and logs at state operations and the first
+24 emulated frames after each reset. Omit the property to compile out the
+worker telemetry. Production uses the synchronous new-SCSP path so sound CPU
+and sample generation follow the emulation thread's saved fractional timeline.
+`-PsaturnSynchronousScsp=false` enables the legacy asynchronous path for QA
+comparisons. Compare fresh saves made by the selected mode; cross-mode state
+files are rejected rather than silently normalized.
 
 `tests/api_contract.c` is an Android native smoke test (link with libdl).
 Pass the built core's path as its sole argument. It checks pre-frame state
