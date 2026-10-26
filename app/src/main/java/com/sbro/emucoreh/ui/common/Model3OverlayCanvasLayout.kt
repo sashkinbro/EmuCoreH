@@ -50,17 +50,20 @@ internal fun buildModel3OverlayCanvasLayout(
     val factor = fit(gap)
     val d = diameter * factor
     val step = d + gap
+    val isLandscape = w >= h
+    val dpadScale = requested * factor
+    val dpad = overlayDpadCrossGeometry((if (isLandscape) 130f else 150f) * dpadScale, isLandscape)
     val systemHeight = .8f * d
     val systemTop = top + h - systemHeight
     val buttonBottom = systemTop - gap
-    val crossTop = buttonBottom - (3f * d + 2f * gap)
+    val crossTop = buttonBottom - dpad.extent
     val faceLeft = left + w - (4f * d + 3f * gap)
     val faceTop = buttonBottom - (2f * d + gap)
     val slots = linkedMapOf(
-        "dpad_up" to (left + step to crossTop),
-        "dpad_left" to (left to crossTop + step),
-        "dpad_right" to (left + 2f * step to crossTop + step),
-        "dpad_down" to (left + step to crossTop + 2f * step)
+        "dpad_up" to (left + dpad.centerOffset to crossTop),
+        "dpad_left" to (left to crossTop + dpad.centerOffset),
+        "dpad_right" to (left + dpad.step to crossTop + dpad.centerOffset),
+        "dpad_down" to (left + dpad.centerOffset to crossTop + dpad.step)
     )
     listOf("l1", "y", "r1", "l2", "x", "a", "b", "r2").forEachIndexed { index, id ->
         slots[id] = faceLeft + index % 4 * step to faceTop + index / 4 * step
@@ -73,21 +76,38 @@ internal fun buildModel3OverlayCanvasLayout(
     val buttons = slots.map { (id, slot) ->
         val layout = control(id)
         val system = id in systemIds
-        val buttonWidth = (button * factor * buttonScale(id) * widthScale(id) * if (system) 1.75f else 1f).coerceAtMost(w)
-        val buttonHeight = (button * factor * buttonScale(id) * if (system) .8f else 1f).coerceAtMost(h)
+        val isDpad = id.startsWith("dpad_")
+        val baseButton = if (isDpad) dpad.tile / factor else button
+        val buttonWidth = (baseButton * factor * buttonScale(id) * widthScale(id) * if (system) 1.75f else 1f).coerceAtMost(w)
+        val buttonHeight = (baseButton * factor * buttonScale(id) * if (system) .8f else 1f).coerceAtMost(h)
         val group = when {
             system -> adjustment(centerOffset, AppPreferences.DEFAULT_CENTER_OFFSET_X, AppPreferences.DEFAULT_CENTER_OFFSET_Y)
-            id.startsWith("dpad_") -> adjustment(dpadOffset, AppPreferences.DEFAULT_DPAD_OFFSET_X, AppPreferences.DEFAULT_DPAD_OFFSET_Y)
+            isDpad -> adjustment(dpadOffset, AppPreferences.DEFAULT_DPAD_OFFSET_X, AppPreferences.DEFAULT_DPAD_OFFSET_Y)
             else -> adjustment(actionOffset, AppPreferences.DEFAULT_ACTION_OFFSET_X, AppPreferences.DEFAULT_ACTION_OFFSET_Y)
         }
-        val baseX = (slot.first + ((if (system) systemWidth else d) - buttonWidth) / 2f + group.first).coerceIn(left, left + w - buttonWidth)
-        val baseY = (slot.second + ((if (system) systemHeight else d) - buttonHeight) / 2f + group.second).coerceIn(top, top + h - buttonHeight)
+        val slotWidth = when {
+            system -> systemWidth
+            isDpad -> dpad.tile
+            else -> d
+        }
+        val slotHeight = when {
+            system -> systemHeight
+            isDpad -> dpad.tile
+            else -> d
+        }
+        val baseX = (slot.first + (slotWidth - buttonWidth) / 2f + group.first).coerceIn(left, left + w - buttonWidth)
+        val baseY = (slot.second + (slotHeight - buttonHeight) / 2f + group.second).coerceIn(top, top + h - buttonHeight)
         val label = SegaTouchLayouts.label(platform, id)
+        val shape = when {
+            system -> RoundedCornerShape(10.dp)
+            isDpad -> RoundedCornerShape(8.dp)
+            else -> CircleShape
+        }
         OverlayCanvasButtonSpec(id, requireNotNull(overlayDrawableForControl(id)), buttonWidth.dp, buttonHeight.dp,
             baseX.dp, baseY.dp,
             (baseX + pixels(layout.offset.first)).coerceIn(left, left + w - buttonWidth).dp,
             (baseY + pixels(layout.offset.second)).coerceIn(top, top + h - buttonHeight).dp,
-            if (system) RoundedCornerShape(10.dp) else CircleShape, layout.opacity, layout.visible,
+            shape, layout.opacity, layout.visible,
             label.takeUnless { it in setOf("A", "B", "X", "Y") })
     }.filter { preview || it.visible }
     fun stick(id: String, size: Float, panel: Float, onRight: Boolean, offset: Pair<Float, Float>, dx: Float, dy: Float): OverlayCanvasStickSpec {

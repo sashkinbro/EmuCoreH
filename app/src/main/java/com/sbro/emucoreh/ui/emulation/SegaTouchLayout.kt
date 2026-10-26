@@ -1,6 +1,7 @@
 package com.sbro.emucoreh.ui.emulation
 
 import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.ui.common.overlayDpadCrossGeometry
 
 internal data class SegaTouchButtonBounds(
     val keyCode: Int, val x: Float, val y: Float, val width: Float, val height: Float
@@ -57,9 +58,10 @@ private fun segaConsoleTouchLayout(
     val six = platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X, EmulationPlatform.SATURN)
     val systems = if (platform.isSaturn) listOf(108) else if (six) listOf(109, 108) else if (platform == EmulationPlatform.SG_1000) emptyList() else listOf(108)
     val diameter = minOf(64f * scale.coerceIn(.5f, 1.5f), width / (if (six) 5.7f else 4.6f), height / 3.9f)
-    val step = diameter * .72f
-    val arrow = diameter * .7f
-    val crossSize = 2f * step + arrow
+    val isLandscape = width >= height
+    val dpadScale = diameter / 64f
+    val dpad = overlayDpadCrossGeometry((if (isLandscape) 130f else 150f) * dpadScale, isLandscape)
+    val crossSize = dpad.extent
     val faceWidth = diameter * (if (six) 3.2f else 2.1f)
     val faceLeft = width - faceWidth
     val systemHeight = diameter * .65f
@@ -74,10 +76,10 @@ private fun segaConsoleTouchLayout(
         fun button(key: Int, x: Float, y: Float, size: Float = diameter) =
             add(SegaTouchButtonBounds(key, x, y, size, size))
         val crossTop = bottom - crossSize
-        button(19, step, crossTop, arrow)
-        button(21, 0f, crossTop + step, arrow)
-        button(22, 2f * step, crossTop + step, arrow)
-        button(20, step, crossTop + 2f * step, arrow)
+        button(19, dpad.centerOffset, crossTop, dpad.tile)
+        button(21, 0f, crossTop + dpad.centerOffset, dpad.tile)
+        button(22, dpad.step, crossTop + dpad.centerOffset, dpad.tile)
+        button(20, dpad.centerOffset, crossTop + dpad.step, dpad.tile)
         val faces = if (six) listOf(102, 100, 103, 99, 96, 97) else listOf(96, 97)
         faces.forEachIndexed { index, key ->
             val column = index % (if (six) 3 else 2)

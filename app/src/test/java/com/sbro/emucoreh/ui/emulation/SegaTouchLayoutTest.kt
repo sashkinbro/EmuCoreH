@@ -1,11 +1,12 @@
 package com.sbro.emucoreh.ui.emulation
 
 import com.sbro.emucoreh.core.EmulationPlatform
+import com.sbro.emucoreh.ui.common.overlayDpadCrossGeometry
 import org.junit.Assert.*
 import org.junit.Test
 
 class SegaTouchLayoutTest {
-    @Test fun consoleDefaultsUseCompactCrossAndRaisedSlantedSixButtonRows() {
+    @Test fun consoleDefaultsUseDreamcastStyleCrossAndRaisedSlantedSixButtonRows() {
         for (platform in listOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X)) {
             val buttons = segaTouchLayout(platform, 800f, 400f, 1f).associateBy { it.keyCode }
             val a = buttons.getValue(99)
@@ -15,8 +16,19 @@ class SegaTouchLayoutTest {
             assertTrue("ABC rises to the right", a.y > b.y && b.y > c.y)
             assertTrue("XYZ rises to the right", buttons.getValue(102).y > buttons.getValue(100).y && buttons.getValue(100).y > buttons.getValue(103).y)
             assertTrue("Face row is raised", a.y + a.height < 400f - a.height * .25f)
-            val cross = buttons.values.filter { it.keyCode in setOf(19, 20, 21, 22) }
-            assertTrue("Cross stays compact", cross.maxOf { it.x + it.width } - cross.minOf { it.x } <= a.width * 2.2f)
+        }
+    }
+
+    @Test fun everySegaPlatformUsesTheDreamcastDpadCross() {
+        for (platform in EmulationPlatform.entries.filter { it.usesPlatformTouchLayouts && !it.isModel3 }) {
+            for ((width, height) in listOf(800f to 400f, 400f to 800f)) {
+                val isLandscape = width >= height
+                val buttons = segaTouchLayout(platform, width, height, 1f)
+                    .filter { it.keyCode in setOf(19, 20, 21, 22) }
+                val extent = buttons.maxOf { it.x + it.width } - buttons.minOf { it.x }
+                val expected = overlayDpadCrossGeometry(if (isLandscape) 130f else 150f, isLandscape).extent
+                assertEquals("$platform ${width}x$height", expected, extent, .001f)
+            }
         }
     }
 
@@ -33,9 +45,13 @@ class SegaTouchLayoutTest {
                     }
                     buttons.forEachIndexed { index, a ->
                         buttons.drop(index + 1).forEach { b ->
-                            assertFalse("$platform $width x $height overlaps ${a.keyCode}/${b.keyCode}",
-                                a.x < b.x + b.width && b.x < a.x + a.width &&
-                                    a.y < b.y + b.height && b.y < a.y + a.height)
+                            // The Dreamcast D-pad intentionally overlaps adjacent arrow
+                            // hitboxes while the visible arrow shapes stay apart.
+                            if (!(a.keyCode in setOf(19, 20, 21, 22) && b.keyCode in setOf(19, 20, 21, 22))) {
+                                assertFalse("$platform $width x $height overlaps ${a.keyCode}/${b.keyCode}",
+                                    a.x < b.x + b.width && b.x < a.x + a.width &&
+                                        a.y < b.y + b.height && b.y < a.y + a.height)
+                            }
                         }
                     }
                 }

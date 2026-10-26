@@ -161,16 +161,16 @@ fun buildOverlayCanvasLayout(
     val centerH = ((if (isLandscape) 26 else 30) * responsiveScale).dp
     val wideCenterW = centerW * 1.2f
     val centerInlineGap = (if (isLandscape) OverlayCenterInlineGapLandscape else OverlayCenterInlineGapPortrait) * responsiveScale
-    val clusterGap = (if (isLandscape) OverlayClusterGapLandscape else OverlayClusterGapPortrait) * responsiveScale
     val actionGap = (if (isLandscape) OverlayActionGapLandscape else OverlayActionGapPortrait) * responsiveScale
-    val dpadButtonSize = dpadSize / 3f
+    val dpadGeometry = overlayDpadCrossGeometry(dpadSize.value, isLandscape)
+    val dpadButtonSize = dpadGeometry.tile.dp
     val actionButtonSize = actionSize / 3.1f
-    val dpadStep = overlayClusterStep(dpadButtonSize, clusterGap)
+    val dpadStep = dpadGeometry.step.dp
     val actionStep = overlayClusterStep(actionButtonSize, actionGap)
-    val dpadClusterExtent = dpadStep + dpadButtonSize
+    val dpadClusterExtent = dpadGeometry.extent.dp
     val actionClusterExtent = actionStep + actionButtonSize
     val extraDpadSize = dpadClusterExtent * (extraDpadLayout.scale / 100f)
-    val dpadCenterOffset = (dpadClusterExtent - dpadButtonSize) / 2f
+    val dpadCenterOffset = dpadGeometry.centerOffset.dp
     val actionCenterOffset = (actionClusterExtent - actionButtonSize) / 2f
     val edgePadding = (if (isLandscape) 16.dp else 10.dp) * responsiveScale
     // Shoulder buttons used to hug the cutout/system-bar edge, which made the whole

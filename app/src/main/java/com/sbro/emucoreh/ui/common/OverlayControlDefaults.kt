@@ -8,6 +8,32 @@ val OverlayClusterGapLandscape = 32.dp
 val OverlayClusterGapPortrait = 34.dp
 val OverlayActionGapLandscape = 48.dp
 val OverlayActionGapPortrait = 52.dp
+
+// Dreamcast D-pad geometry, shared by every platform's touch overlay so the
+// cross is identical everywhere. The tile is one third of the 130/150dp base
+// and the gaps are the Dreamcast cluster gaps relative to that tile.
+internal val OverlayDpadGapRatioLandscape = OverlayClusterGapLandscape.value / (130f / 3f)
+internal val OverlayDpadGapRatioPortrait = OverlayClusterGapPortrait.value / (150f / 3f)
+
+internal data class OverlayDpadCrossGeometry(
+    val tile: Float,
+    val step: Float,
+    val centerOffset: Float,
+    val extent: Float
+)
+
+internal fun overlayDpadCrossGeometry(baseSize: Float, isLandscape: Boolean): OverlayDpadCrossGeometry {
+    val gapRatio = if (isLandscape) OverlayDpadGapRatioLandscape else OverlayDpadGapRatioPortrait
+    val tile = baseSize / 3f
+    val step = tile * (1f + gapRatio)
+    return OverlayDpadCrossGeometry(
+        tile = tile,
+        step = step,
+        centerOffset = step / 2f,
+        extent = step + tile
+    )
+}
+
 val OverlayPrimaryControlGapLandscape = 24.dp
 val OverlayPrimaryControlGapPortrait = 16.dp
 val OverlayCenterInlineGapLandscape = 10.dp

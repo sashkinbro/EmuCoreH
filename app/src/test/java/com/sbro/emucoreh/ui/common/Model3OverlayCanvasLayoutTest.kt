@@ -27,7 +27,11 @@ class Model3OverlayCanvasLayoutTest {
                     rects.filter { it.id > a.id }.forEach { b ->
                         val separation = maxOf(b.x - a.x - a.w, a.x - b.x - b.w,
                             b.y - a.y - a.h, a.y - b.y - b.h)
-                        assertTrue("$w x $h scale=$scale ${a.id}/${b.id} gap=$separation", separation >= 3.99f)
+                        // The Dreamcast-style D-pad intentionally overlaps adjacent
+                        // arrow hitboxes while the visible arrow shapes stay apart.
+                        if (!(a.id.startsWith("dpad_") && b.id.startsWith("dpad_"))) {
+                            assertTrue("$w x $h scale=$scale ${a.id}/${b.id} gap=$separation", separation >= 3.99f)
+                        }
                     }
                 }
                 assertEquals(setOf("select", "start", "l3", "r3"), result.centerButtons.map { it.id }.toSet())
@@ -82,9 +86,23 @@ class Model3OverlayCanvasLayoutTest {
         val original = layout(800f, 450f, 12f)
         val moved = layout(800f, 450f, 12f, groupOffset = 9f to -9f)
         for (id in listOf("dpad_up", "a", "start", "l3", "r3")) {
-            assertEquals(3f, (moved.button(id)!!.baseX - original.button(id)!!.baseX).value, .001f)
-            assertEquals(-3f, (moved.button(id)!!.baseY - original.button(id)!!.baseY).value, .001f)
+            assertEquals("$id baseX", 3f, (moved.button(id)!!.baseX - original.button(id)!!.baseX).value, .001f)
+            assertEquals("$id baseY", -3f, (moved.button(id)!!.baseY - original.button(id)!!.baseY).value, .001f)
         }
+    }
+
+    @Test fun model3DpadMatchesDreamcastCrossGeometry() {
+        val result = layout(800f, 450f, 12f)
+        val up = requireNotNull(result.button("dpad_up"))
+        val left = requireNotNull(result.button("dpad_left"))
+        val right = requireNotNull(result.button("dpad_right"))
+        val down = requireNotNull(result.button("dpad_down"))
+        val expected = overlayDpadCrossGeometry(130f, true)
+        val horizontalExtent = (right.x + right.width) - left.x
+        val verticalExtent = (down.y + down.height) - up.y
+        assertEquals(expected.tile, up.width.value, .001f)
+        assertEquals(expected.extent, horizontalExtent.value, .001f)
+        assertEquals(expected.extent, verticalExtent.value, .001f)
     }
 
     private fun layout(w: Float, h: Float, inset: Float, scale: Float = 1f,
