@@ -168,7 +168,9 @@ public:
 		// Enabling texture upscaling or dumping also disables this mode.
 		return (tcw.PixelFmt == PixelPal4 || tcw.PixelFmt == PixelPal8)
 				&& config::TextureUpscale == 1
-				&& !config::DumpTextures
+#if !defined(LIBRETRO) || !defined(NDEBUG)
+                && !config::DumpTextures
+#endif
 				&& !custom_texture.enabled()
 				&& tsp.FilterMode <= 1
 				&& !tcw.MipMapped

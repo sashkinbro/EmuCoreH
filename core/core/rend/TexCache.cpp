@@ -548,7 +548,11 @@ bool BaseTextureCacheData::Update()
 		need_32bit_buffer = false;
 	// TODO avoid upscaling/depost. textures that change too often
 
-	bool mipmapped = IsMipmapped() && !config::DumpTextures;
+	bool mipmapped = IsMipmapped()
+#if !defined(LIBRETRO) || !defined(NDEBUG)
+        && !config::DumpTextures
+#endif
+        ;
 
 	if (texconv32 != NULL && need_32bit_buffer)
 	{
@@ -680,6 +684,7 @@ bool BaseTextureCacheData::Update()
 	protectVRam();
 
 	UploadToGPU(upscaled_w, upscaled_h, (const u8 *)temp_tex_buffer, IsMipmapped(), mipmapped);
+	#if !defined(LIBRETRO) || !defined(NDEBUG)
 	if (config::DumpTextures)
 	{
 		ComputeHash();
@@ -687,6 +692,7 @@ bool BaseTextureCacheData::Update()
 		NOTICE_LOG(RENDERER, "Dumped texture %x.png. Old hash %x", texture_hash, old_texture_hash);
 	}
 	PrintTextureName();
+	#endif
 	// Restore the original texture size if it was constrained to VRAM limits above
 	size = originalSize;
 

@@ -91,7 +91,9 @@ static void *mem_region_reserve(void *start, size_t len)
 	void *p = mmap(start, len, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
 	if (p == MAP_FAILED)
 	{
-		perror("mmap");
+#if !defined(LIBRETRO) || !defined(NDEBUG)
+        perror("mmap");
+#endif
 		return NULL;
 	}
 	else
@@ -109,7 +111,9 @@ static void *mem_region_map_file(void *file_handle, void *dest, size_t len, size
 	void *p = mmap(dest, len, PROT_READ | (readwrite ? PROT_WRITE : 0), flags, (int)(uintptr_t)file_handle, offset);
 	if (p == MAP_FAILED)
 	{
-		perror("mmap");
+#if !defined(LIBRETRO) || !defined(NDEBUG)
+        perror("mmap");
+#endif
 		return NULL;
 	}
 	else

@@ -21,8 +21,12 @@ static LogManager* s_log_manager;
 void GenericLog(LogTypes::LOG_LEVELS level, LogTypes::LOG_TYPE type, const char* file, int line,
 		const char* fmt, ...)
 {
-	va_list args;
-	va_start(args, fmt);
+#ifdef NDEBUG
+    // Only GAME_ID_LOG uses this metadata channel in production.
+    if (level != LogTypes::LNOTICE) return;
+#endif
+    va_list args;
+    va_start(args, fmt);
 	if (s_log_manager && s_log_manager->IsEnabled(type, level))
 	{
 		if (level == LogTypes::LDEBUG)

@@ -416,8 +416,13 @@ private:
 
 	void createJuiceAgent()
 	{
-		juice_set_log_level(JUICE_LOG_LEVEL_INFO);
-		juice_set_log_handler(juiceLogHandler);
+#if defined(LIBRETRO) && defined(NDEBUG)
+        juice_set_log_level(JUICE_LOG_LEVEL_NONE);
+        juice_set_log_handler(nullptr);
+#else
+        juice_set_log_level(JUICE_LOG_LEVEL_INFO);
+        juice_set_log_handler(juiceLogHandler);
+#endif
 		juice_config_t config {};
 		config.stun_server_host = "lobby.flyca.st";
 		config.stun_server_port = 25001;

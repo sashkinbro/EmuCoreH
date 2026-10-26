@@ -323,6 +323,7 @@ void CustomTexture::loadCustomTextureAsync(BaseTextureCacheData *texture_data)
 
 void CustomTexture::dumpTexture(BaseTextureCacheData* texture, int w, int h, void *src_buffer)
 {
+#if !defined(LIBRETRO) || !defined(NDEBUG)
 	if (!config::DumpTextures)
 		return;
 
@@ -461,6 +462,7 @@ void CustomTexture::dumpTexture(BaseTextureCacheData* texture, int w, int h, voi
 	stbi_write_png_to_func(savefunc, (void *)path.str().c_str(), w, h, STBI_rgb_alpha, dst_buffer, 0);
 
 	free(dst_buffer);
+#endif
 }
 
 void CustomTexture::prepareSource(BaseCustomTextureSource* source)

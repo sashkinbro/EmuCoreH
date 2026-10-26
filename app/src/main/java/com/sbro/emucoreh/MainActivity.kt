@@ -249,7 +249,7 @@ open class MainActivity : ComponentActivity() {
                     releaseReviewAttemptAndRetryWhenResumed(preferences, claimedAtMs)
                 }
                 PlayInAppReviewManager.Result.RETRYABLE_FAILURE -> {
-                    if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "In-app review failed; retry remains available after cooldown")
+                    if (BuildConfig.DEBUG) Log.w(TAG, "In-app review failed; retry remains available after cooldown")
                 }
             }
         }
