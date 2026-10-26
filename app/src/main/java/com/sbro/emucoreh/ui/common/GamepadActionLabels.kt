@@ -75,9 +75,9 @@ fun gamepadActionLabel(actionId: String, arcade: Boolean = false, platform: Emul
     if (platform.isModel3) return when (actionId) {
         "cross" -> "A"; "circle" -> "B"; "square" -> "X"; "triangle" -> "Y"
         "l1" -> "L"; "r1" -> "R"
-        "select" -> stringResource(R.string.settings_gamepad_action_coin)
-        "l3" -> stringResource(R.string.settings_gamepad_action_service)
-        "r3" -> stringResource(R.string.settings_gamepad_action_test)
+        "select" -> "Coin"
+        "l3" -> "Service"
+        "r3" -> "Test"
         else -> stringResource(gamepadActionLabelRes(actionId))
     }
     if (platform.isSega || platform.isSaturn) {
@@ -91,9 +91,8 @@ fun gamepadActionLabel(actionId: String, arcade: Boolean = false, platform: Emul
             "r1" -> "Z"
             "l2" -> "L"
             "r2" -> "R"
-            "select" -> stringResource(R.string.sega_mode)
-            "start" -> if (platform == EmulationPlatform.MASTER_SYSTEM || platform == EmulationPlatform.SG_1000)
-                stringResource(R.string.sega_pause) else stringResource(R.string.settings_gamepad_action_start)
+            "select" -> "Mode"
+            "start" -> if (platform == EmulationPlatform.MASTER_SYSTEM || platform == EmulationPlatform.SG_1000) "Pause" else "Start"
             else -> stringResource(gamepadActionLabelRes(actionId))
         }
     }

@@ -2299,8 +2299,6 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="sega_fm_audio">صدای FM مستر سیستم</string>
     <string name="sega_crop_border">برش حاشیهٔ عمودی</string>
     <string name="sega_gg_resolution">وضوح کامل SMS در گیم گیر</string>
-    <string name="sega_pause">مکث</string>
-    <string name="sega_mode">حالت</string>
     <string name="home_platform_genesis">Mega Drive / Genesis</string>
     <string name="home_platform_sega_cd">Sega CD / Mega-CD</string>
     <string name="home_platform_sega_32x">Sega 32X</string>

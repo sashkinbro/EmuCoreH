@@ -2283,8 +2283,6 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="sega_fm_audio">마스터 시스템 FM 오디오</string>
     <string name="sega_crop_border">세로 테두리 자르기</string>
     <string name="sega_gg_resolution">게임 기어에서 전체 SMS 해상도 사용</string>
-    <string name="sega_pause">일시 정지</string>
-    <string name="sega_mode">모드</string>
     <string name="home_platform_genesis">Mega Drive / Genesis</string>
     <string name="home_platform_sega_cd">Sega CD / Mega-CD</string>
     <string name="home_platform_sega_32x">Sega 32X</string>

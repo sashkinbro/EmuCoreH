@@ -2471,11 +2471,10 @@ private fun OnScreenControls(
     val hapticView = LocalView.current
     val currentOnPadInput by rememberUpdatedState(onPadInput)
     val currentOnLightGunStickAim by rememberUpdatedState(onLightGunStickAim)
-    val model3ServiceLabel = stringResource(R.string.settings_gamepad_action_service)
-    val model3TestLabel = stringResource(R.string.settings_gamepad_action_test)
-    val segaModeLabel = stringResource(if (platform.isModel3) R.string.settings_gamepad_action_coin else R.string.sega_mode)
-    val segaStartLabel = stringResource(if (platform == EmulationPlatform.MASTER_SYSTEM)
-        R.string.sega_pause else R.string.settings_gamepad_action_start)
+    val model3ServiceLabel = "Service"
+    val model3TestLabel = "Test"
+    val segaModeLabel = if (platform.isModel3) "Coin" else "Mode"
+    val segaStartLabel = if (platform == EmulationPlatform.MASTER_SYSTEM) "Pause" else "Start"
     fun segaLabel(id: String): String? = when (SegaTouchLayouts.canonicalId(id)) {
         "select" -> segaModeLabel
         "start" -> segaStartLabel

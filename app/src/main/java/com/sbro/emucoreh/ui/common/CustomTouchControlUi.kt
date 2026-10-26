@@ -124,7 +124,7 @@ fun CustomControlVisual(
                 if (control.content != CustomTouchControlContent.NONE) {
                     Text(
                         text = if (control.content == CustomTouchControlContent.SYMBOL) {
-                            labelOverride?.let { localizedOverlayLabel(it) } ?: CustomTouchControl.defaultLabelFor(control.actionId)
+                            labelOverride ?: CustomTouchControl.defaultLabelFor(control.actionId)
                         } else {
                             control.label
                         },
@@ -195,7 +195,7 @@ fun ActionSelector(
                         SegaTouchLayouts.canonicalId(selectedActionId) == SegaTouchLayouts.canonicalId(action)),
                     onClick = { onSelect(action) },
                     label = { Text(
-                        SegaTouchLayouts.label(platform, action)?.let { localizedOverlayLabel(it) } ?: actionLabel(action),
+                        SegaTouchLayouts.label(platform, action) ?: actionLabel(action),
                         maxLines = 1, softWrap = false
                     ) },
                     leadingIcon = if (selectedActionId == action) {

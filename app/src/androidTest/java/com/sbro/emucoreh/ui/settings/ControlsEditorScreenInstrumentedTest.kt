@@ -67,7 +67,7 @@ class ControlsEditorScreenInstrumentedTest {
                         androidx.compose.ui.platform.LocalContext provides localized,
                         androidx.compose.ui.platform.LocalConfiguration provides config
                     ) {
-                        androidx.compose.material3.Text(com.sbro.emucoreh.ui.common.localizedOverlayLabel("Mode"),
+                        androidx.compose.material3.Text(SegaTouchLayouts.label(EmulationPlatform.GENESIS, "select")!!,
                             modifier = androidx.compose.ui.Modifier.testTag("mode_$language"))
                     }
                 }

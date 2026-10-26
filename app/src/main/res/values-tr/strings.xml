@@ -2284,8 +2284,6 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="sega_fm_audio">Master System FM sesi</string>
     <string name="sega_crop_border">Dikey kenarlığı kırp</string>
     <string name="sega_gg_resolution">Game Gear tam SMS çözünürlüğü</string>
-    <string name="sega_pause">Duraklat</string>
-    <string name="sega_mode">Mod</string>
     <string name="home_platform_genesis">Mega Drive / Genesis</string>
     <string name="home_platform_sega_cd">Sega CD / Mega-CD</string>
     <string name="home_platform_sega_32x">Sega 32X</string>

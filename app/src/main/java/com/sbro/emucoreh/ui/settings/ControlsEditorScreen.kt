@@ -112,7 +112,6 @@ import com.sbro.emucoreh.ui.common.VectorOverlayButton
 import com.sbro.emucoreh.core.EmulationPlatform
 import com.sbro.emucoreh.data.SegaTouchLayouts
 import com.sbro.emucoreh.data.segaCustomControlBounds
-import com.sbro.emucoreh.ui.common.localizedOverlayLabel
 import com.sbro.emucoreh.ui.common.actionLabel
 import com.sbro.emucoreh.ui.common.actionDrawableRes
 import com.sbro.emucoreh.ui.common.buildOverlayCanvasLayout
@@ -1536,8 +1535,8 @@ private fun ComboActionDialog(
                 }
 
                 ComboActionPreview(
-                    primaryLabel = SegaTouchLayouts.label(platform, actionId)?.let { localizedOverlayLabel(it) } ?: actionLabel(actionId),
-                    secondaryLabel = secondaryActionId?.let { id -> SegaTouchLayouts.label(platform, id)?.let { localizedOverlayLabel(it) } ?: actionLabel(id) }
+                    primaryLabel = SegaTouchLayouts.label(platform, actionId) ?: actionLabel(actionId),
+                    secondaryLabel = secondaryActionId?.let { id -> SegaTouchLayouts.label(platform, id) ?: actionLabel(id) }
                 )
 
                 ComboActionSection(
@@ -1558,7 +1557,7 @@ private fun ComboActionDialog(
                         )
                     } else {
                         ComboActionBadge(
-                            label = SegaTouchLayouts.label(platform, actionId)?.let { localizedOverlayLabel(it) } ?: actionLabel(actionId),
+                            label = SegaTouchLayouts.label(platform, actionId) ?: actionLabel(actionId),
                             highlighted = true
                         )
                     }
@@ -1698,7 +1697,7 @@ private fun ComboActionSection(
 
 @Composable
 private fun controlTitle(controlId: String, platform: EmulationPlatform = EmulationPlatform.DREAMCAST): String {
-    if (platform.usesPlatformTouchLayouts) SegaTouchLayouts.label(platform, controlId)?.let { return localizedOverlayLabel(it) }
+    if (platform.usesPlatformTouchLayouts) SegaTouchLayouts.label(platform, controlId)?.let { return it }
     return when (controlId) {
     "l2" -> "L2"
     "l1" -> "L"

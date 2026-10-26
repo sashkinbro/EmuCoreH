@@ -344,7 +344,7 @@ fun VectorOverlayButton(
                     .border(minOf(width.value, height.value).dp * 0.02f, Color(0xFFEEEEEE), styleShape))
             }
             Text(
-                text = localizedOverlayLabel(labelOverride),
+                text = labelOverride,
                 color = if (visualStyle == TouchControlVisualStyle.CLASSIC) Color(0xFFEEEEEE)
                     else MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,

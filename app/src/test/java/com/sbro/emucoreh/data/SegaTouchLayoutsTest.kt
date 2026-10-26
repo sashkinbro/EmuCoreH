@@ -24,6 +24,7 @@ class SegaTouchLayoutsTest {
         assertEquals("1", SegaTouchLayouts.label(EmulationPlatform.MASTER_SYSTEM, "a"))
         assertEquals("Pause", SegaTouchLayouts.label(EmulationPlatform.MASTER_SYSTEM, "start"))
         assertEquals("Start", SegaTouchLayouts.label(EmulationPlatform.GAME_GEAR, "start"))
+        assertEquals("Mode", SegaTouchLayouts.label(EmulationPlatform.GENESIS, "select"))
         assertNull(SegaTouchLayouts.keyCode(EmulationPlatform.SG_1000, "start"))
         assertNull(SegaTouchLayouts.keyCode(EmulationPlatform.GAME_GEAR, "l1"))
         assertEquals(96, SegaTouchLayouts.keyCode(EmulationPlatform.GAME_GEAR, "cross"))
