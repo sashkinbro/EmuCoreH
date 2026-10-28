@@ -4,6 +4,7 @@ package com.sbro.emucoreh.core
 
 import android.content.Context
 import android.graphics.Rect
+import android.media.AudioManager
 import android.util.Log
 import android.view.Surface
 import com.sbro.emucoreh.data.RetroArchShaderEffects
@@ -1018,6 +1019,9 @@ internal object CoreRuntime {
         var metricsMaxIntervalNanos = 0L
         var metricsMaxCoreNanos = 0L
         var resetMetrics = true
+        val audioManager = context?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        var nextVolumeCheckNanos = 0L
+        var systemAudioMuted: Boolean? = null
         try {
             while (running) {
                 // Owns the thread-affine EGL context, so any queued save/load
@@ -1049,6 +1053,17 @@ internal object CoreRuntime {
                     lastRunRate = 0.0
                     Thread.sleep(8)
                     continue
+                }
+                val volumeCheckTime = System.nanoTime()
+                if (volumeCheckTime >= nextVolumeCheckNanos) {
+                    val muted = audioManager?.let {
+                        runCatching { it.isStreamMute(AudioManager.STREAM_MUSIC) || it.getStreamVolume(AudioManager.STREAM_MUSIC) == 0 }.getOrDefault(false)
+                    } ?: false
+                    if (muted != systemAudioMuted) {
+                        output.setSystemMuted(muted)
+                        systemAudioMuted = muted
+                    }
+                    nextVolumeCheckNanos = volumeCheckTime + 250_000_000L
                 }
                 // The frame limiter is mandatory: every game runs at the rate
                 // reported by the core (59.94/50 Hz NTSC/PAL), and fast forward

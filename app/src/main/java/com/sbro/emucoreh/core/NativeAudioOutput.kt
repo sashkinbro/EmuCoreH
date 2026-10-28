@@ -61,6 +61,8 @@ internal class NativeAudioOutput {
     @Synchronized fun stats(): LongArray? =
         if (handle == 0L) null else bridge.audioOutputStats(handle)
 
+    @Synchronized fun setSystemMuted(muted: Boolean) = bridge.setSystemAudioMuted(muted)
+
     @Synchronized fun bufferedFrames(): Int {
         if (handle == 0L) return -1
         val frames = bridge.audioOutputBufferedFrames(handle)

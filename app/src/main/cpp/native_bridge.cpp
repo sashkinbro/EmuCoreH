@@ -226,6 +226,7 @@ struct FrontendState {
     // the core's audio push blocks, exactly like standalone Flycast. Zero
     // disables the limiter (output closed, paused or unavailable).
     std::atomic<int32_t> audio_pacing_high_water{0};
+    std::atomic<bool> system_audio_muted{false};
     std::atomic<int64_t> audio_source_frames{0};
     std::atomic<int64_t> video_frames{0};
 
@@ -754,7 +755,10 @@ void BlockOnAudioRingHighWater() {
 void RetroAudioSampleBatch(const int16_t* data, size_t frames) {
     if (data == nullptr || frames == 0) return;
     if (g_frontend.time_control.load() == 2) return;
-    BlockOnAudioRingHighWater();
+    // Some Android devices advance a muted output stream slower than real
+    // time. Keep feeding it (e.g. for recording), but never let it throttle
+    // emulation while the system media stream is silent.
+    if (!g_frontend.system_audio_muted.load()) BlockOnAudioRingHighWater();
     std::lock_guard<std::mutex> lock(g_frontend.audio_mutex);
     AudioRingEnsureCapacity(frames);
     const size_t capacity = kAudioRingCapacityFrames;
@@ -2458,6 +2462,19 @@ Java_com_sbro_emucoreh_core_NativeCoreBridge_flushAudioOutput(JNIEnv*, jobject, 
         g_frontend.audio_declick_frames.store(0);
     }
     return 0;
+}
+
+JNIEXPORT void JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_setSystemAudioMuted(JNIEnv*, jobject, jboolean muted) {
+    const bool value = muted == JNI_TRUE;
+    std::lock_guard<std::mutex> lock(g_frontend.audio_mutex);
+    if (g_frontend.system_audio_muted.exchange(value) == value) return;
+    // Do not replay accumulated audio when the device is unmuted. Reset the
+    // callback's resampler at the same time so it starts from fresh samples.
+    g_frontend.audio_read_frame = 0;
+    g_frontend.audio_write_frame = 0;
+    ++g_frontend.audio_generation;
+    g_frontend.audio_declick_frames.store(0);
 }
 
 JNIEXPORT jint JNICALL

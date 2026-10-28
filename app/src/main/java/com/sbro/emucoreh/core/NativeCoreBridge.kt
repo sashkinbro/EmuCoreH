@@ -199,6 +199,8 @@ class NativeCoreBridge {
     /** Linear gain in 0..1 applied on the output callback thread. */
     external fun setAudioGain(gain: Float)
     external fun setAudioPlaybackRate(rate: Double)
+    /** Keep the console paced by its frame clock while system audio is muted. */
+    external fun setSystemAudioMuted(muted: Boolean)
     /** Frames queued for the output; negative when the stream needs recovery. */
     external fun audioOutputBufferedFrames(handle: Long): Int
     /** Queue level the frame loop keeps the output at for audio-synced pacing. */
