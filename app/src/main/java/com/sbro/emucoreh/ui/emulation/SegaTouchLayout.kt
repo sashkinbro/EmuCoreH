@@ -71,7 +71,7 @@ private fun segaConsoleTouchLayout(
     val systemLeft = (width - systemRowWidth) / 2f
     val reserveRow = systems.isNotEmpty() && (systemLeft < crossSize + diameter * .1f || systemLeft + systemRowWidth > faceLeft - diameter * .1f)
     val bottom = height - if (reserveRow) systemHeight + systemGap else 0f
-    val faceBottom = bottom - diameter * .35f
+    val faceBottom = bottom - diameter * (.35f + .15625f)
     return buildList {
         fun button(key: Int, x: Float, y: Float, size: Float = diameter) =
             add(SegaTouchButtonBounds(key, x, y, size, size))

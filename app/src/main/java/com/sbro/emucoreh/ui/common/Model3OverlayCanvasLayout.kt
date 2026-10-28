@@ -58,7 +58,10 @@ internal fun buildModel3OverlayCanvasLayout(
     val buttonBottom = systemTop - gap
     val crossTop = buttonBottom - dpad.extent
     val faceLeft = left + w - (4f * d + 3f * gap)
-    val faceTop = buttonBottom - (2f * d + gap)
+    val rightStickSize = (rightSize * factor).coerceAtMost(h)
+    val rightStickBottom = maxOf(top, crossTop - gap - rightStickSize) + rightStickSize
+    val faceTop = maxOf(buttonBottom - (2f * d + gap) - 10f * requested * factor,
+        rightStickBottom + gap)
     val slots = linkedMapOf(
         "dpad_up" to (left + dpad.centerOffset to crossTop),
         "dpad_left" to (left to crossTop + dpad.centerOffset),
