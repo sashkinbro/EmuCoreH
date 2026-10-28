@@ -389,6 +389,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     private var currentTouchControlsLayoutProfile: TouchControlsLayoutProfile? = null
     private val segaTouchPreferences = SegaTouchLayoutPreferences(application)
     private var currentTouchPlatform = EmulationPlatform.DREAMCAST
+    @Volatile private var currentTouchPlatformIdentity: String? = null
     private var currentGlobalSegaTouchProfile: SegaTouchLayoutProfile? = null
     private var segaTouchProfileJob: Job? = null
     private var currentCustomTouchControlsProfile: CustomTouchControlLibrary? = null
@@ -1052,6 +1053,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
         currentGamePath = if (bootToBios) null else path?.takeIf { it.isNotBlank() }
+        currentTouchPlatformIdentity = null
         // Read the per-game touch profile synchronously so the very first rendered frame
         // already uses it; otherwise the global layout flashes while the game is starting.
         val launchProfile = if (!bootToBios) {
@@ -1112,6 +1114,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
 
                 configureTouchPlatform(if (bootToBios || path.isNullOrBlank()) EmulationPlatform.DREAMCAST
                     else com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path))
+                currentTouchPlatformIdentity = currentGamePath
                 val config = loadLaunchConfig()
                 if (currentTouchPlatform == EmulationPlatform.SEGA_CD ||
                     currentTouchPlatform == EmulationPlatform.SEGA_32X || currentTouchPlatform.isSaturn) {
@@ -3250,10 +3253,11 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    @Synchronized
     private fun refreshSaveStateMetadata() {
         val path = currentGamePath
+        savePreviewJob?.cancel()
         if (path.isNullOrBlank()) {
-            savePreviewJob?.cancel()
             _uiState.value = _uiState.value.copy(
                 currentSlotLastModified = 0L,
                 currentSlotPreviewPath = null,
@@ -3263,20 +3267,12 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
 
-        val currentSlotFile = resolveSaveStateFile(path, _uiState.value.currentSlot)
-            ?.takeIf { it.exists() }
-        val autoSaveFile = resolveSaveStateFile(path, AUTO_SAVE_SLOT)
-            ?.takeIf { it.exists() }
-        _uiState.value = _uiState.value.copy(
-            currentSlotLastModified = currentSlotFile?.lastModified() ?: 0L,
-            autoSaveLastModified = autoSaveFile?.lastModified() ?: 0L
-        )
-        refreshSaveStatePreviews(currentSlotFile, autoSaveFile)
-    }
-
-    private fun refreshSaveStatePreviews(currentSlotFile: File?, autoSaveFile: File?) {
-        savePreviewJob?.cancel()
+        val slot = _uiState.value.currentSlot
+        val platform = if (currentTouchPlatformIdentity == path) currentTouchPlatform else null
         savePreviewJob = viewModelScope.launch(Dispatchers.IO) {
+            val currentSlotFile = resolveSaveStateFile(path, slot, platform)?.takeIf { it.exists() }
+            val autoSaveFile = resolveSaveStateFile(path, AUTO_SAVE_SLOT, platform)?.takeIf { it.exists() }
+            ensureActive()
             val currentPreview = currentSlotFile?.let { file ->
                 runCatching { saveStateRepository.getPreviewImagePath(file) }.getOrNull()
             }
@@ -3284,15 +3280,19 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             val autoSavePreview = autoSaveFile?.let { file ->
                 runCatching { saveStateRepository.getPreviewImagePath(file) }.getOrNull()
             }
-            ensureActive()
-            _uiState.value = _uiState.value.copy(
-                currentSlotPreviewPath = currentPreview,
-                autoSavePreviewPath = autoSavePreview,
-                // A slot preview file keeps its path across overwrites. Bump
-                // this token so the image composable reloads the new bytes
-                // instead of reusing the bitmap cached under the old path.
-                savePreviewVersion = savePreviewVersion.incrementAndGet()
-            )
+            val currentModified = currentSlotFile?.lastModified() ?: 0L
+            val autoSaveModified = autoSaveFile?.lastModified() ?: 0L
+            withContext(Dispatchers.Main.immediate) {
+                if (currentGamePath != path || _uiState.value.currentSlot != slot) return@withContext
+                _uiState.value = _uiState.value.copy(
+                    currentSlotLastModified = currentModified,
+                    autoSaveLastModified = autoSaveModified,
+                    currentSlotPreviewPath = currentPreview,
+                    autoSavePreviewPath = autoSavePreview,
+                    // A slot preview file keeps its path across overwrites.
+                    savePreviewVersion = savePreviewVersion.incrementAndGet()
+                )
+            }
         }
     }
 
@@ -3318,15 +3318,15 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         return (resolveSaveStateFile(gamePath, slot) ?: fallbackFile).exists()
     }
 
-    private fun resolveSaveStateFile(gamePath: String, slot: Int): File? {
+    private fun resolveSaveStateFile(gamePath: String, slot: Int, platform: EmulationPlatform? = null): File? {
         // The identity path is what the native writer actually uses; fall back
         // to the caller's path and finally to a serial-named scan.
-        val identityFile = runCatching { NativeApp.getCurrentSaveStatePath(slot) }
+        val identityFile = runCatching { NativeApp.getCurrentSaveStatePath(slot, platform?.name) }
             .getOrNull()
             ?.takeIf { it.isNotBlank() }
             ?.let(::File)
         if (identityFile?.exists() == true) return identityFile
-        val nativeFile = runCatching { NativeApp.getSaveStatePathForFile(gamePath, slot) }
+        val nativeFile = runCatching { NativeApp.getSaveStatePathForFile(gamePath, slot, platform?.name) }
             .getOrNull()
             ?.takeIf { it.isNotBlank() }
             ?.let(::File)

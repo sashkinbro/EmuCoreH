@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-internal fun rememberGamePlatform(path: String?, stored: String? = null): EmulationPlatform {
+internal fun rememberResolvedGamePlatform(path: String?, stored: String? = null): EmulationPlatform? {
     val context = LocalContext.current
     val known = stored?.let { runCatching { EmulationPlatform.valueOf(it) }.getOrNull() }
     var platform by remember(path, stored) { mutableStateOf(known) }
@@ -37,9 +37,12 @@ internal fun rememberGamePlatform(path: String?, stored: String? = null): Emulat
         platform = known ?: path?.let { withContext(Dispatchers.IO) { SegaPlatformDetector.detect(context, it) } }
             ?: EmulationPlatform.DREAMCAST
     }
-    // Fail closed while header detection is in progress: don't flash unsupported Flycast rows.
-    return platform ?: EmulationPlatform.GENESIS
+    return platform
 }
+
+@Composable
+internal fun rememberGamePlatform(path: String?, stored: String? = null): EmulationPlatform =
+    rememberResolvedGamePlatform(path, stored) ?: EmulationPlatform.GENESIS
 
 @Composable
 internal fun platformLabel(platform: EmulationPlatform): String = stringResource(when (platform) {

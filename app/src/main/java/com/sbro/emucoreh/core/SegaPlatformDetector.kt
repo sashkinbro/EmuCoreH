@@ -32,7 +32,9 @@ object SegaPlatformDetector {
         if (ext in setOf("gdi", "cdi", "7z", "dat", "lst")) return@runCatching EmulationPlatform.DREAMCAST
         if (ext == "cue" || ext == "m3u") {
             if (file.length() > MAX_DESCRIPTOR_BYTES) return@runCatching EmulationPlatform.DREAMCAST
-            val references = descriptorReferences(file.name, file.readText())
+            val text = file.readText()
+            if (ext == "cue" && isGdRomCue(text)) return@runCatching EmulationPlatform.DREAMCAST
+            val references = descriptorReferences(file.name, text)
             for (reference in references) {
                 val target = safeLocalReference(file, reference) ?: continue
                 val detected = detectFile(target, visited, depth + 1)
@@ -90,7 +92,9 @@ object SegaPlatformDetector {
                 "cue", "m3u" -> {
                     val bytes = stream.readPrefix(MAX_DESCRIPTOR_BYTES + 1)
                     if (bytes.size > MAX_DESCRIPTOR_BYTES) return@use EmulationPlatform.DREAMCAST
-                    for (reference in descriptorReferences(name, bytes.toString(Charsets.UTF_8))) {
+                    val text = bytes.toString(Charsets.UTF_8)
+                    if (ext == "cue" && isGdRomCue(text)) return@use EmulationPlatform.DREAMCAST
+                    for (reference in descriptorReferences(name, text)) {
                         val target = DocumentPathResolver.resolveTrackDocument(context, Uri.parse(path), reference) ?: continue
                         val detected = detectDocument(
                             context,
@@ -166,6 +170,10 @@ object SegaPlatformDetector {
             }
         }
         return candidate ?: EmulationPlatform.DREAMCAST
+    }
+
+    private fun isGdRomCue(text: String): Boolean = text.lineSequence().any {
+        it.trim().equals("REM HIGH-DENSITY AREA", ignoreCase = true)
     }
 
     internal fun descriptorReferences(name: String, text: String): List<String> =

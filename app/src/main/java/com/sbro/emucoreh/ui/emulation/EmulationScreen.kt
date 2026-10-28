@@ -435,10 +435,12 @@ fun EmulationScreen(
     )
     val gamepadActions = remember { GamepadManager.mappableButtonActions() }
     val scope = rememberCoroutineScope()
-    val platform = rememberGamePlatform(gamePath)
+    val resolvedPlatform = com.sbro.emucoreh.ui.settings.rememberResolvedGamePlatform(gamePath)
+    val platform = resolvedPlatform ?: EmulationPlatform.GENESIS
     val achievementsRepository = remember(context) { RetroAchievementsRepository.get(context) }
     var achievementUnlockBanner by remember { mutableStateOf<RetroAchievementsEvent?>(null) }
-    LaunchedEffect(platform) {
+    LaunchedEffect(resolvedPlatform) {
+        if (resolvedPlatform == null) return@LaunchedEffect
         if (platform.usesPlatformTouchLayouts) {
             achievementUnlockBanner = null
             return@LaunchedEffect
@@ -777,7 +779,7 @@ fun EmulationScreen(
     var showGamepadIndicator by remember { mutableStateOf(gamepadConnected) }
 
     val tvUiEnabled = LocalTvUiEnvironment.current.enabled
-    val shouldShowOverlay = !tvUiEnabled && uiState.controlsVisible && (
+    val shouldShowOverlay = resolvedPlatform != null && !tvUiEnabled && uiState.controlsVisible && (
         touchPadIndex != null || !gamepadConnected || !uiState.hideOverlayOnGamepad
     )
 

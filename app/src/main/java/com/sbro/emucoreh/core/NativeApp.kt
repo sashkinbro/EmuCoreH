@@ -506,6 +506,8 @@ object NativeApp {
     }
     @JvmStatic fun getCurrentSaveStatePath(slot: Int): String? =
         getSaveStatePathForFile(saveStatePathSource(), slot)
+    @JvmStatic fun getCurrentSaveStatePath(slot: Int, platformName: String?): String? =
+        getSaveStatePathForFile(saveStatePathSource(), slot, platformName)
     @JvmStatic fun getSaveStateScreenshot(path: String): ByteArray? = null
     @JvmStatic fun convertIsoToChd(inputIsoPath: String): Int = -1
 

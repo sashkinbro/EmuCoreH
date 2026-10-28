@@ -60,6 +60,19 @@ class SegaPlatformDetectorTest {
         assertEquals(EmulationPlatform.DREAMCAST, SegaPlatformDetector.detectHeader("game.cue", header(0, "SEGA SEGAKATANA")))
         assertEquals(EmulationPlatform.DREAMCAST, SegaPlatformDetector.detectHeader("game.gdi", header(0, "SEGADISCSYSTEM")))
     }
+    @Test fun segaRallyDreamcastDiscIsNotConfusedWithModel3Romset() = tempDirectory { dir ->
+        assertEquals(EmulationPlatform.DREAMCAST, SegaPlatformDetector.detectHeader("Sega Rally 2.chd", byteArrayOf()))
+        assertEquals(EmulationPlatform.DREAMCAST, SegaPlatformDetector.detectName("Sega Rally 2.gdi"))
+        val arcadeSet = File(dir, "srally2.zip").apply { writeBytes(byteArrayOf()) }
+        assertEquals(EmulationPlatform.MODEL_3, SegaPlatformDetector.detectFile(arcadeSet))
+    }
+    @Test fun gdRomCueUsesItsDiscFormatWithoutInspectingEveryTrack() = tempDirectory { dir ->
+        File(dir, "track.bin").writeBytes(header(0, "SEGADISCSYSTEM"))
+        val cue = File(dir, "rally.cue").apply {
+            writeText("REM SINGLE-DENSITY AREA\nFILE \"track.bin\" BINARY\nREM HIGH-DENSITY AREA\n")
+        }
+        assertEquals(EmulationPlatform.DREAMCAST, SegaPlatformDetector.detectFile(cue))
+    }
     @Test fun cueReadsReferencedTrackAndPlaylistReadsDisc() = tempDirectory { dir ->
         File(dir, "disc.bin").writeBytes(header(0, "SEGADISCSYSTEM"))
         val cue = File(dir, "disc.cue").apply { writeText("FILE \"disc.bin\" BINARY\n TRACK 01 MODE1/2048\n INDEX 01 00:00:00") }
