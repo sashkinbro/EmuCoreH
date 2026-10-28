@@ -105,15 +105,30 @@ fun buildOverlayCanvasLayout(
     previewMode: Boolean = false,
     platform: EmulationPlatform = EmulationPlatform.DREAMCAST
 ): OverlayCanvasLayout {
+    val referenceCenterY = if (platform.usesPlatformTouchLayouts) {
+        val reference = buildOverlayCanvasLayout(
+            canvasWidth, canvasHeight, density, scaleFactor, stickScaleFactor,
+            AppPreferences.DEFAULT_DPAD_OFFSET_X to AppPreferences.DEFAULT_DPAD_OFFSET_Y,
+            AppPreferences.DEFAULT_LSTICK_OFFSET_X to AppPreferences.DEFAULT_LSTICK_OFFSET_Y,
+            AppPreferences.DEFAULT_RSTICK_OFFSET_X to AppPreferences.DEFAULT_RSTICK_OFFSET_Y,
+            AppPreferences.DEFAULT_ACTION_OFFSET_X to AppPreferences.DEFAULT_ACTION_OFFSET_Y,
+            AppPreferences.DEFAULT_LBTN_OFFSET_X to AppPreferences.DEFAULT_LBTN_OFFSET_Y,
+            AppPreferences.DEFAULT_RBTN_OFFSET_X to AppPreferences.DEFAULT_RBTN_OFFSET_Y,
+            AppPreferences.DEFAULT_CENTER_OFFSET_X to AppPreferences.DEFAULT_CENTER_OFFSET_Y,
+            AppPreferences.defaultOverlayControlLayouts((stickScaleFactor * 100f).toInt()),
+            safeLeftInset, safeRightInset, safeTopInset, safeBottomInset, true, EmulationPlatform.DREAMCAST
+        )
+        (reference.actionButtons.minOf { it.y } + reference.actionButtons.maxOf { it.y + it.height }) / 2f
+    } else 0.dp
     if (platform.isModel3) return buildModel3OverlayCanvasLayout(
         canvasWidth, canvasHeight, density, scaleFactor, stickScaleFactor, controlLayouts,
         safeLeftInset, safeRightInset, safeTopInset, safeBottomInset,
-        dpadOffset, lstickOffset, rstickOffset, actionOffset, centerOffset, previewMode
+        dpadOffset, lstickOffset, rstickOffset, actionOffset, centerOffset, previewMode, referenceCenterY
     )
     if (platform.usesPlatformTouchLayouts) return buildSegaOverlayCanvasLayout(
         platform, canvasWidth, canvasHeight, density, scaleFactor, controlLayouts,
         safeLeftInset, safeRightInset, safeTopInset, safeBottomInset,
-        dpadOffset, actionOffset, centerOffset, previewMode
+        dpadOffset, actionOffset, centerOffset, previewMode, referenceCenterY
     )
     fun pxToDp(value: Float): Dp = with(density) { value.toDp() }
 

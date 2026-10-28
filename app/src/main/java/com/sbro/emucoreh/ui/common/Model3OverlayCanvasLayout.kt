@@ -16,7 +16,8 @@ internal fun buildModel3OverlayCanvasLayout(
     controls: Map<String, OverlayControlLayout>, safeLeft: Dp, safeRight: Dp,
     safeTop: Dp, safeBottom: Dp, dpadOffset: Pair<Float, Float>,
     leftStickOffset: Pair<Float, Float>, rightStickOffset: Pair<Float, Float>,
-    actionOffset: Pair<Float, Float>, centerOffset: Pair<Float, Float>, preview: Boolean
+    actionOffset: Pair<Float, Float>, centerOffset: Pair<Float, Float>, preview: Boolean,
+    referenceCenterY: Dp
 ): OverlayCanvasLayout {
     val platform = EmulationPlatform.MODEL_3
     val ids = SegaTouchLayouts.controlIds(platform)
@@ -47,21 +48,28 @@ internal fun buildModel3OverlayCanvasLayout(
         ((h - 4f * gap) / (stickHeight + 3.8f * diameter)).coerceAtLeast(0f))
     val responsive = fit(4f)
     val gap = maxOf(4f, 8f * responsive)
-    val factor = fit(gap)
+    val isLandscape = w >= h
+    val dpadExtentAtFullScale = overlayDpadCrossGeometry((if (isLandscape) 130f else 150f) * requested, isLandscape).extent
+    val spaceAbove = (referenceCenterY.value - top - gap * 1.5f).coerceAtLeast(0f)
+    val spaceBelow = (top + h - referenceCenterY.value - gap * 1.5f).coerceAtLeast(0f)
+    val factor = minOf(fit(gap),
+        spaceAbove / maxOf(leftSize + dpadExtentAtFullScale / 2f, rightSize + diameter),
+        spaceBelow / maxOf(.8f * diameter + dpadExtentAtFullScale / 2f, 1.8f * diameter)
+    ).coerceAtLeast(.0001f)
     val d = diameter * factor
     val step = d + gap
-    val isLandscape = w >= h
     val dpadScale = requested * factor
     val dpad = overlayDpadCrossGeometry((if (isLandscape) 130f else 150f) * dpadScale, isLandscape)
     val systemHeight = .8f * d
     val systemTop = top + h - systemHeight
     val buttonBottom = systemTop - gap
-    val crossTop = buttonBottom - dpad.extent
+    val crossTop = (referenceCenterY.value - dpad.extent / 2f)
+        .coerceIn(top, maxOf(top, buttonBottom - dpad.extent))
     val edgeFaceLeft = left + w - (4f * d + 3f * gap)
     val faceInset = minOf(10f * requested * factor, (edgeFaceLeft - left - dpad.extent - gap).coerceAtLeast(0f))
     val faceLeft = edgeFaceLeft - faceInset
     val rightStickSize = (rightSize * factor).coerceAtMost(h)
-    val desiredFaceTop = buttonBottom - (2f * d + gap) - 20f * requested * factor
+    val desiredFaceTop = referenceCenterY.value - (2f * d + gap) / 2f
     val rightStickBottom = maxOf(top + rightStickSize, minOf(crossTop - gap, desiredFaceTop - gap))
     val faceTop = maxOf(desiredFaceTop, rightStickBottom + gap)
     val slots = linkedMapOf(

@@ -17,7 +17,8 @@ import com.sbro.emucoreh.ui.emulation.segaTouchLayout
 internal fun buildSegaOverlayCanvasLayout(
     platform: EmulationPlatform, width: Dp, height: Dp, density: Density, scale: Float,
     controls: Map<String, OverlayControlLayout>, safeLeft: Dp, safeRight: Dp, safeTop: Dp, safeBottom: Dp,
-    dpadOffset: Pair<Float, Float>, actionOffset: Pair<Float, Float>, centerOffset: Pair<Float, Float>, preview: Boolean
+    dpadOffset: Pair<Float, Float>, actionOffset: Pair<Float, Float>, centerOffset: Pair<Float, Float>, preview: Boolean,
+    referenceCenterY: Dp
 ): OverlayCanvasLayout {
     val padding = 12.dp
     val left = safeLeft + padding
@@ -26,7 +27,8 @@ internal fun buildSegaOverlayCanvasLayout(
     val availableHeight = (height - top - safeBottom - padding).coerceAtLeast(0.dp)
     fun dp(px: Float): Dp = with(density) { px.toDp() }
     val keyIds = SegaTouchLayouts.controlIds(platform).associateBy { SegaTouchLayouts.keyCode(platform, it) }
-    val buttons = segaTouchLayout(platform, availableWidth.value, availableHeight.value, scale).mapNotNull { bounds ->
+    val buttons = segaTouchLayout(platform, availableWidth.value, availableHeight.value, scale,
+        (referenceCenterY - top).value).mapNotNull { bounds ->
         val id = keyIds[bounds.keyCode] ?: return@mapNotNull null
         val layout = controls[id] ?: OverlayControlLayout()
         val isDpad = id.startsWith("dpad_")
