@@ -68,6 +68,7 @@ data class SettingsSnapshot(
     val tvInterfaceMode: TvInterfaceMode = TvInterfaceMode.AUTO,
     val gpuHardwareProfile: Int = GpuHardwareProfiles.ADRENO,
     val renderer: Int = RendererDefaults.defaultForHardware(),
+    val customDriverPath: String? = null,
     val upscaleMultiplier: Float = UPSCALE_DEFAULT,
     val aspectRatio: Int = 1,
     val displayCrop: DisplayCrop = DisplayCrop.None,
@@ -415,6 +416,7 @@ class AppPreferences(private val context: Context) {
             longPreferencesKey("in_app_review_last_attempt_at_ms")
         private val IN_APP_REVIEW_REQUESTED = booleanPreferencesKey("in_app_review_requested")
         private val RENDERER = intPreferencesKey("renderer")
+        private val CUSTOM_DRIVER_PATH = stringPreferencesKey("custom_driver_path")
         private val UPSCALE = floatPreferencesKey("upscale_multiplier_v2")
         private val UPSCALE_LEGACY = intPreferencesKey("upscale_multiplier")
         private val SHADER_CHAIN_ENABLED = booleanPreferencesKey("shader_chain_enabled")
@@ -1038,6 +1040,12 @@ class AppPreferences(private val context: Context) {
     }
 
 
+    suspend fun setCustomDriverPath(path: String?) {
+        context.dataStore.edit { prefs ->
+            if (path.isNullOrBlank()) prefs.remove(CUSTOM_DRIVER_PATH) else prefs[CUSTOM_DRIVER_PATH] = path
+        }
+    }
+
     suspend fun setRenderer(value: Int) {
         context.dataStore.edit { prefs ->
             prefs[RENDERER] = normalizeRendererPreference(value)
@@ -1481,6 +1489,7 @@ class AppPreferences(private val context: Context) {
                 tvInterfaceMode = TvInterfaceMode.fromPreference(prefs[TV_INTERFACE_MODE]),
                 gpuHardwareProfile = gpuHardwareProfile,
                 renderer = normalizeRendererPreference(prefs[RENDERER]),
+                customDriverPath = prefs[CUSTOM_DRIVER_PATH],
                 upscaleMultiplier = readUpscale(prefs),
                 aspectRatio = normalizeAspectRatioPreference(prefs[ASPECT_RATIO]),
                 displayCrop = readDisplayCrop(prefs),

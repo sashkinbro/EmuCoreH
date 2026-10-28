@@ -70,22 +70,20 @@ class GpuDriverManager(private val context: Context) {
     }
 
     fun resolveUsableDriverPath(preferredPath: String?): String? {
-        if (!GpuDriverCompatibility.supportsCustomDrivers()) {
+        if (!GpuDriverCompatibility.supportsCustomDrivers(context)) {
             return null
         }
 
         preferredPath
             ?.takeIf { it.isNotBlank() }
             ?.let(::File)
-            ?.takeIf { isValidDriverLibrary(it) && isVendorCompatible(it) }
+            ?.takeIf { file -> listInstalledDrivers().any { it.mainLibraryPath == file.absolutePath && it.isUsable } }
             ?.let { file ->
                 ensureDriverLibraryPermissions(file)
                 return file.absolutePath
             }
 
-        return listInstalledDrivers()
-            .firstOrNull { it.isUsable }
-            ?.mainLibraryPath
+        return null
     }
 
     fun isVendorCompatible(libraryFile: File): Boolean =
@@ -172,7 +170,7 @@ class GpuDriverManager(private val context: Context) {
         val detectedVendor = expectedVendor
             ?.takeIf { it != GpuDriverVendor.UNKNOWN }
             ?: GpuDriverCompatibility.vendorOfDriverLibrary(driverLibrary)
-        val deviceVendor = GpuDriverCompatibility.deviceVendor()
+        val deviceVendor = GpuDriverCompatibility.deviceVendor(context)
         if (!GpuDriverCompatibility.isInstalledDriverCompatible(
                 selectedDriver,
                 detectedVendor,
@@ -212,7 +210,7 @@ class GpuDriverManager(private val context: Context) {
         GpuDriverCompatibility.isInstalledDriverCompatible(
             mainLibraryName = libraryFile.name,
             driverVendor = vendor,
-            deviceVendor = GpuDriverCompatibility.deviceVendor(),
+            deviceVendor = GpuDriverCompatibility.deviceVendor(context),
             deviceGpu = DeviceGpuInfoProvider.get(context)
         )
 

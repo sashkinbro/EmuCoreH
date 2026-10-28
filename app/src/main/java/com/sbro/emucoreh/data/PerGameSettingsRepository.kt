@@ -16,6 +16,8 @@ data class PerGameSettings(
     val gameTitle: String,
     val gameSerial: String? = null,
     val renderer: Int = EmulatorBridge.AUTO_RENDERER,
+    /** Null inherits global; empty selects the system driver. */
+    val gpuDriverOverride: String? = null,
     val upscaleMultiplier: Float = UPSCALE_DEFAULT,
     val aspectRatio: Int = 1,
     val localMultiplayerMode: Int = AppPreferences.LOCAL_MULTIPLAYER_OFF,
@@ -71,6 +73,9 @@ data class PerGameSettings(
     val providedKeys: Set<String>? = null,
     val updatedAt: Long = System.currentTimeMillis()
 )
+
+internal fun resolveGpuDriverSelection(globalPath: String?, gameOverride: String?): String? =
+    (gameOverride ?: globalPath)?.takeIf { it.isNotBlank() }
 
 internal data class ResolvedShaderChain(
     val enabled: Boolean,
@@ -181,6 +186,7 @@ internal fun JSONObject.toPerGameSettings(): PerGameSettings {
         gameTitle = optString("gameTitle"),
         gameSerial = optString("gameSerial").takeIf { it.isNotBlank() },
         renderer = optInt("renderer", RendererDefaults.AUTO).let(::sanitizeRendererValue),
+        gpuDriverOverride = if (has("gpuDriverOverride") && !isNull("gpuDriverOverride")) optString("gpuDriverOverride") else null,
         upscaleMultiplier = readUpscaleMultiplier(),
         aspectRatio = optInt("aspectRatio", 1).let(::sanitizeAspectRatioValue),
         localMultiplayerMode = optInt(
@@ -302,6 +308,7 @@ internal fun PerGameSettings.toJson(): JSONObject {
         val keys = providedKeys
         fun shouldWrite(key: String): Boolean = keys == null || key in keys
         if (shouldWrite("renderer")) put("renderer", sanitizeRendererValue(renderer))
+        if (shouldWrite("gpuDriverOverride") && gpuDriverOverride != null) put("gpuDriverOverride", gpuDriverOverride)
         if (shouldWrite("upscaleMultiplier")) put("upscaleMultiplier", upscaleMultiplier.toDouble())
         if (shouldWrite("aspectRatio")) put("aspectRatio", sanitizeAspectRatioValue(aspectRatio))
         if (shouldWrite("localMultiplayerMode")) {

@@ -258,6 +258,7 @@ data class EmulationUiState(
 )
 
 private data class EmulationLaunchConfig(
+    val gpuDriverPath: String?,
     val biosPath: String?,
     val emulatorDataPath: String?,
     val renderer: Int,
@@ -1122,6 +1123,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     )
                 }
                 val renderer = rendererOverride ?: config.renderer
+                com.sbro.emucoreh.core.CoreRuntime.selectedGpuDriverPath = config.gpuDriverPath
 
                 // Flycast boots without a firmware dump when no BIOS is
                 // installed; a configured dump is staged by DreamcastBios.
@@ -2712,11 +2714,13 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     addAll(audioOverrideKeys)
                     if (touchControlsLayout != null) add(PER_GAME_TOUCH_CONTROLS_LAYOUT_KEY)
                     if (customTouchControls != null) add(PER_GAME_CUSTOM_TOUCH_CONTROLS_KEY)
+                    if (existingProfile?.gpuDriverOverride != null) add("gpuDriverOverride")
                 }
             }
             perGameSettingsRepository.save(
                 runtimeProfile.copy(
                     touchControlsLayout = touchControlsLayout,
+                    gpuDriverOverride = existingProfile?.gpuDriverOverride,
                     customTouchControls = customTouchControls,
                     touchControlVisualStyle = visualStyleOverride,
                     touchControlPressEffect = pressEffectOverride,
@@ -2812,7 +2816,11 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     private suspend fun loadLaunchConfig(): EmulationLaunchConfig {
         val profile = activePerGameKey()?.let(perGameSettingsRepository::get)
         val settings = preferences.settingsSnapshot.first()
+        if (settings.customDriverPath != null || !profile?.gpuDriverOverride.isNullOrBlank()) {
+            withContext(Dispatchers.IO) { com.sbro.emucoreh.core.DeviceGpuInfoProvider.preload(getApplication()) }
+        }
         return EmulationLaunchConfig(
+            gpuDriverPath = com.sbro.emucoreh.data.resolveGpuDriverSelection(settings.customDriverPath, profile?.gpuDriverOverride),
             biosPath = settings.biosPath,
             emulatorDataPath = settings.emulatorDataPath,
             renderer = settings.renderer,

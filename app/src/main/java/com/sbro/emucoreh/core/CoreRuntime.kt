@@ -34,6 +34,7 @@ internal object CoreRuntime {
 
     val bridge: NativeCoreBridge by lazy { NativeCoreBridge() }
     val settings = ConcurrentHashMap<String, String>()
+    @Volatile var selectedGpuDriverPath: String? = null
     private val _failure = MutableStateFlow<RuntimeFailure?>(null)
     val failure = _failure.asStateFlow()
 
@@ -282,6 +283,9 @@ internal object CoreRuntime {
         }
 
         shutdownSession()
+        val driverPath = if (requestedCore == RendererDefaults.CORE_VULKAN)
+            GpuDriverManager(app).resolveUsableDriverPath(selectedGpuDriverPath) else null
+        bridge.configureVulkanDriver(driverPath, app.applicationInfo.nativeLibraryDir, app.cacheDir.absolutePath)
         platform = detectedPlatform
         val root = File(app.filesDir, when (platform.coreId) { 1 -> "jgenesis"; 2 -> "supermodel"; 3 -> "saturn"; else -> "flycast" })
         systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath

@@ -165,9 +165,15 @@ private const val SHADER_PRESET_USE_GLOBAL = "__emucorea_use_global_shader__"
 fun PerGameSettingsManagerScreen(
     initialGamePath: String? = null,
     onOpenControlsLayoutEditor: (GameItem) -> Unit,
+    onOpenGpuDriverManager: (GameItem) -> Unit,
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val gpuSnapshot by com.sbro.emucoreh.core.DeviceGpuInfoProvider.snapshot.collectAsState()
+    val gpuDriverSupported = gpuSnapshot?.model?.let(com.sbro.emucoreh.core.GpuDriverCompatibility::vendorOfGpu)
+        ?.takeIf { it != com.sbro.emucoreh.core.GpuDriverVendor.UNKNOWN }?.supportsCustomDrivers
+        ?: com.sbro.emucoreh.core.GpuDriverCompatibility.supportsCustomDrivers(context)
+    LaunchedEffect(context) { withContext(Dispatchers.IO) { com.sbro.emucoreh.core.DeviceGpuInfoProvider.preload(context) } }
     val repository = remember(context) { PerGameSettingsRepository(context) }
     val shaderRepository = remember(context) { RetroArchShaderRepository(context) }
     val preferences = remember(context) { AppPreferences(context) }
@@ -214,6 +220,7 @@ fun PerGameSettingsManagerScreen(
                 repository.save(
                     draft.copy(
                         touchControlsLayout = currentLayout,
+                        gpuDriverOverride = repository.get(draft.gameKey)?.gpuDriverOverride,
                         providedKeys = null
                     )
                 )
@@ -596,6 +603,14 @@ fun PerGameSettingsManagerScreen(
                                 }
                             }
                         },
+                        gpuDriverSupported = gpuDriverSupported,
+                        onOpenGpuDriverManager = {
+                            scope.launch {
+                                val savedProfiles = runCatching { persistDraft(draft) }.getOrNull()
+                                if (savedProfiles != null) { profiles = savedProfiles; onOpenGpuDriverManager(game) }
+                                else toast(controlsLayoutSaveFailure)
+                            }
+                        },
                         onOpenControlsLayoutEditor = {
                             if (isOpeningControlsEditor) return@GameSettingsManagerEditorPanel
                             isOpeningControlsEditor = true
@@ -856,6 +871,8 @@ private fun GameSettingsManagerEditorPanel(
     shaderPresets: List<RetroArchShaderPreset>,
     onRemoveShaderPresets: suspend (Set<String>) -> Boolean,
     onOpenControlsLayoutEditor: () -> Unit,
+    onOpenGpuDriverManager: () -> Unit,
+    gpuDriverSupported: Boolean,
     onDraftChange: (PerGameSettings) -> Unit
 ) {
     val platform = rememberGamePlatform(game.path, game.platform)
@@ -883,6 +900,16 @@ private fun GameSettingsManagerEditorPanel(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+        if (selectedTab == GameSettingsManagerTab.Core &&
+            (platform.coreId == 0 || platform.isSega) &&
+            gpuDriverSupported) {
+            ManagerActionButton(
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Rounded.Tune,
+                title = stringResource(R.string.settings_gpu_driver_manage),
+                onClick = onOpenGpuDriverManager
+            )
         }
         if (selectedTab == GameSettingsManagerTab.Controls) {
             ManagerActionButton(
@@ -1904,6 +1931,7 @@ internal fun PerGameSettings.resolveAgainst(defaultProfile: PerGameSettings): Pe
         gameSerial = gameSerial,
         keyboardMouse = pick("keyboardMouse", keyboardMouse, defaultProfile.keyboardMouse),
         renderer = pick("renderer", renderer, defaultProfile.renderer),
+        gpuDriverOverride = pick("gpuDriverOverride", gpuDriverOverride, defaultProfile.gpuDriverOverride),
         upscaleMultiplier = pick("upscaleMultiplier", upscaleMultiplier, defaultProfile.upscaleMultiplier),
         aspectRatio = pick("aspectRatio", aspectRatio, defaultProfile.aspectRatio),
         localMultiplayerMode = pick(

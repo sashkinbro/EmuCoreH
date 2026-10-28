@@ -77,6 +77,7 @@ import com.sbro.emucoreh.ui.saves.SaveManagerScreen
 import com.sbro.emucoreh.ui.settings.LanguageSettingsScreen
 import com.sbro.emucoreh.ui.settings.ControlsLayoutEditorHostScreen
 import com.sbro.emucoreh.ui.settings.PerGameSettingsManagerScreen
+import com.sbro.emucoreh.ui.settings.GpuDriverScreen
 import com.sbro.emucoreh.ui.settings.SettingsScreen
 import com.sbro.emucoreh.ui.settings.SettingsViewModel
 import com.sbro.emucoreh.ui.textures.TextureManagerScreen
@@ -92,6 +93,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 
@@ -171,6 +174,9 @@ object CheatManagerRoute
 
 @Serializable
 object FeedbackRoute
+
+@Serializable
+data class GpuDriverSettingsRoute(val gamePath: String? = null, val gameTitle: String? = null, val gameSerial: String? = null)
 
 @Serializable
 data class GameSettingsManagerRoute(val gamePath: String? = null)
@@ -817,6 +823,7 @@ fun AppNavigation(
                         initialTab = route.tab,
                         onBackClick = { navController.popBackStack() },
                         onOpenMemoryCardManager = navigateMemoryCardManager,
+                        onOpenGpuDriverManager = { navController.navigate(GpuDriverSettingsRoute()) },
                         onOpenLanguageScreen = {
                             navController.navigate(LanguageSettingsRoute) {
                                 launchSingleTop = true
@@ -903,6 +910,9 @@ fun AppNavigation(
                 val route = backStackEntry.toRoute<GameSettingsManagerRoute>()
                 PerGameSettingsManagerScreen(
                     initialGamePath = route.gamePath,
+                    onOpenGpuDriverManager = { game ->
+                        navController.navigate(GpuDriverSettingsRoute(game.path, game.title, game.serial))
+                    },
                     onOpenControlsLayoutEditor = { game ->
                         navController.navigate(
                             ControlsLayoutEditorRoute(
@@ -917,6 +927,49 @@ fun AppNavigation(
                     },
                     onBackClick = { navController.popBackStack() }
                 )
+            }
+
+            composable<GpuDriverSettingsRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<GpuDriverSettingsRoute>()
+                val repository = remember(context) { com.sbro.emucoreh.data.PerGameSettingsRepository(context) }
+                val driverSaveMutex = remember { Mutex() }
+                var gameProfile by remember(route.gamePath) { mutableStateOf<com.sbro.emucoreh.data.PerGameSettings?>(null) }
+                var profileLoaded by remember(route.gamePath) { mutableStateOf(route.gamePath == null) }
+                LaunchedEffect(route.gamePath) {
+                    gameProfile = route.gamePath?.let { path -> withContext(Dispatchers.IO) { repository.get(path) } }
+                    profileLoaded = true
+                }
+                fun saveGameDriver(path: String?) {
+                    val gamePath = route.gamePath ?: return
+                    scope.launch {
+                        driverSaveMutex.withLock {
+                        val updated = withContext(Dispatchers.IO) {
+                            val existing = repository.get(gamePath) ?: com.sbro.emucoreh.data.PerGameSettings(
+                                gameKey = gamePath, gameTitle = route.gameTitle.orEmpty(), gameSerial = route.gameSerial,
+                                providedKeys = emptySet()
+                            )
+                            existing.copy(gpuDriverOverride = path,
+                                providedKeys = existing.providedKeys?.let { if (path == null) it - "gpuDriverOverride" else it + "gpuDriverOverride" }
+                            ).also(repository::save)
+                        }
+                        gameProfile = updated
+                        }
+                    }
+                }
+                if (profileLoaded) {
+                    GpuDriverScreen(
+                        onBackClick = { navController.popBackStack() },
+                        selectedDriverPathOverride = (gameProfile?.gpuDriverOverride ?: settingsUiState.customDriverPath)?.takeIf { it.isNotBlank() },
+                        rendererOverride = gameProfile?.renderer?.takeIf { gameProfile?.providedKeys?.contains("renderer") != false },
+                        onSelectDriverForGame = if (route.gamePath == null) null else { name ->
+                            val driver = settingsUiState.installedGpuDrivers.firstOrNull { it.name == name && it.isUsable }
+                            if (name == null) saveGameDriver("") else if (driver != null) saveGameDriver(driver.mainLibraryPath)
+                        },
+                        onUseGlobalForGame = if (route.gamePath == null) null else ({ saveGameDriver(null) }),
+                        gameInheritsGlobal = route.gamePath != null && gameProfile?.gpuDriverOverride == null,
+                        viewModel = settingsViewModel
+                    )
+                }
             }
 
             composable<ControlsLayoutEditorRoute> { backStackEntry ->

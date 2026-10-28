@@ -15,6 +15,74 @@ import org.junit.Assume.assumeTrue
 import java.util.concurrent.atomic.AtomicInteger
 
 class CustomVulkanDriverInstrumentedTest {
+    @Test fun liveCatalogDownloadsAndInstallsDriver() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val supplied = File(InstrumentationRegistry.getArguments().getString("driverQaArchive").orEmpty())
+        assumeTrue("Network test is opt-in with the owner-supplied QA archive", supplied.isFile)
+        val root = File(context.cacheDir, "live-driver-catalog-qa").apply { mkdirs() }
+        val isolated = object : ContextWrapper(context) {
+            override fun getFilesDir(): File = File(root, "files").apply { mkdirs() }
+            override fun getCacheDir(): File = File(root, "cache").apply { mkdirs() }
+        }
+        try {
+            val repository = GpuDriverCatalogRepository(isolated)
+            val catalog = repository.loadCatalog()
+            assertTrue("Catalog should include the tested Turnip driver", catalog.any { it.downloadUrl.contains("Turnip_Gen8_V35.zip") })
+            val driver = catalog.first { it.downloadUrl.contains("Turnip_Gen8_V35.zip") }
+            val archive = repository.downloadDriver(driver) { }
+            val manager = GpuDriverManager(isolated)
+            val name = manager.installFromArchive(archive, driver.vendor)
+            assertTrue(manager.listInstalledDrivers().any { it.name == name && it.isUsable })
+            assertEquals(null, manager.resolveUsableDriverPath(File(root, "missing.so").absolutePath))
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun runtimeLoadsSelectedDriverAndResetsToSystem() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val archive = File(InstrumentationRegistry.getArguments().getString("driverQaArchive").orEmpty())
+        assumeTrue("Supply a compatible catalog archive", archive.isFile && archive.canRead())
+        val root = File(context.cacheDir, "runtime-driver-qa").apply { mkdirs() }
+        val testArchive = File(root, "EmuCoreH-runtime-qa-${System.nanoTime()}.zip")
+        archive.copyTo(testArchive)
+        val manager = GpuDriverManager(context)
+        val name = manager.installFromArchive(testArchive)
+        val path = requireNotNull(manager.readMainLibraryPath(name))
+        val rom = File(root, "test.sms").apply {
+            writeBytes(ByteArray(32768).apply {
+                byteArrayOf(0xf3.toByte(), 0x21, 0, 0xc0.toByte(), 0x34, 0x18, 0xfd.toByte()).copyInto(this)
+            })
+        }
+        val consumer = HandlerThread("RuntimeDriverQaFrames").apply { start() }
+        try {
+            CoreRuntime.shutdown()
+            CoreRuntime.initialize(context)
+            CoreRuntime.updateSetting("EmuCoreH/Runtime", "Renderer", RendererDefaults.VULKAN.toString())
+            ImageReader.newInstance(320, 240, PixelFormat.RGBA_8888, 3).use { reader ->
+                reader.setOnImageAvailableListener({ it.acquireLatestImage()?.close() }, Handler(consumer.looper))
+                CoreRuntime.attachSurface(reader.surface, 320, 240)
+                for ((selection, expected) in listOf(path to "custom", null to "system")) {
+                    CoreRuntime.selectedGpuDriverPath = selection
+                    assertTrue("Runtime failed to boot", CoreRuntime.start(rom.absolutePath, false))
+                    val deadline = android.os.SystemClock.uptimeMillis() + 10000
+                    while (CoreRuntime.bridge.vulkanDriverStatus() == "pending" && android.os.SystemClock.uptimeMillis() < deadline)
+                        Thread.sleep(50)
+                    assertEquals(expected, CoreRuntime.bridge.vulkanDriverStatus())
+                    if (expected == "custom") assertTrue(CoreRuntime.bridge.vulkanDriverName().contains("Mesa", true))
+                    CoreRuntime.shutdown()
+                }
+                CoreRuntime.detachSurface()
+            }
+        } finally {
+            CoreRuntime.shutdown()
+            CoreRuntime.selectedGpuDriverPath = null
+            CoreRuntime.detachSurface()
+            manager.remove(name)
+            consumer.quitSafely()
+            consumer.join(3000)
+            root.deleteRecursively()
+        }
+    }
+
     @Test fun catalogDriverRunsOwnerDreamcastGame() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext

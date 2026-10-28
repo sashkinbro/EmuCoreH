@@ -1,5 +1,6 @@
 package com.sbro.emucoreh.core
 
+import android.content.Context
 import android.os.Build
 import java.io.File
 import java.util.Locale
@@ -202,6 +203,12 @@ object GpuDriverCompatibility {
     )
 
     fun deviceVendor(): GpuDriverVendor = deviceVendor(currentDeviceInfo())
+
+    fun deviceVendor(context: Context): GpuDriverVendor =
+        vendorOfGpu(DeviceGpuInfoProvider.get(context).model)
+            .takeIf { it != GpuDriverVendor.UNKNOWN } ?: deviceVendor()
+
+    fun supportsCustomDrivers(context: Context): Boolean = deviceVendor(context).supportsCustomDrivers
 
     fun vendorOfGpu(model: GpuModelInfo?): GpuDriverVendor = when (model?.vendor) {
         GpuVendor.ADRENO -> GpuDriverVendor.ADRENO

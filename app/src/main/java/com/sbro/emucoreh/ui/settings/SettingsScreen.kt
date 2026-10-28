@@ -278,12 +278,21 @@ fun SettingsScreen(
     onOpenControlsLayoutEditor: ((EmulationPlatform) -> Unit)? = null,
     onOpenThemeManager: (() -> Unit)? = null,
     onOpenTouchControlCreator: (() -> Unit)? = null,
+    onOpenGpuDriverManager: (() -> Unit)? = null,
     viewModel: SettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val gamepadDeviceAssignments by GamepadManager.gamepadDeviceAssignmentsState.collectAsState()
     val ignoredGamepadDevices by GamepadManager.ignoredGamepadDevicesState.collectAsState()
     val context = LocalContext.current
+    val gpuSnapshot by com.sbro.emucoreh.core.DeviceGpuInfoProvider.snapshot.collectAsState()
+    val gpuDriverSupported = gpuSnapshot?.model?.let(com.sbro.emucoreh.core.GpuDriverCompatibility::vendorOfGpu)
+        ?.takeIf { it != com.sbro.emucoreh.core.GpuDriverVendor.UNKNOWN }?.supportsCustomDrivers
+        ?: com.sbro.emucoreh.core.GpuDriverCompatibility.supportsCustomDrivers(context)
+    LaunchedEffect(context) {
+        withContext(Dispatchers.IO) { com.sbro.emucoreh.core.DeviceGpuInfoProvider.preload(context) }
+        viewModel.refreshInstalledGpuDrivers()
+    }
     val tvUiEnabled = LocalTvUiEnvironment.current.enabled
     val topInset = appScreenTopPadding()
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -622,6 +631,8 @@ fun SettingsScreen(
                 onOpenControlsLayoutEditor = onOpenControlsLayoutEditor,
                 onOpenThemeManager = onOpenThemeManager,
                 onOpenTouchControlCreator = onOpenTouchControlCreator,
+                onOpenGpuDriverManager = onOpenGpuDriverManager,
+                gpuDriverSupported = gpuDriverSupported,
                 viewModel = viewModel,
                 topInset = 0.dp,
                 modifier = Modifier
@@ -1082,7 +1093,9 @@ private fun SettingsContent(
     onOpenMemoryCardManager: (() -> Unit)? = null,
     onOpenControlsLayoutEditor: ((EmulationPlatform) -> Unit)? = null,
     onOpenThemeManager: (() -> Unit)? = null,
-    onOpenTouchControlCreator: (() -> Unit)? = null
+    onOpenTouchControlCreator: (() -> Unit)? = null,
+    onOpenGpuDriverManager: (() -> Unit)? = null,
+    gpuDriverSupported: Boolean = false
 ) {
     val gamepadActions = remember { GamepadManager.mappableButtonActions() }
     val gamepadDeviceAssignments by GamepadManager.gamepadDeviceAssignmentsState.collectAsState()
@@ -2132,6 +2145,18 @@ private fun SettingsContent(
                             helpText = stringResource(R.string.settings_help_renderer),
                             onResetToDefault = { viewModel.setRenderer(defaults.renderer) }
                         )
+                        }
+                        if ((platform.coreId == 0 || platform.isSega) &&
+                            gpuDriverSupported) {
+                            SettingsItem(
+                                icon = Icons.Rounded.Memory,
+                                label = stringResource(R.string.settings_gpu_driver_manage),
+                                value = uiState.installedGpuDrivers.firstOrNull { it.mainLibraryPath == uiState.customDriverPath }?.name
+                                    ?: stringResource(R.string.settings_gpu_driver_system),
+                                onClick = { onOpenGpuDriverManager?.invoke() },
+                                enabled = onOpenGpuDriverManager != null,
+                                helpText = stringResource(R.string.settings_help_gpu_driver)
+                            )
                         }
                         ChoiceSection(
                             title = stringResource(R.string.settings_aspect_ratio),
