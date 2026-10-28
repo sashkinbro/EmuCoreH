@@ -901,16 +901,6 @@ private fun GameSettingsManagerEditorPanel(
                 )
             }
         }
-        if (selectedTab == GameSettingsManagerTab.Core &&
-            (platform.coreId == 0 || platform.isSega) &&
-            gpuDriverSupported) {
-            ManagerActionButton(
-                modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Rounded.Tune,
-                title = stringResource(R.string.settings_gpu_driver_manage),
-                onClick = onOpenGpuDriverManager
-            )
-        }
         if (selectedTab == GameSettingsManagerTab.Controls) {
             ManagerActionButton(
                 modifier = Modifier.fillMaxWidth(),
@@ -933,6 +923,8 @@ private fun GameSettingsManagerEditorPanel(
             maxUpscaleMultiplier = maxUpscaleMultiplier,
             shaderPresets = shaderPresets,
             onRemoveShaderPresets = onRemoveShaderPresets,
+            onOpenGpuDriverManager = onOpenGpuDriverManager,
+            gpuDriverSupported = gpuDriverSupported,
             onDraftChange = onDraftChange
         )
     }
@@ -947,6 +939,8 @@ private fun GameSettingsTabContent(
     maxUpscaleMultiplier: Int,
     shaderPresets: List<RetroArchShaderPreset>,
     onRemoveShaderPresets: suspend (Set<String>) -> Boolean,
+    onOpenGpuDriverManager: () -> Unit,
+    gpuDriverSupported: Boolean,
     onDraftChange: (PerGameSettings) -> Unit
 ) {
     val nativeUpscaleLabel = stringResource(R.string.settings_upscale_native)
@@ -987,6 +981,14 @@ private fun GameSettingsTabContent(
                             onDraftChange(draft.copy(renderer = normalizeManagerRenderer(defaultProfile.renderer)))
                         }
                     )
+                    if (gpuDriverSupported) {
+                        ManagerActionButton(
+                            modifier = Modifier.fillMaxWidth(),
+                            icon = Icons.Rounded.Tune,
+                            title = stringResource(R.string.settings_gpu_driver_manage),
+                            onClick = onOpenGpuDriverManager
+                        )
+                    }
                     }
                     // Internal resolution is the app-level per-game setting
                     // (draft.upscaleMultiplier) - the same value the in-game

@@ -2149,13 +2149,16 @@ private fun SettingsContent(
                         if ((platform.coreId == 0 || platform.isSega) &&
                             gpuDriverSupported) {
                             SettingsItem(
-                                icon = Icons.Rounded.Memory,
-                                label = stringResource(R.string.settings_gpu_driver_manage),
+                                icon = Icons.Rounded.Tune,
+                                label = stringResource(R.string.settings_gpu_driver_manager_title),
                                 value = uiState.installedGpuDrivers.firstOrNull { it.mainLibraryPath == uiState.customDriverPath }?.name
                                     ?: stringResource(R.string.settings_gpu_driver_system),
                                 onClick = { onOpenGpuDriverManager?.invoke() },
                                 enabled = onOpenGpuDriverManager != null,
-                                helpText = stringResource(R.string.settings_help_gpu_driver)
+                                border = BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+                                )
                             )
                         }
                         ChoiceSection(
