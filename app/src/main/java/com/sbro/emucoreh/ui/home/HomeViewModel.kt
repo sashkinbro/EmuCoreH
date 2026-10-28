@@ -64,6 +64,9 @@ import kotlinx.coroutines.withContext
 import java.text.Normalizer
 import kotlin.time.Duration.Companion.milliseconds
 
+private const val STARTUP_PATH_CHECK_ATTEMPTS = 4
+private const val STARTUP_PATH_CHECK_DELAY_MS = 200L
+
 enum class HomeLibraryViewMode {
     GRID, LIST, SHELF
 }
@@ -261,9 +264,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     if (com.sbro.emucoreh.BuildConfig.DEBUG) logStartupMilestone("cached_library games=${startupCache.games.size}")
                 }
                 // Provider traversal validates the roots after an eligible disk cache is already visible.
-                val effectivePaths = withContext(Dispatchers.IO) {
-                    selectedPaths.filter { SetupValidator.hasCoreReadableGameFile(context, it) }
-                }
+                val effectivePaths = filterAccessibleGamePaths(context, selectedPaths)
                 val libraryKey = libraryKey(effectivePaths)
                 if (currentLibraryRoot != libraryKey) {
                     allGames = emptyList()
@@ -908,6 +909,39 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             librarySections = sections,
             recentGames = recentGames
         )
+    }
+
+    /**
+     * Configured paths can be temporarily unreachable while FUSE/removable
+     * storage finishes mounting at boot. Retry before treating a folder as
+     * missing so Home does not ask for a folder that is already configured.
+     */
+    private suspend fun filterAccessibleGamePaths(
+        context: Application,
+        paths: List<String>
+    ): List<String> {
+        if (paths.isEmpty()) return paths
+        return buildList {
+            for (path in paths) {
+                if (isGameFolderAccessibleWithRetry(context, path)) add(path)
+            }
+        }
+    }
+
+    private suspend fun isGameFolderAccessibleWithRetry(
+        context: Application,
+        path: String
+    ): Boolean {
+        repeat(STARTUP_PATH_CHECK_ATTEMPTS) { attempt ->
+            val accessible = withContext(Dispatchers.IO) {
+                SetupValidator.isGameFolderAccessible(context, path)
+            }
+            if (accessible) return true
+            if (attempt < STARTUP_PATH_CHECK_ATTEMPTS - 1) {
+                delay(STARTUP_PATH_CHECK_DELAY_MS shl attempt)
+            }
+        }
+        return false
     }
 
     private fun updateBootstrapState() {
