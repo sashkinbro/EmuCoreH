@@ -63,7 +63,9 @@ private fun segaConsoleTouchLayout(
     val dpad = overlayDpadCrossGeometry((if (isLandscape) 130f else 150f) * dpadScale, isLandscape)
     val crossSize = dpad.extent
     val faceWidth = diameter * (if (six) 3.2f else 2.1f)
-    val faceLeft = width - faceWidth
+    val edgeFaceLeft = width - faceWidth
+    val faceInset = minOf(diameter * .15625f, (edgeFaceLeft - crossSize - diameter * .1f).coerceAtLeast(0f))
+    val faceLeft = edgeFaceLeft - faceInset
     val systemHeight = diameter * .65f
     val systemWidth = diameter * 1.4f
     val systemGap = diameter * .1f

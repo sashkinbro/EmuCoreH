@@ -24,9 +24,12 @@ class RightActionDefaultLayoutTest {
                 AppPreferences.DEFAULT_CENTER_OFFSET_X to AppPreferences.DEFAULT_CENTER_OFFSET_Y,
                 controls, 0.dp, 0.dp, 0.dp, 0.dp, platform = platform
             )
-            requireNotNull(layout.button("a")).y.value
+            val rightId = if (platform.isModel3) "r2" else "b"
+            val right = requireNotNull(layout.button(rightId))
+            requireNotNull(layout.button("a")).y.value to (right.x + right.width).value
         }
-        positions.forEach { (platform, y) ->
+        positions.forEach { (platform, position) ->
+            val (y, rightEdge) = position
             val expected = when (platform) {
                 EmulationPlatform.DREAMCAST -> 348.0645f
                 EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD,
@@ -36,6 +39,9 @@ class RightActionDefaultLayoutTest {
                 EmulationPlatform.MODEL_3 -> 323.6f
             }
             assertEquals(platform.name, expected, y, .01f)
+            if (platform != EmulationPlatform.DREAMCAST) {
+                assertEquals("$platform right margin", 778f, rightEdge, .01f)
+            }
         }
     }
 }

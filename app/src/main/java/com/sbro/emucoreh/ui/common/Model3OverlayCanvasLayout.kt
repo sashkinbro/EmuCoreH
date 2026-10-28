@@ -57,7 +57,9 @@ internal fun buildModel3OverlayCanvasLayout(
     val systemTop = top + h - systemHeight
     val buttonBottom = systemTop - gap
     val crossTop = buttonBottom - dpad.extent
-    val faceLeft = left + w - (4f * d + 3f * gap)
+    val edgeFaceLeft = left + w - (4f * d + 3f * gap)
+    val faceInset = minOf(10f * requested * factor, (edgeFaceLeft - left - dpad.extent - gap).coerceAtLeast(0f))
+    val faceLeft = edgeFaceLeft - faceInset
     val rightStickSize = (rightSize * factor).coerceAtMost(h)
     val desiredFaceTop = buttonBottom - (2f * d + gap) - 20f * requested * factor
     val rightStickBottom = maxOf(top + rightStickSize, minOf(crossTop - gap, desiredFaceTop - gap))
