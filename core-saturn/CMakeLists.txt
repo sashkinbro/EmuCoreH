@@ -13,6 +13,7 @@ target_include_directories(saturn_libretro PRIVATE
   deps/libchdr/include deps/lzma-19.00/include deps/zlib-1.2.11)
 target_compile_definitions(saturn_libretro PRIVATE
   NDEBUG
+  $<$<CONFIG:Debug>:SATURN_ENABLE_DIAGNOSTICS=1>
   __LIBRETRO__ _LOW_ACCURACY_ INLINE=inline WANT_SATURN_EMU
   PSS_STYLE=1 NEED_CD=1 NEED_BPP=32 WANT_32BPP NEED_DEINTERLACER
   WANT_THREADING HAVE_THREADS NEED_TREMOR FRONTEND_SUPPORTS_RGB565

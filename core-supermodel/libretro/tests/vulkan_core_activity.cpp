@@ -15,7 +15,9 @@ int Model3RunRetailValidation(const char* directory){
         std::filesystem::path(romName).extension()==".zip","local retail ROM-set filename");
   std::vector<std::string> strings={"model3-retail-validation",
     (std::filesystem::path(own.dli_fname).parent_path()/"libsupermodel_libretro.so").string(),
-    (base/"system").string(),(base/romName).string(),(base/"retail-save").string(),(base/"retail").string(),"1",(base/"state.rstate").string()};
+    (base/"system").string(),(base/romName).string(),(base/"retail-save").string(),(base/"retail").string(),
+    std::filesystem::exists(base/"state.rstate")?"1":"1800"};
+  if(std::filesystem::exists(base/"state.rstate"))strings.push_back((base/"state.rstate").string());
   std::vector<char*> args;for(auto& item:strings)args.push_back(item.data());
   setenv("MODEL3_VULKAN_VALIDATION","1",1);
   return Model3VulkanCoreProbe(static_cast<int>(args.size()),args.data());

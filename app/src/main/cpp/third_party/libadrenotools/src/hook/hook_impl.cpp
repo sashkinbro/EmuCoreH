@@ -13,7 +13,12 @@
 #include "hook_impl.h"
 
 #define TAG "hook_impl"
+#ifdef NDEBUG
+#define LOGI(fmt, ...) ((void)0)
+#else
 #define LOGI(fmt, ...) __android_log_print(ANDROID_LOG_INFO, TAG, fmt, ##__VA_ARGS__)
+#endif
+#define LOGW(fmt, ...) __android_log_print(ANDROID_LOG_WARN, TAG, fmt, ##__VA_ARGS__)
 
 const HookImplParams *hook_params; //!< Bunch of info needed to load/patch the driver
 int (*gsl_memory_alloc_pure_sym)(uint32_t, uint32_t, void *);
@@ -128,7 +133,7 @@ __attribute__((visibility("default"))) void *hook_android_dlopen_ext(const char 
         LOGI("hook_android_dlopen_ext: loading custom driver: %s%s", hook_params->customDriverDir.c_str(), hook_params->customDriverName.c_str());
         void *handle{android_dlopen_ext(hook_params->customDriverName.c_str(), flags, &newExtinfo)};
         if (!handle) {
-            LOGI("hook_android_dlopen_ext: hook failed: failed to load custom driver: %s!", dlerror());
+            LOGW("hook_android_dlopen_ext: hook failed: failed to load custom driver: %s!", dlerror());
             return fallback();
         }
 

@@ -22,8 +22,8 @@ void GenericLog(LogTypes::LOG_LEVELS level, LogTypes::LOG_TYPE type, const char*
 		const char* fmt, ...)
 {
 #ifdef NDEBUG
-    // Only GAME_ID_LOG uses this metadata channel in production.
-    if (level != LogTypes::LNOTICE) return;
+    // Keep functional game IDs and critical core errors in production.
+    if (level != LogTypes::LNOTICE && level != LogTypes::LERROR) return;
 #endif
     va_list args;
     va_start(args, fmt);

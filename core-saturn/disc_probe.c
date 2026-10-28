@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(SATURN_ENABLE_DIAGNOSTICS)
 #include <android/log.h>
 #define PROBE_LOG(...) __android_log_print(ANDROID_LOG_INFO, "SaturnProbe", __VA_ARGS__)
 #else

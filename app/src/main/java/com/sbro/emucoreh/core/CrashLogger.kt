@@ -64,7 +64,10 @@ object CrashLogger {
 
     /** Only call for an unrecoverable session/startup failure, never a recoverable warning. */
     fun logError(tag: String, message: String, throwable: Throwable? = null) {
-        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
+        if (!com.sbro.emucoreh.BuildConfig.DEBUG) {
+            Log.e(tag, message, throwable)
+            return
+        }
         entries.write("ERROR") {
             buildString {
                 append("[$tag] $message")

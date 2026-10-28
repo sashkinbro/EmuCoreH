@@ -645,8 +645,8 @@ bool EnvironmentCallback(unsigned cmd, void* data) {
 void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
     if (fmt == nullptr) return;
 #ifdef NDEBUG
-    // INFO is reserved for functional game-ID events from the bundled core.
-    if (level != RETRO_LOG_INFO) return;
+    // INFO carries functional game IDs. Warnings and errors remain visible.
+    if (level == RETRO_LOG_DEBUG) return;
 #endif
     char message[1024];
     va_list args;
@@ -675,12 +675,15 @@ void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
         }
     }
 
-#ifndef NDEBUG
+#ifdef NDEBUG
+    if (level == RETRO_LOG_INFO) return;
+#else
     // Flycast runs its LogManager at debug verbosity and traces every MMIO
     // access and dynarec bookkeeping entry. Forwarding that to logcat floods
     // the ring buffer and evicts the frontend's own logs, so debug output
     // stays out of logcat and only notices, warnings and errors are kept.
     if (level == RETRO_LOG_DEBUG) return;
+#endif
     int priority = ANDROID_LOG_INFO;
     switch (level) {
         case RETRO_LOG_WARN: priority = ANDROID_LOG_WARN; break;
@@ -688,7 +691,6 @@ void RetroLogCallback(enum retro_log_level level, const char* fmt, ...) {
         default: break;
     }
     __android_log_write(priority, CORE_LOG_TAG, message);
-#endif
 }
 
 }  // namespace

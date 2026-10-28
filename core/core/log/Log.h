@@ -68,7 +68,7 @@ __attribute__((format(printf, 5, 6)))
 // ordinary diagnostics. Keep that dedicated channel when release logs are off.
 #if defined(LIBRETRO) && defined(NDEBUG)
 #define GAME_ID_LOG(t, ...) GenericLog(LogTypes::LNOTICE, LogTypes::t, __FILE__, __LINE__, __VA_ARGS__)
-#define GENERIC_LOG(t, v, ...) ((void)0)
+#define GENERIC_LOG(t, v, ...) do { if ((v) == LogTypes::LERROR) GenericLog(v, t, __FILE__, __LINE__, __VA_ARGS__); } while (0)
 #else
 #define GAME_ID_LOG(t, ...) NOTICE_LOG(t, __VA_ARGS__)
 // Let the compiler optimize this out

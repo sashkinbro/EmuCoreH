@@ -80,9 +80,6 @@
     public static int v(...);
     public static int d(...);
     public static int i(...);
-    public static int w(...);
-    public static int e(...);
-    public static int wtf(...);
 }
 
 # Third-party stack trace diagnostics must not reach stderr in release.

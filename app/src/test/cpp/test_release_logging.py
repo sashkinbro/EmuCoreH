@@ -26,7 +26,7 @@ with tempfile.TemporaryDirectory(prefix="emucoreh-release-logs-") as directory:
             str(root / "app/src/test/cpp/release_logging_test.cpp"), "-o", str(binary)
         ], check=True, env=env)
         subprocess.run([str(binary)], check=True, env=env)
-        print("PASS", "release: zero diagnostic argument evaluation or output, functional game IDs" if release
+        print("PASS", "release: routine diagnostics removed, failures and functional game IDs retained" if release
               else "debug: diagnostics and game IDs retained")
 
     # Compile the real release crash reporter: it must not install handlers or

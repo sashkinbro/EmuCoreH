@@ -125,7 +125,8 @@ class Model3RuntimeInstrumentedTest {
                         assertEquals("Boot $set: ${bridge.nativeLastBootError()}",
                             0, bridge.loadDisc(handle, Model3ContentPreparer.prepare(context, rom.absolutePath)))
                         assertTrue("Bind Model 3 GLES renderer: ${bridge.nativeLastBootError()}", bridge.ensureHardwareContext())
-                        assertTrue(bridge.getSystemInfo().contains("Supermodel", true))
+                        assertTrue("Loaded Model 3 core: ${bridge.getSystemInfo()}",
+                            bridge.getSystemInfo().contains("Super3", true))
                         assertFalse("Loaded Model 3 owns its core", bridge.nativeSelectCore(1))
                         assertFalse("Arcade set has no disc tray", bridge.hasDiscMedia(handle))
                         args.getString("model3QaLoadStateForProbe")?.let { path ->
