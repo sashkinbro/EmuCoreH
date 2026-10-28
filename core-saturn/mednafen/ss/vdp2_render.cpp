@@ -28,6 +28,7 @@
 #include "ss_memory.h"
 #include "vdp2_common.h"
 #include "vdp2_render.h"
+#include "vdp2_tile_row_cache.h"
 
 #include <retro_timers.h>
 #include <rthreads/rthreads.h>
@@ -1963,6 +1964,7 @@ static void T_DrawRBG(const bool rn, uint64* bgbuf, const unsigned w, const uint
  int16 sfcode_lut[8];
 
  MakeSFCodeLUT<TA_PrioMode, TA_CCMode>((rn ? 0 : 4), sfcode_lut);
+ RotatedTileRowCache tile_cache;
 
  for(unsigned i = 0; MDFN_LIKELY(i < w); i++)
  {
@@ -1994,7 +1996,7 @@ static void T_DrawRBG(const bool rn, uint64* bgbuf, const unsigned w, const uint
   const uint32 ix = (  Xp + (uint32)(((int64)kx * (int32)(r.Xsp + (r.dX * i))) >> 16)) >> 10;
   const uint32 iy = (r.Yp + (uint32)(((int64)ky * (int32)(r.Ysp + (r.dY * i))) >> 16)) >> 10;
 
-  rot_tp |= tf.Fetch<TA_bpp>(TA_bmen, ix, iy);
+  rot_tp |= tile_cache.Fetch<TA_bpp>(tf, ab, TA_bmen, ix, iy);
 
   LB.rotabsel[i] = rot_tp;
   //
