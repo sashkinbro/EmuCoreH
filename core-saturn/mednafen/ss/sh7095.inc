@@ -2562,8 +2562,9 @@ uint32 NO_INLINE SH7095::Exception(const unsigned exnum, const unsigned vecnum)
 
 */
 
+// Each processor advances one instruction at a time in the scheduler loop.
 template<unsigned which, bool EmulateICache, bool DebugMode>
-INLINE void SH7095::Step(void)
+__attribute__((always_inline)) inline void SH7095::Step(void)
 {
  //
  // Ideally, we would place SPEPRecover: after the FRT event check, but doing
