@@ -823,7 +823,9 @@ fun AppNavigation(
                         initialTab = route.tab,
                         onBackClick = { navController.popBackStack() },
                         onOpenMemoryCardManager = navigateMemoryCardManager,
-                        onOpenGpuDriverManager = { navController.navigate(GpuDriverSettingsRoute()) },
+                        onOpenGpuDriverManager = {
+                            navController.navigate(GpuDriverSettingsRoute()) { launchSingleTop = true }
+                        },
                         onOpenLanguageScreen = {
                             navController.navigate(LanguageSettingsRoute) {
                                 launchSingleTop = true
@@ -911,7 +913,9 @@ fun AppNavigation(
                 PerGameSettingsManagerScreen(
                     initialGamePath = route.gamePath,
                     onOpenGpuDriverManager = { game ->
-                        navController.navigate(GpuDriverSettingsRoute(game.path, game.title, game.serial))
+                        navController.navigate(GpuDriverSettingsRoute(game.path, game.title, game.serial)) {
+                            launchSingleTop = true
+                        }
                     },
                     onOpenControlsLayoutEditor = { game ->
                         navController.navigate(
