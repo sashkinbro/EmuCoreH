@@ -1,7 +1,6 @@
 package com.sbro.emucoreh.ui.customization
 
-import android.graphics.ImageDecoder
-import android.graphics.drawable.AnimatedImageDrawable
+import android.graphics.drawable.Animatable
 import android.media.MediaPlayer
 import android.os.PowerManager
 import android.view.ViewGroup
@@ -27,9 +26,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.data.HomeBackgroundPreset
+import com.sbro.emucoreh.data.HomeBackgroundImageDecoder
 import com.sbro.emucoreh.data.HomeBackgroundType
 import java.io.File
-import kotlin.math.max
 
 @Composable
 fun HomeBackgroundMedia(
@@ -55,7 +54,7 @@ fun HomeBackgroundMedia(
     key(type, file.absolutePath, file.lastModified(), file.length(), revision) {
         when (type) {
             HomeBackgroundType.IMAGE,
-            HomeBackgroundType.GIF -> ImageBackground(file = file, modifier = modifier)
+            HomeBackgroundType.GIF -> ImageBackground(file = file, type = type, modifier = modifier)
             HomeBackgroundType.VIDEO -> VideoBackground(file = file, modifier = modifier)
             HomeBackgroundType.NONE,
             HomeBackgroundType.BUILT_IN -> Unit
@@ -90,26 +89,18 @@ private val HomeBackgroundPreset.portraitFocus: Alignment
     }
 
 @Composable
-private fun ImageBackground(file: File, modifier: Modifier) {
+private fun ImageBackground(file: File, type: HomeBackgroundType, modifier: Modifier) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val powerManager = remember(context) { context.getSystemService(PowerManager::class.java) }
     val allowAnimation = powerManager?.isPowerSaveMode != true
     val drawable = remember(file.absolutePath, file.lastModified()) {
-        runCatching {
-            ImageDecoder.decodeDrawable(ImageDecoder.createSource(file)) { decoder, info, _ ->
-                var sampleSize = 1
-                while (max(info.size.width, info.size.height) / sampleSize > 2048) {
-                    sampleSize *= 2
-                }
-                decoder.setTargetSampleSize(sampleSize)
-            }
-        }.getOrNull()
+        HomeBackgroundImageDecoder.decode(context, file, type)
     } ?: return
     var imageView by remember(file.absolutePath) { mutableStateOf<ImageView?>(null) }
 
     DisposableEffect(lifecycleOwner, drawable, allowAnimation) {
-        val animatedDrawable = drawable as? AnimatedImageDrawable
+        val animatedDrawable = drawable as? Animatable
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_RESUME -> if (allowAnimation) animatedDrawable?.start()
@@ -137,16 +128,16 @@ private fun ImageBackground(file: File, modifier: Modifier) {
                 )
                 scaleType = ImageView.ScaleType.CENTER_CROP
                 setImageDrawable(drawable)
-                if (allowAnimation) (drawable as? AnimatedImageDrawable)?.start()
+                if (allowAnimation) (drawable as? Animatable)?.start()
                 imageView = this
             }
         },
         update = { imageView ->
             if (imageView.drawable !== drawable) imageView.setImageDrawable(drawable)
-            if (allowAnimation) (drawable as? AnimatedImageDrawable)?.start()
+            if (allowAnimation) (drawable as? Animatable)?.start()
         },
         onRelease = {
-            (drawable as? AnimatedImageDrawable)?.stop()
+            (drawable as? Animatable)?.stop()
             it.setImageDrawable(null)
         }
     )

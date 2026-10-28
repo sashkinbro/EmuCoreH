@@ -1,7 +1,6 @@
 package com.sbro.emucoreh.data
 
 import android.content.Context
-import android.graphics.ImageDecoder
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -149,13 +148,8 @@ class HomeBackgroundRepository(context: Context) {
         when (type) {
             HomeBackgroundType.IMAGE,
             HomeBackgroundType.GIF -> {
-                val drawable = ImageDecoder.decodeDrawable(ImageDecoder.createSource(file)) { decoder, info, _ ->
-                    var sampleSize = 1
-                    while (max(info.size.width, info.size.height) / sampleSize > MAX_VALIDATION_DIMENSION) {
-                        sampleSize *= 2
-                    }
-                    decoder.setTargetSampleSize(sampleSize)
-                }
+                val drawable = HomeBackgroundImageDecoder.decode(appContext, file, type)
+                requireNotNull(drawable) { "Selected image cannot be decoded" }
                 require(drawable.intrinsicWidth > 0 && drawable.intrinsicHeight > 0) {
                     "Selected image cannot be decoded"
                 }
@@ -199,6 +193,5 @@ class HomeBackgroundRepository(context: Context) {
         const val DIRECTORY_NAME = "customization"
         const val FILE_NAME = "home_background"
         const val MAX_BACKGROUND_BYTES = 250L * 1024L * 1024L
-        const val MAX_VALIDATION_DIMENSION = 2048
     }
 }
