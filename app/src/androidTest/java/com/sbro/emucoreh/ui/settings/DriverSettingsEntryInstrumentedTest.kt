@@ -47,4 +47,27 @@ class DriverSettingsEntryInstrumentedTest {
         entry.performClick()
         compose.runOnIdle { assertTrue(opened) }
     }
+
+    @Test fun model3AndSg1000ShowOnlyTheirSupportedGraphicsSettings() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        assumeTrue(GpuDriverCompatibility.supportsCustomDrivers(context))
+        compose.setContent {
+            EmuCoreHTheme { SettingsScreen(initialTab = "graphics", onOpenGpuDriverManager = {}) }
+        }
+        val model3 = context.getString(R.string.home_platform_model_3)
+        val sg1000 = context.getString(R.string.home_platform_sg_1000)
+        val renderer = context.getString(R.string.settings_renderer)
+        val driver = context.getString(R.string.settings_gpu_driver_manager_title)
+        compose.waitUntil(15_000) { compose.onAllNodesWithText(model3).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText(model3).performScrollTo().performClick()
+        compose.onNodeWithText(renderer).assertExists()
+        compose.onNodeWithText(context.getString(R.string.settings_renderer_opengl)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.settings_renderer_vulkan)).assertExists()
+        compose.onNodeWithText(driver).assertExists()
+        compose.onNodeWithText(context.getString(R.string.model3_native_video)).assertDoesNotExist()
+        compose.onNodeWithText(sg1000).performScrollTo().performClick()
+        compose.onNodeWithText(renderer).assertExists()
+        compose.onNodeWithText(driver).assertDoesNotExist()
+        assertTrue("No empty SG-1000 video section", compose.onAllNodesWithText(sg1000).fetchSemanticsNodes().size == 1)
+    }
 }

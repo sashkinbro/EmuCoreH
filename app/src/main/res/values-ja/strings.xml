@@ -1265,7 +1265,7 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">フレーム制限</string>
     <string name="settings_frame_limit_desc">エミュレーションを本体のリフレッシュレートに制限します。オフにするとデバイスの性能に応じて高速に動作します。</string>
     <string name="settings_target_fps">目標フレームレート</string>
-    <string name="settings_target_fps_desc">自動では、動作中のコアが報告するフレームレートを使用します。手動の値はエミュレーション速度を設定するため、ゲームの描画フレーム数は少なくなる場合があります。</string>
+    <string name="settings_target_fps_desc">自動では、動作中のコアが報告するフレームレートを使用します。手動の値はエミュレーション速度を設定するため、ゲームの描画フレーム数は少なくなる場合があります。 50 Hzのゲームで25、60 Hzのゲームで30を選ぶと、音声を含むエミュレーション速度が約半分になります。</string>
     <string name="settings_display_crop">表示クロップ</string>
     <string name="settings_display_crop_desc">拡大縮小の前に上下左右の端を同じピクセル数だけ切り取ります。0を選択するとクロップを無効にします。</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1465,7 +1465,7 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">画面の向き</string>
     <string name="flycast_opt_screen_rotation_info">縦画面のアーケードゲームなどで使用する表示方向です。</string>
     <string name="flycast_opt_alpha_sorting_label">アルファソート</string>
-    <string name="flycast_opt_alpha_sorting_info">透明ポリゴンの並べ替え方法を選択します。</string>
+    <string name="flycast_opt_alpha_sorting_info">透明ポリゴンの並べ替え方法を選びます。方法によって描画の精度と速度が変わります。</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">ストリップ単位（高速・低精度）</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">トライアングル単位（標準）</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">ピクセル単位（正確・低速）</string>
@@ -1490,7 +1490,7 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">ミップマッピング</string>
     <string name="flycast_opt_mipmapping_info">有効にすると、遠くにあるテクスチャに縮小版が使用され、パフォーマンスが向上してちらつきが軽減されます。</string>
     <string name="flycast_opt_fog_label">フォグ効果</string>
-    <string name="flycast_opt_fog_info">霧のエミュレーションを有効にします。</string>
+    <string name="flycast_opt_fog_info">ゲームの霧の効果を描画します。無効にすると見た目が変わり、性能が向上する場合があります。</string>
     <string name="flycast_opt_volume_modifier_enable_label">ボリュームモディファイア</string>
     <string name="flycast_opt_volume_modifier_enable_info">ゲームがオブジェクトの影を描画するためによく使用するDreamcast GPUの機能です。通常は有効のままにしてください。パフォーマンスへの影響は最小限か、ほとんどありません。</string>
     <string name="flycast_opt_anisotropic_filtering_label">異方性フィルタリング</string>
@@ -1538,7 +1538,7 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">ワイドスクリーンハック</string>
     <string name="flycast_opt_widescreen_hack_info">通常の4:3アスペクト比の外側までジオメトリを描画します。描画が広がった領域にグラフィックの不具合が生じる場合があります。</string>
     <string name="flycast_opt_gdrom_fast_loading_label">GD-ROM高速読み込み（非正確）</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">GD-ROMの読み込みを高速化します。</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">ディスク読み込みの再現された待ち時間を短縮します。高速化により一部のゲームでタイミングの問題が生じる場合があります。</string>
     <string name="flycast_opt_dc_32mb_mod_label">Dreamcast 32MB RAM改造</string>
     <string name="flycast_opt_dc_32mb_mod_info">Dreamcastの32MB RAM改造を有効にします。互換性に影響する場合があります。</string>
     <string name="flycast_opt_sh4clock_label">SH4 CPUのアンダー/オーバークロック</string>
@@ -2392,4 +2392,16 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreHはAndroidのデフォルトのVulkanローダーを使用します。</string>
     <string name="settings_gpu_driver_system">システム</string>
     <string name="settings_help_gpu_driver">カスタムドライバーの切り替えが可能な場合に、どのGPUドライバーパッケージを使用するかを選択します。システムドライバーが最も安全なデフォルトです。これは、特定のGPUでのパフォーマンスを向上させたり、レンダリングを修正したりすることが知られているドライバーをテストしている場合にのみ変更してください。</string>
+    <string name="sega_region_help">本体の地域を選択します。地域制限のあるゲームでは対応する地域が必要です。変更を反映するにはゲームを再起動してください。</string>
+    <string name="sega_timing_help">NTSCまたはPALの映像タイミングを選択します。リフレッシュレートとゲーム速度に影響します。再起動後に反映されます。</string>
+    <string name="sega_sprite_limit_help">1行あたりのスプライト数の制限を解除し、多数のスプライトによるちらつきを軽減します。表示が実機と異なる場合があります。</string>
+    <string name="sega_low_pass_help">Mega Driveの音声の高音域を抑え、実機に近い柔らかい音にします。</string>
+    <string name="sega_fm_audio_help">Master SystemのFM音源をエミュレートします。対応ゲームではFM音楽と効果音を再生できます。</string>
+    <string name="sega_crop_border_help">Master System画面の上下の余白を隠し、表示範囲を変更します。</string>
+    <string name="sega_gg_resolution_help">Game Gearの通常の液晶表示範囲より広い画像を表示します。未完成の描画領域が見える場合があります。</string>
+    <string name="saturn_cart_help">Saturnのカートリッジを自動検出、拡張RAM、バックアップメモリー、なしから選択します。ゲームによっては特定の種類が必要です。再起動後に反映されます。</string>
+    <string name="saturn_language_help">Saturnのシステム言語を選択します。対応ゲームのメニューやテキストに反映されます。再起動が必要です。</string>
+    <string name="settings_help_gyro_stick">照準モードでスマートフォンの動きに割り当てるアナログスティックを選びます。ゲーム内のカメラを操作するスティックを選んでください。</string>
+    <string name="settings_help_arcade_device">このプレイヤーのエミュレートするコントローラーを選びます。自動ではライトガンモード中はライトガン、それ以外はゲームパッドを使います。</string>
+    <string name="settings_help_light_gun_aim">ライトガンの照準方法を選びます。ジャイロ、アナログスティック、方向キー、タッチから選べます。</string>
 </resources>

@@ -1271,7 +1271,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">Обмеження кадрів</string>
     <string name="settings_frame_limit_desc">Обмежує емуляцію частотою оновлення консолі. Вимкніть, щоб працювати так швидко, як дозволяє пристрій.</string>
     <string name="settings_target_fps">Цільова частота кадрів</string>
-    <string name="settings_target_fps_desc">Авто використовує частоту кадрів, яку повідомляє активне ядро. Ручні значення задають швидкість емуляції; ігри можуть відмальовувати менше кадрів.</string>
+    <string name="settings_target_fps_desc">Авто використовує частоту кадрів, яку повідомляє активне ядро. Ручні значення задають швидкість емуляції; ігри можуть відмальовувати менше кадрів. Вибір 25 для гри на 50 Гц або 30 для гри на 60 Гц уповільнює емуляцію приблизно вдвічі, разом зі звуком.</string>
     <string name="settings_display_crop">Обрізання зображення</string>
     <string name="settings_display_crop_desc">Обрізає однакову кількість пікселів з усіх чотирьох країв перед масштабуванням. Виберіть 0, щоб вимкнути обрізання.</string>
     <string name="settings_display_crop_pixels">%1$d пкс</string>
@@ -1471,7 +1471,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">Орієнтація екрана</string>
     <string name="flycast_opt_screen_rotation_info">Орієнтація зображення для вертикальних аркадних ігор.</string>
     <string name="flycast_opt_alpha_sorting_label">Сортування прозорості</string>
-    <string name="flycast_opt_alpha_sorting_info">Виберіть спосіб сортування прозорих полігонів.</string>
+    <string name="flycast_opt_alpha_sorting_info">Вибирає спосіб сортування прозорих полігонів. Методи відрізняються точністю та швидкістю рендерингу.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">За смугами (швидко, найменш точно)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">За трикутниками (звичайно)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">За пікселями (точно, але повільно)</string>
@@ -1496,7 +1496,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">Міпмапінг</string>
     <string name="flycast_opt_mipmapping_info">Текстури використовують зменшені копії на відстані — це підвищує продуктивність і зменшує мерехтіння.</string>
     <string name="flycast_opt_fog_label">Ефекти туману</string>
-    <string name="flycast_opt_fog_info">Увімкнути емуляцію туману.</string>
+    <string name="flycast_opt_fog_info">Відображає туман у іграх. Вимкнення змінює зображення й може підвищити продуктивність.</string>
     <string name="flycast_opt_volume_modifier_enable_label">Модифікатор об\'єму (тіні)</string>
     <string name="flycast_opt_volume_modifier_enable_info">Функція GPU Dreamcast, яку ігри зазвичай використовують для малювання тіней об\'єктів. Рекомендовано тримати увімкненим — вплив на продуктивність мінімальний.</string>
     <string name="flycast_opt_anisotropic_filtering_label">Анізотропна фільтрація</string>
@@ -1544,7 +1544,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">Хак широкого екрана</string>
     <string name="flycast_opt_widescreen_hack_info">Малює геометрію поза звичайним співвідношенням сторін 4:3. Може спричинити графічні артефакти в нових ділянках.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">Швидке завантаження GD-ROM (неточно)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">Прискорює завантаження з GD-ROM.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">Скорочує емульовані затримки завантаження диска. Прискорення може спричинити проблеми з таймінгом у деяких іграх.</string>
     <string name="flycast_opt_dc_32mb_mod_label">Мод 32 МБ ОЗП Dreamcast</string>
     <string name="flycast_opt_dc_32mb_mod_info">Вмикає мод 32 МБ ОЗП для Dreamcast. Може вплинути на сумісність.</string>
     <string name="flycast_opt_sh4clock_label">Частота CPU SH4</string>
@@ -2398,4 +2398,16 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH використовуватиме стандартний завантажувач Vulkan від Android.</string>
     <string name="settings_gpu_driver_system">Системний</string>
     <string name="settings_help_gpu_driver">Вибирає, який пакет драйверів графічного процесора використовувати, коли доступне перемикання користувацьких драйверів. Системний драйвер — найбезпечніше налаштування за замовчуванням; змінюйте його тільки в тому випадку, якщо ви тестуєте відомий драйвер, який покращує продуктивність або виправляє рендеринг на вашому конкретному графічному процесорі.</string>
+    <string name="sega_region_help">Вибирає регіон консолі. Для ігор із регіональним захистом може знадобитися відповідний регіон. Зміна діє після перезапуску гри.</string>
+    <string name="sega_timing_help">Вибирає відеостандарт NTSC або PAL, який впливає на частоту оновлення та швидкість гри. Зміна діє після перезапуску.</string>
+    <string name="sega_sprite_limit_help">Прибирає обмеження кількості спрайтів у рядку й зменшує мерехтіння, коли їх багато. Зображення може відрізнятися від оригіналу.</string>
+    <string name="sega_low_pass_help">Приглушує високі частоти звуку Mega Drive, роблячи звучання м’якшим і ближчим до консолі.</string>
+    <string name="sega_fm_audio_help">Емулює FM-звуковий модуль Master System. Сумісні ігри можуть відтворювати FM-музику та ефекти.</string>
+    <string name="sega_crop_border_help">Прибирає верхні й нижні поля зображення Master System, змінюючи видиму область кадру.</string>
+    <string name="sega_gg_resolution_help">Показує ширше зображення Game Gear за межами звичайного екрана. У деяких іграх можуть бути видимі незавершені області.</string>
+    <string name="saturn_cart_help">Вибирає картридж Saturn: автовизначення, розширення пам’яті, пам’ять збережень або без картриджа. Деяким іграм потрібен певний тип. Зміна діє після перезапуску.</string>
+    <string name="saturn_language_help">Вибирає системну мову Saturn. Сумісні ігри можуть використовувати її для меню й тексту. Зміна діє після перезапуску.</string>
+    <string name="settings_help_gyro_stick">Вибирає аналоговий стік, яким керують рухи телефона в режимі прицілювання. Виберіть стік, що керує камерою у грі.</string>
+    <string name="settings_help_arcade_device">Вибирає контролер для цього гравця. Автоматичний режим використовує пістолет у режимі світлового пістолета, інакше — геймпад.</string>
+    <string name="settings_help_light_gun_aim">Вибирає спосіб наведення світлового пістолета: гіроскоп, аналоговий стік, хрестовину або дотик.</string>
 </resources>

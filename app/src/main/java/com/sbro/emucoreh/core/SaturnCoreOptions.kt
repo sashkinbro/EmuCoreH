@@ -15,13 +15,13 @@ object SaturnCoreOptions {
 
     private fun choice(value: String, label: Int) = FlycastCoreOptions.Choice(value, label)
     private val definitions = listOf(
-        FlycastCoreOptions.Option(CART_KEY, R.string.saturn_addon_cart, R.string.sega_restart_required, "system",
+        FlycastCoreOptions.Option(CART_KEY, R.string.saturn_addon_cart, R.string.saturn_cart_help, "system",
             listOf(choice("Auto Detect", R.string.settings_arcade_device_auto),
                 choice("Extended RAM (1MB)", R.string.saturn_cart_1m),
                 choice("Extended RAM (4MB)", R.string.saturn_cart_4m),
                 choice("Backup Memory", R.string.saturn_cart_backup),
                 choice("None", R.string.touch_control_creator_none)), "Auto Detect"),
-        FlycastCoreOptions.Option(REGION_KEY, R.string.sega_region, R.string.sega_restart_required, "system",
+        FlycastCoreOptions.Option(REGION_KEY, R.string.sega_region, R.string.sega_region_help, "system",
             listOf(choice("Auto Detect", R.string.settings_arcade_device_auto),
                 choice("Japan", R.string.flycast_opt_region_choice_japan),
                 choice("North America", R.string.saturn_region_north_america),
@@ -31,7 +31,7 @@ object SaturnCoreOptions {
                 choice("Asia (PAL)", R.string.saturn_region_asia_pal),
                 choice("Brazil", R.string.saturn_region_brazil),
                 choice("Latin America", R.string.saturn_region_latin_america)), "Auto Detect"),
-        FlycastCoreOptions.Option(LANGUAGE_KEY, R.string.flycast_opt_language_label, R.string.sega_restart_required, "system",
+        FlycastCoreOptions.Option(LANGUAGE_KEY, R.string.flycast_opt_language_label, R.string.saturn_language_help, "system",
             listOf(choice("english", R.string.settings_language_english), choice("german", R.string.settings_language_german),
                 choice("french", R.string.settings_language_french), choice("spanish", R.string.settings_language_spanish),
                 choice("italian", R.string.settings_language_italian), choice("japanese", R.string.settings_language_japanese)), "english"),

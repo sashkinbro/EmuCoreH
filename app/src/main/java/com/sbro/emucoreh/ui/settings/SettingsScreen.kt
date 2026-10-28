@@ -1126,9 +1126,9 @@ private fun SettingsContent(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             if (platform.isModel3 && searchQuery.isBlank() &&
-                selectedTab in setOf(SettingsTab.Graphics, SettingsTab.Emulation)) {
+                selectedTab == SettingsTab.Emulation) {
                 Model3SettingsInfo(
-                    showNativeVideo = selectedTab == SettingsTab.Graphics,
+                    showNativeVideo = false,
                     showCabinetSetup = selectedTab == SettingsTab.Emulation
                 )
             }
@@ -1560,6 +1560,7 @@ private fun SettingsContent(
                         if (platform.coreId == 0 && uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
                             ChoiceSection(
                                 title = stringResource(R.string.settings_gyro_stick),
+                                helpText = stringResource(R.string.settings_help_gyro_stick),
                                 options = gyroStickTargetOptions(),
                                 selectedValue = uiState.gyroStickTarget,
                                 onSelect = viewModel::setGyroStickTarget,
@@ -1569,6 +1570,7 @@ private fun SettingsContent(
                         if (platform.coreId == 0) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_arcade_device_player_1),
+                            helpText = stringResource(R.string.settings_help_arcade_device),
                             options = arcadeDeviceOptions(),
                             selectedValue = uiState.arcadeDevice1,
                             onSelect = viewModel::setArcadeDevice1,
@@ -1578,6 +1580,7 @@ private fun SettingsContent(
                         if (platform.coreId == 0) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_arcade_device_player_2),
+                            helpText = stringResource(R.string.settings_help_arcade_device),
                             options = arcadeDeviceOptions(),
                             selectedValue = uiState.arcadeDevice2,
                             onSelect = viewModel::setArcadeDevice2,
@@ -1587,6 +1590,7 @@ private fun SettingsContent(
                         if (platform.coreId == 0) {
                         ChoiceSection(
                             title = stringResource(R.string.settings_light_gun_aim),
+                            helpText = stringResource(R.string.settings_help_light_gun_aim),
                             options = lightGunAimSourceOptions(),
                             selectedValue = uiState.lightGunAimSource,
                             onSelect = viewModel::setLightGunAimSource,
@@ -2114,14 +2118,14 @@ private fun SettingsContent(
                 }
 
                 SettingsTab.Graphics -> {
-                    if (platform.isSega || platform.isSaturn) {
+                    if (settingsCoreOptionSectionVisible(platform, "video")) {
                         SettingsSection(title = platformLabel(platform)) {
                             SegaCoreOptionRows(platform, category = "video")
                         }
                     }
                     SettingsSection(title = stringResource(R.string.settings_graphics_tab)) {
-                        if (platform.coreId == 0 || platform.isSega) {
-                        val rendererOptions = if (platform.isSega) {
+                        if (platform.coreId == 0 || platform.isSega || platform.isModel3) {
+                        val rendererOptions = if (platform.isSega || platform.isModel3) {
                             // jgenesis always emulates on the CPU, but its
                             // frames are presented through one of our GPU
                             // output backends.
@@ -2139,14 +2143,14 @@ private fun SettingsContent(
                         ChoiceSection(
                             title = stringResource(R.string.settings_renderer),
                             options = rendererOptions,
-                            selectedValue = RendererDefaults.normalizeAndroidRenderer(uiState.renderer)
+                            selectedValue = if (platform.isModel3) uiState.model3Renderer else RendererDefaults.normalizeAndroidRenderer(uiState.renderer)
                                 .let { if (platform.isSega && it == RendererDefaults.SOFTWARE) RendererDefaults.OPENGL else it },
-                            onSelect = viewModel::setRenderer,
+                            onSelect = { if (platform.isModel3) viewModel.setModel3Renderer(it) else viewModel.setRenderer(it) },
                             helpText = stringResource(R.string.settings_help_renderer),
-                            onResetToDefault = { viewModel.setRenderer(defaults.renderer) }
+                            onResetToDefault = { if (platform.isModel3) viewModel.setModel3Renderer(RendererDefaults.VULKAN) else viewModel.setRenderer(defaults.renderer) }
                         )
                         }
-                        if ((platform.coreId == 0 || platform.isSega) &&
+                        if (platform.supportsCustomGpuDrivers() &&
                             gpuDriverSupported) {
                             SettingsItem(
                                 icon = Icons.Rounded.Tune,
@@ -2154,6 +2158,7 @@ private fun SettingsContent(
                                 value = uiState.installedGpuDrivers.firstOrNull { it.mainLibraryPath == uiState.customDriverPath }?.name
                                     ?: stringResource(R.string.settings_gpu_driver_system),
                                 onClick = { onOpenGpuDriverManager?.invoke() },
+                                helpText = stringResource(R.string.settings_help_gpu_driver),
                                 enabled = onOpenGpuDriverManager != null,
                                 border = BorderStroke(
                                     1.dp,
@@ -2268,11 +2273,9 @@ private fun SettingsContent(
                         )
                         ChoiceSection(
                             title = stringResource(R.string.settings_target_fps),
-                            options = listOf(
-                                0 to stringResource(R.string.settings_aspect_ratio_auto),
-                                50 to "50 Hz",
-                                60 to "60 Hz"
-                            ),
+                            options = com.sbro.emucoreh.core.FrameRateChoices.values.map { rate ->
+                                rate to if (rate == 0) stringResource(R.string.settings_aspect_ratio_auto) else "$rate Hz"
+                            },
                             selectedValue = uiState.targetFps,
                             onSelect = viewModel::setTargetFps,
                             helpText = stringResource(R.string.settings_target_fps_desc),
@@ -2323,7 +2326,7 @@ private fun SettingsContent(
                         }
                     }
 
-                    if (platform.isSega || platform.isSaturn) {
+                    if (settingsCoreOptionSectionVisible(platform, "system")) {
                         SettingsSection(title = platformLabel(platform)) {
                             SegaCoreOptionRows(platform, category = "system")
                         }
@@ -3186,7 +3189,7 @@ private fun GameMenuSettingsTab(
     }
 
     supportedTabs.forEach { tab ->
-        val sections = uiState.gameMenuSectionOrder.filter { it.tab == tab && (platform.coreId == 0 || it != GameMenuSectionId.EMULATION_CPU) }
+        val sections = uiState.gameMenuSectionOrder.filter { it.tab == tab && (platform.coreId == 0 || platform.isSega || platform.isSaturn || it != GameMenuSectionId.EMULATION_CPU) }
         SettingsSection(
             title = stringResource(
                 R.string.settings_game_menu_tab_content_format,

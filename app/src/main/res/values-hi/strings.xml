@@ -1266,7 +1266,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">फ़्रेम सीमा</string>
     <string name="settings_frame_limit_desc">एमुलेशन को कंसोल की रिफ्रेश दर तक सीमित करता है। डिवाइस की अधिकतम गति से चलाने के लिए इसे बंद करें।</string>
     <string name="settings_target_fps">लक्ष्य फ़्रेम दर</string>
-    <string name="settings_target_fps_desc">ऑटो सक्रिय कोर द्वारा बताई गई फ़्रेम दर का उपयोग करता है। मैन्युअल मान एमुलेशन की गति तय करते हैं; गेम कम फ़्रेम बना सकते हैं।</string>
+    <string name="settings_target_fps_desc">ऑटो सक्रिय कोर द्वारा बताई गई फ़्रेम दर का उपयोग करता है। मैन्युअल मान एमुलेशन की गति तय करते हैं; गेम कम फ़्रेम बना सकते हैं। 50 Hz गेम के लिए 25 या 60 Hz गेम के लिए 30 चुनने से ध्वनि सहित एमुलेशन लगभग आधी गति पर चलता है।</string>
     <string name="settings_display_crop">डिस्प्ले क्रॉप</string>
     <string name="settings_display_crop_desc">आकार बदलने से पहले चारों किनारों से समान संख्या में पिक्सेल काटता है। क्रॉप बंद करने के लिए 0 चुनें।</string>
     <string name="settings_display_crop_pixels">%1$d पिक्सेल</string>
@@ -1466,7 +1466,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">स्क्रीन ओरिएंटेशन</string>
     <string name="flycast_opt_screen_rotation_info">वर्टिकल आर्केड गेम्स के लिए छवि का ओरिएंटेशन।</string>
     <string name="flycast_opt_alpha_sorting_label">अल्फ़ा सॉर्टिंग</string>
-    <string name="flycast_opt_alpha_sorting_info">पारदर्शी पॉलीगॉन्स को किस क्रम में लगाया जाए, यह चुनें।</string>
+    <string name="flycast_opt_alpha_sorting_info">पारदर्शी पॉलीगॉन को क्रमबद्ध करने का तरीका चुनता है। सटीकता और रेंडर गति तरीके पर निर्भर हैं।</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">प्रति-स्ट्रिप (तेज़, सबसे कम सटीक)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">प्रति-त्रिभुज (सामान्य)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">प्रति-पिक्सेल (सटीक, पर सबसे धीमा)</string>
@@ -1491,7 +1491,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">मिपमैपिंग</string>
     <string name="flycast_opt_mipmapping_info">चालू होने पर दूर दिखने वाले टेक्सचर उनके छोटे रूप में इस्तेमाल होते हैं, जिससे प्रदर्शन बढ़ता है और झिलमिलाहट घटती है।</string>
     <string name="flycast_opt_fog_label">कोहरा प्रभाव</string>
-    <string name="flycast_opt_fog_info">गेम्स में कोहरे का एमुलेशन चालू करें।</string>
+    <string name="flycast_opt_fog_info">गेम में धुंध के प्रभाव दिखाता है। इसे बंद करने से चित्र बदलता है और प्रदर्शन बेहतर हो सकता है।</string>
     <string name="flycast_opt_volume_modifier_enable_label">वॉल्यूम मॉडिफ़ायर (छाया)</string>
     <string name="flycast_opt_volume_modifier_enable_info">Dreamcast GPU की सुविधा, जिसका इस्तेमाल गेम्स आम तौर पर वस्तुओं की छाया बनाने के लिए करते हैं। इसे सामान्यतः चालू रखना चाहिए — प्रदर्शन पर असर बहुत कम पड़ता है।</string>
     <string name="flycast_opt_anisotropic_filtering_label">एनिसोट्रॉपिक फ़िल्टरिंग</string>
@@ -1539,7 +1539,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">वाइडस्क्रीन हैक</string>
     <string name="flycast_opt_widescreen_hack_info">सामान्य 4:3 अनुपात से बाहर ज्यामिति बनाता है। खुलने वाले हिस्सों में ग्राफ़िकल गड़बड़ी हो सकती है।</string>
     <string name="flycast_opt_gdrom_fast_loading_label">GD-ROM तेज़ लोडिंग (असटीक)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">GD-ROM से लोडिंग तेज़ करता है।</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">डिस्क लोड करने की सिम्युलेटेड देरी घटाता है। तेज़ लोडिंग से कुछ गेम में टाइमिंग की समस्या हो सकती है।</string>
     <string name="flycast_opt_dc_32mb_mod_label">Dreamcast 32MB RAM मॉड</string>
     <string name="flycast_opt_dc_32mb_mod_info">Dreamcast के लिए 32MB RAM मॉड चालू करता है। अनुकूलता प्रभावित हो सकती है।</string>
     <string name="flycast_opt_sh4clock_label">SH4 CPU अंडर/ओवरक्लॉक</string>
@@ -2393,4 +2393,16 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH Android के डिफ़ॉल्ट Vulkan लोडर का उपयोग करेगा।</string>
     <string name="settings_gpu_driver_system">सिस्टम</string>
     <string name="settings_help_gpu_driver">चुनता है कि कस्टम ड्राइवर स्विचिंग उपलब्ध होने पर किस GPU ड्राइवर पैकेज का उपयोग किया जाए। सिस्टम ड्राइवर सबसे सुरक्षित डिफ़ॉल्ट है; इसे केवल तभी बदलें जब आप किसी ज्ञात ड्राइवर का परीक्षण कर रहे हों जो प्रदर्शन में सुधार करता है या आपके विशिष्ट GPU पर रेंडरिंग को ठीक करता है।</string>
+    <string name="sega_region_help">कंसोल का क्षेत्र चुनता है। क्षेत्र प्रतिबंध वाले गेम को सही क्षेत्र की आवश्यकता हो सकती है। लागू करने के लिए गेम दोबारा शुरू करें।</string>
+    <string name="sega_timing_help">NTSC या PAL वीडियो टाइमिंग चुनता है, जो रिफ्रेश दर और गेम की गति को प्रभावित करती है। लागू करने के लिए दोबारा शुरू करें।</string>
+    <string name="sega_sprite_limit_help">एक पंक्ति में स्प्राइट की सीमा हटाकर अधिक स्प्राइट होने पर झिलमिलाहट कम करता है। चित्र मूल कंसोल से अलग हो सकता है।</string>
+    <string name="sega_low_pass_help">Mega Drive ऑडियो की ऊँची आवृत्तियाँ कम करता है, जिससे आवाज़ नरम और मूल कंसोल के करीब होती है।</string>
+    <string name="sega_fm_audio_help">Master System की FM ध्वनि इकाई का अनुकरण करता है। समर्थित गेम FM संगीत और प्रभाव चला सकते हैं।</string>
+    <string name="sega_crop_border_help">Master System चित्र के ऊपर और नीचे के बॉर्डर छिपाता है और दिखने वाला क्षेत्र बदलता है।</string>
+    <string name="sega_gg_resolution_help">Game Gear की सामान्य LCD सीमा से बाहर का चौड़ा चित्र दिखाता है। कुछ गेम में अधूरे ग्राफ़िक्स दिख सकते हैं।</string>
+    <string name="saturn_cart_help">Saturn कार्ट्रिज चुनता है: स्वचालित, अतिरिक्त RAM, सेव मेमोरी या कोई नहीं। कुछ गेम को विशेष कार्ट्रिज चाहिए। दोबारा शुरू करें।</string>
+    <string name="saturn_language_help">Saturn सिस्टम की भाषा चुनता है। समर्थित गेम इसे मेनू और टेक्स्ट के लिए इस्तेमाल कर सकते हैं। दोबारा शुरू करें।</string>
+    <string name="settings_help_gyro_stick">लक्ष्य मोड में फ़ोन की गति से नियंत्रित होने वाली एनालॉग स्टिक चुनता है। गेम के कैमरे को नियंत्रित करने वाली स्टिक चुनें।</string>
+    <string name="settings_help_arcade_device">इस खिलाड़ी का एमुलेटेड कंट्रोलर चुनता है। स्वचालित विकल्प लाइट गन मोड में गन और अन्यथा गेमपैड उपयोग करता है।</string>
+    <string name="settings_help_light_gun_aim">लाइट गन से निशाना लगाने का तरीका चुनता है: जाइरोस्कोप, एनालॉग स्टिक, दिशात्मक बटन या स्पर्श।</string>
 </resources>

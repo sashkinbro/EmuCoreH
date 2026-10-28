@@ -538,8 +538,8 @@ fun PerGameSettingsManagerScreen(
             selectedGame?.let { game ->
                 item {
                     val storedProfile = profiles.firstOrNull { it.gameKey == game.path }
-                    val defaultProfile = remember(settingsSnapshot, game) {
-                        settingsSnapshot.toPerGameSettings(game)
+                    val defaultProfile = remember(settingsSnapshot, game, platform) {
+                        settingsSnapshot.toPerGameSettings(game).let { if (platform.isModel3) it.copy(renderer = settingsSnapshot.model3Renderer) else it }
                     }
                     val editableProfile = remember(storedProfile, defaultProfile) {
                         (storedProfile ?: defaultProfile).resolveAgainst(defaultProfile)
@@ -955,10 +955,9 @@ private fun GameSettingsTabContent(
     ) {
         when (selectedTab) {
             GameSettingsManagerTab.Core -> {
-                if (platform.isModel3) Model3SettingsInfo()
                 EditorSection(title = stringResource(R.string.game_settings_manager_section_profile)) {
-                    if (platform.coreId == 0 || platform.isSega) {
-                    val rendererOptions = if (platform.isSega) {
+                    if (platform.coreId == 0 || platform.isSega || platform.isModel3) {
+                    val rendererOptions = if (platform.isSega || platform.isModel3) {
                         listOf(
                             12 to stringResource(R.string.settings_renderer_opengl),
                             14 to stringResource(R.string.settings_renderer_vulkan)
@@ -974,14 +973,14 @@ private fun GameSettingsTabContent(
                         title = stringResource(R.string.settings_renderer),
                         options = rendererOptions,
                         selectedValue = normalizeManagerRenderer(draft.renderer)
-                            .let { if (platform.isSega && it == RendererDefaults.SOFTWARE) RendererDefaults.OPENGL else it },
+                            .let { if ((platform.isSega || platform.isModel3) && it == RendererDefaults.SOFTWARE) RendererDefaults.OPENGL else it },
                         onSelected = { onDraftChange(draft.copy(renderer = it)) },
                         helpText = stringResource(R.string.settings_help_renderer),
                         onResetToDefault = {
                             onDraftChange(draft.copy(renderer = normalizeManagerRenderer(defaultProfile.renderer)))
                         }
                     )
-                    if (gpuDriverSupported) {
+                    if (platform.supportsCustomGpuDrivers() && gpuDriverSupported) {
                         ManagerActionButton(
                             modifier = Modifier.fillMaxWidth(),
                             icon = Icons.Rounded.Tune,
@@ -1088,11 +1087,9 @@ private fun GameSettingsTabContent(
                 EditorSection(title = stringResource(R.string.game_settings_manager_section_runtime)) {
                     SelectionRow(
                         title = stringResource(R.string.settings_target_fps),
-                        options = listOf(
-                            0 to stringResource(R.string.settings_aspect_ratio_auto),
-                            50 to "50 Hz",
-                            60 to "60 Hz"
-                        ),
+                        options = com.sbro.emucoreh.core.FrameRateChoices.values.map { rate ->
+                            rate to if (rate == 0) stringResource(R.string.settings_aspect_ratio_auto) else "$rate Hz"
+                        },
                         selectedValue = draft.targetFps,
                         onSelected = { onDraftChange(draft.copy(targetFps = it)) },
                         helpText = stringResource(R.string.settings_target_fps_desc),
@@ -1129,7 +1126,8 @@ private fun GameSettingsTabContent(
                     if (platform.isSega || platform.isSaturn) SegaCoreOptionRows(platform, overrides = draft.coreOptions, category = "system",
                         onChange = { key, value -> onDraftChange(draft.copy(coreOptions = draft.coreOptions + (key to value))) })
                     else if (platform.coreId == 0) CoreOptionManagerRows(
-                        options = FlycastCoreOptions.systemOptions(),
+                        options = FlycastCoreOptions.systemOptions() + FlycastCoreOptions.performanceOptions() +
+                            FlycastCoreOptions.hacksOptions() + FlycastCoreOptions.vmuOptions(),
                         draft = draft,
                         onDraftChange = onDraftChange
                     )
@@ -1359,6 +1357,7 @@ private fun GameSettingsTabContent(
                     if (platform.coreId == 0 && draft.gyroMode == AppPreferences.GYRO_MODE_AIM) {
                         SelectionRow(
                             title = stringResource(R.string.settings_gyro_stick),
+                            helpText = stringResource(R.string.settings_help_gyro_stick),
                             options = gyroStickTargetOptions(),
                             selectedValue = draft.gyroStickTarget,
                             onSelected = { onDraftChange(draft.copy(gyroStickTarget = it)) },
@@ -1368,6 +1367,7 @@ private fun GameSettingsTabContent(
                     if (platform.coreId == 0) {
                     SelectionRow(
                         title = stringResource(R.string.settings_arcade_device_player_1),
+                        helpText = stringResource(R.string.settings_help_arcade_device),
                         options = arcadeDeviceOptions(),
                         selectedValue = draft.arcadeDevice1,
                         onSelected = { onDraftChange(draft.copy(arcadeDevice1 = it)) },
@@ -1377,6 +1377,7 @@ private fun GameSettingsTabContent(
                     if (platform.coreId == 0) {
                     SelectionRow(
                         title = stringResource(R.string.settings_arcade_device_player_2),
+                        helpText = stringResource(R.string.settings_help_arcade_device),
                         options = arcadeDeviceOptions(),
                         selectedValue = draft.arcadeDevice2,
                         onSelected = { onDraftChange(draft.copy(arcadeDevice2 = it)) },
@@ -1386,6 +1387,7 @@ private fun GameSettingsTabContent(
                     if (platform.coreId == 0) {
                     SelectionRow(
                         title = stringResource(R.string.settings_light_gun_aim),
+                        helpText = stringResource(R.string.settings_help_light_gun_aim),
                         options = lightGunAimSourceOptions(),
                         selectedValue = draft.lightGunAimSource,
                         onSelected = { onDraftChange(draft.copy(lightGunAimSource = it)) },
@@ -1484,7 +1486,7 @@ private fun GameSettingsTabContent(
 
                 if (platform.coreId == 0) EditorSection(title = stringResource(R.string.settings_core_input)) {
                     CoreOptionManagerRows(
-                        options = FlycastCoreOptions.inputOptions(),
+                        options = FlycastCoreOptions.inputOptions() + FlycastCoreOptions.expansionsOptions(),
                         draft = draft,
                         onDraftChange = onDraftChange
                     )
@@ -1535,16 +1537,28 @@ private fun CoreOptionManagerRows(
 ) {
     val context = LocalContext.current
     val platform = rememberGamePlatform(draft.gameKey)
+    val preferences = remember(context) { AppPreferences(context) }
+    val customTextures by preferences.textureReplacementsEnabled.collectAsState(initial = false)
+    val preloadTextures by preferences.textureReplacementsPrecache.collectAsState(initial = false)
+    val dumpTextures by preferences.textureDumpingEnabled.collectAsState(initial = false)
     options.forEach { option ->
         val values = option.choices.map { it.value }
         val current = draft.coreOptions[option.key]
             ?: (if (option.key.startsWith("jgenesis_")) com.sbro.emucoreh.core.SegaCoreOptions.value(context, option.key, platform)
                 else if (option.key.startsWith("beetle_saturn_")) com.sbro.emucoreh.core.SaturnCoreOptions.value(context, option.key)
-                else CoreOptionStore.value(option.key))
+                else CoreOptionStore.value(option.key) ?: when (option.key) {
+                    "reicast_custom_textures" -> if (customTextures) "enabled" else "disabled"
+                    "reicast_preload_custom_textures" -> if (preloadTextures) "enabled" else "disabled"
+                    "reicast_dump_textures" -> if (dumpTextures) "enabled" else "disabled"
+                    else -> null
+                })
             ?: option.defaultValue
         val index = values.indexOf(current).let { if (it >= 0) it else 0 }
         val title = stringResource(option.labelRes)
-        val help = stringResource(option.descriptionRes).takeIf { it.isNotBlank() }
+        val description = stringResource(option.descriptionRes)
+        val help = if (option.key == "beetle_saturn_cdimagecache")
+            listOf(description, stringResource(R.string.sega_restart_required)).filter { it.isNotBlank() }.joinToString("\n\n")
+        else description.takeIf { it.isNotBlank() }
         if (option.isBooleanToggle) {
             ToggleRow(
                 title = title,

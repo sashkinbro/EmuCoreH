@@ -1265,7 +1265,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">프레임 제한</string>
     <string name="settings_frame_limit_desc">에뮬레이션을 콘솔의 주사율로 제한합니다. 끄면 기기가 허용하는 만큼 빠르게 실행됩니다.</string>
     <string name="settings_target_fps">목표 프레임 속도</string>
-    <string name="settings_target_fps_desc">자동은 활성 코어가 보고한 프레임 속도를 사용합니다. 수동 값은 에뮬레이션 속도를 설정하며 게임이 더 적은 프레임을 그릴 수 있습니다.</string>
+    <string name="settings_target_fps_desc">자동은 활성 코어가 보고한 프레임 속도를 사용합니다. 수동 값은 에뮬레이션 속도를 설정하며 게임이 더 적은 프레임을 그릴 수 있습니다. 50 Hz 게임에서 25를, 60 Hz 게임에서 30을 선택하면 오디오를 포함한 에뮬레이션 속도가 약 절반이 됩니다.</string>
     <string name="settings_display_crop">화면 자르기</string>
     <string name="settings_display_crop_desc">크기 조정 전에 네 가장자리에서 같은 수의 픽셀을 잘라냅니다. 자르기를 끄려면 0을 선택하세요.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1465,7 +1465,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">화면 방향</string>
     <string name="flycast_opt_screen_rotation_info">세로 화면 아케이드 게임 등에서 사용하는 표시 방향입니다.</string>
     <string name="flycast_opt_alpha_sorting_label">알파 정렬</string>
-    <string name="flycast_opt_alpha_sorting_info">투명 폴리곤을 정렬하는 방법을 선택합니다.</string>
+    <string name="flycast_opt_alpha_sorting_info">투명 폴리곤의 정렬 방식을 선택합니다. 방식에 따라 정확도와 렌더링 속도가 달라집니다.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">스트립 단위 (고속, 정확도 낮음)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">삼각형 단위 (일반)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">픽셀 단위 (정확, 가장 느림)</string>
@@ -1490,7 +1490,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">밉매핑</string>
     <string name="flycast_opt_mipmapping_info">활성화하면 멀리 있는 텍스처에 축소판을 사용하여 성능이 향상되고 반짝임이 줄어듭니다.</string>
     <string name="flycast_opt_fog_label">안개 효과</string>
-    <string name="flycast_opt_fog_info">안개 에뮬레이션을 활성화합니다.</string>
+    <string name="flycast_opt_fog_info">게임의 안개 효과를 표시합니다. 끄면 화면이 달라지고 성능이 향상될 수 있습니다.</string>
     <string name="flycast_opt_volume_modifier_enable_label">볼륨 모디파이어</string>
     <string name="flycast_opt_volume_modifier_enable_info">게임에서 오브젝트 그림자를 그리는 데 주로 사용하는 Dreamcast GPU 기능입니다. 보통 활성화 상태로 두는 것이 좋으며 성능 영향은 거의 없습니다.</string>
     <string name="flycast_opt_anisotropic_filtering_label">이방성 필터링</string>
@@ -1538,7 +1538,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">와이드스크린 핵</string>
     <string name="flycast_opt_widescreen_hack_info">일반적인 4:3 화면 비율 밖까지 지오메트리를 그립니다. 새로 드러난 영역에 그래픽 오류가 발생할 수 있습니다.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">GD-ROM 빠른 로딩 (부정확)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">GD-ROM 로딩 속도를 높입니다.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">모의 디스크 로딩 지연을 줄입니다. 빠른 로딩은 일부 게임에서 타이밍 문제를 일으킬 수 있습니다.</string>
     <string name="flycast_opt_dc_32mb_mod_label">Dreamcast 32MB RAM 모드</string>
     <string name="flycast_opt_dc_32mb_mod_info">Dreamcast용 32MB RAM 모드를 활성화합니다. 호환성에 영향을 줄 수 있습니다.</string>
     <string name="flycast_opt_sh4clock_label">SH4 CPU 언더/오버클럭</string>
@@ -2392,4 +2392,16 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH가 Android의 기본 Vulkan 로더를 사용합니다.</string>
     <string name="settings_gpu_driver_system">시스템</string>
     <string name="settings_help_gpu_driver">사용자 지정 드라이버 전환이 가능할 때 사용할 GPU 드라이버 패키지를 선택합니다. 시스템 드라이버가 가장 안전한 기본값입니다. 특정 GPU에서 성능을 향상시키거나 렌더링을 수정하는 것으로 알려진 드라이버를 테스트하는 경우에만 이를 변경하세요.</string>
+    <string name="sega_region_help">콘솔 지역을 선택합니다. 지역 제한이 있는 게임은 일치하는 지역이 필요할 수 있습니다. 게임을 다시 시작해야 적용됩니다.</string>
+    <string name="sega_timing_help">화면 주사율과 게임 속도에 영향을 주는 NTSC 또는 PAL 영상 타이밍을 선택합니다. 다시 시작해야 적용됩니다.</string>
+    <string name="sega_sprite_limit_help">한 줄의 스프라이트 제한을 해제해 여러 스프라이트가 겹칠 때 깜빡임을 줄입니다. 원래 화면과 달라질 수 있습니다.</string>
+    <string name="sega_low_pass_help">Mega Drive 오디오의 고주파를 줄여 실제 콘솔에 가까운 부드러운 소리를 냅니다.</string>
+    <string name="sega_fm_audio_help">Master System의 FM 사운드 장치를 에뮬레이션합니다. 지원 게임에서 FM 음악과 효과음을 재생할 수 있습니다.</string>
+    <string name="sega_crop_border_help">Master System 화면의 위아래 테두리를 숨겨 보이는 영역을 변경합니다.</string>
+    <string name="sega_gg_resolution_help">Game Gear의 일반 LCD 영역 밖까지 더 넓게 표시합니다. 완성되지 않은 그래픽이 보일 수 있습니다.</string>
+    <string name="saturn_cart_help">Saturn 카트리지를 자동 감지, 확장 RAM, 저장 메모리 또는 없음으로 선택합니다. 일부 게임에는 특정 카트리지가 필요합니다. 다시 시작해야 합니다.</string>
+    <string name="saturn_language_help">Saturn 시스템 언어를 선택합니다. 지원 게임의 메뉴와 텍스트에 사용될 수 있습니다. 다시 시작해야 합니다.</string>
+    <string name="settings_help_gyro_stick">조준 모드에서 휴대전화 움직임으로 제어할 아날로그 스틱을 선택합니다. 게임의 카메라를 조작하는 스틱을 선택하세요.</string>
+    <string name="settings_help_arcade_device">이 플레이어의 에뮬레이션 컨트롤러를 선택합니다. 자동은 라이트건 모드에서 라이트건을, 그 외에는 게임패드를 사용합니다.</string>
+    <string name="settings_help_light_gun_aim">라이트건 조준 방식을 선택합니다: 자이로스코프, 아날로그 스틱, 방향키 또는 터치.</string>
 </resources>

@@ -1288,7 +1288,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">Limit snímků</string>
     <string name="settings_frame_limit_desc">Omezuje emulaci na obnovovací frekvenci konzole. Vypnutím poběží tak rychle, jak zařízení dovolí.</string>
     <string name="settings_target_fps">Cílová frekvence snímků</string>
-    <string name="settings_target_fps_desc">Automatická volba používá snímkovou frekvenci hlášenou aktivním jádrem. Ruční hodnoty určují rychlost emulace; hry mohou vykreslovat méně snímků.</string>
+    <string name="settings_target_fps_desc">Automatická volba používá snímkovou frekvenci hlášenou aktivním jádrem. Ruční hodnoty určují rychlost emulace; hry mohou vykreslovat méně snímků. Volba 25 pro hru s 50 Hz nebo 30 pro hru s 60 Hz zpomalí emulaci i zvuk přibližně na polovinu.</string>
     <string name="settings_display_crop">Ořez obrazu</string>
     <string name="settings_display_crop_desc">Ořízne stejný počet pixelů ze všech čtyř okrajů před změnou velikosti. Výběrem 0 ořez vypnete.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1488,7 +1488,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">Orientace obrazovky</string>
     <string name="flycast_opt_screen_rotation_info">Otočení obrazu pro vertikální arkádové hry.</string>
     <string name="flycast_opt_alpha_sorting_label">Řazení průhlednosti</string>
-    <string name="flycast_opt_alpha_sorting_info">Vyberte způsob řazení průhledných polygonů.</string>
+    <string name="flycast_opt_alpha_sorting_info">Volí způsob řazení průhledných polygonů. Metody se liší přesností a rychlostí vykreslování.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">Po pruzích (rychlé, nejméně přesné)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">Po trojúhelnících (normální)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">Po pixelech (přesné, ale nejpomalejší)</string>
@@ -1513,7 +1513,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">Mipmapy</string>
     <string name="flycast_opt_mipmapping_info">Vzdálené textury používají zmenšené verze, což zvyšuje výkon a omezuje blikání.</string>
     <string name="flycast_opt_fog_label">Efekty mlhy</string>
-    <string name="flycast_opt_fog_info">Zapne emulaci mlhy.</string>
+    <string name="flycast_opt_fog_info">Zobrazuje ve hrách mlhu. Vypnutí změní obraz a může zvýšit výkon.</string>
     <string name="flycast_opt_volume_modifier_enable_label">Modifikátor objemu</string>
     <string name="flycast_opt_volume_modifier_enable_info">Funkce GPU Dreamcastu, kterou hry obvykle používají ke kreslení stínů objektů. Obvykle by měla být zapnutá – dopad na výkon je minimální.</string>
     <string name="flycast_opt_anisotropic_filtering_label">Anizotropní filtrování</string>
@@ -1561,7 +1561,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">Hack pro širokou obrazovku</string>
     <string name="flycast_opt_widescreen_hack_info">Vykresluje geometrii mimo běžný poměr stran 4:3. V odhalených oblastech se mohou objevit grafické chyby.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">Rychlé načítání GD-ROM (nepřesné)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">Zrychlí načítání z GD-ROM.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">Zkracuje simulované prodlevy načítání disku. Rychlejší načítání může v některých hrách způsobit problémy s časováním.</string>
     <string name="flycast_opt_dc_32mb_mod_label">Mod 32 MB RAM pro Dreamcast</string>
     <string name="flycast_opt_dc_32mb_mod_info">Zapne mod 32 MB RAM pro Dreamcast. Může ovlivnit kompatibilitu.</string>
     <string name="flycast_opt_sh4clock_label">Taktování CPU SH4</string>
@@ -2415,4 +2415,16 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH použije výchozí zavaděč Vulkan systému Android.</string>
     <string name="settings_gpu_driver_system">Systémový</string>
     <string name="settings_help_gpu_driver">Umožňuje vybrat balíček vlastního ovladače GPU (jako je Turnip), který nahradí výchozí systémový ovladač. Vlastní ovladače mohou u zařízení s procesory Snapdragon/Adreno výrazně zlepšit výkon nebo opravit vizuální nedostatky v určitých hrách. Jestliže budete zažívat pády, vraťte zpět Systémový ovladač.</string>
+    <string name="sega_region_help">Vybere oblast konzole. Hry s regionálním omezením mohou vyžadovat odpovídající oblast. Změna se projeví po restartu hry.</string>
+    <string name="sega_timing_help">Vybere časování obrazu NTSC nebo PAL, které ovlivňuje obnovovací frekvenci a rychlost hry. Změna se projeví po restartu.</string>
+    <string name="sega_sprite_limit_help">Odstraní limit spritů na řádek a omezí blikání. Obraz se může lišit od původní konzole.</string>
+    <string name="sega_low_pass_help">Tlumí vysoké frekvence zvuku Mega Drive a vytváří jemnější zvuk bližší konzoli.</string>
+    <string name="sega_fm_audio_help">Emuluje zvukovou jednotku FM konzole Master System. Podporované hry mohou přehrávat FM hudbu a efekty.</string>
+    <string name="sega_crop_border_help">Skryje horní a dolní okraj obrazu Master System a změní viditelnou oblast.</string>
+    <string name="sega_gg_resolution_help">Zobrazí širší obraz Game Gear mimo běžnou oblast LCD. Mohou být vidět nedokončené části grafiky.</string>
+    <string name="saturn_cart_help">Vybere cartridge Saturn: automaticky, rozšíření RAM, paměť pro uložení nebo žádnou. Některé hry vyžadují určitý typ. Restartujte hru.</string>
+    <string name="saturn_language_help">Vybere systémový jazyk Saturn. Podporované hry jej mohou použít pro nabídky a texty. Restartujte hru.</string>
+    <string name="settings_help_gyro_stick">Vybere analogovou páčku ovládanou pohybem telefonu v režimu míření. Vyberte páčku, která ovládá kameru hry.</string>
+    <string name="settings_help_arcade_device">Vybere emulovaný ovladač tohoto hráče. Automatický režim používá světelnou pistoli v režimu pistole, jinak gamepad.</string>
+    <string name="settings_help_light_gun_aim">Vybere způsob míření světelnou pistolí: gyroskop, analogovou páčku, směrový kříž nebo dotyk.</string>
 </resources>

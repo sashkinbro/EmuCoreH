@@ -7,6 +7,28 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SegaSettingsPolicyTest {
+    @Test fun consoleSectionsAppearOnlyWhenTheyHaveOptions() {
+        assertFalse(settingsCoreOptionSectionVisible(EmulationPlatform.SG_1000, "video"))
+        assertTrue(settingsCoreOptionSectionVisible(EmulationPlatform.SG_1000, "system"))
+        assertTrue(settingsCoreOptionSectionVisible(EmulationPlatform.GENESIS, "video"))
+        assertTrue(settingsCoreOptionSectionVisible(EmulationPlatform.SATURN, "video"))
+        for (platform in EmulationPlatform.entries) {
+            for (category in listOf("video", "system", "audio")) {
+                val options = if (platform.isSaturn) com.sbro.emucoreh.core.SaturnCoreOptions.options(platform)
+                    else com.sbro.emucoreh.core.SegaCoreOptions.options(platform)
+                assertEquals("$platform $category", options.any { it.category == category },
+                    settingsCoreOptionSectionVisible(platform, category))
+            }
+        }
+    }
+    @Test fun customDriversAreOfferedForHardwareRasterizers() {
+        assertTrue(EmulationPlatform.DREAMCAST.supportsCustomGpuDrivers())
+        assertTrue(EmulationPlatform.MODEL_3.supportsCustomGpuDrivers())
+        assertFalse(EmulationPlatform.SATURN.supportsCustomGpuDrivers())
+        for (platform in EmulationPlatform.entries.filter { it.isSega }) {
+            assertFalse(platform.supportsCustomGpuDrivers())
+        }
+    }
     @Test fun customizationOffersSupportedCheatsWithoutEnablingAchievements() {
         for (platform in EmulationPlatform.entries) {
             assertEquals("Cheats availability for $platform", !platform.isModel3 && !platform.isSaturn,
@@ -54,6 +76,7 @@ class SegaSettingsPolicyTest {
             assertTrue(settingsSearchEntryAvailable(EmulationPlatform.DREAMCAST, "Controls", title))
         }
         assertTrue(settingsSearchEntryAvailable(EmulationPlatform.MODEL_3, "Graphics", R.string.settings_upscale))
+        assertTrue(settingsSearchEntryAvailable(EmulationPlatform.MODEL_3, "Graphics", R.string.settings_renderer))
         for (platform in EmulationPlatform.entries.filter { it.isSega }) {
             assertFalse(settingsSearchEntryAvailable(platform, "Graphics", R.string.settings_upscale))
         }

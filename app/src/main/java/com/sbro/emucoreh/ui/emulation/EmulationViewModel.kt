@@ -693,7 +693,12 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         }
         viewModelScope.launch {
             preferences.renderer.collect { value ->
-                applyGlobalRuntimePreferenceUpdate { it.copy(renderer = value) }
+                if (!currentTouchPlatform.isModel3) applyGlobalRuntimePreferenceUpdate { it.copy(renderer = value) }
+            }
+        }
+        viewModelScope.launch {
+            preferences.model3Renderer.collect { value ->
+                if (currentTouchPlatform.isModel3) applyGlobalRuntimePreferenceUpdate { it.copy(renderer = value) }
             }
         }
         viewModelScope.launch {
@@ -1244,7 +1249,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                         existingProfile
                             ?: safePath.takeIf { it.isNotBlank() }?.let(perGameSettingsRepository::get)
                         )?.coreOptions.orEmpty()
-                        .filterKeys { !FlycastCoreOptions.isManagedKey(it) }
+                        .filterKeys { FlycastCoreOptions.supportsGameOverride(it) }
                     refreshCurrentGameCheats(metadata)
                     _uiState.value = _uiState.value.copy(
                         currentGameTitle = currentGameTitle,
@@ -1714,7 +1719,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 )
             perGameSettingsRepository.save(profile)
             pendingPerGameCoreOptions =
-                coreOptions.filterKeys { !FlycastCoreOptions.isManagedKey(it) }
+                coreOptions.filterKeys { FlycastCoreOptions.supportsGameOverride(it) }
+            com.sbro.emucoreh.core.CoreRuntime.launchCoreOptions = pendingPerGameCoreOptions
             _uiState.value = _uiState.value.copy(
                 gameSettingsProfileActive = true,
                 perGameCoreOptions = pendingPerGameCoreOptions
@@ -2226,7 +2232,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 "${RendererDefaults.coreRendererName(RendererDefaults.toCoreRenderer(requested))}($requested)"
         )
         persistRuntimeState(_uiState.value.copy(renderer = requested)) {
-            preferences.setRenderer(requested)
+            if (currentTouchPlatform.isModel3) preferences.setModel3Renderer(requested) else preferences.setRenderer(requested)
         }
         startEmulation(path = path, bootToBios = bootToBios, rendererOverride = requested)
     }
@@ -2238,7 +2244,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             // per-game core-option overrides applied after the last launch.
             pendingPerGameCoreOptions.forEach { (key, value) -> NativeApp.applyCoreOption(key, value) }
             persistRuntimeState(_uiState.value.copy(renderer = renderer)) {
-                preferences.setRenderer(renderer)
+                if (currentTouchPlatform.isModel3) preferences.setModel3Renderer(renderer) else preferences.setRenderer(renderer)
             }
             updateCrashContext()
             // The session was rebooted on the new backend; close the menu so the
@@ -2823,7 +2829,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             gpuDriverPath = com.sbro.emucoreh.data.resolveGpuDriverSelection(settings.customDriverPath, profile?.gpuDriverOverride),
             biosPath = settings.biosPath,
             emulatorDataPath = settings.emulatorDataPath,
-            renderer = settings.renderer,
+            renderer = if (currentTouchPlatform.isModel3) settings.model3Renderer else settings.renderer,
             upscaleMultiplier = settings.upscaleMultiplier,
             gpuHardwareProfile = settings.gpuHardwareProfile,
             aspectRatio = settings.aspectRatio,
@@ -2853,7 +2859,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             fpsOverlayMode = settings.fpsOverlayMode,
             confirmSaveLoadActions = settings.confirmSaveLoadActions,
             backButtonExitsGame = settings.backButtonExitsGame,
-            renderer = settings.renderer,
+            renderer = if (currentTouchPlatform.isModel3) settings.model3Renderer else settings.renderer,
             upscale = settings.upscaleMultiplier,
             aspectRatio = settings.aspectRatio,
             localMultiplayerMode = settings.localMultiplayerMode,
@@ -3059,7 +3065,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         settings: SettingsSnapshot,
         profile: PerGameSettings
     ): Set<String> = buildSet {
-        if (renderer != settings.renderer) add("renderer")
+        if (renderer != (if (currentTouchPlatform.isModel3) settings.model3Renderer else settings.renderer)) add("renderer")
         if (upscale != settings.upscaleMultiplier) add("upscaleMultiplier")
         if (aspectRatio != settings.aspectRatio) add("aspectRatio")
         if (localMultiplayerMode != settings.localMultiplayerMode) add("localMultiplayerMode")

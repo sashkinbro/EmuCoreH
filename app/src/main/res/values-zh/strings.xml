@@ -1267,7 +1267,7 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">幀率限制</string>
     <string name="settings_frame_limit_desc">將模擬限制在主機的刷新率。關閉後以裝置允許的最高速度運行。</string>
     <string name="settings_target_fps">目標幀率</string>
-    <string name="settings_target_fps_desc">自动模式使用当前核心报告的帧率。手动值设置模拟速度；游戏实际渲染的帧数可能更少。</string>
+    <string name="settings_target_fps_desc">自动模式使用当前核心报告的帧率。手动值设置模拟速度；游戏实际渲染的帧数可能更少。 对于 50 Hz 游戏选择 25，或对于 60 Hz 游戏选择 30，模拟速度和声音将约为正常速度的一半。</string>
     <string name="settings_display_crop">畫面裁切</string>
     <string name="settings_display_crop_desc">缩放前从四边裁剪相同数量的像素。选择 0 可关闭裁剪。</string>
     <string name="settings_display_crop_pixels">%1$d 像素</string>
@@ -1467,7 +1467,7 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">螢幕方向</string>
     <string name="flycast_opt_screen_rotation_info">設定畫面方向，適用於垂直顯示的大型電玩遊戲。</string>
     <string name="flycast_opt_alpha_sorting_label">透明排序</string>
-    <string name="flycast_opt_alpha_sorting_info">選擇透明多邊形的排序方式。</string>
+    <string name="flycast_opt_alpha_sorting_info">选择透明多边形的排序方式。不同方式的准确度和渲染速度有所不同。</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">逐條帶（快速，最不精確）</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">逐三角形（一般）</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">逐像素（精確，但最慢）</string>
@@ -1492,7 +1492,7 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">Mipmap 貼圖</string>
     <string name="flycast_opt_mipmapping_info">啟用後，材質在遠處會使用較小的版本，可提升效能並減少閃爍。</string>
     <string name="flycast_opt_fog_label">霧化效果</string>
-    <string name="flycast_opt_fog_info">啟用霧化效果模擬。</string>
+    <string name="flycast_opt_fog_info">显示游戏中的雾效。关闭后画面会改变，性能可能提高。</string>
     <string name="flycast_opt_volume_modifier_enable_label">陰影體修飾</string>
     <string name="flycast_opt_volume_modifier_enable_info">Dreamcast GPU 功能，遊戲通常用來繪製物件陰影。一般建議保持啟用，效能影響通常極小。</string>
     <string name="flycast_opt_anisotropic_filtering_label">各向異性過濾</string>
@@ -1540,7 +1540,7 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">寬螢幕 Hack</string>
     <string name="flycast_opt_widescreen_hack_info">繪製超出一般 4:3 顯示比例的幾何圖形。在新增的區域可能出現圖形異常。</string>
     <string name="flycast_opt_gdrom_fast_loading_label">GD-ROM 快速讀取（不精確）</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">加快 GD-ROM 的讀取速度。</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">缩短模拟的光盘读取延迟。快速读取可能导致部分游戏出现时序问题。</string>
     <string name="flycast_opt_dc_32mb_mod_label">Dreamcast 32MB RAM 改造</string>
     <string name="flycast_opt_dc_32mb_mod_info">為 Dreamcast 啟用 32MB RAM 改造。可能影響相容性。</string>
     <string name="flycast_opt_sh4clock_label">SH4 CPU 降頻／超頻</string>
@@ -2394,4 +2394,16 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH 将使用 Android 默认的 Vulkan 加载器。</string>
     <string name="settings_gpu_driver_system">系統</string>
     <string name="settings_help_gpu_driver">在自定义驱动程序切换可用时选择要使用的 GPU 驱动包。系统驱动是最安全的默认设置；仅当您正在测试已知可以提高性能或修复特定 GPU 上渲染的驱动程序时，才更改此设置。</string>
+    <string name="sega_region_help">选择主机地区。有区域限制的游戏可能需要匹配的地区。重新启动游戏后生效。</string>
+    <string name="sega_timing_help">选择 NTSC 或 PAL 视频时序，会影响刷新率和游戏速度。重新启动游戏后生效。</string>
+    <string name="sega_sprite_limit_help">移除每行精灵数量限制，减少多个精灵重叠时的闪烁。画面可能与原机不同。</string>
+    <string name="sega_low_pass_help">降低 Mega Drive 音频中的高频，使声音更柔和、更接近原机。</string>
+    <string name="sega_fm_audio_help">模拟 Master System 的 FM 音源。支持的游戏可播放 FM 音乐和音效。</string>
+    <string name="sega_crop_border_help">隐藏 Master System 画面的上下边框，改变可见画面范围。</string>
+    <string name="sega_gg_resolution_help">显示 Game Gear 正常 LCD 区域以外的更宽画面，某些游戏可能露出未完成的图像。</string>
+    <string name="saturn_cart_help">选择 Saturn 卡带：自动检测、扩展内存、存档内存或无卡带。部分游戏需要特定类型。重新启动后生效。</string>
+    <string name="saturn_language_help">选择 Saturn 系统语言。支持的游戏可能将其用于菜单和文字。重新启动后生效。</string>
+    <string name="settings_help_gyro_stick">选择瞄准模式下由手机动作控制的模拟摇杆。请选择游戏中控制视角的摇杆。</string>
+    <string name="settings_help_arcade_device">选择此玩家模拟的控制器。自动模式在光枪模式下使用光枪，否则使用手柄。</string>
+    <string name="settings_help_light_gun_aim">选择光枪瞄准方式：陀螺仪、模拟摇杆、方向键或触摸。</string>
 </resources>

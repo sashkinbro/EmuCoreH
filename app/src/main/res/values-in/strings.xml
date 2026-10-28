@@ -1280,7 +1280,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">Batas bingkai</string>
     <string name="settings_frame_limit_desc">Membatasi emulasi ke laju penyegaran konsol. Matikan agar berjalan secepat perangkat.</string>
     <string name="settings_target_fps">Laju bingkai target</string>
-    <string name="settings_target_fps_desc">Otomatis memakai laju bingkai yang dilaporkan inti aktif. Nilai manual menentukan kecepatan emulasi; gim dapat merender lebih sedikit bingkai.</string>
+    <string name="settings_target_fps_desc">Otomatis memakai laju bingkai yang dilaporkan inti aktif. Nilai manual menentukan kecepatan emulasi; gim dapat merender lebih sedikit bingkai. Memilih 25 untuk game 50 Hz atau 30 untuk game 60 Hz menjalankan emulasi dan audio sekitar setengah kecepatan.</string>
     <string name="settings_display_crop">Pangkas tampilan</string>
     <string name="settings_display_crop_desc">Memangkas jumlah piksel yang sama dari keempat tepi sebelum penskalaan. Pilih 0 untuk menonaktifkan pemangkasan.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1480,7 +1480,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">Orientasi Layar</string>
     <string name="flycast_opt_screen_rotation_info">Orientasi tampilan untuk game arcade vertikal.</string>
     <string name="flycast_opt_alpha_sorting_label">Pengurutan Alpha</string>
-    <string name="flycast_opt_alpha_sorting_info">Pilih cara poligon transparan diurutkan.</string>
+    <string name="flycast_opt_alpha_sorting_info">Memilih cara mengurutkan poligon transparan. Akurasi dan kecepatan render berbeda menurut metode.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">Per-Strip (cepat, paling tidak akurat)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">Per-Triangle (biasa)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">Per-Pixel (akurat, tapi paling lambat)</string>
@@ -1505,7 +1505,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">Mipmap</string>
     <string name="flycast_opt_mipmapping_info">Saat aktif, tekstur menggunakan versi yang lebih kecil ketika tampak jauh; ini dapat meningkatkan performa dan mengurangi efek berkedip.</string>
     <string name="flycast_opt_fog_label">Efek Kabut</string>
-    <string name="flycast_opt_fog_info">Aktifkan emulasi efek kabut.</string>
+    <string name="flycast_opt_fog_info">Menampilkan efek kabut dalam game. Menonaktifkannya mengubah gambar dan dapat meningkatkan performa.</string>
     <string name="flycast_opt_volume_modifier_enable_label">Pengubah Volume (Bayangan)</string>
     <string name="flycast_opt_volume_modifier_enable_info">Fitur GPU Dreamcast yang biasanya dipakai game untuk menggambar bayangan objek. Sebaiknya tetap aktif; dampaknya pada performa biasanya minimal.</string>
     <string name="flycast_opt_anisotropic_filtering_label">Penyaringan Anisotropik</string>
@@ -1553,7 +1553,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">Hack Layar Lebar</string>
     <string name="flycast_opt_widescreen_hack_info">Menggambar geometri di luar rasio aspek 4:3 normal. Dapat menimbulkan masalah grafis di area yang muncul.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">Pemuatan Cepat GD-ROM (tidak akurat)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">Mempercepat pemuatan GD-ROM.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">Mengurangi jeda pemuatan cakram yang disimulasikan. Pemuatan cepat dapat menyebabkan masalah waktu di beberapa game.</string>
     <string name="flycast_opt_dc_32mb_mod_label">Mod RAM 32MB Dreamcast</string>
     <string name="flycast_opt_dc_32mb_mod_info">Mengaktifkan Mod RAM 32MB untuk Dreamcast. Dapat memengaruhi kompatibilitas.</string>
     <string name="flycast_opt_sh4clock_label">Under/Overclock CPU SH4</string>
@@ -2407,4 +2407,16 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH akan menggunakan pemuat Vulkan default Android.</string>
     <string name="settings_gpu_driver_system">Sistem</string>
     <string name="settings_help_gpu_driver">Mengizinkan Anda untuk memilih paket driver GPU pilihan kustom Anda sendiri (contoh seperti Turnip) untuk dipasangkan sebagai pengganti konfigurasi driver bawaan sistem default ponsel. Penggunaan konfigurasi driver GPU khusus tersebut bisa jadi akan mampu mendongkrak kehalusan atau mengatasi keanehan perenderan bentuk (glitch) visual di beberapa judul game tertentu buat hape berbasis Snapdragon/Adreno. Seandainya kamu mengalami game force close/crash melulu segeralah kembali ke pengaturan Driver System standar.</string>
+    <string name="sega_region_help">Memilih wilayah konsol. Game dengan pembatasan wilayah mungkin memerlukan wilayah yang sesuai. Mulai ulang game untuk menerapkan.</string>
+    <string name="sega_timing_help">Memilih waktu video NTSC atau PAL yang memengaruhi laju penyegaran dan kecepatan game. Mulai ulang untuk menerapkan.</string>
+    <string name="sega_sprite_limit_help">Menghapus batas sprite per baris untuk mengurangi kedipan saat banyak sprite muncul. Gambar dapat berbeda dari aslinya.</string>
+    <string name="sega_low_pass_help">Meredam frekuensi tinggi pada audio Mega Drive agar terdengar lebih lembut dan menyerupai konsol.</string>
+    <string name="sega_fm_audio_help">Mengemulasikan unit suara FM Master System. Game yang mendukung dapat memutar musik dan efek FM.</string>
+    <string name="sega_crop_border_help">Menyembunyikan batas atas dan bawah gambar Master System sehingga area yang terlihat berubah.</string>
+    <string name="sega_gg_resolution_help">Menampilkan gambar Game Gear yang lebih lebar di luar area LCD normal. Bagian grafis yang belum selesai mungkin terlihat.</string>
+    <string name="saturn_cart_help">Memilih kartrid Saturn: otomatis, ekspansi RAM, memori penyimpanan, atau tanpa kartrid. Beberapa game memerlukan jenis tertentu. Mulai ulang.</string>
+    <string name="saturn_language_help">Memilih bahasa sistem Saturn. Game yang mendukung dapat menggunakannya untuk menu dan teks. Mulai ulang untuk menerapkan.</string>
+    <string name="settings_help_gyro_stick">Memilih stik analog yang dikendalikan gerakan ponsel dalam mode bidik. Pilih stik yang mengendalikan kamera game.</string>
+    <string name="settings_help_arcade_device">Memilih pengontrol yang diemulasikan untuk pemain ini. Otomatis memakai pistol dalam mode light gun, selain itu memakai gamepad.</string>
+    <string name="settings_help_light_gun_aim">Memilih cara membidik light gun: giroskop, stik analog, tombol arah, atau sentuhan.</string>
 </resources>

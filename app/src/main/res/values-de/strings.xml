@@ -1268,7 +1268,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">Bildratenlimit</string>
     <string name="settings_frame_limit_desc">Begrenzt die Emulation auf die Bildwiederholrate der Konsole. Ausschalten, um so schnell wie das Gerät läuft.</string>
     <string name="settings_target_fps">Ziel-Bildrate</string>
-    <string name="settings_target_fps_desc">Automatisch nutzt die vom aktiven Kern gemeldete Bildrate. Manuelle Werte bestimmen die Emulationsgeschwindigkeit; Spiele können weniger Bilder rendern.</string>
+    <string name="settings_target_fps_desc">Automatisch nutzt die vom aktiven Kern gemeldete Bildrate. Manuelle Werte bestimmen die Emulationsgeschwindigkeit; Spiele können weniger Bilder rendern. Bei einem 50-Hz-Spiel halbiert 25 und bei einem 60-Hz-Spiel 30 die Emulationsgeschwindigkeit ungefähr, einschließlich Ton.</string>
     <string name="settings_display_crop">Bildzuschnitt</string>
     <string name="settings_display_crop_desc">Schneidet vor der Skalierung an allen vier Rändern gleich viele Pixel ab. Mit 0 wird der Zuschnitt deaktiviert.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1468,7 +1468,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">Bildschirmausrichtung</string>
     <string name="flycast_opt_screen_rotation_info">Die Bildausrichtung für vertikale Arcadespiele.</string>
     <string name="flycast_opt_alpha_sorting_label">Alpha-Sortierung</string>
-    <string name="flycast_opt_alpha_sorting_info">Legt fest, wie transparente Polygone sortiert werden.</string>
+    <string name="flycast_opt_alpha_sorting_info">Wählt die Sortierung transparenter Polygone. Genauigkeit und Rendergeschwindigkeit hängen von der Methode ab.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">Pro Streifen (schnell, am wenigsten genau)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">Pro Dreieck (normal)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">Pro Pixel (genau, aber am langsamsten)</string>
@@ -1493,7 +1493,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">Mipmap-Filterung</string>
     <string name="flycast_opt_mipmapping_info">Wenn aktiviert, verwenden Texturen in der Ferne verkleinerte Versionen von sich selbst. Das kann die Leistung erhöhen und Flimmern verringern.</string>
     <string name="flycast_opt_fog_label">Nebeleffekte</string>
-    <string name="flycast_opt_fog_info">Aktiviert die Emulation von Nebeleffekten.</string>
+    <string name="flycast_opt_fog_info">Zeigt Nebeleffekte in Spielen. Das Abschalten verändert das Bild und kann die Leistung verbessern.</string>
     <string name="flycast_opt_volume_modifier_enable_label">Volumen-Modifizierer</string>
     <string name="flycast_opt_volume_modifier_enable_info">Eine GPU-Funktion der Dreamcast, die Spiele meist zum Zeichnen von Objektschatten nutzen. Sollte normalerweise aktiviert bleiben – der Leistungseinfluss ist minimal bis vernachlässigbar.</string>
     <string name="flycast_opt_anisotropic_filtering_label">Anisotrope Filterung</string>
@@ -1541,7 +1541,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">Breitbild-Hack</string>
     <string name="flycast_opt_widescreen_hack_info">Zeichnet Geometrie außerhalb des normalen 4:3-Seitenverhältnisses. Kann in den neu sichtbaren Bereichen Grafikfehler verursachen.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">GD-ROM-Schnellladen (ungenau)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">Beschleunigt das Laden von GD-ROM.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">Verkürzt simulierte Ladezeiten der Disc. Schnelleres Laden kann in manchen Spielen Timingprobleme verursachen.</string>
     <string name="flycast_opt_dc_32mb_mod_label">Dreamcast 32-MB-RAM-Mod</string>
     <string name="flycast_opt_dc_32mb_mod_info">Aktiviert den 32-MB-RAM-Mod für die Dreamcast. Kann die Kompatibilität beeinträchtigen.</string>
     <string name="flycast_opt_sh4clock_label">SH4-CPU unter-/übertakten</string>
@@ -2395,4 +2395,16 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH wird den standardmäßigen Vulkan-Loader von Android verwenden.</string>
     <string name="settings_gpu_driver_system">System</string>
     <string name="settings_help_gpu_driver">Wählt aus, welches GPU-Treiberpaket verwendet werden soll, wenn der benutzerdefinierte Treiberwechsel verfügbar ist. Der Systemtreiber ist der sicherste Standard; ändere dies nur, wenn du einen bekannten Treiber testest, der die Leistung verbessert oder das Rendering auf deiner spezifischen GPU repariert.</string>
+    <string name="sega_region_help">Wählt die Konsolenregion. Spiele mit Regionssperre benötigen möglicherweise die passende Region. Wirksam nach einem Neustart.</string>
+    <string name="sega_timing_help">Wählt NTSC- oder PAL-Bildtiming und beeinflusst Bildfrequenz und Spielgeschwindigkeit. Wirksam nach einem Neustart.</string>
+    <string name="sega_sprite_limit_help">Entfernt das Sprite-Limit pro Zeile und verringert Flackern bei vielen Sprites. Das Bild kann vom Original abweichen.</string>
+    <string name="sega_low_pass_help">Dämpft hohe Frequenzen im Mega-Drive-Ton für einen weicheren, konsolennahen Klang.</string>
+    <string name="sega_fm_audio_help">Emuliert die FM-Soundeinheit des Master Systems. Unterstützte Spiele können FM-Musik und Effekte abspielen.</string>
+    <string name="sega_crop_border_help">Entfernt den oberen und unteren Rand des Master-System-Bildes und verändert den sichtbaren Bildbereich.</string>
+    <string name="sega_gg_resolution_help">Zeigt das breitere Game-Gear-Bild außerhalb des normalen LCD-Bereichs. Unfertige Bildbereiche können sichtbar werden.</string>
+    <string name="saturn_cart_help">Wählt das Saturn-Modul: automatisch, RAM-Erweiterung, Speicher oder keines. Manche Spiele benötigen ein bestimmtes Modul. Neustart erforderlich.</string>
+    <string name="saturn_language_help">Wählt die Saturn-Systemsprache. Unterstützte Spiele können sie für Menüs und Texte verwenden. Neustart erforderlich.</string>
+    <string name="settings_help_gyro_stick">Wählt den Analogstick, der im Zielmodus durch Telefonbewegungen gesteuert wird. Wähle den Stick für die Spielkamera.</string>
+    <string name="settings_help_arcade_device">Wählt den emulierten Controller für diesen Spieler. Automatisch verwendet im Lightgun-Modus die Lichtpistole, sonst ein Gamepad.</string>
+    <string name="settings_help_light_gun_aim">Wählt die Zielsteuerung der Lichtpistole: Gyroskop, Analogstick, Steuerkreuz oder Berührung.</string>
 </resources>

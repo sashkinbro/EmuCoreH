@@ -1274,7 +1274,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">حد الإطارات</string>
     <string name="settings_frame_limit_desc">يحد من المحاكاة بمعدل تحديث وحدة التحكم. أوقفه للتشغيل بأقصى سرعة يسمح بها الجهاز.</string>
     <string name="settings_target_fps">معدل الإطارات المستهدف</string>
-    <string name="settings_target_fps_desc">يستخدم الوضع التلقائي معدل الإطارات الذي تبلغ عنه النواة النشطة. تحدد القيم اليدوية سرعة المحاكاة؛ وقد تعرض الألعاب إطارات أقل.</string>
+    <string name="settings_target_fps_desc">يستخدم الوضع التلقائي معدل الإطارات الذي تبلغ عنه النواة النشطة. تحدد القيم اليدوية سرعة المحاكاة؛ وقد تعرض الألعاب إطارات أقل. اختيار 25 للعبة بتردد 50 هرتز أو 30 للعبة بتردد 60 هرتز يبطئ المحاكاة والصوت إلى نصف السرعة تقريبًا.</string>
     <string name="settings_display_crop">قص الصورة</string>
     <string name="settings_display_crop_desc">يقتطع العدد نفسه من البكسلات من الحواف الأربع قبل تغيير الحجم. اختر 0 لإيقاف الاقتصاص.</string>
     <string name="settings_display_crop_pixels">%1$d بكسل</string>
@@ -1474,7 +1474,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">اتجاه الشاشة</string>
     <string name="flycast_opt_screen_rotation_info">اتجاه الصورة للألعاب الأركيدية العمودية.</string>
     <string name="flycast_opt_alpha_sorting_label">ترتيب الشفافية</string>
-    <string name="flycast_opt_alpha_sorting_info">اختر طريقة ترتيب المضلعات الشفافة.</string>
+    <string name="flycast_opt_alpha_sorting_info">يحدد طريقة ترتيب المضلعات الشفافة. تختلف الدقة وسرعة العرض حسب الطريقة.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">حسب الشرائح (سريع، الأقل دقة)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">حسب المثلثات (عادي)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">حسب البكسلات (دقيق لكن الأبطأ)</string>
@@ -1499,7 +1499,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">الخرائط المصغّرة (Mipmapping)</string>
     <string name="flycast_opt_mipmapping_info">عند التفعيل تستخدم الخامات نسخًا أصغر منها عند الابتعاد، مما يحسّن الأداء ويقلل الوميض الدقيق.</string>
     <string name="flycast_opt_fog_label">تأثيرات الضباب</string>
-    <string name="flycast_opt_fog_info">تفعيل محاكاة الضباب.</string>
+    <string name="flycast_opt_fog_info">يعرض تأثيرات الضباب في الألعاب. يؤدي تعطيله إلى تغيير الصورة وقد يحسن الأداء.</string>
     <string name="flycast_opt_volume_modifier_enable_label">معدّل الحجم (Volume Modifier)</string>
     <string name="flycast_opt_volume_modifier_enable_info">ميزة في GPU الخاص بـ Dreamcast تستخدمها الألعاب عادةً لرسم ظلال الأجسام. يُنصح بتفعيله؛ فالتأثير على الأداء ضئيل عادةً.</string>
     <string name="flycast_opt_anisotropic_filtering_label">التصفية متباينة الخواص</string>
@@ -1547,7 +1547,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">حيلة الشاشة العريضة</string>
     <string name="flycast_opt_widescreen_hack_info">رسم الهندسة خارج نسبة الأبعاد المعتادة 4:3. قد يسبب عيوبًا رسومية في المناطق المكشوفة.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">التحميل السريع من GD-ROM (غير دقيق)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">يسرّع التحميل من GD-ROM.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">يقلل تأخيرات تحميل القرص المحاكاة. قد يسبب التحميل السريع مشكلات توقيت في بعض الألعاب.</string>
     <string name="flycast_opt_dc_32mb_mod_label">تعديل 32 ميغابايت RAM لـ Dreamcast</string>
     <string name="flycast_opt_dc_32mb_mod_info">يفعّل تعديل ذاكرة RAM بسعة 32 ميغابايت لـ Dreamcast. قد يؤثر على التوافق.</string>
     <string name="flycast_opt_sh4clock_label">تردد CPU SH4 (خفض/رفع)</string>
@@ -2401,4 +2401,16 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">سيستخدم EmuCoreH محمل Vulkan الافتراضي لنظام Android.</string>
     <string name="settings_gpu_driver_system">النظام</string>
     <string name="settings_help_gpu_driver">يختار حزمة تعريف GPU التي يجب استخدامها عند توفر تبديل التعريف المخصص. تعريف النظام هو الافتراضي الأكثر أمانًا؛ قم بتغييره فقط إذا كنت تختبر تعريفًا معروفًا يحسن الأداء أو يصلح العرض على وحدة معالجة الرسومات الخاصة بك تحديدًا.</string>
+    <string name="sega_region_help">يحدد منطقة الجهاز. قد تتطلب الألعاب المقيدة بمنطقة إعداداً مطابقاً. أعد تشغيل اللعبة لتطبيق التغيير.</string>
+    <string name="sega_timing_help">يحدد توقيت الفيديو NTSC أو PAL، مما يؤثر في معدل التحديث وسرعة اللعبة. أعد التشغيل لتطبيق التغيير.</string>
+    <string name="sega_sprite_limit_help">يزيل حد عدد العناصر المتحركة في السطر لتقليل الوميض عند ازدحامها. قد تختلف الصورة عن الجهاز الأصلي.</string>
+    <string name="sega_low_pass_help">يخفف الترددات العالية في صوت Mega Drive ليصبح أنعم وأقرب إلى صوت الجهاز.</string>
+    <string name="sega_fm_audio_help">يحاكي وحدة الصوت FM في Master System. يمكن للألعاب الداعمة تشغيل موسيقى ومؤثرات FM.</string>
+    <string name="sega_crop_border_help">يخفي الحدين العلوي والسفلي لصورة Master System، فيغير المساحة الظاهرة.</string>
+    <string name="sega_gg_resolution_help">يعرض صورة Game Gear أوسع من مساحة شاشة LCD المعتادة. قد تظهر رسومات غير مكتملة في بعض الألعاب.</string>
+    <string name="saturn_cart_help">يحدد خرطوشة Saturn: تلقائية أو ذاكرة RAM إضافية أو ذاكرة حفظ أو بدون خرطوشة. تتطلب بعض الألعاب نوعاً معيناً. أعد التشغيل.</string>
+    <string name="saturn_language_help">يحدد لغة نظام Saturn. قد تستخدمها الألعاب الداعمة للقوائم والنصوص. أعد التشغيل لتطبيق التغيير.</string>
+    <string name="settings_help_gyro_stick">يحدد العصا التناظرية التي تتحكم بها حركة الهاتف في وضع التصويب. اختر العصا التي تتحكم بكاميرا اللعبة.</string>
+    <string name="settings_help_arcade_device">يحدد وحدة التحكم المحاكاة لهذا اللاعب. يستخدم الوضع التلقائي المسدس عند تفعيل وضع المسدس الضوئي، وإلا فيستخدم يد التحكم.</string>
+    <string name="settings_help_light_gun_aim">يحدد طريقة تصويب المسدس الضوئي: الجيروسكوب أو العصا التناظرية أو أزرار الاتجاهات أو اللمس.</string>
 </resources>

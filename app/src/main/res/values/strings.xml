@@ -1301,7 +1301,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">Frame limit</string>
     <string name="settings_frame_limit_desc">Caps emulation to the console\'s refresh rate. Turn off to run as fast as the device allows.</string>
     <string name="settings_target_fps">Target frame rate</string>
-    <string name="settings_target_fps_desc">Auto uses the frame rate reported by the active core. Manual values set the emulation rate; games may render fewer frames.</string>
+    <string name="settings_target_fps_desc">Auto uses the frame rate reported by the active core. Manual values set the emulation rate; games may render fewer frames. Choosing 25 for a 50 Hz game or 30 for a 60 Hz game runs emulation at about half speed, including audio.</string>
     <string name="settings_display_crop">Display crop</string>
     <string name="settings_display_crop_desc">Trims the same number of pixels from all four edges before scaling. Select 0 to turn cropping off.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1497,7 +1497,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">Screen Orientation</string>
     <string name="flycast_opt_screen_rotation_info">Image orientation for vertical arcade games.</string>
     <string name="flycast_opt_alpha_sorting_label">Alpha Sorting</string>
-    <string name="flycast_opt_alpha_sorting_info">Select how the transparent polygons are sorted.</string>
+    <string name="flycast_opt_alpha_sorting_info">Selects how transparent polygons are sorted. Accuracy and rendering speed vary by method.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">Per-Strip (fast, least accurate)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">Per-Triangle (normal)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">Per-Pixel (accurate, but slowest)</string>
@@ -1522,7 +1522,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">Mipmapping</string>
     <string name="flycast_opt_mipmapping_info">When enabled textures will use smaller version of themselves when they appear farther away, it can increase performances and reduce shimmering.</string>
     <string name="flycast_opt_fog_label">Fog Effects</string>
-    <string name="flycast_opt_fog_info">Enable fog emulation.</string>
+    <string name="flycast_opt_fog_info">Renders fog effects in games. Disabling fog changes the picture and may improve performance.</string>
     <string name="flycast_opt_volume_modifier_enable_label">Volume Modifier</string>
     <string name="flycast_opt_volume_modifier_enable_info">A Dreamcast GPU feature that is typically used by games to draw object shadows. This should normally be enabled - the performance impact is usually minimal to negligible.</string>
     <string name="flycast_opt_anisotropic_filtering_label">Anisotropic Filtering</string>
@@ -1570,7 +1570,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">Widescreen Hack</string>
     <string name="flycast_opt_widescreen_hack_info">Draw geometry outside of the normal 4:3 aspect ratio. May produce graphical glitches in the revealed areas.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">GD-ROM Fast Loading (inaccurate)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">Speeds up GD-ROM loading.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">Reduces simulated disc loading delays. Faster loading may cause timing problems in some games.</string>
     <string name="flycast_opt_dc_32mb_mod_label">Dreamcast 32MB RAM Mod</string>
     <string name="flycast_opt_dc_32mb_mod_info">Enables 32MB RAM Mod for Dreamcast. May affect compatibility</string>
     <string name="flycast_opt_sh4clock_label">SH4 CPU under/overclock</string>
@@ -2418,4 +2418,16 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH will use Android\'s default Vulkan loader.</string>
     <string name="settings_gpu_driver_system">System</string>
     <string name="settings_help_gpu_driver">Allows you to select a custom GPU driver package (like Turnip) to replace the default system driver. Custom drivers can significantly improve performance or fix visual glitches in certain games on Snapdragon/Adreno devices. If you experience crashes, revert to the System driver.</string>
+    <string name="sega_region_help">Selects the emulated console region. Region-locked games may require a matching setting. Restart the game to apply it.</string>
+    <string name="sega_timing_help">Selects NTSC or PAL video timing, affecting refresh rate and game speed. Restart the game to apply it.</string>
+    <string name="sega_sprite_limit_help">Removes the per-line sprite limit to reduce flicker when many sprites overlap. This can change the original picture.</string>
+    <string name="sega_low_pass_help">Filters high frequencies in Mega Drive audio to give it a softer, more console-like sound.</string>
+    <string name="sega_fm_audio_help">Emulates the Master System FM sound unit. Games that support it can play FM music and effects.</string>
+    <string name="sega_crop_border_help">Hides the upper and lower border of the Master System picture, changing the visible frame.</string>
+    <string name="sega_gg_resolution_help">Shows the wider Game Gear image outside the normal LCD area. Some games may reveal unfinished graphics.</string>
+    <string name="saturn_cart_help">Selects the Saturn cartridge: automatic detection, expansion RAM, backup memory, or none. Some games require a specific cartridge. Restart to apply.</string>
+    <string name="saturn_language_help">Selects the language reported by the Saturn system. Supported games may use it for menus and text. Restart to apply.</string>
+    <string name="settings_help_gyro_stick">Choose which analog stick receives phone motion in Aim mode. Select the stick the game uses for camera control.</string>
+    <string name="settings_help_arcade_device">Choose the emulated controller for this player. Automatic uses the light gun when light-gun mode is active; otherwise it uses a gamepad.</string>
+    <string name="settings_help_light_gun_aim">Choose how to aim the light gun: gyroscope, an analog stick, directional pad, or touch.</string>
 </resources>

@@ -5,6 +5,11 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class EmulationTimingTest {
+    @org.junit.Test fun manualTargetsIncludeHalfRatesAndKeepExistingSpeedSemantics() {
+        org.junit.Assert.assertEquals(listOf(0, 25, 30, 50, 60), FrameRateChoices.values)
+        org.junit.Assert.assertEquals(0.5, EmulationTiming.speedMultiplier(50.0, 25), 0.001)
+        org.junit.Assert.assertEquals(0.5, EmulationTiming.speedMultiplier(60.0, 30), 0.001)
+    }
     private fun stats(audio: Long, video: Long, deviceHz: Long = 48000,
                       callbacks: Long = 0, silence: Long = 0) =
         longArrayOf(0, 0, deviceHz, 0, 0, audio, callbacks, silence, 44100, video)

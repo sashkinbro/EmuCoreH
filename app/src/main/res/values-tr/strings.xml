@@ -1266,7 +1266,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">Kare sınırı</string>
     <string name="settings_frame_limit_desc">Emülasyonu konsolun yenileme hızıyla sınırlar. Cihazın izin verdiği kadar hızlı çalışması için kapatın.</string>
     <string name="settings_target_fps">Hedef kare hızı</string>
-    <string name="settings_target_fps_desc">Otomatik, etkin çekirdeğin bildirdiği kare hızını kullanır. Elle girilen değerler emülasyon hızını belirler; oyunlar daha az kare işleyebilir.</string>
+    <string name="settings_target_fps_desc">Otomatik, etkin çekirdeğin bildirdiği kare hızını kullanır. Elle girilen değerler emülasyon hızını belirler; oyunlar daha az kare işleyebilir. 50 Hz oyun için 25 veya 60 Hz oyun için 30 seçmek, ses dahil emülasyonu yaklaşık yarı hıza düşürür.</string>
     <string name="settings_display_crop">Görüntü kırpma</string>
     <string name="settings_display_crop_desc">Ölçeklemeden önce dört kenardan eşit sayıda piksel kırpar. Kırpmayı kapatmak için 0 seçin.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1466,7 +1466,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">Ekran Yönü</string>
     <string name="flycast_opt_screen_rotation_info">Dikey arcade oyunları için görüntü döndürmesi.</string>
     <string name="flycast_opt_alpha_sorting_label">Saydamlık Sıralaması</string>
-    <string name="flycast_opt_alpha_sorting_info">Saydam çokgenlerin nasıl sıralanacağını seçin.</string>
+    <string name="flycast_opt_alpha_sorting_info">Saydam çokgenlerin sıralama yöntemini seçer. Doğruluk ve çizim hızı yönteme göre değişir.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">Şerit başına (hızlı, en az doğru)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">Üçgen başına (normal)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">Piksel başına (doğru, ancak en yavaş)</string>
@@ -1491,7 +1491,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">Mip eşleme</string>
     <string name="flycast_opt_mipmapping_info">Etkinleştirildiğinde uzaktaki dokular küçültülmüş sürümlerini kullanır; bu, performansı artırır ve titremeyi azaltır.</string>
     <string name="flycast_opt_fog_label">Sis Efektleri</string>
-    <string name="flycast_opt_fog_info">Sis emülasyonunu etkinleştirir.</string>
+    <string name="flycast_opt_fog_info">Oyunlarda sis efektlerini gösterir. Kapatmak görüntüyü değiştirir ve performansı artırabilir.</string>
     <string name="flycast_opt_volume_modifier_enable_label">Hacim Değiştirici</string>
     <string name="flycast_opt_volume_modifier_enable_info">Dreamcast GPU\'sunun oyunlar tarafından nesne gölgelerini çizmek için kullanılan bir özelliğidir. Normalde etkin bırakılmalıdır — performans etkisi genellikle çok azdır.</string>
     <string name="flycast_opt_anisotropic_filtering_label">Anizotropik Filtreleme</string>
@@ -1539,7 +1539,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">Geniş Ekran Hilesi</string>
     <string name="flycast_opt_widescreen_hack_info">Geometriyi normal 4:3 en-boy oranının dışına çizer. Açığa çıkan alanlarda grafik bozulmalarına neden olabilir.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">GD-ROM Hızlı Yükleme (hatalı)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">GD-ROM yüklemesini hızlandırır.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">Benzetilen disk yükleme gecikmelerini azaltır. Hızlı yükleme bazı oyunlarda zamanlama sorunlarına yol açabilir.</string>
     <string name="flycast_opt_dc_32mb_mod_label">Dreamcast 32MB RAM Modu</string>
     <string name="flycast_opt_dc_32mb_mod_info">Dreamcast için 32 MB RAM modunu etkinleştirir. Uyumluluğu etkileyebilir.</string>
     <string name="flycast_opt_sh4clock_label">SH4 CPU düşük/yüksek hız aşırtma</string>
@@ -2393,4 +2393,16 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH, Android\'in varsayılan Vulkan yükleyicisini kullanacak.</string>
     <string name="settings_gpu_driver_system">Sistem</string>
     <string name="settings_help_gpu_driver">Özel sürücü geçişi mevcut olduğunda hangi GPU sürücü paketinin kullanılacağını seçer. Sistem sürücüsü en güvenli varsayılandır; bunu yalnızca kendi GPU\'nuzda performansı artıran veya işlemeyi (rendering) düzelten bilinen bir sürücüyü test ediyorsanız değiştirin.</string>
+    <string name="sega_region_help">Konsol bölgesini seçer. Bölge kilitli oyunlar uygun bölge gerektirebilir. Uygulamak için oyunu yeniden başlatın.</string>
+    <string name="sega_timing_help">Yenileme hızını ve oyun hızını etkileyen NTSC veya PAL görüntü zamanlamasını seçer. Uygulamak için yeniden başlatın.</string>
+    <string name="sega_sprite_limit_help">Satır başına sprite sınırını kaldırarak çok sayıda sprite olduğunda titremeyi azaltır. Görüntü orijinalden farklı olabilir.</string>
+    <string name="sega_low_pass_help">Mega Drive sesindeki yüksek frekansları azaltarak daha yumuşak ve konsola yakın ses sağlar.</string>
+    <string name="sega_fm_audio_help">Master System FM ses birimini emüle eder. Destekleyen oyunlar FM müzik ve efektleri çalabilir.</string>
+    <string name="sega_crop_border_help">Master System görüntüsünün üst ve alt kenarlıklarını gizleyerek görünen alanı değiştirir.</string>
+    <string name="sega_gg_resolution_help">Game Gear görüntüsünü normal LCD alanının dışında da gösterir. Bazı oyunlarda tamamlanmamış grafikler görünebilir.</string>
+    <string name="saturn_cart_help">Saturn kartuşunu seçer: otomatik, RAM genişletmesi, kayıt belleği veya hiçbiri. Bazı oyunlar belirli bir kartuş ister. Yeniden başlatın.</string>
+    <string name="saturn_language_help">Saturn sistem dilini seçer. Destekleyen oyunlar bu dili menü ve metinlerde kullanabilir. Yeniden başlatın.</string>
+    <string name="settings_help_gyro_stick">Nişan alma modunda telefon hareketleriyle kontrol edilen analog çubuğu seçer. Oyunda kamerayı kontrol eden çubuğu seçin.</string>
+    <string name="settings_help_arcade_device">Bu oyuncunun emüle edilen denetleyicisini seçer. Otomatik, ışık tabancası modunda tabanca, diğer durumlarda oyun kolu kullanır.</string>
+    <string name="settings_help_light_gun_aim">Işık tabancasıyla nişan alma yöntemini seçer: jiroskop, analog çubuk, yön tuşları veya dokunma.</string>
 </resources>

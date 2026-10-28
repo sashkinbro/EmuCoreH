@@ -11,6 +11,9 @@ struct VulkanContext {
   VkQueue queue = VK_NULL_HANDLE;
   uint32_t queueFamily = 0;
   std::function<void()> lockQueue, unlockQueue;
+  VkInstance instance = VK_NULL_HANDLE;
+  PFN_vkGetInstanceProcAddr getInstanceProcAddr = nullptr;
+  PFN_vkGetDeviceProcAddr getDeviceProcAddr = nullptr;
 };
 // Experimental Real3D mesh consumer. Until per-sync-index image slots are
 // added, queue-idle at frame start protects the shared output from frontend

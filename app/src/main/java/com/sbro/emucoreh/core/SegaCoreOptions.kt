@@ -5,21 +5,21 @@ import com.sbro.emucoreh.R
 
 /** Only options actually implemented by the jgenesis libretro shim. */
 object SegaCoreOptions {
-    private fun toggle(key: String, label: Int, default: String = "disabled") = FlycastCoreOptions.Option(
-        key, label, label, if (key in setOf("jgenesis_genesis_lpf", "jgenesis_sms_fm")) "audio" else "video", listOf(
+    private fun toggle(key: String, label: Int, description: Int, default: String = "disabled") = FlycastCoreOptions.Option(
+        key, label, description, if (key in setOf("jgenesis_genesis_lpf", "jgenesis_sms_fm")) "audio" else "video", listOf(
             FlycastCoreOptions.Choice("enabled", R.string.flycast_choice_enabled),
             FlycastCoreOptions.Choice("disabled", R.string.flycast_choice_disabled)
         ), default
     )
     private val region = FlycastCoreOptions.Option("jgenesis_region", R.string.sega_region,
-        R.string.sega_restart_required, "system", listOf(
+        R.string.sega_region_help, "system", listOf(
             FlycastCoreOptions.Choice("auto", R.string.settings_aspect_ratio_auto),
             FlycastCoreOptions.Choice("americas", R.string.flycast_opt_region_choice_usa),
             FlycastCoreOptions.Choice("europe", R.string.flycast_opt_region_choice_europe),
             FlycastCoreOptions.Choice("japan", R.string.flycast_opt_region_choice_japan)
         ), "auto")
     private val timing = FlycastCoreOptions.Option("jgenesis_timing", R.string.sega_timing,
-        R.string.sega_restart_required, "system", listOf(
+        R.string.sega_timing_help, "system", listOf(
             FlycastCoreOptions.Choice("auto", R.string.settings_aspect_ratio_auto),
             FlycastCoreOptions.Choice("ntsc", R.string.sega_ntsc),
             FlycastCoreOptions.Choice("pal", R.string.sega_pal)
@@ -32,15 +32,15 @@ object SegaCoreOptions {
                 if (platform != EmulationPlatform.SG_1000) add(region)
                 if (platform != EmulationPlatform.GAME_GEAR) add(timing)
             }
-            if (platform != EmulationPlatform.SG_1000) add(toggle("jgenesis_remove_sprite_limit", R.string.sega_remove_sprite_limit))
+            if (platform != EmulationPlatform.SG_1000) add(toggle("jgenesis_remove_sprite_limit", R.string.sega_remove_sprite_limit, R.string.sega_sprite_limit_help))
             if (platform in setOf(EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD, EmulationPlatform.SEGA_32X))
-                add(toggle("jgenesis_genesis_lpf", R.string.sega_low_pass_filter, "enabled"))
+                add(toggle("jgenesis_genesis_lpf", R.string.sega_low_pass_filter, R.string.sega_low_pass_help, "enabled"))
             if (platform == EmulationPlatform.MASTER_SYSTEM) {
-                add(toggle("jgenesis_sms_fm", R.string.sega_fm_audio, "enabled"))
-                add(toggle("jgenesis_sms_crop_vertical_border", R.string.sega_crop_border, "enabled"))
+                add(toggle("jgenesis_sms_fm", R.string.sega_fm_audio, R.string.sega_fm_audio_help, "enabled"))
+                add(toggle("jgenesis_sms_crop_vertical_border", R.string.sega_crop_border, R.string.sega_crop_border_help, "enabled"))
             }
             if (platform == EmulationPlatform.GAME_GEAR)
-                add(toggle("jgenesis_gg_sms_resolution", R.string.sega_gg_resolution))
+                add(toggle("jgenesis_gg_sms_resolution", R.string.sega_gg_resolution, R.string.sega_gg_resolution_help))
         }
     }
 

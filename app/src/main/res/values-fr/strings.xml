@@ -1268,7 +1268,7 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">Limite d\'images</string>
     <string name="settings_frame_limit_desc">Limite l\'émulation au taux de rafraîchissement de la console. Désactivez pour aller aussi vite que l\'appareil le permet.</string>
     <string name="settings_target_fps">Fréquence d\'images cible</string>
-    <string name="settings_target_fps_desc">Le mode automatique utilise la fréquence indiquée par le cœur actif. Les valeurs manuelles fixent la vitesse d’émulation ; les jeux peuvent produire moins d’images.</string>
+    <string name="settings_target_fps_desc">Le mode automatique utilise la fréquence indiquée par le cœur actif. Les valeurs manuelles fixent la vitesse d’émulation ; les jeux peuvent produire moins d’images. Choisir 25 pour un jeu à 50 Hz ou 30 pour un jeu à 60 Hz réduit environ de moitié la vitesse de l’émulation et du son.</string>
     <string name="settings_display_crop">Rognage de l\'image</string>
     <string name="settings_display_crop_desc">Rogne le même nombre de pixels sur les quatre bords avant la mise à l’échelle. Sélectionnez 0 pour désactiver le rognage.</string>
     <string name="settings_display_crop_pixels">%1$d px</string>
@@ -1468,7 +1468,7 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">Orientation de l\'écran</string>
     <string name="flycast_opt_screen_rotation_info">L\'orientation de l\'image pour les jeux d\'arcade verticaux.</string>
     <string name="flycast_opt_alpha_sorting_label">Tri alpha</string>
-    <string name="flycast_opt_alpha_sorting_info">Détermine comment les polygones transparents sont triés.</string>
+    <string name="flycast_opt_alpha_sorting_info">Choisit le tri des polygones transparents. La précision et la vitesse varient selon la méthode.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">Par bande (rapide, le moins précis)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">Par triangle (normal)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">Par pixel (précis, mais le plus lent)</string>
@@ -1493,7 +1493,7 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">Filtrage mipmap</string>
     <string name="flycast_opt_mipmapping_info">Lorsqu\'il est activé, les textures utilisent des versions réduites d\'elles-mêmes au loin ; cela peut améliorer les performances et réduire le scintillement.</string>
     <string name="flycast_opt_fog_label">Effets de brouillard</string>
-    <string name="flycast_opt_fog_info">Active l\'émulation des effets de brouillard.</string>
+    <string name="flycast_opt_fog_info">Affiche les effets de brouillard. Les désactiver modifie l’image et peut améliorer les performances.</string>
     <string name="flycast_opt_volume_modifier_enable_label">Modificateur de volume</string>
     <string name="flycast_opt_volume_modifier_enable_info">Fonctionnalité du GPU de la Dreamcast généralement utilisée par les jeux pour dessiner les ombres des objets. À laisser activée normalement : l\'impact sur les performances est minime, voire négligeable.</string>
     <string name="flycast_opt_anisotropic_filtering_label">Filtrage anisotrope</string>
@@ -1541,7 +1541,7 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">Astuce grand écran</string>
     <string name="flycast_opt_widescreen_hack_info">Dessine la géométrie en dehors du rapport d\'aspect 4:3 normal. Peut produire des artefacts graphiques dans les zones révélées.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">Chargement rapide des GD-ROM (imprécis)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">Accélère le chargement des GD-ROM.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">Réduit les délais simulés de chargement du disque. Le chargement rapide peut causer des problèmes de synchronisation.</string>
     <string name="flycast_opt_dc_32mb_mod_label">Mod RAM 32 Mo Dreamcast</string>
     <string name="flycast_opt_dc_32mb_mod_info">Active le mod de 32 Mo de RAM pour la Dreamcast. Peut affecter la compatibilité.</string>
     <string name="flycast_opt_sh4clock_label">Sous/surfréquençage du CPU SH4</string>
@@ -2395,4 +2395,16 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH utilisera le chargeur Vulkan par défaut d\'Android.</string>
     <string name="settings_gpu_driver_system">Système</string>
     <string name="settings_help_gpu_driver">Sélectionne le package de pilotes GPU à utiliser lorsque le changement de pilote personnalisé est disponible. Le pilote système est la valeur par défaut la plus sûre ; ne modifiez cela que si vous testez un pilote connu qui améliore les performances ou corrige le rendu sur votre GPU spécifique.</string>
+    <string name="sega_region_help">Choisit la région de la console. Les jeux protégés par région peuvent nécessiter une région correspondante. Redémarrez le jeu pour appliquer.</string>
+    <string name="sega_timing_help">Choisit le timing vidéo NTSC ou PAL, qui affecte la fréquence et la vitesse du jeu. Redémarrez pour appliquer.</string>
+    <string name="sega_sprite_limit_help">Supprime la limite de sprites par ligne pour réduire le scintillement. Le rendu peut différer de la console originale.</string>
+    <string name="sega_low_pass_help">Atténue les hautes fréquences du son Mega Drive pour un rendu plus doux, proche de la console.</string>
+    <string name="sega_fm_audio_help">Émule le module sonore FM de la Master System. Les jeux compatibles peuvent jouer de la musique et des effets FM.</string>
+    <string name="sega_crop_border_help">Masque les bordures supérieure et inférieure de la Master System et modifie la zone visible.</string>
+    <string name="sega_gg_resolution_help">Affiche une image Game Gear plus large que la zone LCD normale. Des zones graphiques inachevées peuvent apparaître.</string>
+    <string name="saturn_cart_help">Choisit la cartouche Saturn : automatique, extension RAM, mémoire de sauvegarde ou aucune. Certains jeux exigent un type précis. Redémarrage nécessaire.</string>
+    <string name="saturn_language_help">Choisit la langue système Saturn. Les jeux compatibles peuvent l’utiliser pour les menus et textes. Redémarrage nécessaire.</string>
+    <string name="settings_help_gyro_stick">Choisit le stick analogique contrôlé par les mouvements du téléphone en mode visée. Choisissez celui qui contrôle la caméra du jeu.</string>
+    <string name="settings_help_arcade_device">Choisit la manette émulée pour ce joueur. Le mode automatique utilise le pistolet en mode pistolet optique, sinon une manette.</string>
+    <string name="settings_help_light_gun_aim">Choisit la méthode de visée du pistolet optique : gyroscope, stick analogique, croix directionnelle ou toucher.</string>
 </resources>

@@ -1593,6 +1593,19 @@ object FlycastCoreOptions {
     fun option(key: String): Option? = optionsByKey[key]
 
     fun isManagedKey(key: String): Boolean = key in managedKeys
+    fun supportsGameOverride(key: String): Boolean = key != INTERNAL_RESOLUTION_KEY
+
+    /** Resolve and validate overrides before the core reads its boot options. */
+    fun startupOptions(global: Map<String, String>, game: Map<String, String>): Map<String, String> {
+        val result = mutableMapOf<String, String>()
+        for (source in listOf(global, game)) {
+            for ((key, value) in source) {
+                val option = option(key) ?: continue
+                if (option.choices.any { it.value == value }) result[key] = value
+            }
+        }
+        return result
+    }
 
     /** System options without the network ones, which live in the Network tab. */
     fun systemOptions(): List<Option> = forCategory("system").filterNot { it.key in networkKeys }
@@ -1626,14 +1639,12 @@ object FlycastCoreOptions {
     /** Network options, grouped for the Network settings tab. */
     fun networkOptions(): List<Option> = optionList.filter { it.key in networkKeys }
 
-    /** In-game menu subsets. Managed options stay in the main settings only. */
+    /** In-game options; resolution remains owned by the image-quality control. */
     fun gameMenuGraphicsOptions(): List<Option> =
         videoOptions().filterNot { isManagedKey(it.key) }
 
     fun gameMenuEmulationOptions(): List<Option> =
-        performanceOptions() + systemOptions().filter {
-            it.shortKey in setOf("region", "language", "hle_bios")
-        }
+        systemOptions() + performanceOptions() + hacksOptions() + vmuOptions() + networkOptions()
 
-    fun gameMenuControlsOptions(): List<Option> = inputOptions()
+    fun gameMenuControlsOptions(): List<Option> = inputOptions() + expansionsOptions()
 }

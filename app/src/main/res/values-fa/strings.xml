@@ -1281,7 +1281,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">محدودیت فریم</string>
     <string name="settings_frame_limit_desc">شبیه‌سازی را به نرخ نوسازی کنسول محدود می‌کند. برای اجرا با بیشترین سرعت دستگاه، آن را خاموش کنید.</string>
     <string name="settings_target_fps">نرخ فریم هدف</string>
-    <string name="settings_target_fps_desc">حالت خودکار نرخ فریم گزارش‌شده توسط هستهٔ فعال را به‌کار می‌گیرد. مقادیر دستی سرعت شبیه‌سازی را تعیین می‌کنند؛ بازی‌ها ممکن است فریم کمتری ترسیم کنند.</string>
+    <string name="settings_target_fps_desc">حالت خودکار نرخ فریم گزارش‌شده توسط هستهٔ فعال را به‌کار می‌گیرد. مقادیر دستی سرعت شبیه‌سازی را تعیین می‌کنند؛ بازی‌ها ممکن است فریم کمتری ترسیم کنند. انتخاب ۲۵ برای بازی ۵۰ هرتزی یا ۳۰ برای بازی ۶۰ هرتزی، سرعت شبیه‌سازی و صدا را تقریباً نصف می‌کند.</string>
     <string name="settings_display_crop">برش تصویر</string>
     <string name="settings_display_crop_desc">پیش از تغییر اندازه، تعداد یکسانی پیکسل از هر چهار لبه برش می‌دهد. برای غیرفعال کردن برش، 0 را انتخاب کنید.</string>
     <string name="settings_display_crop_pixels">%1$d پیکسل</string>
@@ -1481,7 +1481,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">جهت صفحه</string>
     <string name="flycast_opt_screen_rotation_info">جهت تصویر برای بازی‌های آرکید عمودی.</string>
     <string name="flycast_opt_alpha_sorting_label">مرتب‌سازی شفافیت</string>
-    <string name="flycast_opt_alpha_sorting_info">روش مرتب‌سازی چندضلعی‌های شفاف را انتخاب کنید.</string>
+    <string name="flycast_opt_alpha_sorting_info">روش مرتب‌سازی چندضلعی‌های شفاف را انتخاب می‌کند. دقت و سرعت رندر بسته به روش متفاوت است.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">بر اساس نوارها (سریع، کم‌دقت‌ترین)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">بر اساس مثلث‌ها (معمولی)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">بر اساس پیکسل (دقیق اما کندترین)</string>
@@ -1506,7 +1506,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">میپ‌مپینگ</string>
     <string name="flycast_opt_mipmapping_info">با فعال‌سازی، بافت‌ها در فاصله‌های دور از نسخهٔ کوچک‌تر خود استفاده می‌کنند؛ این کار کارایی را بالا می‌برد و سوسوزدن را کم می‌کند.</string>
     <string name="flycast_opt_fog_label">جلوه‌های مه</string>
-    <string name="flycast_opt_fog_info">شبیه‌سازی مه را فعال می‌کند.</string>
+    <string name="flycast_opt_fog_info">جلوه‌های مه را در بازی نمایش می‌دهد. خاموش کردن آن تصویر را تغییر می‌دهد و ممکن است عملکرد را بهتر کند.</string>
     <string name="flycast_opt_volume_modifier_enable_label">تغییردهندهٔ حجم (Volume Modifier)</string>
     <string name="flycast_opt_volume_modifier_enable_info">ویژگی GPU در Dreamcast که بازی‌ها معمولاً برای کشیدن سایهٔ اجسام از آن استفاده می‌کنند. بهتر است فعال بماند؛ تأثیر آن بر کارایی معمولاً ناچیز است.</string>
     <string name="flycast_opt_anisotropic_filtering_label">فیلترینگ ناهمسانگرد</string>
@@ -1554,7 +1554,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">ترفند صفحهٔ عریض</string>
     <string name="flycast_opt_widescreen_hack_info">هندسه را بیرون از نسبت تصویر معمول 4:3 رسم می‌کند. ممکن است در نواحی آشکارشده اشکالات گرافیکی ایجاد کند.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">بارگذاری سریع GD-ROM (غیردقیق)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">بارگذاری از GD-ROM را سرعت می‌بخشد.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">تأخیر شبیه‌سازی‌شده بارگذاری دیسک را کاهش می‌دهد. بارگذاری سریع ممکن است در برخی بازی‌ها مشکل زمان‌بندی ایجاد کند.</string>
     <string name="flycast_opt_dc_32mb_mod_label">ماد 32 مگابایتی RAM برای Dreamcast</string>
     <string name="flycast_opt_dc_32mb_mod_info">ماد حافظهٔ 32 مگابایتی RAM را برای Dreamcast فعال می‌کند. ممکن است بر سازگاری اثر بگذارد.</string>
     <string name="flycast_opt_sh4clock_label">فرکانس CPU SH4 (کاهش/افزایش)</string>
@@ -2408,4 +2408,16 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH از لودر پیش‌فرض Vulkan اندروید استفاده خواهد کرد.</string>
     <string name="settings_gpu_driver_system">سیستم</string>
     <string name="settings_help_gpu_driver">به شما امکان می‌دهد یک بسته درایور سفارشی GPU را جایگزین کنید.</string>
+    <string name="sega_region_help">منطقهٔ کنسول را انتخاب می‌کند. بازی‌های دارای محدودیت منطقه ممکن است به منطقهٔ مطابق نیاز داشته باشند. برای اعمال، بازی را دوباره اجرا کنید.</string>
+    <string name="sega_timing_help">زمان‌بندی تصویر NTSC یا PAL را انتخاب می‌کند که بر نرخ تازه‌سازی و سرعت بازی اثر دارد. برای اعمال دوباره اجرا کنید.</string>
+    <string name="sega_sprite_limit_help">محدودیت تعداد اسپرایت در هر خط را برمی‌دارد و سوسوزدن را کاهش می‌دهد. تصویر ممکن است با کنسول اصلی تفاوت داشته باشد.</string>
+    <string name="sega_low_pass_help">فرکانس‌های بالای صدای Mega Drive را کاهش می‌دهد تا صدا نرم‌تر و به کنسول نزدیک‌تر شود.</string>
+    <string name="sega_fm_audio_help">واحد صدای FM در Master System را شبیه‌سازی می‌کند. بازی‌های سازگار می‌توانند موسیقی و افکت‌های FM پخش کنند.</string>
+    <string name="sega_crop_border_help">حاشیه‌های بالا و پایین تصویر Master System را پنهان می‌کند و محدودهٔ قابل مشاهده را تغییر می‌دهد.</string>
+    <string name="sega_gg_resolution_help">تصویر گسترده‌تری از Game Gear خارج از محدودهٔ معمول LCD نشان می‌دهد. ممکن است بخش‌های ناتمام گرافیک دیده شوند.</string>
+    <string name="saturn_cart_help">کارتریج Saturn را انتخاب می‌کند: تشخیص خودکار، RAM اضافی، حافظهٔ ذخیره یا بدون کارتریج. برخی بازی‌ها نوع مشخصی می‌خواهند. دوباره اجرا کنید.</string>
+    <string name="saturn_language_help">زبان سیستم Saturn را انتخاب می‌کند. بازی‌های سازگار ممکن است از آن برای منو و متن استفاده کنند. دوباره اجرا کنید.</string>
+    <string name="settings_help_gyro_stick">اهرم آنالوگی را انتخاب می‌کند که در حالت نشانه‌گیری با حرکت تلفن کنترل می‌شود. اهرم کنترل دوربین بازی را انتخاب کنید.</string>
+    <string name="settings_help_arcade_device">کنترلر شبیه‌سازی‌شده این بازیکن را انتخاب می‌کند. حالت خودکار در حالت تفنگ نوری از تفنگ و در غیر این صورت از دسته استفاده می‌کند.</string>
+    <string name="settings_help_light_gun_aim">روش نشانه‌گیری تفنگ نوری را انتخاب می‌کند: ژیروسکوپ، اهرم آنالوگ، کلیدهای جهت یا لمس.</string>
 </resources>

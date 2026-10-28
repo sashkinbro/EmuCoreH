@@ -252,6 +252,8 @@ int main(int argc, char **argv) {
   check(vkCreateDevice(iface.gpu, &di, nullptr, &iface.device) == VK_SUCCESS,
         "device");
   vkGetDeviceQueue(iface.device, iface.queue_index, 0, &iface.queue);
+  iface.get_instance_proc_addr = vkGetInstanceProcAddr;
+  iface.get_device_proc_addr = vkGetDeviceProcAddr;
   iface.interface_type = RETRO_HW_RENDER_INTERFACE_VULKAN;
   iface.interface_version = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
   iface.set_image = setImage;

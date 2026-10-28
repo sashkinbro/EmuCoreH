@@ -75,6 +75,127 @@ class Model3RuntimeInstrumentedTest {
     @Test fun ownerSuppliedDaytona2RendersAudioAndRestores() = exerciseOwnerSet("daytona2")
     @Test fun ownerSuppliedLostWorldRendersAudioAndRestores() = exerciseOwnerSet("lostwsga")
 
+    @Test fun ownerSegaRally2RendersWithCustomVulkanDriver() {
+        val args = InstrumentationRegistry.getArguments()
+        val archive = File(args.getString("driverQaArchive").orEmpty())
+        val rom = File(args.getString("model3QaPath_srally2").orEmpty())
+        assumeTrue("Supply the owner ROM and compatible driver", archive.isFile && rom.isFile)
+        val qa = newQaDirectory("srally2-custom-vulkan")
+        val isolated = object : android.content.ContextWrapper(context) {
+            override fun getFilesDir(): File = File(qa, "driver-files").apply { mkdirs() }
+        }
+        val manager = GpuDriverManager(isolated)
+        val driver = requireNotNull(manager.readMainLibraryPath(manager.installFromArchive(archive)))
+        CoreRuntime.shutdown()
+        try {
+            assertTrue(bridge.configureVulkanDriver(driver, context.applicationInfo.nativeLibraryDir, qa.absolutePath))
+            assertTrue(bridge.nativeSelectCore(2))
+            initializeIsolated(qa, copyDefinitions = true)
+            val session = bridge.createSession()
+            assertNotEquals(0L, session)
+            try {
+                PixelRecorder("Model3CustomVulkan").use { pixels ->
+                    assertEquals(0, bridge.setSurface(session, pixels.reader.surface, RendererDefaults.CORE_VULKAN))
+                    assertEquals("Boot: ${bridge.nativeLastBootError()}", 0,
+                        bridge.loadDisc(session, Model3ContentPreparer.prepare(context, rom.absolutePath)))
+                    assertTrue("Vulkan context: ${bridge.nativeLastBootError()}", bridge.ensureHardwareContext())
+                    val before = requireNotNull(bridge.audioOutputStats(0))
+                    repeat(1800) { frame ->
+                        val buttons = when {
+                            frame % 120 in 60..61 -> 1 shl 0
+                            frame % 120 in 75..76 -> 1 shl 3
+                            frame > 180 -> 1 shl 9
+                            else -> 0
+                        }
+                        bridge.setPadButtons(session, 0, buttons.inv() and 0xffff)
+                        bridge.runFrame(session)
+                    }
+                    bridge.setPadButtons(session, 0, 0xffff)
+                    assertTrue("No images presented", pixels.presented.await(5, TimeUnit.SECONDS))
+                    pixels.failure.get()?.let { throw AssertionError("ImageReader failed", it) }
+                    assertTrue("No visible Model 3 game frames", pixels.sawVisible.get())
+                    pixels.writeBestPng(File(context.getExternalFilesDir(null), "model3-custom-vulkan-qa.png"))
+                    Log.i("Model3RuntimeQA", "custom frames=${pixels.frames.get()} colored=${pixels.latestColoredPixels.get()} peak=${pixels.maxColoredPixels.get()} status=${bridge.vulkanDriverStatus()} driver=${bridge.vulkanDriverName()}")
+                    assertTrue("No colored game scene; peak=${pixels.maxColoredPixels.get()}", pixels.maxColoredPixels.get() >= 100)
+                    assertTrue("No PCM produced", requireNotNull(bridge.audioOutputStats(0))[5] > before[5])
+                    assertEquals("The custom driver must actually be loaded", "custom", bridge.vulkanDriverStatus())
+                    assertTrue("Actual driver: ${bridge.vulkanDriverName()}",
+                        bridge.vulkanDriverName().contains("Mesa", true) || bridge.vulkanDriverName().contains("Turnip", true))
+                    verifyStateRoundTrip(session, qa, false)
+                }
+            } finally {
+                bridge.destroySession(session)
+                bridge.setSurface(session, null, RendererDefaults.CORE_OPENGL)
+            }
+        } finally {
+            bridge.configureVulkanDriver(null, context.applicationInfo.nativeLibraryDir, qa.absolutePath)
+            restoreFrontend()
+            Model3ContentPreparer.releasePreparedContent(context)
+            qa.deleteRecursively()
+        }
+    }
+
+    @Test fun ownerSegaRally2RuntimeSwitchesVulkanAndOpenGl() {
+        val args = InstrumentationRegistry.getArguments()
+        val archive = File(args.getString("driverQaArchive").orEmpty())
+        val rom = File(args.getString("model3QaPath_srally2").orEmpty())
+        assumeTrue("Supply the owner ROM and compatible driver", archive.isFile && rom.isFile)
+        val qa = newQaDirectory("srally2-runtime-switch")
+        val uniqueArchive = File(qa, "Model3-QA-${System.nanoTime()}.zip")
+        archive.copyTo(uniqueArchive)
+        val manager = GpuDriverManager(context)
+        val name = manager.installFromArchive(uniqueArchive)
+        val driver = requireNotNull(manager.readMainLibraryPath(name))
+        val thread = HandlerThread("Model3RuntimeSwitchFrames").apply { start() }
+        val frames = AtomicInteger()
+        fun awaitFramesAfter(previous: Int) {
+            val deadline = android.os.SystemClock.uptimeMillis() + 20_000
+            while (frames.get() < previous + 5 && android.os.SystemClock.uptimeMillis() < deadline && CoreRuntime.isRunning()) Thread.sleep(25)
+            assertTrue("No frames after renderer switch: ${CoreRuntime.diagnostics()}", frames.get() >= previous + 5)
+        }
+        try {
+            CoreRuntime.shutdown()
+            CoreRuntime.initialize(context)
+            CoreRuntime.setDataRootOverride(File(qa, "data").absolutePath)
+            CoreRuntime.selectedGpuDriverPath = driver
+            CoreRuntime.setHostForeground(true)
+            CoreRuntime.updateSetting("EmuCoreH/Runtime", "Renderer", RendererDefaults.VULKAN.toString())
+            ImageReader.newInstance(640, 480, PixelFormat.RGBA_8888, 3).use { reader ->
+                reader.setOnImageAvailableListener({ source -> source.acquireLatestImage()?.use { frames.incrementAndGet() } }, Handler(thread.looper))
+                try {
+                    CoreRuntime.attachSurface(reader.surface, 640, 480)
+                    assertTrue("Start Model 3 with Vulkan", CoreRuntime.start(rom.absolutePath, false))
+                    awaitFramesAfter(0)
+                    assertEquals("custom", bridge.vulkanDriverStatus())
+                    assertTrue(bridge.vulkanDriverName().contains("Mesa", true))
+                    assertTrue(CoreRuntime.diagnostics().contains("\"renderer\":${RendererDefaults.CORE_VULKAN}"))
+                    var before = frames.get()
+                    assertTrue("Switch to OpenGL", CoreRuntime.restartWithRenderer(RendererDefaults.OPENGL))
+                    awaitFramesAfter(before)
+                    assertTrue(CoreRuntime.diagnostics().contains("\"renderer\":${RendererDefaults.CORE_OPENGL}"))
+                    before = frames.get()
+                    assertTrue("Switch back to Vulkan", CoreRuntime.restartWithRenderer(RendererDefaults.VULKAN))
+                    awaitFramesAfter(before)
+                    assertEquals("custom", bridge.vulkanDriverStatus())
+                    assertTrue(CoreRuntime.diagnostics().contains("\"renderer\":${RendererDefaults.CORE_VULKAN}"))
+                } finally {
+                    CoreRuntime.shutdown()
+                    CoreRuntime.detachSurface()
+                }
+            }
+        } finally {
+            CoreRuntime.shutdown()
+            CoreRuntime.detachSurface()
+            CoreRuntime.selectedGpuDriverPath = null
+            CoreRuntime.setDataRootOverride(null)
+            CoreRuntime.initialize(context)
+            manager.remove(name)
+            thread.quitSafely()
+            thread.join(3000)
+            qa.deleteRecursively()
+        }
+    }
+
     @Test fun ownerSuppliedSelectedSetPreparesRendersAndRestores() {
         val set = InstrumentationRegistry.getArguments().getString("model3QaSet")
         assumeTrue("Supply model3QaSet for an additional owner ROM", !set.isNullOrBlank())
@@ -343,9 +464,11 @@ class Model3RuntimeInstrumentedTest {
         val frames = AtomicInteger()
         val sawVisible = AtomicBoolean()
         val latestColoredPixels = AtomicInteger()
+        val maxColoredPixels = AtomicInteger()
         val presented = CountDownLatch(3)
         val failure = AtomicReference<Throwable>()
         private val rgba = AtomicReference<ByteArray>()
+        private val bestRgba = AtomicReference<ByteArray>()
         init {
             reader.setOnImageAvailableListener({ source ->
                 try {
@@ -374,6 +497,10 @@ class Model3RuntimeInstrumentedTest {
                             }
                             if (colors.size >= 8 && nonBlack >= 100) sawVisible.set(true)
                             latestColoredPixels.set(colored)
+                            if (colored > maxColoredPixels.get()) {
+                                maxColoredPixels.set(colored)
+                                bestRgba.set(pixels)
+                            }
                             rgba.set(pixels)
                         }
                     }
@@ -381,7 +508,13 @@ class Model3RuntimeInstrumentedTest {
             }, handler)
         }
         fun writePng(file: File) {
-            val pixels = rgba.get() ?: return // An early scripted key edge may precede image three.
+            writePixels(file, rgba.get())
+        }
+        fun writeBestPng(file: File) {
+            writePixels(file, bestRgba.get())
+        }
+        private fun writePixels(file: File, pixels: ByteArray?) {
+            pixels ?: return // An early scripted key edge may precede image three.
             val bitmap = Bitmap.createBitmap(640, 480, Bitmap.Config.ARGB_8888)
             try {
                 bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(pixels))

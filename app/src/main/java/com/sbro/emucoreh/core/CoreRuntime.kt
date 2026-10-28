@@ -268,23 +268,22 @@ internal object CoreRuntime {
         val app = context ?: return false
         val detectedPlatform = if (biosOnly) EmulationPlatform.DREAMCAST else SegaPlatformDetector.detect(app, gamePath)
         val requestedCore = when {
-            // Supermodel's renderer is OpenGL ES only.
-            detectedPlatform.isModel3 || detectedPlatform.isSaturn -> RendererDefaults.CORE_OPENGL
+            detectedPlatform.isSaturn -> RendererDefaults.CORE_OPENGL
             // jgenesis has no core-side GPU rasterizer, but both of our GPU
             // output backends can present its software frames. Legacy
             // "Software" preferences from Flycast map to the OpenGL output.
-            detectedPlatform.isSega -> RendererDefaults.toCoreRenderer(requestedRenderer)
+            detectedPlatform.isSega || detectedPlatform.isModel3 -> RendererDefaults.toCoreRenderer(requestedRenderer)
                 .takeIf { it != RendererDefaults.CORE_SOFTWARE } ?: RendererDefaults.CORE_OPENGL
             else -> RendererDefaults.toCoreRenderer(requestedRenderer)
         }
-        val candidates = if (detectedPlatform.isSega && requestedCore == RendererDefaults.CORE_VULKAN) {
+        val candidates = if ((detectedPlatform.isSega || detectedPlatform.isModel3) && requestedCore == RendererDefaults.CORE_VULKAN) {
             listOf(RendererDefaults.CORE_VULKAN, RendererDefaults.CORE_OPENGL)
         } else {
             listOf(requestedCore)
         }
 
         shutdownSession()
-        val driverPath = if (requestedCore == RendererDefaults.CORE_VULKAN)
+        val driverPath = if (detectedPlatform.supportsCustomGpuDrivers() && requestedCore == RendererDefaults.CORE_VULKAN)
             GpuDriverManager(app).resolveUsableDriverPath(selectedGpuDriverPath) else null
         bridge.configureVulkanDriver(driverPath, app.applicationInfo.nativeLibraryDir, app.cacheDir.absolutePath)
         platform = detectedPlatform
@@ -470,10 +469,8 @@ internal object CoreRuntime {
         }
         // Explicit user choices from the settings / game manager / in-game menu
         // win over every derived default.
-        CoreOptionStore.persistedEntries().forEach { (key, value) ->
-            if (FlycastCoreOptions.option(key) != null) {
-                bridge.nativeSetOption(key, value)
-            }
+        FlycastCoreOptions.startupOptions(CoreOptionStore.persistedEntries(), launchCoreOptions).forEach { (key, value) ->
+            bridge.nativeSetOption(key, value)
         }
         // A Dreamcast BIOS dump is optional: when none is installed the core
         // boots through its HLE BIOS so games still start.
@@ -520,7 +517,13 @@ internal object CoreRuntime {
             ?: SegaCoreOptions.options(platform).firstOrNull { it.key == key }?.defaultValue
         else if (key.startsWith("beetle_saturn_")) context?.let { SaturnCoreOptions.value(it, key) }
             ?: SaturnCoreOptions.options().firstOrNull { it.key == key }?.defaultValue
-        else CoreOptionStore.value(key) ?: FlycastCoreOptions.option(key)?.defaultValue
+        else CoreOptionStore.value(key) ?: when (key) {
+            "reicast_custom_textures" -> settings["EmuCoreH/Runtime:LoadTextureReplacements"]
+            "reicast_preload_custom_textures" -> settings["EmuCoreH/Runtime:PrecacheTextureReplacements"]
+            "reicast_dump_textures" -> settings["EmuCoreH/Runtime:DumpReplaceableTextures"]
+            else -> null
+        }?.toBooleanStrictOrNull()?.let { if (it) "enabled" else "disabled" }
+            ?: FlycastCoreOptions.option(key)?.defaultValue
 
     /**
      * Forwards a core option without persisting it. Used for per-game overrides

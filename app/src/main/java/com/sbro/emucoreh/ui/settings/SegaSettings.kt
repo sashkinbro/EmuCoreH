@@ -102,8 +102,7 @@ internal fun SegaCoreOptionRows(
         val help = buildList {
             val description = stringResource(option.descriptionRes)
             if (description.isNotBlank()) add(description)
-            if (!liveOnly && (option.key in setOf("jgenesis_region", "jgenesis_timing") ||
-                    (platform.isSaturn && com.sbro.emucoreh.core.SaturnCoreOptions.requiresRestart(option.key)))) {
+            if (!liveOnly && option.key == "beetle_saturn_cdimagecache") {
                 add(stringResource(R.string.sega_restart_required))
             }
         }.distinct().joinToString("\n\n")

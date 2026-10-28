@@ -128,6 +128,7 @@ data class SettingsUiState(
     val languageTag: String? = null,
     val tvInterfaceMode: TvInterfaceMode = TvInterfaceMode.AUTO,
     val renderer: Int = RendererDefaults.defaultForHardware(),
+    val model3Renderer: Int = RendererDefaults.VULKAN,
     val customDriverPath: String? = null,
     val gpuDriverType: Int = 0,
     val installedGpuDrivers: List<InstalledGpuDriver> = emptyList(),
@@ -335,6 +336,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             languageTag = snapshot.languageTag,
             tvInterfaceMode = snapshot.tvInterfaceMode,
             renderer = snapshot.renderer,
+            model3Renderer = snapshot.model3Renderer,
             customDriverPath = snapshot.customDriverPath,
             gpuDriverType = if (snapshot.customDriverPath == null) 0 else 1,
             upscaleMultiplier = snapshot.upscaleMultiplier,
@@ -822,6 +824,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             if (!EmulatorBridge.setRenderer(value)) return@launch
             preferences.setRenderer(value)
         }
+    }
+    fun setModel3Renderer(value: Int) {
+        viewModelScope.launch { preferences.setModel3Renderer(value) }
     }
 
 

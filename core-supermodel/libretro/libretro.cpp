@@ -149,10 +149,13 @@ bool create_graphics(){
     if(!environment(RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE,&iface)||!iface||iface->interface_type!=RETRO_HW_RENDER_INTERFACE_VULKAN||iface->interface_version<RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION)
       return fail("Frontend did not provide a compatible Vulkan interface");
     auto* vk=reinterpret_cast<const retro_hw_render_interface_vulkan*>(iface);
-    if(!vk->set_image||!vk->lock_queue||!vk->unlock_queue)return fail("Frontend Vulkan queue contract is incomplete");
+    if(!vk->set_image||!vk->lock_queue||!vk->unlock_queue||!vk->instance||!vk->get_instance_proc_addr||!vk->get_device_proc_addr)return fail("Frontend Vulkan queue contract is incomplete");
     host->vulkan_interface=vk;
     New3D::VulkanContext context{vk->gpu,vk->device,vk->queue,vk->queue_index,
       [vk]{vk->lock_queue(vk->handle);},[vk]{vk->unlock_queue(vk->handle);}};
+    context.instance=vk->instance;
+    context.getInstanceProcAddr=vk->get_instance_proc_addr;
+    context.getDeviceProcAddr=vk->get_device_proc_addr;
     host->vulkan=std::make_unique<New3D::VulkanScene>(std::move(context));
     host->vulkan_consumer=std::make_unique<VulkanFrameConsumer>(*host->vulkan,host->render2d);
     host->renderer=std::make_unique<New3D::CNew3D>(host->config,host->game.name,host->vulkan_consumer.get());

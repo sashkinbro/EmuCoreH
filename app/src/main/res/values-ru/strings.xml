@@ -1270,7 +1270,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_frame_limit">Ограничение кадров</string>
     <string name="settings_frame_limit_desc">Ограничивает эмуляцию частотой обновления консоли. Отключите, чтобы работать так быстро, как позволяет устройство.</string>
     <string name="settings_target_fps">Целевая частота кадров</string>
-    <string name="settings_target_fps_desc">Авто использует частоту кадров, сообщаемую активным ядром. Ручные значения задают скорость эмуляции; игры могут отрисовывать меньше кадров.</string>
+    <string name="settings_target_fps_desc">Авто использует частоту кадров, сообщаемую активным ядром. Ручные значения задают скорость эмуляции; игры могут отрисовывать меньше кадров. Выбор 25 для игры на 50 Гц или 30 для игры на 60 Гц замедляет эмуляцию примерно вдвое, включая звук.</string>
     <string name="settings_display_crop">Обрезка изображения</string>
     <string name="settings_display_crop_desc">Обрезает одинаковое количество пикселей со всех четырёх краёв перед масштабированием. Выберите 0, чтобы отключить обрезку.</string>
     <string name="settings_display_crop_pixels">%1$d пкс</string>
@@ -1470,7 +1470,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_screen_rotation_label">Ориентация экрана</string>
     <string name="flycast_opt_screen_rotation_info">Поворот изображения для вертикальных аркадных игр.</string>
     <string name="flycast_opt_alpha_sorting_label">Сортировка прозрачности</string>
-    <string name="flycast_opt_alpha_sorting_info">Выбор способа сортировки прозрачных полигонов.</string>
+    <string name="flycast_opt_alpha_sorting_info">Выбирает способ сортировки прозрачных полигонов. Методы различаются точностью и скоростью рендеринга.</string>
     <string name="flycast_opt_alpha_sorting_choice_per_strip_fast_least_accurate">По полосам (быстро, наименее точно)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_triangle_normal">По треугольникам (обычно)</string>
     <string name="flycast_opt_alpha_sorting_choice_per_pixel_accurate">По пикселям (точно, но медленнее всего)</string>
@@ -1495,7 +1495,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_mipmapping_label">Мипмаппинг</string>
     <string name="flycast_opt_mipmapping_info">На расстоянии текстуры используют уменьшенные копии — это повышает производительность и снижает мерцание.</string>
     <string name="flycast_opt_fog_label">Эффекты тумана</string>
-    <string name="flycast_opt_fog_info">Включает эмуляцию эффектов тумана.</string>
+    <string name="flycast_opt_fog_info">Отображает туман в играх. Отключение меняет изображение и может повысить производительность.</string>
     <string name="flycast_opt_volume_modifier_enable_label">Модификатор объёма (тени)</string>
     <string name="flycast_opt_volume_modifier_enable_info">Функция GPU Dreamcast, обычно используемая играми для отрисовки теней объектов. Рекомендуется держать включённой — влияние на производительность минимально.</string>
     <string name="flycast_opt_anisotropic_filtering_label">Анизотропная фильтрация</string>
@@ -1543,7 +1543,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="flycast_opt_widescreen_hack_label">Хак широкого экрана</string>
     <string name="flycast_opt_widescreen_hack_info">Отрисовывает геометрию за пределами обычного соотношения сторон 4:3. Может вызывать графические артефакты в открывшихся областях.</string>
     <string name="flycast_opt_gdrom_fast_loading_label">Быстрая загрузка GD-ROM (неточно)</string>
-    <string name="flycast_opt_gdrom_fast_loading_info">Ускоряет загрузку с GD-ROM.</string>
+    <string name="flycast_opt_gdrom_fast_loading_info">Сокращает эмулируемые задержки загрузки диска. Ускорение может вызвать проблемы с таймингом в некоторых играх.</string>
     <string name="flycast_opt_dc_32mb_mod_label">Мод 32 МБ ОЗУ Dreamcast</string>
     <string name="flycast_opt_dc_32mb_mod_info">Включает мод 32 МБ ОЗУ для Dreamcast. Может влиять на совместимость.</string>
     <string name="flycast_opt_sh4clock_label">Частота CPU SH4 (разгон/снижение)</string>
@@ -2397,4 +2397,16 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_gpu_driver_status_system_desc">EmuCoreH будет использовать стандартный загрузчик Vulkan от Android.</string>
     <string name="settings_gpu_driver_system">Системный</string>
     <string name="settings_help_gpu_driver">Выбирает, какой пакет драйверов графического процессора использовать, когда доступно переключение пользовательских драйвер. Системный драйвер — самая безопасная настройка по умолчанию; изменяйте ее только в том случае, если вы тестируете известный драйвер, который улучшает производительность или исправляет рендеринг на вашем конкретном графическом процессоре.</string>
+    <string name="sega_region_help">Выбирает регион консоли. Играм с региональной защитой может потребоваться подходящий регион. Изменение действует после перезапуска.</string>
+    <string name="sega_timing_help">Выбирает видеостандарт NTSC или PAL, влияющий на частоту обновления и скорость игры. Изменение действует после перезапуска.</string>
+    <string name="sega_sprite_limit_help">Убирает ограничение спрайтов в строке и уменьшает мерцание при их большом количестве. Изображение может отличаться от оригинала.</string>
+    <string name="sega_low_pass_help">Приглушает высокие частоты звука Mega Drive, делая звучание мягче и ближе к консоли.</string>
+    <string name="sega_fm_audio_help">Эмулирует FM-звуковой модуль Master System. Совместимые игры могут воспроизводить FM-музыку и эффекты.</string>
+    <string name="sega_crop_border_help">Убирает верхние и нижние поля изображения Master System, изменяя видимую область кадра.</string>
+    <string name="sega_gg_resolution_help">Показывает более широкое изображение Game Gear за пределами обычного экрана. В некоторых играх могут быть видны незавершённые области.</string>
+    <string name="saturn_cart_help">Выбирает картридж Saturn: автоопределение, расширение памяти, память сохранений или отсутствие картриджа. Некоторым играм нужен определённый тип. Требуется перезапуск.</string>
+    <string name="saturn_language_help">Выбирает системный язык Saturn. Совместимые игры могут использовать его для меню и текста. Требуется перезапуск.</string>
+    <string name="settings_help_gyro_stick">Выбирает аналоговый стик, управляемый движением телефона в режиме прицеливания. Выберите стик, который управляет камерой в игре.</string>
+    <string name="settings_help_arcade_device">Выбирает контроллер игрока. Автоматический режим использует пистолет в режиме светового пистолета, иначе — геймпад.</string>
+    <string name="settings_help_light_gun_aim">Выбирает способ наведения светового пистолета: гироскоп, аналоговый стик, крестовину или касание.</string>
 </resources>

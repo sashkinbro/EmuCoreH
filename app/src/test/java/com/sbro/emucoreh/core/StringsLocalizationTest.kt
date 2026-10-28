@@ -119,6 +119,29 @@ class StringsLocalizationTest {
     }
 
     @Test
+    fun `sega and saturn option help is present and explains more than the label in every locale`() {
+        val pairs = mapOf(
+            "sega_region" to "sega_region_help", "sega_timing" to "sega_timing_help",
+            "sega_remove_sprite_limit" to "sega_sprite_limit_help", "sega_low_pass_filter" to "sega_low_pass_help",
+            "sega_fm_audio" to "sega_fm_audio_help", "sega_crop_border" to "sega_crop_border_help",
+            "sega_gg_resolution" to "sega_gg_resolution_help", "saturn_addon_cart" to "saturn_cart_help",
+            "flycast_opt_language_label" to "saturn_language_help",
+            "settings_gyro_stick" to "settings_help_gyro_stick",
+            "settings_arcade_device_player_1" to "settings_help_arcade_device",
+            "settings_light_gun_aim" to "settings_help_light_gun_aim"
+        )
+        val files = resolveResDir().listFiles().orEmpty().map { File(it, "strings.xml") }.filter(File::isFile)
+        assertTrue("Expected 18 language files", files.size >= 18)
+        files.forEach { file ->
+            val strings = readStrings(file)
+            pairs.forEach { (label, help) ->
+                val description = strings[help].orEmpty().trim()
+                assertTrue("Missing or short $help in ${file.parentFile.name}", description.length > strings.getValue(label).trim().length + 15)
+            }
+        }
+    }
+
+    @Test
     fun `supported arcade cabinet and firmware guidance includes System SP in every locale`() {
         resolveResDir().listFiles().orEmpty().map { File(it, "strings.xml") }.filter(File::isFile).forEach { file ->
             val strings = readStrings(file)

@@ -3885,6 +3885,7 @@ private fun EmulationSidebarMenu(
                         if (platform.coreId == 0) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_arcade_device_player_1),
+                            helpText = stringResource(R.string.settings_help_arcade_device),
                             options = arcadeDeviceOptions().map { (value, label) -> LiveSelectionOption(value, label) },
                             currentValue = uiState.arcadeDevice1,
                             onValueChange = onSetArcadeDevice1,
@@ -3894,6 +3895,7 @@ private fun EmulationSidebarMenu(
                         if (platform.coreId == 0) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_arcade_device_player_2),
+                            helpText = stringResource(R.string.settings_help_arcade_device),
                             options = arcadeDeviceOptions().map { (value, label) -> LiveSelectionOption(value, label) },
                             currentValue = uiState.arcadeDevice2,
                             onValueChange = onSetArcadeDevice2,
@@ -3920,6 +3922,7 @@ private fun EmulationSidebarMenu(
                         if (platform.coreId == 0 && uiState.gyroMode == AppPreferences.GYRO_MODE_AIM) {
                             LiveSelectionRow(
                                 title = stringResource(R.string.settings_gyro_stick),
+                                helpText = stringResource(R.string.settings_help_gyro_stick),
                                 options = gyroStickTargetOptions().map { (value, label) -> LiveSelectionOption(value, label) },
                                 currentValue = uiState.gyroStickTarget,
                                 onValueChange = onSetGyroStickTarget,
@@ -3929,6 +3932,7 @@ private fun EmulationSidebarMenu(
                         if (platform.coreId == 0) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_light_gun_aim),
+                            helpText = stringResource(R.string.settings_help_light_gun_aim),
                             options = lightGunAimSourceOptions().map { (value, label) -> LiveSelectionOption(value, label) },
                             currentValue = uiState.lightGunAimSource,
                             onValueChange = onSetLightGunAimSource,
@@ -3959,6 +3963,7 @@ private fun EmulationSidebarMenu(
                             }
                             LiveSliderRow(
                                 title = stringResource(R.string.settings_gyro_sensitivity),
+                                helpText = stringResource(R.string.settings_help_gyro_sensitivity),
                                 valueLabelForValue = { "$it%" },
                                 value = uiState.gyroSensitivity.toFloat(), range = 25f..300f, steps = 10,
                                 onValueChange = { onSetGyroSensitivity(it.roundToInt()) },
@@ -3966,6 +3971,7 @@ private fun EmulationSidebarMenu(
                             )
                             LiveSliderRow(
                                 title = stringResource(R.string.settings_gyro_smoothing),
+                                helpText = stringResource(R.string.settings_help_gyro_smoothing),
                                 valueLabelForValue = { "$it%" },
                                 value = uiState.gyroSmoothing.toFloat(), range = 0f..90f, steps = 8,
                                 onValueChange = { onSetGyroSmoothing(it.roundToInt()) },
@@ -3973,12 +3979,14 @@ private fun EmulationSidebarMenu(
                             )
                             SettingsToggle(
                                 title = stringResource(R.string.settings_gyro_invert_x),
+                                helpText = stringResource(R.string.settings_help_gyro_invert_x),
                                 checked = uiState.gyroInvertX, onCheckedChange = onSetGyroInvertX,
                                 onResetToDefault = { onSetGyroInvertX(globalDefaults.gyroInvertX) }
                             )
                             if (sensorMode != AppPreferences.GYRO_MODE_STEERING) {
                                 SettingsToggle(
                                     title = stringResource(R.string.settings_gyro_invert_y),
+                                    helpText = stringResource(R.string.settings_help_gyro_invert_y),
                                     checked = uiState.gyroInvertY, onCheckedChange = onSetGyroInvertY,
                                     onResetToDefault = { onSetGyroInvertY(globalDefaults.gyroInvertY) }
                                 )
@@ -4257,11 +4265,9 @@ private fun EmulationSidebarMenu(
 
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_target_fps),
-                            options = listOf(
-                                LiveSelectionOption(0, stringResource(R.string.settings_aspect_ratio_auto)),
-                                LiveSelectionOption(50, "50 Hz"),
-                                LiveSelectionOption(60, "60 Hz")
-                            ),
+                            options = com.sbro.emucoreh.core.FrameRateChoices.values.map { rate ->
+                                LiveSelectionOption(rate, if (rate == 0) stringResource(R.string.settings_aspect_ratio_auto) else "$rate Hz")
+                            },
                             currentValue = uiState.targetFps,
                             onValueChange = onSetTargetFps,
                             helpText = stringResource(R.string.settings_target_fps_desc),
@@ -4317,7 +4323,7 @@ private fun EmulationSidebarMenu(
                                     GameMenuSectionId.EMULATION_CPU,
                                     GameMenuSectionId.EMULATION_AUDIO -> {
 
-                        if (section == GameMenuSectionId.EMULATION_CPU && platform.coreId == 0) {
+                        if (section == GameMenuSectionId.EMULATION_CPU && (platform.coreId == 0 || platform.isSega || platform.isSaturn)) {
                             SidebarSectionTitle(
                                 text = stringResource(R.string.settings_emulation_tab).uppercase(),
                                 color = sectionTitleColor,
@@ -4325,7 +4331,11 @@ private fun EmulationSidebarMenu(
                                 horizontalInset = sectionLabelInset
                             )
                             CoreOptionRows(
-                                options = FlycastCoreOptions.gameMenuEmulationOptions(),
+                                options = when {
+                                    platform.isSega -> SegaCoreOptions.options(platform).filter { it.category == "system" }
+                                    platform.isSaturn -> com.sbro.emucoreh.core.SaturnCoreOptions.options(platform).filter { it.category == "system" }
+                                    else -> FlycastCoreOptions.gameMenuEmulationOptions()
+                                },
                                 version = coreOptionsVersion,
                                 perGameOverrides = uiState.perGameCoreOptions,
                                 onValueChange = onCoreOptionChange
@@ -4397,7 +4407,6 @@ private fun EmulationSidebarMenu(
                     }
 
                     EmulationMenuTab.Graphics -> {
-                        if (platform.isModel3) Model3SettingsInfo()
                         gameMenuSectionsForTab(GameMenuTabId.GRAPHICS, uiState.gameMenuSectionOrder)
                             .filterNot(uiState.hiddenGameMenuSections::contains)
                             .forEach { section ->
@@ -4410,18 +4419,17 @@ private fun EmulationSidebarMenu(
                             horizontalInset = sectionLabelInset
                         )
 
-                        if (platform.coreId == 0) {
+                        if (platform.coreId == 0 || platform.isModel3 || platform.isSega) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_renderer),
                             options = listOf(
                                 LiveSelectionOption(12, stringResource(R.string.settings_renderer_opengl)),
-                                LiveSelectionOption(14, stringResource(R.string.settings_renderer_vulkan)),
-                                LiveSelectionOption(13, stringResource(R.string.settings_renderer_software))
-                            ),
+                                LiveSelectionOption(14, stringResource(R.string.settings_renderer_vulkan))
+                            ) + if (platform.coreId == 0) listOf(LiveSelectionOption(13, stringResource(R.string.settings_renderer_software))) else emptyList(),
                             currentValue = uiState.renderer,
                             onValueChange = onSetRenderer,
                             helpText = stringResource(R.string.settings_help_renderer),
-                            onResetToDefault = { onSetRenderer(globalDefaults.renderer) }
+                            onResetToDefault = { onSetRenderer(if (platform.isModel3) globalDefaults.model3Renderer else globalDefaults.renderer) }
                         )
                         }
 
@@ -5611,7 +5619,10 @@ private fun CoreOptionRows(
             ?: option.defaultValue
         val currentIndex = values.indexOf(current).let { if (it >= 0) it else 0 }
         val title = stringResource(option.labelRes)
-        val help = stringResource(option.descriptionRes).takeIf { it.isNotBlank() }
+        val description = stringResource(option.descriptionRes)
+        val help = if (option.key == "beetle_saturn_cdimagecache")
+            listOf(description, stringResource(R.string.sega_restart_required)).filter { it.isNotBlank() }.joinToString("\n\n")
+        else description.takeIf { it.isNotBlank() }
         val choiceLabels = option.choices.map { stringResource(it.labelRes) }
         if (option.isBooleanToggle) {
             SettingsToggle(

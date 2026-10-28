@@ -10,6 +10,12 @@ internal fun segaSettingsTabAvailable(tab: String): Boolean = tab !in setOf("Net
 
 internal fun EmulationPlatform.supportsAnalogControlSettings(): Boolean = coreId == 0 || isModel3
 
+internal fun settingsCoreOptionSectionVisible(platform: EmulationPlatform, category: String): Boolean {
+    val options = if (platform.isSaturn) com.sbro.emucoreh.core.SaturnCoreOptions.options(platform)
+        else com.sbro.emucoreh.core.SegaCoreOptions.options(platform)
+    return options.any { it.category == category }
+}
+
 internal fun gameMenuCustomizationTabAvailable(platform: EmulationPlatform, tab: GameMenuTabId): Boolean =
     when (tab) {
         GameMenuTabId.CHEATS -> platform.coreId == 0 || platform.isSega
@@ -23,9 +29,8 @@ internal fun settingsSearchEntryAvailable(platform: EmulationPlatform, tab: Stri
     if (platform.coreId == 0) return true
     if (title == R.string.settings_upscale) return segaSettingsTabAvailable(tab) && platform.supportsInternalResolution
     if (!segaSettingsTabAvailable(tab) || title in flycastOnlySearchSettings) return false
-    // Model 3 has no renderer choice; Supermodel is OpenGL-only. Sega does
-    // expose the jgenesis output backend, so the row is only hidden here.
-    if ((platform.isModel3 || platform.isSaturn) && title == R.string.settings_renderer) return false
+    if (title == R.string.settings_renderer && platform.isSaturn) return false
+    if (title == R.string.settings_renderer && platform.isModel3) return tab == "Graphics"
     return platform.supportsAnalogControlSettings() || title !in analogSearchSettings
 }
 

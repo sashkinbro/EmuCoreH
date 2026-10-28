@@ -1,5 +1,9 @@
 package com.sbro.emucoreh.core
 
+internal object FrameRateChoices {
+    val values = listOf(0, 25, 30, 50, 60)
+}
+
 /** Measures guest progress, never the sound device's callbacks (which include silence). */
 internal class EmulationTiming {
     data class Metrics(val fps: Double, val speedPercent: Double)
