@@ -30,10 +30,10 @@ class RightActionDefaultLayoutTest {
             val expected = when (platform) {
                 EmulationPlatform.DREAMCAST -> 348.0645f
                 EmulationPlatform.GENESIS, EmulationPlatform.SEGA_CD,
-                EmulationPlatform.SEGA_32X, EmulationPlatform.SATURN -> 330.08002f
+                EmulationPlatform.SEGA_32X, EmulationPlatform.SATURN -> 320.08002f
                 EmulationPlatform.MASTER_SYSTEM, EmulationPlatform.GAME_GEAR,
-                EmulationPlatform.SG_1000 -> 341.6f
-                EmulationPlatform.MODEL_3 -> 333.6f
+                EmulationPlatform.SG_1000 -> 331.6f
+                EmulationPlatform.MODEL_3 -> 323.6f
             }
             assertEquals(platform.name, expected, y, .01f)
         }

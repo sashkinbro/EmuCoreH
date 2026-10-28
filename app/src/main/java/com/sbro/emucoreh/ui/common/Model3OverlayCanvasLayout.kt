@@ -59,9 +59,9 @@ internal fun buildModel3OverlayCanvasLayout(
     val crossTop = buttonBottom - dpad.extent
     val faceLeft = left + w - (4f * d + 3f * gap)
     val rightStickSize = (rightSize * factor).coerceAtMost(h)
-    val rightStickBottom = maxOf(top, crossTop - gap - rightStickSize) + rightStickSize
-    val faceTop = maxOf(buttonBottom - (2f * d + gap) - 10f * requested * factor,
-        rightStickBottom + gap)
+    val desiredFaceTop = buttonBottom - (2f * d + gap) - 20f * requested * factor
+    val rightStickBottom = maxOf(top + rightStickSize, minOf(crossTop - gap, desiredFaceTop - gap))
+    val faceTop = maxOf(desiredFaceTop, rightStickBottom + gap)
     val slots = linkedMapOf(
         "dpad_up" to (left + dpad.centerOffset to crossTop),
         "dpad_left" to (left to crossTop + dpad.centerOffset),
@@ -126,7 +126,8 @@ internal fun buildModel3OverlayCanvasLayout(
         val minX = left + (panelWidth - actualSize) / 2f
         val maxX = left + w - panelWidth + (panelWidth - actualSize) / 2f
         val baseX = ((if (onRight) maxX else minX) + group.first).coerceIn(minX, maxX)
-        val baseY = (crossTop - gap - actualSize + group.second).coerceIn(top, top + h - actualSize)
+        val stickBottom = if (onRight) minOf(crossTop, faceTop) - gap else crossTop - gap
+        val baseY = (stickBottom - actualSize + group.second).coerceIn(top, top + h - actualSize)
         return OverlayCanvasStickSpec(id, actualSize.dp, layout.widthScale, baseX.dp, baseY.dp,
             (baseX + pixels(layout.offset.first)).coerceIn(minX, maxX).dp,
             (baseY + pixels(layout.offset.second)).coerceIn(top, top + h - actualSize).dp,
