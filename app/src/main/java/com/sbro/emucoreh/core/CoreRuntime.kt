@@ -1019,6 +1019,9 @@ internal object CoreRuntime {
         var metricsMaxIntervalNanos = 0L
         var metricsMaxCoreNanos = 0L
         var resetMetrics = true
+        var frameHint: FramePerformanceHint? = null
+        var hintAttempted = false
+        var hintTargetNanos = 14_166_667L
         val audioManager = context?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
         var nextVolumeCheckNanos = 0L
         var systemAudioMuted: Boolean? = null
@@ -1046,6 +1049,9 @@ internal object CoreRuntime {
                 }
                 drainFrameTasks()
                 if (paused || !hostPlayback.isForeground) {
+                    frameHint?.close()
+                    frameHint = null
+                    hintAttempted = false
                     framePacer.reset()
                     resetMetrics = true
                     timingClock.reset()
@@ -1053,6 +1059,10 @@ internal object CoreRuntime {
                     lastRunRate = 0.0
                     Thread.sleep(8)
                     continue
+                }
+                if (!hintAttempted) {
+                    hintAttempted = true
+                    frameHint = context?.let { createFramePerformanceHint(it, android.os.Process.myTid(), hintTargetNanos) }
                 }
                 val volumeCheckTime = System.nanoTime()
                 if (volumeCheckTime >= nextVolumeCheckNanos) {
@@ -1094,6 +1104,10 @@ internal object CoreRuntime {
                             1 -> runRate * audioPlaybackRate * 3.0
                             2 -> 2.0
                             else -> runRate * audioPlaybackRate
+                        }
+                        if (pacedRate.isFinite() && pacedRate > 0.0) {
+                            // Reserve part of each frame for presentation and scheduling jitter.
+                            hintTargetNanos = (850_000_000.0 / pacedRate).toLong().coerceAtLeast(1L)
                         }
                         // The console speed is anchored to the sound card by the
                         // native audio push back pressure (standalone Flycast
@@ -1160,11 +1174,11 @@ internal object CoreRuntime {
                         }
                         frameStartNanos = System.nanoTime()
                         framePacer.frameStarted(frameStartNanos)
-                        val coreStartNanos = if (collectMetrics || com.sbro.emucoreh.BuildConfig.DEBUG) System.nanoTime() else 0L
+                        val coreStartNanos = if (collectMetrics || com.sbro.emucoreh.BuildConfig.DEBUG || frameHint != null) System.nanoTime() else 0L
                         bridge.setLightGunCursorEnabled(lightGunCursorEnabled)
                         bridge.runFrame(session)
                         arcadeInputMode = bridge.getArcadeInputMode(session)
-                        val elapsed = if (collectMetrics || com.sbro.emucoreh.BuildConfig.DEBUG) System.nanoTime() - coreStartNanos else 0L
+                        val elapsed = if (collectMetrics || com.sbro.emucoreh.BuildConfig.DEBUG || frameHint != null) System.nanoTime() - coreStartNanos else 0L
                         bridge.getDisplayRect(session)
                             ?.takeIf { it.size == 4 && it[2] > 0 && it[3] > 0 }
                             ?.let {
@@ -1184,6 +1198,7 @@ internal object CoreRuntime {
                         elapsed
                     }
                 } ?: if (skippedPausedFrame) continue else break
+                frameHint?.report(coreNanos, hintTargetNanos)
                 val frameNanos = if (collectMetrics) System.nanoTime() - t0 else 0L
                 // Recover a disconnected stream in release builds as well.
                 output.bufferedFrames()
@@ -1253,6 +1268,7 @@ internal object CoreRuntime {
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Emulation frame loop stopped", error)
             reportFailure("Emulation frame loop stopped: ${error.javaClass.simpleName}: ${error.message.orEmpty()}", error)
         } finally {
+            frameHint?.close()
             running = false
             // A failed worker retains its session for orderly UI cleanup, but
             // must not retain a playing stream after it stops producing audio.
