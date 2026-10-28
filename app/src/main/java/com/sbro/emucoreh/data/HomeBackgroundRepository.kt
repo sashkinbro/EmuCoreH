@@ -5,6 +5,7 @@ import android.graphics.ImageDecoder
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.system.Os
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -91,9 +92,15 @@ class HomeBackgroundRepository(context: Context) {
                     output.fd.sync()
                 }
                 validateContent(temporaryFile, type)
-                clear()
                 val targetFile = fileFor(type)
-                check(temporaryFile.renameTo(targetFile)) { "Unable to restore background" }
+                // The staged file lives in the same directory as the old
+                // background. Rename it first so validation or rename failure
+                // cannot delete the user's existing background.
+                Os.rename(temporaryFile.absolutePath, targetFile.absolutePath)
+                backgroundDirectory.listFiles()?.forEach { file ->
+                    if (file != targetFile) file.delete()
+                }
+                Unit
             } finally {
                 temporaryFile.delete()
             }
