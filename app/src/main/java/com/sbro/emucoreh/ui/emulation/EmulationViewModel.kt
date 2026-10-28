@@ -109,7 +109,7 @@ private fun buildPerformanceOverlayHeader(application: Application): String {
         application.packageManager.getPackageInfo(application.packageName, 0)
     }.getOrNull()
     val appVersion = packageInfo?.versionName?.takeIf(String::isNotBlank) ?: "?"
-    val buildNumber = packageInfo?.longVersionCode?.toString() ?: "?"
+    val buildNumber = packageInfo?.let { androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(it) }?.toString() ?: "?"
     val coreName = runCatching { NativeApp.getCoreName().orEmpty() }
         .getOrDefault("")
         .ifBlank { "?" }

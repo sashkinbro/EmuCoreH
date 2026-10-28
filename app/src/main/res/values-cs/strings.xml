@@ -712,6 +712,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <plurals name="settings_customization_games_per_row">
         <item quantity="one">%d hra na řádek</item>
         <item quantity="few">%d hry na řádek</item>
+        <item quantity="many">%d hry na řádek</item>
         <item quantity="other">%d her na řádek</item>
     </plurals>
     <string name="settings_customization_background_section">Pozadí domovské obrazovky</string>

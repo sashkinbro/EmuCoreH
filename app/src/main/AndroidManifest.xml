@@ -91,42 +91,8 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="file" android:pathPattern=".*\\.iso" />
-                <data android:scheme="file" android:pathPattern=".*\\.ISO" />
-                <data android:scheme="file" android:pathPattern=".*\\.chd" />
-                <data android:scheme="file" android:pathPattern=".*\\.CHD" />
-                <data android:scheme="file" android:pathPattern=".*\\.gdi" />
-                <data android:scheme="file" android:pathPattern=".*\\.GDI" />
-                <data android:scheme="file" android:pathPattern=".*\\.cdi" />
-                <data android:scheme="file" android:pathPattern=".*\\.CDI" />
-                <data android:scheme="file" android:pathPattern=".*\\.cue" />
-                <data android:scheme="file" android:pathPattern=".*\\.CUE" />
-                <data android:scheme="file" android:pathPattern=".*\\.m3u" />
-                <data android:scheme="file" android:pathPattern=".*\\.M3U" />
-                <data android:scheme="file" android:pathPattern=".*\\.zip" />
-                <data android:scheme="file" android:pathPattern=".*\\.ZIP" />
-                <data android:scheme="file" android:pathPattern=".*\\.7z" />
-                <data android:scheme="file" android:pathPattern=".*\\.7Z" />
-                <data android:scheme="file" android:pathPattern=".*\\.dat" />
-                <data android:scheme="file" android:pathPattern=".*\\.DAT" />
-                <data android:scheme="file" android:pathPattern=".*\\.lst" />
-                <data android:scheme="file" android:pathPattern=".*\\.LST" />
-                <data android:scheme="file" android:pathPattern=".*\\.md" />
-                <data android:scheme="file" android:pathPattern=".*\\.MD" />
-                <data android:scheme="file" android:pathPattern=".*\\.gen" />
-                <data android:scheme="file" android:pathPattern=".*\\.GEN" />
-                <data android:scheme="file" android:pathPattern=".*\\.smd" />
-                <data android:scheme="file" android:pathPattern=".*\\.SMD" />
-                <data android:scheme="file" android:pathPattern=".*\\.32x" />
-                <data android:scheme="file" android:pathPattern=".*\\.32X" />
-                <data android:scheme="file" android:pathPattern=".*\\.sms" />
-                <data android:scheme="file" android:pathPattern=".*\\.SMS" />
-                <data android:scheme="file" android:pathPattern=".*\\.gg" />
-                <data android:scheme="file" android:pathPattern=".*\\.GG" />
-                <data android:scheme="file" android:pathPattern=".*\\.sg" />
-                <data android:scheme="file" android:pathPattern=".*\\.SG" />
-                <data android:scheme="file" android:pathPattern=".*\\.bin" />
-                <data android:scheme="file" android:pathPattern=".*\\.BIN" />
+                <!-- Android ignores path patterns without an authority; file:/// paths have none. -->
+                <data android:scheme="file" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
