@@ -12,6 +12,18 @@ import org.junit.Test
 class Model3OverlayCanvasLayoutTest {
     private data class Rect(val id: String, val x: Float, val y: Float, val w: Float, val h: Float)
 
+    @Test fun model3SystemRowIsCenteredBetweenControlGroups() {
+        for ((w, h) in listOf(800f to 450f, 360f to 800f)) {
+            val result = layout(w, h, 12f)
+            val dpadRight = result.dpadButtons.maxOf { (it.x + it.width).value }
+            val actionLeft = result.actionButtons.minOf { it.x.value }
+            val centerLeft = result.centerButtons.minOf { it.x.value }
+            val centerRight = result.centerButtons.maxOf { (it.x + it.width).value }
+            assertEquals("${w}x$h", (dpadRight + actionLeft) / 2f,
+                (centerLeft + centerRight) / 2f, .01f)
+        }
+    }
+
     @Test fun model3DefaultsHaveSeparateButtonStickAndSystemSlots() {
         for ((w, h) in listOf(640f to 360f, 800f to 450f, 360f to 800f, 240f to 160f, 1280f to 720f)) {
             for (inset in listOf(0f, 12f)) for (scale in listOf(1f, 1.5f, 2f)) {

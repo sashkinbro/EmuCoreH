@@ -68,7 +68,8 @@ private fun segaConsoleTouchLayout(
     val systemWidth = diameter * 1.4f
     val systemGap = diameter * .1f
     val systemRowWidth = systems.size * systemWidth + (systems.size - 1).coerceAtLeast(0) * systemGap
-    val systemLeft = (width - systemRowWidth) / 2f
+    val systemLeft = ((crossSize + faceLeft - systemRowWidth) / 2f)
+        .coerceIn(0f, (width - systemRowWidth).coerceAtLeast(0f))
     val reserveRow = systems.isNotEmpty() && (systemLeft < crossSize + diameter * .1f || systemLeft + systemRowWidth > faceLeft - diameter * .1f)
     val bottom = height - if (reserveRow) systemHeight + systemGap else 0f
     val faceBottom = bottom - diameter * (.35f + .15625f)
@@ -103,7 +104,7 @@ private fun segaConsoleTouchLayout(
             button(105, width - shoulder, shoulderTop, shoulder)
         }
         systems.forEachIndexed { index, key ->
-            add(SegaTouchButtonBounds(key, (width - systemRowWidth) / 2f + index * (systemWidth + systemGap),
+            add(SegaTouchButtonBounds(key, systemLeft + index * (systemWidth + systemGap),
                 height - systemHeight, systemWidth, systemHeight))
         }
     }

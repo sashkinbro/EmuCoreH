@@ -10,6 +10,20 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SegaOverlayCanvasLayoutTest {
+    @Test fun systemButtonsAreCenteredBetweenDirectionalAndActionGroups() {
+        val platforms = EmulationPlatform.entries.filter { it.isSega || it.isSaturn }
+        for (platform in platforms) for ((width, height) in listOf(800f to 450f, 360f to 800f)) {
+            val result = layout(platform, width = width, height = height)
+            if (result.centerButtons.isEmpty()) continue
+            val dpadRight = result.dpadButtons.maxOf { (it.x + it.width).value }
+            val actionLeft = result.actionButtons.filter { it.id !in setOf("l2", "r2") }.minOf { it.x.value }
+            val centerLeft = result.centerButtons.minOf { it.x.value }
+            val centerRight = result.centerButtons.maxOf { (it.x + it.width).value }
+            assertEquals("$platform ${width}x$height", (dpadRight + actionLeft) / 2f,
+                (centerLeft + centerRight) / 2f, .01f)
+        }
+    }
+
     @Test fun repeatedGrowAndShrinkRebuildsPreserveConsoleGroupSpacing() {
         val platform = EmulationPlatform.GENESIS
         for ((width, height) in listOf(800f to 450f, 360f to 800f, 240f to 160f)) {

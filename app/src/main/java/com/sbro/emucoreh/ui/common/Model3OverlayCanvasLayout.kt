@@ -71,8 +71,12 @@ internal fun buildModel3OverlayCanvasLayout(
     listOf("l1", "y", "r1", "l2", "x", "a", "b", "r2").forEachIndexed { index, id ->
         slots[id] = faceLeft + index % 4 * step to faceTop + index / 4 * step
     }
-    val systemWidth = 1.75f * d
-    val systemLeft = left + (w - (4f * systemWidth + 3f * gap)) / 2f
+    val systemCenter = (left + dpad.extent + faceLeft) / 2f
+    val availableSystemWidth = 2f * minOf(systemCenter - left, left + w - systemCenter)
+    val systemWidth = ((minOf(7f * d + 3f * gap, availableSystemWidth) - 3f * gap) / 4f).coerceAtLeast(0f)
+    val systemRowWidth = 4f * systemWidth + 3f * gap
+    val systemLeft = (systemCenter - systemRowWidth / 2f)
+        .coerceIn(left, (left + w - systemRowWidth).coerceAtLeast(left))
     systemIds.forEachIndexed { index, id -> slots[id] = systemLeft + index * (systemWidth + gap) to systemTop }
     fun adjustment(offset: Pair<Float, Float>, defaultX: Float, defaultY: Float) =
         pixels(offset.first - defaultX) to pixels(offset.second - defaultY)
@@ -81,7 +85,8 @@ internal fun buildModel3OverlayCanvasLayout(
         val system = id in systemIds
         val isDpad = id.startsWith("dpad_")
         val baseButton = if (isDpad) dpad.tile / factor else button
-        val buttonWidth = (baseButton * factor * buttonScale(id) * widthScale(id) * if (system) 1.75f else 1f).coerceAtMost(w)
+        val buttonWidth = (if (system) systemWidth * buttonScale(id) * widthScale(id) / largestButton
+            else baseButton * factor * buttonScale(id) * widthScale(id)).coerceAtMost(w)
         val buttonHeight = (baseButton * factor * buttonScale(id) * if (system) .8f else 1f).coerceAtMost(h)
         val group = when {
             system -> adjustment(centerOffset, AppPreferences.DEFAULT_CENTER_OFFSET_X, AppPreferences.DEFAULT_CENTER_OFFSET_Y)
