@@ -2419,8 +2419,9 @@ INLINE void SH7095::DoIDIF_Real(void)
   FetchIF<EmulateICache, DebugMode>(false);
 }
 
+// Let the compiler inline the hot pipeline transition into instruction dispatch.
 template<unsigned which, bool EmulateICache, bool DebugMode, bool DelaySlot, bool IntPreventNext, bool SkipFetchIF>
-static NO_INLINE void DoIDIF(void)
+static INLINE void DoIDIF(void)
 {
  CPU[which].DoIDIF_Real<EmulateICache, DebugMode, DelaySlot, IntPreventNext, SkipFetchIF>();
 }
