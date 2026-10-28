@@ -2352,4 +2352,5 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="saturn_cd_image_cache_desc">يحمل صورة القرص كاملة إلى الذاكرة عند بدء التشغيل. قد يقلل زمن التحميل لكنه يستهلك ذاكرة أكبر ويبطئ الإقلاع.</string>
     <string name="saturn_region_south_korea">كوريا الجنوبية</string>
     <string name="saturn_region_asia_pal">آسيا (PAL)</string>
+    <string name="onboarding_supported_consoles">الأجهزة المدعومة</string>
 </resources>

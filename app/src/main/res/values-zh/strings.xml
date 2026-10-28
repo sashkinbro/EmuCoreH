@@ -2345,4 +2345,5 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="saturn_cd_image_cache_desc">启动时将完整光盘镜像加载到内存中。这可以缩短加载时间，但会占用更多 RAM 并减慢启动速度。</string>
     <string name="saturn_region_south_korea">韩国</string>
     <string name="saturn_region_asia_pal">亚洲 (PAL)</string>
+    <string name="onboarding_supported_consoles">支持的游戏机</string>
 </resources>

@@ -1,61 +1,124 @@
 package com.sbro.emucoreh.ui.common
 
+import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Gamepad
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 
-/** Shared setup guide, placed immediately above the game-folder picker. */
-@Composable
-fun SupportedSystemsCard(modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier.fillMaxWidth().testTag("supported_systems_card"),
-        shape = neonShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .3f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
-    ) {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Icon(Icons.Rounded.Gamepad, contentDescription = null,
-                    modifier = Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)
-                Text(stringResource(R.string.supported_systems_title), style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface)
-            }
-            Text(stringResource(R.string.supported_systems_intro), style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            SupportedSystemGroup(stringResource(R.string.supported_systems_no_bios_title),
-                stringResource(R.string.supported_systems_no_bios_body))
-            SupportedSystemGroup("Dreamcast", stringResource(R.string.supported_systems_dreamcast_body))
-            SupportedSystemGroup(stringResource(R.string.supported_systems_required_title),
-                stringResource(R.string.supported_systems_required_body))
-            SupportedSystemGroup("Naomi · Naomi 2 · Atomiswave · System SP",
-                stringResource(R.string.supported_systems_arcade_body))
-        }
-    }
-}
+private data class SupportedSystem(@StringRes val label: Int, val formats: List<String>)
+
+private val supportedSystems = listOf(
+    SupportedSystem(R.string.home_platform_dreamcast, listOf(".cdi", ".chd", ".cue", ".gdi", ".iso", ".m3u")),
+    SupportedSystem(R.string.home_platform_naomi, listOf(".7z", ".bin", ".dat", ".lst", ".zip")),
+    SupportedSystem(R.string.home_platform_naomi_2, listOf(".7z", ".bin", ".dat", ".lst", ".zip")),
+    SupportedSystem(R.string.home_platform_atomiswave, listOf(".7z", ".bin", ".dat", ".lst", ".zip")),
+    SupportedSystem(R.string.home_platform_system_sp, listOf(".7z", ".bin", ".dat", ".lst", ".zip")),
+    SupportedSystem(R.string.home_platform_model_3, listOf(".zip")),
+    SupportedSystem(R.string.home_platform_genesis, listOf(".bin", ".gen", ".md", ".smd", ".zip")),
+    SupportedSystem(R.string.home_platform_sega_cd, listOf(".chd", ".cue", ".m3u")),
+    SupportedSystem(R.string.home_platform_saturn, listOf(".bin", ".chd", ".cue", ".iso", ".m3u")),
+    SupportedSystem(R.string.home_platform_sega_32x, listOf(".32x", ".bin", ".zip")),
+    SupportedSystem(R.string.home_platform_master_system, listOf(".bin", ".sms", ".zip")),
+    SupportedSystem(R.string.home_platform_game_gear, listOf(".bin", ".gg", ".zip")),
+    SupportedSystem(R.string.home_platform_sg_1000, listOf(".bin", ".sg", ".zip")),
+)
 
 @Composable
-private fun SupportedSystemGroup(title: String, description: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-        Text(description, style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+fun SupportedSystemsCard(modifier: Modifier = Modifier) {
+    var showFormats by remember { mutableStateOf(false) }
+    Surface(
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("supported_systems_card"),
+        shape = neonShape(32.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+        tonalElevation = 2.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f))
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(
+                    modifier = Modifier.size(52.dp).clip(neonShape(18.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Rounded.Gamepad, contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.onboarding_supported_consoles),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    val consoleNames = supportedSystems.map { stringResource(it.label) }
+                    Text(
+                        text = consoleNames.joinToString(" · "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { showFormats = !showFormats },
+                shape = neonShape(18.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.55f))
+            ) {
+                Text(stringResource(R.string.formats_title))
+                Icon(
+                    if (showFormats) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = null
+                )
+            }
+            AnimatedVisibility(visible = showFormats) {
+                Column(Modifier.testTag("supported_systems_formats"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    supportedSystems.forEach { console ->
+                        Column {
+                            Text(stringResource(console.label), style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurface)
+                            Text(console.formats.joinToString("  "), style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
     }
 }

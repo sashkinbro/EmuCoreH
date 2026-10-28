@@ -2369,4 +2369,5 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="saturn_cd_image_cache_desc">Loads the complete disc image into memory at startup. This can shorten loading times at the cost of more RAM and a slower launch.</string>
     <string name="saturn_midsync">Mid-frame input synchronization</string>
     <string name="saturn_midsync_desc">Samples input in the middle of the frame to reduce latency. This increases CPU load and is not needed on most devices.</string>
+    <string name="onboarding_supported_consoles">Supported consoles</string>
 </resources>

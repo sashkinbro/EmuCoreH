@@ -2343,4 +2343,5 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="saturn_cd_image_cache_desc">起動時にディスクイメージ全体をメモリに読み込みます。読み込み時間を短縮できますが、より多くのRAMを使用し、起動が遅くなります。</string>
     <string name="saturn_region_south_korea">韓国</string>
     <string name="saturn_region_asia_pal">アジア (PAL)</string>
+    <string name="onboarding_supported_consoles">対応コンソール</string>
 </resources>

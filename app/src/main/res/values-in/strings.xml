@@ -2358,4 +2358,5 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="saturn_cd_image_cache_desc">Memuat seluruh gambar disk ke memori saat mulai. Ini dapat mempercepat waktu muat tetapi memakai lebih banyak RAM dan memperlambat startup.</string>
     <string name="saturn_region_south_korea">Korea Selatan</string>
     <string name="saturn_region_asia_pal">Asia (PAL)</string>
+    <string name="onboarding_supported_consoles">Konsol yang didukung</string>
 </resources>

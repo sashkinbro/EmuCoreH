@@ -2366,4 +2366,5 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="saturn_cd_image_cache_desc">Načte celý obraz disku při spuštění do paměti. Může zkrátit načítání, ale spotřebuje více RAM a zpomalí start.</string>
     <string name="saturn_region_south_korea">Jižní Korea</string>
     <string name="saturn_region_asia_pal">Asie (PAL)</string>
+    <string name="onboarding_supported_consoles">Podporované konzole</string>
 </resources>

@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.unit.Density
@@ -83,12 +84,14 @@ class OnboardingLocalizationInstrumentedTest {
                     val translated = app.createConfigurationContext(Configuration(app.resources.configuration).apply {
                         setLocale(Locale.forLanguageTag(language))
                     }).resources
-                    compose.onNodeWithText(translated.getString(R.string.supported_systems_title))
+                    compose.onNodeWithText(translated.getString(R.string.onboarding_supported_consoles))
                         .performScrollTo().assertIsDisplayed()
                     if (language in setOf("en", "uk")) captureSetup(language, "guide-top")
-                    compose.onNodeWithText(translated.getString(R.string.supported_systems_required_body))
+                    compose.onNodeWithText(translated.getString(R.string.formats_title))
+                        .performScrollTo().performClick()
+                    compose.onNodeWithText(".sg", substring = true)
                         .performScrollTo().assertIsDisplayed()
-                    if (language in setOf("en", "uk")) captureSetup(language, "guide-bios")
+                    if (language in setOf("en", "uk")) captureSetup(language, "guide-formats")
                     compose.onNodeWithText(translated.getString(R.string.onboarding_games_title))
                         .performScrollTo().assertIsDisplayed()
                     compose.onNodeWithTag("onboarding_navigation").assertIsDisplayed()
