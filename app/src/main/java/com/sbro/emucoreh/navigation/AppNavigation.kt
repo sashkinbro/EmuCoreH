@@ -198,16 +198,16 @@ internal fun shouldReleaseStartupSplash(destination: StartupDestination?): Boole
 
 private const val TAG = "AppNavigation"
 
-private fun appScreenEnterTransition(): EnterTransition = appScreenPopEnterTransition()
+internal fun appScreenEnterTransition(): EnterTransition = appScreenPopEnterTransition()
 
-private fun appScreenExitTransition(): ExitTransition = ExitTransition.None
+internal fun appScreenExitTransition(): ExitTransition = ExitTransition.None
 
-private fun appScreenPopEnterTransition(): EnterTransition {
+internal fun appScreenPopEnterTransition(): EnterTransition {
     return fadeIn(animationSpec = tween(durationMillis = 260, delayMillis = 70, easing = EaseOut)) +
         scaleIn(initialScale = 0.96f, animationSpec = tween(260, delayMillis = 70, easing = EaseOut))
 }
 
-private fun appScreenPopExitTransition(): ExitTransition {
+internal fun appScreenPopExitTransition(): ExitTransition {
     return fadeOut(animationSpec = tween(durationMillis = 110, easing = EaseIn)) +
         scaleOut(targetScale = 1.0f, animationSpec = tween(110, easing = EaseIn))
 }
