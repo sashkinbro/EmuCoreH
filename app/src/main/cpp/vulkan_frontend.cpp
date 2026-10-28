@@ -9,6 +9,10 @@
 
 #include <android/log.h>
 #include <vulkan/vulkan.h>
+#include "vulkan_dispatch.h"
+#include <adrenotools/driver.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 #if defined(EMUCOREA_HAVE_LIBRASHADER)
 #include <librashader.h>
@@ -185,6 +189,83 @@ struct State {
 State g_vk;
 std::mutex g_queue_mutex;
 std::atomic<int> g_shader_effect{0};
+std::mutex g_driver_mutex;
+std::string g_driver_path;
+std::string g_hook_directory;
+void* g_vulkan_library = nullptr;
+std::atomic<bool> g_loader_in_use{false};
+enum class DriverState { System, Pending, Custom, Fallback };
+std::atomic<DriverState> g_driver_state{DriverState::System};
+std::mutex g_driver_name_mutex;
+std::string g_reported_driver_name;
+bool g_layer_path_changed = false;
+bool g_layer_path_existed = false;
+std::string g_previous_layer_path;
+
+void RestoreLayerPath() {
+    if (!g_layer_path_changed) return;
+    if (g_layer_path_existed) setenv("VK_LAYER_PATH", g_previous_layer_path.c_str(), 1);
+    else unsetenv("VK_LAYER_PATH");
+    g_layer_path_changed = false;
+}
+
+void AddDriverLayerPath(const std::string& directory) {
+    DIR* dir = opendir(directory.c_str());
+    if (!dir) return;
+    bool found = false;
+    while (const dirent* entry = readdir(dir)) {
+        const std::string name = entry->d_name;
+        if (name.rfind("VkLayer_", 0) == 0 && name.size() >= 5 &&
+            name.compare(name.size() - 5, 5, ".json") == 0) { found = true; break; }
+    }
+    closedir(dir);
+    if (!found) return;
+    const char* previous = getenv("VK_LAYER_PATH");
+    g_layer_path_existed = previous != nullptr;
+    g_previous_layer_path = previous ? previous : "";
+    const std::string path = g_previous_layer_path.empty() ? directory : g_previous_layer_path + ":" + directory;
+    if (setenv("VK_LAYER_PATH", path.c_str(), 1) == 0) g_layer_path_changed = true;
+}
+
+bool OpenVulkanLibrary() {
+    std::lock_guard<std::mutex> lock(g_driver_mutex);
+    g_loader_in_use = true;
+    const bool custom_requested = !g_driver_path.empty();
+    g_driver_state = custom_requested ? DriverState::Fallback : DriverState::System;
+    { std::lock_guard<std::mutex> name_lock(g_driver_name_mutex); g_reported_driver_name.clear(); }
+    if (custom_requested) {
+        struct stat metadata{};
+        const auto slash = g_driver_path.find_last_of('/');
+        if (slash != std::string::npos && !g_hook_directory.empty() &&
+            stat(g_driver_path.c_str(), &metadata) == 0 && S_ISREG(metadata.st_mode) &&
+            metadata.st_size >= 256 * 1024) {
+            const std::string directory = g_driver_path.substr(0, slash + 1);
+            const std::string name = g_driver_path.substr(slash + 1);
+            AddDriverLayerPath(directory);
+            g_vulkan_library = adrenotools_open_libvulkan(RTLD_NOW | RTLD_LOCAL,
+                ADRENOTOOLS_DRIVER_CUSTOM, nullptr, g_hook_directory.c_str(),
+                directory.c_str(), name.c_str(), nullptr, nullptr);
+            if (g_vulkan_library) g_driver_state = DriverState::Pending;
+            else RestoreLayerPath();
+        }
+    }
+    if (!g_vulkan_library) g_vulkan_library = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+    if (g_vulkan_library && !LoadVulkanGlobals(g_vulkan_library) && g_driver_state == DriverState::Pending) {
+        dlclose(g_vulkan_library);
+        RestoreLayerPath();
+        g_vulkan_library = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+        g_driver_state = DriverState::Fallback;
+    }
+    if (!g_vulkan_library || !LoadVulkanGlobals(g_vulkan_library)) {
+        VK_LOGE("Unable to initialize Vulkan loader");
+        if (g_vulkan_library) dlclose(g_vulkan_library);
+        g_vulkan_library = nullptr;
+        RestoreLayerPath();
+        g_loader_in_use = false;
+        return false;
+    }
+    return true;
+}
 
 template <typename T>
 T LoadInstanceFunction(const char* name) {
@@ -232,6 +313,7 @@ bool HasInstanceExtension(const char* name) {
 
 bool EnsureInstance() {
     if (g_vk.instance != VK_NULL_HANDLE) return true;
+    if (!g_vulkan_library && !OpenVulkanLibrary()) return false;
 
     if (!HasInstanceExtension(VK_KHR_SURFACE_EXTENSION_NAME) ||
         !HasInstanceExtension(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME)) {
@@ -287,6 +369,25 @@ bool EnsureInstance() {
     const VkResult result = vkCreateInstance(&create_info, nullptr, &g_vk.instance);
     if (result != VK_SUCCESS) {
         VK_LOGE("vkCreateInstance failed (0x%x)", result);
+        if (g_driver_state == DriverState::Pending) {
+            dlclose(g_vulkan_library);
+            RestoreLayerPath();
+            g_vulkan_library = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+            g_driver_state = DriverState::Fallback;
+            if (g_vulkan_library && LoadVulkanGlobals(g_vulkan_library)) return EnsureInstance();
+        }
+        return false;
+    }
+    if (g_driver_state == DriverState::Pending) {
+        g_driver_state = adrenotools_custom_driver_library_loaded() ? DriverState::Custom : DriverState::Fallback;
+        if (g_driver_state == DriverState::Fallback) RestoreLayerPath();
+    }
+    if (!LoadVulkanInstance(g_vk.instance)) {
+        VK_LOGE("Vulkan instance entry points are missing");
+        auto destroy = reinterpret_cast<PFN_vkDestroyInstance>(
+            vkGetInstanceProcAddr(g_vk.instance, "vkDestroyInstance"));
+        if (destroy) destroy(g_vk.instance, nullptr);
+        g_vk.instance = VK_NULL_HANDLE;
         return false;
     }
 
@@ -366,6 +467,20 @@ bool PickPhysicalDevice() {
 
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(device, &properties);
+        if (properties.apiVersion >= VK_API_VERSION_1_2 && g_vk.instance_api_version >= VK_API_VERSION_1_1) {
+            auto get_properties2 = LoadInstanceFunction<PFN_vkGetPhysicalDeviceProperties2>("vkGetPhysicalDeviceProperties2");
+            if (get_properties2) {
+                VkPhysicalDeviceDriverProperties driver{};
+                driver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+                VkPhysicalDeviceProperties2 extended{};
+                extended.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+                extended.pNext = &driver;
+                get_properties2(device, &extended);
+                std::lock_guard<std::mutex> name_lock(g_driver_name_mutex);
+                g_reported_driver_name = driver.driverName;
+                VK_LOGI("Vulkan driver: %s", g_reported_driver_name.c_str());
+            }
+        }
         if (properties.apiVersion >= kMinimumCoreVulkanApi &&
             g_vk.instance_api_version < kMinimumCoreVulkanApi) {
             // Flycast takes the core 1.1 memory-requirements path for these
@@ -416,7 +531,7 @@ bool CreateDevice() {
             context = retro_vulkan_context{};
             try {
                 created = g_vk.negotiation.create_device(&context, g_vk.instance, g_vk.physical_device,
-                                                         g_vk.surface, &vkGetInstanceProcAddr,
+                                                         g_vk.surface, vkGetInstanceProcAddr,
                                                          required_extensions, 1, nullptr, 0, nullptr);
             } catch (const std::exception& error) {
                 emucoreh::crash::LogNativeError((std::string("Core Vulkan device creation failed: ") +
@@ -434,6 +549,12 @@ bool CreateDevice() {
         }
 
         g_vk.device = context.device;
+        if (!LoadVulkanDevice(g_vk.device)) {
+            VK_LOGE("Vulkan device entry points are missing");
+            if (vkDestroyDevice) vkDestroyDevice(g_vk.device, nullptr);
+            g_vk.device = VK_NULL_HANDLE;
+            return false;
+        }
         // Flycast/VMA resolve the 1.1 memory-requirements entry points themselves.
         // A device that advertises 1.1 must expose them; failing here keeps the
         // failure inside hardware setup instead of a null call on the first frame.
@@ -479,6 +600,12 @@ bool CreateDevice() {
         device_info.ppEnabledExtensionNames = required_extensions;
         if (vkCreateDevice(g_vk.physical_device, &device_info, nullptr, &g_vk.device) != VK_SUCCESS) {
             VK_LOGE("Frontend vkCreateDevice failed");
+            g_vk.device = VK_NULL_HANDLE;
+            return false;
+        }
+        if (!LoadVulkanDevice(g_vk.device)) {
+            VK_LOGE("Vulkan device entry points are missing");
+            if (vkDestroyDevice) vkDestroyDevice(g_vk.device, nullptr);
             g_vk.device = VK_NULL_HANDLE;
             return false;
         }
@@ -951,7 +1078,7 @@ bool EnsureShaderChain() {
     vk.instance = g_vk.instance;
     vk.device = g_vk.device;
     vk.queue = g_vk.queue;
-    vk.entry = &vkGetInstanceProcAddr;
+    vk.entry = vkGetInstanceProcAddr;
 
     libra_vk_filter_chain_t chain = nullptr;
     if (libra_error_t err = libra_vk_filter_chain_create(&preset, vk, nullptr, &chain)) {
@@ -1432,8 +1559,8 @@ void FillInterface() {
     g_vk.interface.instance = g_vk.instance;
     g_vk.interface.gpu = g_vk.physical_device;
     g_vk.interface.device = g_vk.device;
-    g_vk.interface.get_device_proc_addr = &vkGetDeviceProcAddr;
-    g_vk.interface.get_instance_proc_addr = &vkGetInstanceProcAddr;
+    g_vk.interface.get_device_proc_addr = vkGetDeviceProcAddr;
+    g_vk.interface.get_instance_proc_addr = vkGetInstanceProcAddr;
     g_vk.interface.queue = g_vk.queue;
     g_vk.interface.queue_index = g_vk.queue_family;
     g_vk.interface.set_image = &SetImage;
@@ -1777,6 +1904,30 @@ bool RecordPresentShaderChain(uint32_t swapchain_index, uint32_t source_width, u
 
 }  // namespace
 
+bool ConfigureDriver(const std::string& path, const std::string& hook_directory) {
+    std::lock_guard<std::mutex> lock(g_driver_mutex);
+    if (g_loader_in_use.load()) return false;
+    g_driver_path = path;
+    g_hook_directory = hook_directory;
+    g_driver_state = path.empty() ? DriverState::System : DriverState::Pending;
+    return true;
+}
+
+const char* DriverStatus() {
+    switch (g_driver_state.load()) {
+        case DriverState::System: return "system";
+        case DriverState::Pending: return "pending";
+        case DriverState::Custom: return "custom";
+        case DriverState::Fallback: return "fallback";
+    }
+    return "fallback";
+}
+
+std::string DriverName() {
+    std::lock_guard<std::mutex> lock(g_driver_name_mutex);
+    return g_reported_driver_name;
+}
+
 bool Prepare(ANativeWindow* window, uint32_t window_generation) {
     if (g_vk.requested || g_vk.active) return true;
     if (window == nullptr) return false;
@@ -2102,6 +2253,11 @@ void Destroy() {
     }
     if (g_vk.instance != VK_NULL_HANDLE) vkDestroyInstance(g_vk.instance, nullptr);
     ResetState();
+    std::lock_guard<std::mutex> lock(g_driver_mutex);
+    if (g_vulkan_library) dlclose(g_vulkan_library);
+    g_vulkan_library = nullptr;
+    RestoreLayerPath();
+    g_loader_in_use = false;
 }
 
 }  // namespace emucoreh::vulkan

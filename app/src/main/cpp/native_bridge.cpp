@@ -1442,6 +1442,23 @@ void RetroInputPoll() {}
 // ---------------------------------------------------------------------------
 extern "C" {
 
+JNIEXPORT jboolean JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_configureVulkanDriver(
+    JNIEnv* env, jobject, jstring path, jstring hook_directory, jstring) {
+    return emucoreh::vulkan::ConfigureDriver(ToString(env, path), ToString(env, hook_directory))
+        ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_vulkanDriverStatus(JNIEnv* env, jobject) {
+    return env->NewStringUTF(emucoreh::vulkan::DriverStatus());
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_sbro_emucoreh_core_NativeCoreBridge_vulkanDriverName(JNIEnv* env, jobject) {
+    return env->NewStringUTF(emucoreh::vulkan::DriverName().c_str());
+}
+
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void*) {
     EmuCoreHAchievementsSetJavaVm(vm);
     JNIEnv* env = nullptr;

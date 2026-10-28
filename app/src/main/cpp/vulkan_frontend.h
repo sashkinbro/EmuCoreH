@@ -6,6 +6,7 @@
 #include <android/native_window.h>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 #ifndef VK_USE_PLATFORM_ANDROID_KHR
 #define VK_USE_PLATFORM_ANDROID_KHR
@@ -15,6 +16,11 @@
 #include "libretro_vulkan.h"
 
 namespace emucoreh::vulkan {
+
+// Configure before creating the next Vulkan instance; active instances cannot switch loaders.
+bool ConfigureDriver(const std::string& path, const std::string& hook_directory);
+const char* DriverStatus();
+std::string DriverName();
 
 struct PresentRect {
     int x;

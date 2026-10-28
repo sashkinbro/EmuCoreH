@@ -44,6 +44,12 @@ class NativeCoreBridge {
     /** Frontend post-processing effect derived from the selected shader preset. */
     external fun nativeSetShaderEffect(effect: Int)
 
+    /** Applies to the next Vulkan instance; returns false while one is active. */
+    external fun configureVulkanDriver(path: String?, hookDirectory: String, temporaryDirectory: String): Boolean
+    /** system, pending, custom or fallback for the most recent Vulkan instance. */
+    external fun vulkanDriverStatus(): String
+    external fun vulkanDriverName(): String
+
     /** RetroArch (.slangp) shader chain executed through librashader. */
     external fun nativeSetShaderPreset(path: String, enabled: Boolean)
 

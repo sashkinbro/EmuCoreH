@@ -156,7 +156,8 @@ android {
     }
     packaging {
         jniLibs {
-            useLegacyPackaging = false
+            // adrenotools loads its hook libraries by native filesystem path.
+            useLegacyPackaging = true
             discordSdkDirectory?.let { pickFirsts += "**/libdiscord_partner_sdk.so" }
         }
     }

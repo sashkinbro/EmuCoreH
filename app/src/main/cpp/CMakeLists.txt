@@ -82,6 +82,10 @@ add_library(emucoreh_jni SHARED
     vulkan_frontend.cpp
 )
 
+# Use the same custom Vulkan loader and patched load-status reporting as EmuCoreX.
+add_subdirectory(third_party/libadrenotools)
+add_dependencies(emucoreh_jni main_hook hook_impl file_redirect_hook gsl_alloc_hook)
+
 # Build the same pinned RetroArch .slangp runtime used by EmuCoreR when Cargo
 # is available. The GL effect presenter remains available as a fallback.
 add_subdirectory(third_party/librashader)
@@ -103,6 +107,7 @@ find_library(VULKAN_LIBRARY vulkan)
 
 target_link_libraries(emucoreh_jni PRIVATE
     rcheevos_frontend
+    adrenotools
     android
     log
     dl
