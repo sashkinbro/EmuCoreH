@@ -212,6 +212,11 @@ internal fun appScreenPopExitTransition(): ExitTransition {
         scaleOut(targetScale = 1.0f, animationSpec = tween(110, easing = EaseIn))
 }
 
+internal fun gpuDriverPopExitTransition(): ExitTransition {
+    return fadeOut(animationSpec = tween(durationMillis = 260, easing = EaseIn)) +
+        scaleOut(targetScale = 0.96f, animationSpec = tween(260, easing = EaseIn))
+}
+
 @Composable
 fun AppNavigation(
     launchIntentVersion: Int = 0,
@@ -933,7 +938,9 @@ fun AppNavigation(
                 )
             }
 
-            composable<GpuDriverSettingsRoute> { backStackEntry ->
+            composable<GpuDriverSettingsRoute>(
+                popExitTransition = { gpuDriverPopExitTransition() }
+            ) { backStackEntry ->
                 val route = backStackEntry.toRoute<GpuDriverSettingsRoute>()
                 val repository = remember(context) { com.sbro.emucoreh.data.PerGameSettingsRepository(context) }
                 val driverSaveMutex = remember { Mutex() }
