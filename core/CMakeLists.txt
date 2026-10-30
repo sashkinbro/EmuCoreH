@@ -211,7 +211,13 @@ elseif(LIBRETRO)
 			set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 		endif()
 	endif()
-	set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "flycast_libretro"
+	# Android's package installer only extracts native libraries whose file name
+	# starts with "lib", and the Android build ships every core under the
+	# EmuCore brand. Other platforms keep the upstream "flycast_libretro" name.
+	if(NOT DEFINED EMUCORE_LIBRETRO_OUTPUT_NAME)
+		set(EMUCORE_LIBRETRO_OUTPUT_NAME "flycast_libretro")
+	endif()
+	set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${EMUCORE_LIBRETRO_OUTPUT_NAME}"
 	  XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
 	  XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
     )

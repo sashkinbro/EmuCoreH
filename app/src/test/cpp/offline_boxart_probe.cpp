@@ -14,10 +14,10 @@
 // $remote = '/data/local/tmp/emucoreh-offline-cover-probe-20261015'
 // & $adb -t $transport shell mkdir -p $remote
 // & $adb -t $transport push "$env:TEMP/offline_boxart_probe" "$remote/offline_boxart_probe"
-// & $adb -t $transport push "$nativeLibs/flycast_libretro.so" "$remote/flycast_libretro.so"
+// & $adb -t $transport push "$nativeLibs/libemucore_dreamcast.so" "$remote/libemucore_dreamcast.so"
 // & $adb -t $transport push "$nativeLibs/libc++_shared.so" "$remote/libc++_shared.so"
 // & $adb -t $transport shell chmod 755 "$remote/offline_boxart_probe"
-// foreach ($kind in @('gdi','chd','Chd','CHD')) { foreach ($format in @('rectangle','twiddled','vq')) { & $adb -t $transport shell "LD_LIBRARY_PATH=$remote $remote/offline_boxart_probe $remote/flycast_libretro.so $remote $format $kind"; if ($LASTEXITCODE -ne 0) { throw "Probe failed: $format $kind" } } }
+// foreach ($kind in @('gdi','chd','Chd','CHD')) { foreach ($format in @('rectangle','twiddled','vq')) { & $adb -t $transport shell "LD_LIBRARY_PATH=$remote $remote/offline_boxart_probe $remote/libemucore_dreamcast.so $remote $format $kind"; if ($LASTEXITCODE -ne 0) { throw "Probe failed: $format $kind" } } }
 // All generated fixtures and output stay in $remote; each invocation is a fresh
 // process. This probes actual native VFS I/O, not a Java DocumentsProvider grant.
 // CHD/Chd verify the library recognizes file extensions independently of case.

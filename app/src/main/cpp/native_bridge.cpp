@@ -3,7 +3,7 @@
 //
 // EmuCoreH libretro frontend for the vendored Flycast core.
 //
-// The core (flycast_libretro.so, built by the :core-android module
+// The core (libemucore_dreamcast.so, built by the :core-android module
 // from /core) is loaded with dlopen and driven through the libretro C API.
 // This file owns:
 //   * environment negotiation (directories, options, logging, AV info),
@@ -131,11 +131,13 @@ std::mutex g_core_library_mutex;
 void* g_core_libraries[4]{};
 
 const char* CoreLibraryName(int core_id) {
-    return core_id == 3 ? "libsaturn_libretro.so" : core_id == 2 ? "libsupermodel_libretro.so" : core_id == 1 ? "libjgenesis_libretro.so" : "flycast_libretro.so";
+    // Every core ships under the EmuCore name; the lib prefix is required for
+    // Android to unpack the library from the APK on install.
+    return core_id == 3 ? "libemucore_saturn.so" : core_id == 2 ? "libemucore_model3.so" : core_id == 1 ? "libemucore_sega.so" : "libemucore_dreamcast.so";
 }
 
 const char* CoreDisplayName() {
-    return g_core_id.load() == 3 ? "Beetle Saturn" : g_core_id.load() == 2 ? "Supermodel" : g_core_id.load() == 1 ? "jgenesis" : "Flycast";
+    return g_core_id.load() == 3 ? "EmuCore Saturn" : g_core_id.load() == 2 ? "EmuCore Model 3" : g_core_id.load() == 1 ? "EmuCore Sega" : "EmuCore Dreamcast";
 }
 
 void* RetainCoreLibrary(int core_id) {

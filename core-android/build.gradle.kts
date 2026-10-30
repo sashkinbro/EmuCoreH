@@ -2,7 +2,7 @@
 //
 // This module does not contain any Java/Kotlin code or Flycast's own
 // frontend: it only compiles the upstream CMake project with LIBRETRO=ON,
-// producing flycast_libretro.so. The EmuCoreH JNI bridge in :app loads the
+// producing libemucore_dreamcast.so. The EmuCoreH JNI bridge in :app loads the
 // produced library at runtime through dlopen.
 plugins {
     alias(libs.plugins.android.library)
@@ -24,6 +24,10 @@ android {
             cmake {
                 arguments += listOf(
                     "-DLIBRETRO=ON",
+                    // Every shipped core is named libemucore_*.so: the Android
+                    // installer only unpacks libraries with the lib prefix, and
+                    // the app loads the cores by these names.
+                    "-DEMUCORE_LIBRETRO_OUTPUT_NAME=libemucore_dreamcast",
                     "-DANDROID_STL=c++_shared",
                     "-DUSE_HOST_SDL=OFF",
                     "-DUSE_HOST_LIBZIP=OFF",

@@ -48,12 +48,18 @@ abstract class BuildJGenesis @Inject constructor(
             // Keep optimized emulation for debug APKs, but isolate all diagnostic
             // cfgs and artifacts from the shipping release DSO.
             val debugAssertions = if (enableDiagnostics.get()) "yes" else "no"
-            environment("RUSTFLAGS", "-C debug-assertions=$debugAssertions -C target-cpu=generic -C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384 -C link-arg=-Wl,-soname,libjgenesis_libretro.so")
+            environment("RUSTFLAGS", "-C debug-assertions=$debugAssertions -C target-cpu=generic -C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384 -C link-arg=-Wl,-soname,libemucore_sega.so")
         }
         files.copy {
             from(cargoTargetDirectory.file("aarch64-linux-android/release/libjgenesis_libretro.so"))
             into(jniDirectory.dir("arm64-v8a"))
+            // Ship under the EmuCore core name; the app loads it by this name.
+            rename("libjgenesis_libretro.so", "libemucore_sega.so")
         }
+        // Drop outputs of earlier builds that used the upstream name so the
+        // generated jniLibs directory only ever holds the shipped library.
+        val staleLibrary = jniDirectory.get().asFile.resolve("arm64-v8a/libjgenesis_libretro.so")
+        if (staleLibrary.isFile) staleLibrary.delete()
         files.copy {
             from(sourceDirectory.file("LICENSE"), sourceDirectory.file("UPSTREAM.txt"), sourceDirectory.file("README-ANDROID.md"))
             into(assetsDirectory.dir("jgenesis"))

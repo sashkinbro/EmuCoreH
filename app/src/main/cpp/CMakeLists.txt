@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # The emulator core (Flycast, vendored in /core) is built by the :core-android
-# Gradle module and shipped as flycast_libretro.so. This target is the
+# Gradle module and shipped as libemucore_dreamcast.so. This target is the
 # EmuCoreH frontend bridge; it loads the core at runtime through dlopen and
 # drives it via the libretro API.
 set(CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../core")

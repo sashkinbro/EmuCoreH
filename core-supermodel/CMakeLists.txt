@@ -55,7 +55,7 @@ if(MODEL3_ENABLE_EXPERIMENTAL_VULKAN)
   target_compile_definitions(supermodel_libretro PRIVATE MODEL3_ENABLE_EXPERIMENTAL_VULKAN=1)
   target_link_libraries(supermodel_libretro PRIVATE vulkan)
 endif()
-set_target_properties(supermodel_libretro PROPERTIES OUTPUT_NAME supermodel_libretro)
+set_target_properties(supermodel_libretro PROPERTIES OUTPUT_NAME emucore_model3)
 if(MODEL3_BUILD_LIFECYCLE_TESTS)
   target_compile_definitions(supermodel_libretro PRIVATE MODEL3_RENDER_SNAPSHOT=1)
   add_library(model3_vulkan_validation SHARED libretro/tests/vulkan_activity.cpp libretro/tests/vulkan_core_activity.cpp

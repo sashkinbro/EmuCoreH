@@ -6,7 +6,7 @@ endif()
 include(sources.cmake)
 add_library(saturn_libretro SHARED ${BEETLE_SATURN_SOURCES})
 set_target_properties(saturn_libretro PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED YES
-  CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES PREFIX "lib" OUTPUT_NAME "saturn_libretro")
+  CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES PREFIX "lib" OUTPUT_NAME "emucore_saturn")
 target_include_directories(saturn_libretro PRIVATE
   . mednafen mednafen/include mednafen/hw_cpu mednafen/ss mednafen/cdrom
   libretro-common/include
