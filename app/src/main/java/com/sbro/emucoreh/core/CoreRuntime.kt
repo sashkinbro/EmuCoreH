@@ -32,6 +32,12 @@ internal object CoreRuntime {
     private const val TAG = "CoreRuntime"
     private const val DEFAULT_FRAME_WIDTH = 320
     private const val DEFAULT_FRAME_HEIGHT = 240
+    private val ADRENOTOOLS_HOOK_LIBRARIES = listOf(
+        "libmain_hook.so",
+        "libhook_impl.so",
+        "libgsl_alloc_hook.so",
+        "libfile_redirect_hook.so"
+    )
 
     val bridge: NativeCoreBridge by lazy { NativeCoreBridge() }
     val settings = ConcurrentHashMap<String, String>()
@@ -162,8 +168,8 @@ internal object CoreRuntime {
         runCatching {
             bridge.nativeInit(systemDirectory, saveDirectory, coreAssetsDirectory)
             bridge.apiVersion()
-        }.onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "Unable to initialise libretro frontend", it) }
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.installNativeCrashReporter()
+        }.onFailure { CrashLogger.logError(TAG, "Unable to initialise libretro frontend", it) }
+        CrashLogger.installNativeCrashReporter()
     }
 
     fun isRunning(): Boolean = running && failure.value == null && sessionLock.withLock { session != 0L }
@@ -285,7 +291,7 @@ internal object CoreRuntime {
         shutdownSession()
         val driverPath = if (detectedPlatform.supportsCustomGpuDrivers() && requestedCore == RendererDefaults.CORE_VULKAN)
             GpuDriverManager(app).resolveUsableDriverPath(selectedGpuDriverPath) else null
-        bridge.configureVulkanDriver(driverPath, app.applicationInfo.nativeLibraryDir, app.cacheDir.absolutePath)
+        bridge.configureVulkanDriver(driverPath, adrenoToolsHookDirectory(app), app.cacheDir.absolutePath)
         platform = detectedPlatform
         val root = File(app.filesDir, when (platform.coreId) { 1 -> "jgenesis"; 2 -> "supermodel"; 3 -> "saturn"; else -> "flycast" })
         systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath
@@ -305,7 +311,7 @@ internal object CoreRuntime {
         } else File(root, "save")).apply { mkdirs() }.absolutePath
         coreAssetsDirectory = File(root, "assets").apply { mkdirs() }.absolutePath
         if (!bridge.nativeSelectCore(platform.coreId)) {
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "Unable to select core for $platform")
+            CrashLogger.logError(TAG, "Unable to select core for $platform")
             return false
         }
         bridge.nativeInit(systemDirectory, saveDirectory, coreAssetsDirectory)
@@ -327,7 +333,7 @@ internal object CoreRuntime {
             }
         }
         if (!created) {
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "Unable to start $platform: all renderer candidates failed")
+            CrashLogger.logError(TAG, "Unable to start $platform: all renderer candidates failed")
             return false
         }
 
@@ -374,7 +380,7 @@ internal object CoreRuntime {
             started = true
             return true
         } catch (error: Exception) {
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "Failed to start frame/audio runtime", error)
+            CrashLogger.logError(TAG, "Failed to start frame/audio runtime", error)
             return false
         } finally {
             if (!started) shutdownSession()
@@ -1282,9 +1288,35 @@ internal object CoreRuntime {
     }
 
     private fun reportFailure(detail: String, throwable: Throwable? = null) {
-        if (_failure.compareAndSet(null, RuntimeFailure(detail)) && com.sbro.emucoreh.BuildConfig.DEBUG) {
+        if (_failure.compareAndSet(null, RuntimeFailure(detail))) {
             CrashLogger.logError(TAG, detail, throwable)
         }
+    }
+
+    /**
+     * adrenotools builds a linker namespace from the directory that holds its
+     * hook libraries. Uncompressed native libraries (extractNativeLibs=false)
+     * have no such directory on disk, so the hooks are unpacked from the APK
+     * once. Without a custom driver the directory is never opened.
+     */
+    private fun adrenoToolsHookDirectory(app: Context): String {
+        val nativeDirectory = app.applicationInfo.nativeLibraryDir
+        if (!nativeDirectory.isNullOrBlank() && File(nativeDirectory).isDirectory) return nativeDirectory
+        val hooksDirectory = File(app.filesDir, "adrenotools-hooks").apply { mkdirs() }
+        val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
+        runCatching {
+            java.util.zip.ZipFile(app.applicationInfo.sourceDir).use { archive ->
+                ADRENOTOOLS_HOOK_LIBRARIES.forEach { name ->
+                    val entry = archive.getEntry("lib/$abi/$name") ?: return@forEach
+                    val target = File(hooksDirectory, name)
+                    if (target.isFile && target.length() == entry.size) return@forEach
+                    archive.getInputStream(entry).use { input ->
+                        target.outputStream().use { output -> input.copyTo(output) }
+                    }
+                }
+            }
+        }.onFailure { CrashLogger.logError(TAG, "Unable to unpack the adrenotools hooks", it) }
+        return hooksDirectory.absolutePath
     }
 
     private fun loadDisc(handle: Long, gamePath: String): Int {

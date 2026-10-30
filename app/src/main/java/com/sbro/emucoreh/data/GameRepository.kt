@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.sbro.emucoreh.core.BiosValidator
+import com.sbro.emucoreh.core.CrashLogger
 import com.sbro.emucoreh.core.DocumentPathResolver
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.SetupValidator
@@ -45,6 +46,28 @@ data class GameItem(
     val platform: String? = null
 )
 
+/**
+ * Tells the caller whether a library scan actually finished. An interrupted or
+ * truncated walk must never be cached as if it were the complete library: that
+ * is how a general folder ends up showing only the games of the first
+ * subfolder until the next rescan.
+ */
+class ScanOutcome {
+    /** The walk stopped because the caller asked to abort (VM active, new request). */
+    @Volatile
+    var aborted: Boolean = false
+
+    /** The walk hit the entry/depth guard before it finished the tree. */
+    @Volatile
+    var truncated: Boolean = false
+
+    /** Entries the provider failed to describe; the rest of the tree still scanned. */
+    @Volatile
+    var unreadableEntries: Int = 0
+
+    val complete: Boolean get() = !aborted && !truncated
+}
+
 class GameRepository {
 
     companion object {
@@ -53,7 +76,11 @@ class GameRepository {
         private val COVER_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp")
         private val COVER_DIRECTORY_NAMES = setOf("covers", "cover", "art", "artwork", "boxart", "box art")
         private const val MAX_DOCUMENT_SCAN_DEPTH = 32
-        private const val MAX_DOCUMENT_SCAN_ENTRIES = 20_000
+        // Generous enough for a full library (a disc set contributes one entry
+        // per track) while still bounding a pathological provider tree. Hitting
+        // it marks the scan incomplete instead of silently caching a partial
+        // library.
+        private const val MAX_DOCUMENT_SCAN_ENTRIES = 200_000
         // CUE/GDI/M3U descriptors are a few kilobytes at most.
         private const val MAX_CONTAINER_BYTES = 1L * 1024L * 1024L
 
@@ -161,8 +188,10 @@ class GameRepository {
         context: Context,
         cachedGamesByPath: Map<String, GameItem>,
         shouldAbort: () -> Boolean = { false },
-        preferEnglishTitles: Boolean = false
+        preferEnglishTitles: Boolean = false,
+        outcome: ScanOutcome = ScanOutcome()
     ): List<GameItem> {
+        val startedNanos = System.nanoTime()
         val dir = File(path)
         if (!dir.exists() || !dir.isDirectory) return emptyList()
         val scan = ScanEnvironment.create(context, preferEnglishTitles)
@@ -170,12 +199,15 @@ class GameRepository {
             dir,
             scan,
             cachedGamesByPath,
-            shouldAbort
+            shouldAbort,
+            outcome = outcome
         ).distinctBy { libraryIdentity(it.path) }
         val scanned = DiscTrackReferences.withoutReferencedTracks(discovered, scan.referencedTracks) { game ->
             dir.toPath().relativize(File(game.path).toPath()).joinToString("/")
         }
-        return groupLocalDiscs(scanned).sortedBy { it.title.lowercase() }
+        val games = groupLocalDiscs(scanned).sortedBy { it.title.lowercase() }
+        logScanSummary("local", path, games, outcome, startedNanos)
+        return games
     }
 
     fun scanDirectoryFromUri(uri: Uri, context: Context): List<GameItem> {
@@ -187,11 +219,13 @@ class GameRepository {
         context: Context,
         cachedGamesByPath: Map<String, GameItem>,
         shouldAbort: () -> Boolean = { false },
-        preferEnglishTitles: Boolean = false
+        preferEnglishTitles: Boolean = false,
+        outcome: ScanOutcome = ScanOutcome()
     ): List<GameItem> {
         if (!DocumentsContract.isTreeUri(uri)) {
             return emptyList()
         }
+        val startedNanos = System.nanoTime()
         return runCatching {
             val docFile = DocumentFile.fromTreeUri(context, uri) ?: return@runCatching emptyList()
             val locations = mutableMapOf<String, ScannedDocumentLocation>()
@@ -204,16 +238,47 @@ class GameRepository {
                 depth = 0,
                 budget = DocumentScanBudget(),
                 directorySegments = emptyList(),
-                locations = locations
+                locations = locations,
+                outcome = outcome
             ).distinctBy { libraryIdentity(it.path) }
             val scanned = DiscTrackReferences.withoutReferencedTracks(discovered, scan.referencedTracks) { game ->
                 locations[game.path]?.segments?.joinToString("/").orEmpty()
             }
-            groupDocumentDiscs(scanned, locations, context).sortedBy { it.title.lowercase() }
+            val games = groupDocumentDiscs(scanned, locations, context).sortedBy { it.title.lowercase() }
+            logScanSummary("document", uri.toString(), games, outcome, startedNanos)
+            games
         }.onFailure { error ->
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to scan document tree: $uri", error)
+            // A provider failure must not look like an empty library: report it
+            // and let the caller keep the previous snapshot instead of caching
+            // an empty folder listing.
+            outcome.aborted = true
+            CrashLogger.logError(TAG, "Unable to scan document tree: $uri", error)
         }.getOrDefault(emptyList())
     }
+
+    private fun logScanSummary(
+        kind: String,
+        root: String,
+        games: List<GameItem>,
+        outcome: ScanOutcome,
+        startedNanos: Long
+    ) {
+        val elapsedMs = (System.nanoTime() - startedNanos) / 1_000_000L
+        val platforms = games.groupingBy { it.platform ?: "unclassified" }.eachCount()
+            .entries.sortedByDescending { it.value }
+            .take(16)
+            .joinToString(",") { "${it.key}=${it.value}" }
+        CrashLogger.logStep(
+            "Library",
+            "scan_$kind root=${shortRoot(root)} games=${games.size} " +
+                "complete=${outcome.complete} aborted=${outcome.aborted} " +
+                "truncated=${outcome.truncated} unreadable=${outcome.unreadableEntries} " +
+                "elapsedMs=$elapsedMs platforms=[$platforms]"
+        )
+    }
+
+    private fun shortRoot(root: String): String =
+        if (root.startsWith("content://")) DocumentPathResolver.normalizeDisplayName(root) else File(root).name
 
     fun findCoverForGame(
         path: String,
@@ -252,7 +317,8 @@ class GameRepository {
         cachedGamesByPath: Map<String, GameItem>,
         shouldAbort: () -> Boolean,
         inheritedPlatform: LibraryPlatform? = null,
-        directorySegments: List<String> = emptyList()
+        directorySegments: List<String> = emptyList(),
+        outcome: ScanOutcome = ScanOutcome()
     ): List<GameItem> {
         val items = mutableListOf<GameItem>()
         val children = dir.listFiles().orEmpty()
@@ -277,7 +343,10 @@ class GameRepository {
         val coverCandidates = buildLocalCoverCandidates(children)
 
         children.forEach { file ->
-            if (shouldAbort()) return items
+            if (shouldAbort()) {
+                outcome.aborted = true
+                return items
+            }
             when {
                 file.isDirectory && normalizeBaseName(file.name) !in COVER_DIRECTORY_NAMES -> {
                     items.addAll(
@@ -287,7 +356,8 @@ class GameRepository {
                             cachedGamesByPath,
                             shouldAbort,
                             directoryPlatform,
-                            directorySegments + file.name
+                            directorySegments + file.name,
+                            outcome
                         )
                     )
                 }
@@ -319,19 +389,28 @@ class GameRepository {
                     } else {
                         val sourcePath = file.absolutePath
                         val displayName = folderTitle ?: file.name
-                        readLibraryScanMetadata(
-                            platform = platform,
-                            inferFromName = { EmulatorBridge.parseMetadataFromName(displayName) },
-                            readPlatformMetadata = {
-                                EmulatorBridge.getGameMetadata(
-                                    sourcePath,
-                                    readDiscMetadata = false,
-                                    knownPlatform = platform,
-                                    knownDisplayName = displayName
-                                )
-                            },
-                            learnedSerial = { scan.learnedSerials[LearnedSerialRepository.key(file.name)] }
-                        )
+                        // A single unreadable ROM must not abort the whole library walk.
+                        runCatching {
+                            readLibraryScanMetadata(
+                                platform = platform,
+                                inferFromName = { EmulatorBridge.parseMetadataFromName(displayName) },
+                                readPlatformMetadata = {
+                                    EmulatorBridge.getGameMetadata(
+                                        sourcePath,
+                                        readDiscMetadata = false,
+                                        knownPlatform = platform,
+                                        knownDisplayName = displayName
+                                    )
+                                },
+                                learnedSerial = { scan.learnedSerials[LearnedSerialRepository.key(file.name)] }
+                            )
+                        }.getOrElse { error ->
+                            outcome.unreadableEntries++
+                            if (com.sbro.emucoreh.BuildConfig.DEBUG) {
+                                Log.w(TAG, "Metadata read failed for ${file.name}", error)
+                            }
+                            com.sbro.emucoreh.core.GameMetadata(displayName, null)
+                        }
                     }
                     if (BiosValidator.isLikelyBiosLibraryEntry(file.name, metadata.title, metadata.serial)) {
                         return@forEach
@@ -394,9 +473,14 @@ class GameRepository {
         budget: DocumentScanBudget,
         directorySegments: List<String>,
         locations: MutableMap<String, ScannedDocumentLocation>,
-        inheritedPlatform: LibraryPlatform? = null
+        inheritedPlatform: LibraryPlatform? = null,
+        outcome: ScanOutcome = ScanOutcome()
     ): List<GameItem> {
-        if (depth > MAX_DOCUMENT_SCAN_DEPTH || !budget.tryEnterDirectory(docFile.uri.toString())) {
+        if (depth > MAX_DOCUMENT_SCAN_DEPTH) {
+            outcome.truncated = true
+            return emptyList()
+        }
+        if (!budget.tryEnterDirectory(docFile.uri.toString())) {
             return emptyList()
         }
         val context = scan.context
@@ -434,7 +518,14 @@ class GameRepository {
         val coverCandidates = buildDocumentCoverCandidates(children, ::infoFor)
 
         for (file in children) {
-            if (shouldAbort() || !budget.tryVisitEntry()) return items
+            if (shouldAbort()) {
+                outcome.aborted = true
+                return items
+            }
+            if (!budget.tryVisitEntry()) {
+                outcome.truncated = true
+                return items
+            }
             val info = infoFor(file)
             val mimeType = info?.mimeType ?: runCatching { file.type }.getOrNull()
             val name = documentDisplayName(context, file, info)
@@ -444,7 +535,7 @@ class GameRepository {
                 SetupValidator.DocumentEntryKind.DIRECTORY,
                 SetupValidator.DocumentEntryKind.UNKNOWN -> {
                     if (normalizeBaseName(name) !in COVER_DIRECTORY_NAMES) {
-                        items.addAll(
+                        val nested = try {
                             scanDocumentFile(
                                 file,
                                 scan,
@@ -454,9 +545,20 @@ class GameRepository {
                                 budget,
                                 directorySegments + name,
                                 locations,
-                                directoryPlatform
+                                directoryPlatform,
+                                outcome
                             )
-                        )
+                        } catch (cancelled: java.util.concurrent.CancellationException) {
+                            throw cancelled
+                        } catch (error: Exception) {
+                            // One unreadable folder must not hide the rest of the tree.
+                            outcome.unreadableEntries++
+                            if (com.sbro.emucoreh.BuildConfig.DEBUG) {
+                                Log.w(TAG, "Unable to scan directory ${file.uri}", error)
+                            }
+                            emptyList()
+                        }
+                        items.addAll(nested)
                     }
                 }
                 SetupValidator.DocumentEntryKind.GAME_FILE -> {
@@ -512,19 +614,28 @@ class GameRepository {
                     if (!isLibraryContent(name, scan.arcadeCatalog, platform)) continue
                     val libraryPlatform = folderPlatform?.takeIf { platform.coreId == 0 }
                     val displayName = folderTitle ?: name
-                    val metadata = readLibraryScanMetadata(
-                        platform = platform,
-                        inferFromName = { EmulatorBridge.parseMetadataFromName(displayName) },
-                        readPlatformMetadata = {
-                            EmulatorBridge.getGameMetadata(
-                                uriPath,
-                                readDiscMetadata = false,
-                                knownPlatform = platform,
-                                knownDisplayName = displayName
-                            )
-                        },
-                        learnedSerial = { scan.learnedSerials[LearnedSerialRepository.key(name)] }
-                    )
+                    // A single unreadable document must not abort the whole library walk.
+                    val metadata = runCatching {
+                        readLibraryScanMetadata(
+                            platform = platform,
+                            inferFromName = { EmulatorBridge.parseMetadataFromName(displayName) },
+                            readPlatformMetadata = {
+                                EmulatorBridge.getGameMetadata(
+                                    uriPath,
+                                    readDiscMetadata = false,
+                                    knownPlatform = platform,
+                                    knownDisplayName = displayName
+                                )
+                            },
+                            learnedSerial = { scan.learnedSerials[LearnedSerialRepository.key(name)] }
+                        )
+                    }.getOrElse { error ->
+                        outcome.unreadableEntries++
+                        if (com.sbro.emucoreh.BuildConfig.DEBUG) {
+                            Log.w(TAG, "Metadata read failed for $name", error)
+                        }
+                        com.sbro.emucoreh.core.GameMetadata(displayName, null)
+                    }
 
                     if (BiosValidator.isLikelyBiosLibraryEntry(name, metadata.title, metadata.serial)) {
                         continue

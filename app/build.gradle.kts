@@ -156,8 +156,14 @@ android {
     }
     packaging {
         jniLibs {
-            // adrenotools loads its hook libraries by native filesystem path.
-            useLegacyPackaging = true
+            // Native libraries stay uncompressed and page-aligned inside the
+            // APK so the linker loads them straight from the package. Legacy
+            // packaging required the installer to extract every .so, and some
+            // vendor installers (Unisoc Anbernic firmware) silently skip the
+            // largest library: Flycast then never loads and every Dreamcast
+            // launch fails. adrenotools resolves its hook libraries through
+            // the same namespace, which includes the APK lib directory.
+            useLegacyPackaging = false
             discordSdkDirectory?.let { pickFirsts += "**/libdiscord_partner_sdk.so" }
         }
     }

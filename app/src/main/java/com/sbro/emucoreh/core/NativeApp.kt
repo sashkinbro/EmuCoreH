@@ -54,7 +54,7 @@ object NativeApp {
     init {
         loadedCoreLibraryName = "emucoreh_jni"
         hasNativeCore = runCatching { CoreRuntime.bridge.apiVersion() }
-            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "Unable to load $loadedCoreLibraryName", it) }
+            .onFailure { CrashLogger.logError(TAG, "Unable to load $loadedCoreLibraryName", it) }
             .isSuccess
         hasNativeTools = false
     }
@@ -541,23 +541,28 @@ object NativeApp {
 
     @JvmStatic
     fun setCrashContextString(key: String, value: String?) {
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logContext(key, value)
+        CrashLogger.logContext(key, value)
     }
 
     @JvmStatic
     fun setCrashContextInt(key: String, value: Int) {
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logContext(key, value)
+        CrashLogger.logContext(key, value)
     }
 
     @JvmStatic
     fun setCrashContextBool(key: String, value: Boolean) {
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logContext(key, value)
+        CrashLogger.logContext(key, value)
     }
 
+    /**
+     * Launch/surface milestones. Written in every build type: they are the
+     * breadcrumbs that tell us where a launch died when the process is killed
+     * by the core.
+     */
     @JvmStatic
     fun logCrashBreadcrumb(message: String) {
         if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, message)
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logInfo("Native", message)
+        CrashLogger.logStep("Native", message)
     }
 
     @JvmStatic

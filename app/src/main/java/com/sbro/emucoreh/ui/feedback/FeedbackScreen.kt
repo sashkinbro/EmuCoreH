@@ -66,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.R
+import com.sbro.emucoreh.core.CrashLogger
 import com.sbro.emucoreh.data.AppPreferences
 import com.sbro.emucoreh.data.GameItem
 import com.sbro.emucoreh.data.GameLibraryCacheRepository
@@ -77,6 +78,7 @@ import com.sbro.emucoreh.feedback.FeedbackUploadScheduler
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import java.util.Locale
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,6 +86,25 @@ import com.sbro.emucoreh.ui.theme.neon.neonShape
 import com.sbro.emucoreh.ui.theme.neon.neonButtonShape
 
 private data class FeedbackCategory(val id: String, val label: String)
+
+/**
+ * A tester report is only actionable with the crash log: attach it to every
+ * submission so the reason a game failed to start reaches the report instead of
+ * staying on the device.
+ */
+private fun crashLogAttachments(): List<FeedbackAttachment> {
+    val path = CrashLogger.logFilePath() ?: return emptyList()
+    val file = File(path)
+    if (!file.isFile || file.length() == 0L) return emptyList()
+    return listOf(
+        FeedbackAttachment(
+            uri = Uri.fromFile(file),
+            displayName = "crash.log",
+            mimeType = "text/plain",
+            sizeBytes = file.length()
+        )
+    )
+}
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -217,7 +238,9 @@ fun FeedbackScreen(onBackClick: () -> Unit) {
                         gameSerial = selectedGame?.serial.orEmpty(),
                         message = message,
                         includeDiagnostics = true,
-                        attachments = attachments.toList()
+                        attachments = (attachments.toList() + crashLogAttachments()).take(
+                            FeedbackLimits.MAX_ATTACHMENTS
+                        )
                     )
                 }.onSuccess {
                     Toast.makeText(context, queuedMessage, Toast.LENGTH_LONG).show()

@@ -37,6 +37,7 @@ import com.sbro.emucoreh.data.recentLibraryGroups
 import com.sbro.emucoreh.data.GameLibraryCacheRepository
 import com.sbro.emucoreh.data.GameLibraryCacheSnapshot
 import com.sbro.emucoreh.data.GameRepository
+import com.sbro.emucoreh.data.ScanOutcome
 import com.sbro.emucoreh.data.RecentGameEntry
 import com.sbro.emucoreh.data.decideCoreUpdateResetAction
 import java.util.Locale
@@ -620,6 +621,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     val context = getApplication<Application>()
                     val cachedByPath = flattenLibraryGroups(cachedGames).associateBy { it.path }
                     val preferEnglishTitles = preferEnglishGameTitles
+                    val scanOutcome = ScanOutcome()
                     val scannedGames = withContext(Dispatchers.IO) {
                         val scanContext = currentCoroutineContext()
                         val shouldAbort = {
@@ -632,29 +634,42 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                                 repository.scanDirectoryFromUri(
                                     path.toUri(), context, cachedByPath,
                                     shouldAbort = shouldAbort,
-                                    preferEnglishTitles = preferEnglishTitles
+                                    preferEnglishTitles = preferEnglishTitles,
+                                    outcome = scanOutcome
                                 )
                             } else {
                                 repository.scanDirectory(
                                     path, context, cachedByPath,
                                     shouldAbort = shouldAbort,
-                                    preferEnglishTitles = preferEnglishTitles
+                                    preferEnglishTitles = preferEnglishTitles,
+                                    outcome = scanOutcome
                                 )
                             }
                         }.distinctBy { GameRepository.libraryIdentity(it.path) })
                             .sortedBy { it.title.lowercase() }
                     }
                     request.ensureCurrent()
-                    if (EmulatorBridge.isVmActive()) {
+                    if (EmulatorBridge.isVmActive() || scanOutcome.aborted) {
+                        // An interrupted walk is not the library: keep the previous
+                        // snapshot visible and rescan once the VM is idle instead of
+                        // caching a partial folder listing.
                         queueDeferredLibraryWork(
                             rootPaths = paths,
                             isInitialLoad = false,
                             showRefreshIndicator = showRefreshIndicator
                         )
+                        if (scannedGames.isNotEmpty() && allGames.isEmpty()) {
+                            allGames = scannedGames
+                            currentLibraryRoot = rootPath
+                            currentLibraryPaths = paths
+                            libraryInitialized = true
+                            publishVisibleGames()
+                        }
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             isRefreshing = false
                         )
+                        updateBootstrapState()
                         return@withLock
                     }
                     allGames = scannedGames
@@ -668,8 +683,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     publishVisibleGames()
                     updateBootstrapState()
                     val gamesToCache = allGames
-                    withContext(Dispatchers.IO) {
-                        libraryCacheRepository.save(rootPath, gamesToCache, preferEnglishTitles)
+                    if (scanOutcome.complete) {
+                        withContext(Dispatchers.IO) {
+                            libraryCacheRepository.save(rootPath, gamesToCache, preferEnglishTitles)
+                        }
                     }
                     request.ensureCurrent()
                     if (com.sbro.emucoreh.BuildConfig.DEBUG) logStartupMilestone("scan_done games=${allGames.size}")

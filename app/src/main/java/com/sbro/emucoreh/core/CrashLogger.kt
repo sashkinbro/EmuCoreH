@@ -8,13 +8,20 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import java.io.File
 import java.io.FileWriter
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 
+/**
+ * Crash diagnostics for every build type.
+ *
+ * Release builds ship the same failure reporting as debug builds: the
+ * uncaught-exception handler, the native fatal-signal handler and the
+ * previous-run exit report all write to `Android/data/<pkg>/files/logs/crash.log`,
+ * so a tester can send back the reason a game failed to start. Only the
+ * high-frequency routine diagnostics (INFO/CTX traces) stay debug-only.
+ */
 object CrashLogger {
 
     private const val TAG = "CrashLogger"
@@ -28,21 +35,26 @@ object CrashLogger {
     private const val MAX_EXIT_REPORTS = 3
     private const val MAX_EXIT_TRACE_CHARS = 200_000
 
+    private val debug: Boolean get() = com.sbro.emucoreh.BuildConfig.DEBUG
+
     @Volatile
     private var logFile: File? = null
 
     @Volatile
     private var previousHandler: Thread.UncaughtExceptionHandler? = null
 
+    /** Last session banner; repeated in crash entries so a report explains itself. */
+    @Volatile
+    private var sessionBanner: String = ""
+
     private val dateFmt by lazy { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US) }
 
     private val entries = CrashLogWriter(com.sbro.emucoreh.BuildConfig.DEBUG, ::writeEntry)
 
     fun init(context: Context) {
-        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         logFile = resolveLogFile(context)
         installUncaughtExceptionHandler()
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) writeStartupLine(context)
+        writeStartupLine(context)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             logPreviousRunExits(context)
         }
@@ -52,22 +64,21 @@ object CrashLogger {
      * Installs the native fatal-signal handler once the native library is
      * loaded. The handler appends a full report (signal, fault address,
      * thread, backtrace) to this log the moment the process dies from a
-     * native crash; in normal operation it writes nothing. Idempotent, so
-     * it is safe to call again after late native (re)initialization.
+     * native crash; in normal operation it writes nothing. Idempotent, so it
+     * is safe to call again after late native (re)initialization.
      */
     fun installNativeCrashReporter() {
-        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         val file = logFile ?: return
         runCatching { CoreRuntime.bridge.nativeInstallCrashReporter(file.absolutePath) }
-            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to install native crash reporter", it) }
+            .onFailure { Log.w(TAG, "Unable to install native crash reporter", it) }
     }
+
+    /** Absolute path of the crash log, for diagnostics screens and bug reports. */
+    fun logFilePath(): String? = logFile?.takeIf { it.exists() }?.absolutePath
 
     /** Only call for an unrecoverable session/startup failure, never a recoverable warning. */
     fun logError(tag: String, message: String, throwable: Throwable? = null) {
-        if (!com.sbro.emucoreh.BuildConfig.DEBUG) {
-            Log.e(tag, message, throwable)
-            return
-        }
+        Log.e(tag, message, throwable)
         entries.write("ERROR") {
             buildString {
                 append("[$tag] $message")
@@ -76,13 +87,53 @@ object CrashLogger {
         }
     }
 
+    /**
+     * Records what the user is about to run. Written for every launch in every
+     * build type: when the process dies inside the core, this is the entry that
+     * names the game, platform and renderer the crash belongs to.
+     */
+    fun logLaunch(
+        platform: String,
+        title: String,
+        serial: String?,
+        renderer: Int,
+        rendererName: String,
+        source: String,
+        pathHint: String,
+        biosOnly: Boolean = false
+    ) {
+        val banner = buildString {
+            append("platform=").append(platform.ifBlank { "?" })
+            append(" | title=").append(title.ifBlank { "?" })
+            append(" | serial=").append(serial?.takeIf { it.isNotBlank() } ?: "-")
+            append(" | renderer=").append(rendererName).append('(').append(renderer).append(')')
+            append(" | source=").append(source.ifBlank { "?" })
+            append(" | file=").append(pathHint.ifBlank { "?" })
+            if (biosOnly) append(" | bios_only=true")
+            append(" | device=").append(Build.MANUFACTURER).append(' ').append(Build.MODEL)
+            append(" | android=").append(Build.VERSION.RELEASE).append(" (API ").append(Build.VERSION.SDK_INT).append(')')
+        }
+        sessionBanner = banner
+        entries.write("LAUNCH") { banner }
+    }
+
+    /** Routine diagnostics: debug builds only, never evaluated in release. */
     fun logInfo(tag: String, message: String) {
-        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
+        if (!debug) return
         entries.write("INFO") { "[$tag] $message" }
     }
 
+    /**
+     * Launch milestone (surface lifecycle, core start phases). Written in every
+     * build type so a report shows how far the launch got before the crash.
+     */
+    fun logStep(tag: String, message: String) {
+        entries.write("STEP") { "[$tag] $message" }
+    }
+
+    /** Routine diagnostics: debug builds only, never evaluated in release. */
     fun logContext(key: String, value: Any?) {
-        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
+        if (!debug) return
         entries.write("CTX") { "$key = $value" }
     }
 
@@ -94,7 +145,7 @@ object CrashLogger {
             if (!dir.exists()) dir.mkdirs()
             File(dir, LOG_FILE)
         } catch (e: Exception) {
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Failed to resolve log file", e)
+            Log.e(TAG, "Failed to resolve log file", e)
             null
         }
     }
@@ -107,15 +158,26 @@ object CrashLogger {
         val device = "${Build.MANUFACTURER} ${Build.MODEL}"
         val androidVer = Build.VERSION.RELEASE
         val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: "?"
+        val buildType = if (debug) "debug" else "release"
 
-        entries.write("START") { "APP START — v$appVersion | Android $androidVer | $device | $abi" }
+        entries.write("START") {
+            "APP START — v$appVersion ($buildType) | Android $androidVer | $device | $abi"
+        }
     }
 
     private fun installUncaughtExceptionHandler() {
         previousHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
-                entries.write("CRASH") { "Thread: ${thread.name}\n${throwable.stackTraceString()}" }
+                entries.write("CRASH") {
+                    buildString {
+                        append("Thread: ").append(thread.name)
+                        if (sessionBanner.isNotBlank()) {
+                            append("\nLast launch: ").append(sessionBanner)
+                        }
+                        append("\n").append(throwable.stackTraceString())
+                    }
+                }
             } catch (_: Exception) {
                 // Don't let logger crash prevent the original crash from propagating
             }
@@ -133,7 +195,7 @@ object CrashLogger {
     @RequiresApi(Build.VERSION_CODES.R)
     private fun logPreviousRunExits(context: Context) {
         runCatching { reportPreviousRunExits(context) }
-            .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Unable to read previous exit info", it) }
+            .onFailure { Log.w(TAG, "Unable to read previous exit info", it) }
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -247,7 +309,6 @@ object CrashLogger {
     }
 
     private fun writeEntry(level: String, body: String) {
-        if (!com.sbro.emucoreh.BuildConfig.DEBUG) return
         if (level == "ERROR") Log.println(Log.ERROR, TAG, body)
         val file = logFile ?: return
         val timestamp = dateFmt.format(Date())
@@ -257,7 +318,7 @@ object CrashLogger {
             rotateIfNeeded(file)
             FileWriter(file, /* append = */ true).use { it.write(line) }
         } catch (e: Exception) {
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Failed to write log entry", e)
+            Log.e(TAG, "Failed to write log entry", e)
         }
     }
 
@@ -275,13 +336,14 @@ object CrashLogger {
             val rotationHeader = "=== LOG ROTATED at ${dateFmt.format(Date())} (old entries trimmed) ===\n"
             file.writeBytes(rotationHeader.toByteArray() + content.copyOfRange(safeStart.coerceAtMost(content.size), content.size))
         } catch (e: Exception) {
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Failed to rotate log", e)
+            Log.e(TAG, "Failed to rotate log", e)
         }
     }
 
-    private fun Throwable.stackTraceString(): String {
-        val sw = StringWriter()
-        printStackTrace(PrintWriter(sw))
-        return sw.toString().trimEnd()
-    }
+    /**
+     * R8 strips `Throwable.printStackTrace` in release (`-assumenosideeffects`),
+     * so the trace is captured through [Log.getStackTraceString] instead of a
+     * PrintWriter that would silently produce an empty report.
+     */
+    private fun Throwable.stackTraceString(): String = Log.getStackTraceString(this).trimEnd()
 }

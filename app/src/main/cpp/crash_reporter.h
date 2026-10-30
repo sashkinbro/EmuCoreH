@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2026 SBRO
 // SPDX-License-Identifier: LicenseRef-EmuCoreH-Proprietary
 //
-// Debug-only fatal-signal crash reporter. Installs async-signal-safe handlers for the
-// deadly signals (SIGSEGV, SIGABRT, SIGBUS, SIGILL, SIGFPE, SIGTRAP) that
-// append a full report (signal, fault address, thread, backtrace) to the
-// crash log file right before the process dies. The previous handler is
-// chained afterwards so the platform still captures the tombstone. Nothing
-// is ever written unless the process actually crashes.
+// Fatal-signal crash reporter, active in debug and release builds. Installs
+// async-signal-safe handlers for the deadly signals (SIGSEGV, SIGABRT, SIGBUS,
+// SIGILL, SIGFPE, SIGTRAP) that append a full report (signal, fault address,
+// thread, backtrace) to the crash log file right before the process dies. The
+// previous handler is chained afterwards so the platform still captures the
+// tombstone. Nothing is ever written unless the process actually crashes.
 #pragma once
 
 namespace emucoreh::crash {
@@ -17,8 +17,8 @@ void InstallCrashReporter(const char* log_path);
 
 // Appends one "ERROR: [Native]" entry to the same crash log. Used for
 // recoverable native failures (e.g. caught C++ exceptions at the JNI
-// boundary) during debug sessions. Both functions are empty in release. Safe to call from any thread outside
-// signal context; does nothing when the reporter was never installed.
+// boundary). Safe to call from any thread outside signal context; does
+// nothing when the reporter was never installed.
 void LogNativeError(const char* message);
 
 }  // namespace emucoreh::crash

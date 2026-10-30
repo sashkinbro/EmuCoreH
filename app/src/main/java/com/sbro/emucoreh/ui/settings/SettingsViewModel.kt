@@ -128,7 +128,7 @@ data class SettingsUiState(
     val languageTag: String? = null,
     val tvInterfaceMode: TvInterfaceMode = TvInterfaceMode.AUTO,
     val renderer: Int = RendererDefaults.defaultForHardware(),
-    val model3Renderer: Int = RendererDefaults.VULKAN,
+    val model3Renderer: Int = RendererDefaults.MODEL3_DEFAULT,
     val customDriverPath: String? = null,
     val gpuDriverType: Int = 0,
     val installedGpuDrivers: List<InstalledGpuDriver> = emptyList(),

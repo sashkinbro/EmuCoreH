@@ -68,7 +68,7 @@ data class SettingsSnapshot(
     val tvInterfaceMode: TvInterfaceMode = TvInterfaceMode.AUTO,
     val gpuHardwareProfile: Int = GpuHardwareProfiles.ADRENO,
     val renderer: Int = RendererDefaults.defaultForHardware(),
-    val model3Renderer: Int = RendererDefaults.VULKAN,
+    val model3Renderer: Int = RendererDefaults.MODEL3_DEFAULT,
     val customDriverPath: String? = null,
     val upscaleMultiplier: Float = UPSCALE_DEFAULT,
     val aspectRatio: Int = 1,
@@ -1037,7 +1037,7 @@ class AppPreferences(private val context: Context) {
         normalizeRendererPreference(prefs[RENDERER])
     }
     val model3Renderer: Flow<Int> = context.dataStore.data.map { prefs ->
-        if (prefs[MODEL3_RENDERER] == RendererDefaults.OPENGL) RendererDefaults.OPENGL else RendererDefaults.VULKAN
+        RendererDefaults.normalizeModel3Renderer(prefs[MODEL3_RENDERER])
     }
 
     val gpuHardwareProfile: Flow<Int> = context.dataStore.data.map { prefs ->
@@ -1058,7 +1058,7 @@ class AppPreferences(private val context: Context) {
     }
     suspend fun setModel3Renderer(value: Int) {
         context.dataStore.edit { prefs ->
-            prefs[MODEL3_RENDERER] = if (value == RendererDefaults.OPENGL) RendererDefaults.OPENGL else RendererDefaults.VULKAN
+            prefs[MODEL3_RENDERER] = RendererDefaults.normalizeModel3Renderer(value)
         }
     }
 
@@ -1499,7 +1499,7 @@ class AppPreferences(private val context: Context) {
                 tvInterfaceMode = TvInterfaceMode.fromPreference(prefs[TV_INTERFACE_MODE]),
                 gpuHardwareProfile = gpuHardwareProfile,
                 renderer = normalizeRendererPreference(prefs[RENDERER]),
-                model3Renderer = if (prefs[MODEL3_RENDERER] == RendererDefaults.OPENGL) RendererDefaults.OPENGL else RendererDefaults.VULKAN,
+                model3Renderer = RendererDefaults.normalizeModel3Renderer(prefs[MODEL3_RENDERER]),
                 customDriverPath = prefs[CUSTOM_DRIVER_PATH],
                 upscaleMultiplier = readUpscale(prefs),
                 aspectRatio = normalizeAspectRatioPreference(prefs[ASPECT_RATIO]),
@@ -3191,7 +3191,7 @@ class AppPreferences(private val context: Context) {
             put("hiddenGameMenuSections", prefs[HIDDEN_GAME_MENU_SECTIONS] ?: "")
             put("gpuHardwareProfile", gpuHardwareProfile)
             put("renderer", normalizeRendererPreference(prefs[RENDERER]))
-            put("model3Renderer", if (prefs[MODEL3_RENDERER] == RendererDefaults.OPENGL) RendererDefaults.OPENGL else RendererDefaults.VULKAN)
+            put("model3Renderer", RendererDefaults.normalizeModel3Renderer(prefs[MODEL3_RENDERER]))
             put("upscaleMultiplier", readUpscale(prefs).toDouble())
             put("shaderChainEnabled", prefs[SHADER_CHAIN_ENABLED] ?: false)
             put("shaderChainPreset", prefs[SHADER_CHAIN_PRESET].orEmpty())
@@ -3454,7 +3454,7 @@ class AppPreferences(private val context: Context) {
                 if (json.has("renderer")) json.optInt("renderer") else null
             )
             prefs[RENDERER] = importedRenderer
-            prefs[MODEL3_RENDERER] = if (json.optInt("model3Renderer", RendererDefaults.VULKAN) == RendererDefaults.OPENGL) RendererDefaults.OPENGL else RendererDefaults.VULKAN
+            prefs[MODEL3_RENDERER] = RendererDefaults.normalizeModel3Renderer(json.optInt("model3Renderer", RendererDefaults.MODEL3_DEFAULT))
             prefs[UPSCALE] = json.readUpscaleMultiplier()
             prefs[SHADER_CHAIN_ENABLED] = json.optBoolean("shaderChainEnabled", false)
             json.optString("shaderChainPreset").trim().takeIf(String::isNotEmpty)?.let {

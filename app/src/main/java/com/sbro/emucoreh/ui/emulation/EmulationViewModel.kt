@@ -1170,22 +1170,32 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 )
                 delay(200.milliseconds)
 
+                // Detection opens SAF descriptors, so resolve the platform once
+                // for both content preparation and the launch report.
+                val launchPlatform = if (bootToBios || path.isNullOrBlank()) {
+                    null
+                } else {
+                    com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path)
+                }
                 val launchPath = when {
                     bootToBios -> ""
                     path.isNullOrBlank() -> null
-                    else -> if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isModel3) {
+                    launchPlatform?.isModel3 == true -> {
                         runCatching { com.sbro.emucoreh.core.Model3ContentPreparer.prepare(getApplication(), path) }
                             .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Model 3 content", it) }.getOrNull()
-                    } else if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isSaturn) {
+                    }
+                    launchPlatform?.isSaturn == true -> {
                         runCatching { com.sbro.emucoreh.core.SaturnContentPreparer.prepare(getApplication(), path) }
                             .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Saturn content", it) }.getOrNull()
-                    } else if (com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path).isSega) {
+                    }
+                    launchPlatform?.isSega == true -> {
                         // The previous session (including a failed one) has been unloaded above.
                         // Copy SAF content before taking CoreRuntime's lifecycle lock, so a
                         // background/surface-destroy callback cannot block on a large disc copy.
                         runCatching { com.sbro.emucoreh.core.JGenesisContentPreparer.prepare(getApplication(), path) }
                             .onFailure { if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Unable to prepare Sega launch content", it) }.getOrNull()
-                    } else DocumentPathResolver.prepareGameLaunchPath(getApplication(), path)
+                    }
+                    else -> DocumentPathResolver.prepareGameLaunchPath(getApplication(), path)
                 }
 
                 if (!bootToBios && launchPath.isNullOrBlank()) {
@@ -1361,6 +1371,25 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     launchState = "starting",
                     launchPath = path
                 )
+                // Record the launch before the core takes over: if the process
+                // dies inside the native session, this is the entry that names
+                // the game, platform and renderer the crash belongs to.
+                com.sbro.emucoreh.core.CrashLogger.logLaunch(
+                    platform = (launchPlatform ?: currentTouchPlatform).name,
+                    title = if (bootToBios) BIOS_SESSION_TITLE else currentGameTitle,
+                    serial = currentGameSerial,
+                    renderer = _uiState.value.renderer,
+                    rendererName = com.sbro.emucoreh.core.RendererDefaults.androidRendererName(_uiState.value.renderer),
+                    source = if (bootToBios) "bios_only" else currentGameSource,
+                    pathHint = (launchPath ?: path).orEmpty().let { raw ->
+                        if (raw.startsWith("content://")) {
+                            DocumentPathResolver.normalizeDisplayName(raw)
+                        } else {
+                            File(raw).name
+                        }
+                    },
+                    biosOnly = bootToBios
+                )
             }
 
             if (hasPendingStateLoad) {
@@ -1452,7 +1481,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     allowBiosBoot = bootToBios
                 )
             } catch (error: Exception) {
-                if (com.sbro.emucoreh.BuildConfig.DEBUG) com.sbro.emucoreh.core.CrashLogger.logError(TAG, "EmulatorBridge.startEmulation failed", error)
+                com.sbro.emucoreh.core.CrashLogger.logError(TAG, "EmulatorBridge.startEmulation failed", error)
                 false
             }
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "EmulatorBridge.startEmulation returned $started path=$pathToLaunch")
@@ -2230,7 +2259,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         if (isShuttingDown || cancelPendingStart) return
         val path = currentGamePath
         val bootToBios = path == null
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb(
+        NativeApp.logCrashBreadcrumb(
             "renderer fallback engaged -> " +
                 "${RendererDefaults.coreRendererName(RendererDefaults.toCoreRenderer(requested))}($requested)"
         )

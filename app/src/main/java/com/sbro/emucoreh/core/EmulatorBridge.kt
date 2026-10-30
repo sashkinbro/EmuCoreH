@@ -272,7 +272,7 @@ object EmulatorBridge {
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "initializeOnce completed")
         } catch (error: Exception) {
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "initializeOnce failed", error)
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) CrashLogger.logError(TAG, "initializeOnce FAILED", error)
+            CrashLogger.logError(TAG, "initializeOnce FAILED", error)
         }
     }
 
@@ -413,7 +413,7 @@ object EmulatorBridge {
             path.isBlank() -> "bios"
             else -> "file"
         }
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb("startEmulation requested pathType=$pathType vmActive=$isVmActive")
+        NativeApp.logCrashBreadcrumb("startEmulation requested pathType=$pathType vmActive=$isVmActive")
         if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "startEmulation requested pathType=$pathType vmActive=$isVmActive")
 
         return BackupSessionGate.start(active = { isVmActive }) {
@@ -422,10 +422,10 @@ object EmulatorBridge {
             isVmActive = true
             shutdownRequested = false
             var result = try {
-                if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb("startEmulation entering native runVMThread")
+                NativeApp.logCrashBreadcrumb("startEmulation entering native runVMThread")
                 NativeApp.runVMThread(path)
             } catch (error: Exception) {
-                if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb("startEmulation exception before native start returned")
+                NativeApp.logCrashBreadcrumb("startEmulation exception before native start returned")
                 if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "startEmulation native call failed", error)
                 false
             }
@@ -434,7 +434,7 @@ object EmulatorBridge {
                 // cannot be opened. Surface that as a failed launch instead of
                 // leaving the user on a misleading BIOS screen.
                 if (CoreRuntime.platform.coreId == 0 && !NativeApp.hasDiscMedia()) {
-                    if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb("disc image failed to mount; aborting launch")
+                    NativeApp.logCrashBreadcrumb("disc image failed to mount; aborting launch")
                     if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Disc image could not be mounted; aborting $pathType launch")
                     runCatching { NativeApp.shutdown() }
                     result = false
@@ -448,7 +448,7 @@ object EmulatorBridge {
             if (result && !allowBiosBoot && !path.isBlank()) {
                 recordLearnedGameSerial(path)
             }
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb("startEmulation finished result=$result")
+            NativeApp.logCrashBreadcrumb("startEmulation finished result=$result")
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "startEmulation finished result=$result")
             result
             }
@@ -877,7 +877,7 @@ object EmulatorBridge {
         if (!isNativeLoaded || !isVmActive || path.isBlank()) return false
         return runSerial {
             try {
-                if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb("disc swap requested pathType=${path.substringBefore(':', "file")}")
+                NativeApp.logCrashBreadcrumb("disc swap requested pathType=${path.substringBefore(':', "file")}")
                 NativeApp.changeDisc(path)
             } catch (error: Exception) {
                 if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Disc swap failed", error)
@@ -890,7 +890,7 @@ object EmulatorBridge {
         val resolvedRenderer = normalizeRenderer(gpuType)
         val cacheKey = "EmuCoreH/Runtime:Renderer"
         val rendererChanged = settingsCache[cacheKey] != resolvedRenderer.toString()
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb(
+        NativeApp.logCrashBreadcrumb(
             "renderer change requested renderer=${rendererName(resolvedRenderer)}($resolvedRenderer) vmActive=$isVmActive"
         )
         if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "Renderer change requested: ${rendererName(resolvedRenderer)}($resolvedRenderer) vmActive=$isVmActive")
@@ -1028,7 +1028,7 @@ object EmulatorBridge {
         if (!synchronized(surfaceEpoch) { surfaceEpoch.created(generation, surface) }) return
         if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "onSurfaceCreated: generation=$generation")
         if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_surface_state", "created")
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb("surfaceCreated")
+        NativeApp.logCrashBreadcrumb("surfaceCreated")
         launchSerial {
             try {
                 NativeApp.onNativeSurfaceCreated()
@@ -1057,7 +1057,7 @@ object EmulatorBridge {
         if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextInt("emu_surface_width", width)
         if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextInt("emu_surface_height", height)
         if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextBool("emu_surface_valid", surface.isValid)
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb("surfaceChanged width=$width height=$height valid=${surface.isValid}")
+        NativeApp.logCrashBreadcrumb("surfaceChanged width=$width height=$height valid=${surface.isValid}")
         launchSerial {
             synchronized(surfaceEpoch) {
                 if (!surfaceEpoch.isCurrent(generation, eventVersion)) {
@@ -1086,7 +1086,7 @@ object EmulatorBridge {
             lastSurfaceHeight = 0
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "onSurfaceDestroyed: generation=$generation eventVersion=${surfaceEpoch.eventVersion}")
             if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.setCrashContextString("emu_surface_state", "destroyed")
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb("surfaceDestroyed")
+            NativeApp.logCrashBreadcrumb("surfaceDestroyed")
             runCatching { NativeApp.pause() }
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "onSurfaceDestroyed: pause done, calling native destroy")
             // Android invalidates the BufferQueue as soon as this callback returns.
@@ -1113,7 +1113,7 @@ object EmulatorBridge {
         // recreates Vulkan's swapchain after the first emulated frame.
         if (NativeApp.hasAttachedSurface(surface, width, height)) return
         if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "rebindSurface: width=$width height=$height")
-        if (com.sbro.emucoreh.BuildConfig.DEBUG) NativeApp.logCrashBreadcrumb("rebindSurface width=$width height=$height")
+        NativeApp.logCrashBreadcrumb("rebindSurface width=$width height=$height")
         try {
             NativeApp.onNativeSurfaceChanged(surface, width, height)
         } catch (_: Exception) { }

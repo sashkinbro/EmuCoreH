@@ -2,12 +2,8 @@
 // SPDX-License-Identifier: LicenseRef-EmuCoreH-Proprietary
 #include "crash_reporter.h"
 
-#ifdef NDEBUG
-namespace emucoreh::crash {
-void InstallCrashReporter(const char*) {}
-void LogNativeError(const char*) {}
-}
-#else
+// The fatal-signal handler is part of release builds too: a tester build must
+// leave the native crash reason in crash.log, not only a logcat tombstone.
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -331,5 +327,3 @@ void InstallCrashReporter(const char* log_path) {
 }
 
 }  // namespace emucoreh::crash
-
-#endif

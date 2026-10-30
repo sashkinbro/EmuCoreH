@@ -36,8 +36,10 @@ class EmuCoreHApp : Application() {
                 ?.firstOrNull { it.pid == Process.myPid() }?.processName
         }
         if (processName?.endsWith(":discord") == true) return
-        // CrashLogger must be the very first thing — it catches crashes in all subsequent init steps
-        if (BuildConfig.DEBUG) startupStep("crash_logger") { CrashLogger.init(this) }
+        // CrashLogger must be the very first thing — it catches crashes in all
+        // subsequent init steps. Release builds keep it too: a tester build has
+        // to leave the reason a game failed to start in files/logs/crash.log.
+        startupStep("crash_logger") { CrashLogger.init(this) }
         if (DriveBackupArchive.hasPendingRecovery(this)) applicationScope.launch {
             try { BackupSessionGate.whileStopped { DriveBackupArchive(this@EmuCoreHApp).recoverPending() } }
             catch (cancelled: CancellationException) { throw cancelled }
