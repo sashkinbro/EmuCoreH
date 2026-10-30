@@ -166,7 +166,7 @@ android {
             discordSdkDirectory?.let { pickFirsts += "**/libdiscord_partner_sdk.so" }
         }
     }
-    discordSdkDirectory?.let { sdkDir -> sourceSets["main"].jniLibs.srcDir(sdkDir) }
+    discordSdkDirectory?.let { sdkDir -> sourceSets["main"].jniLibs.directories.add(sdkDir.absolutePath) }
     bundle {
         language {
             enableSplit = false
