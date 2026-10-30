@@ -7,6 +7,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
+import java.util.zip.CRC32
 
 /**
  * Dreamcast and arcade BIOS files. Flycast reads them from `<system>/dc/`:
@@ -18,6 +19,7 @@ import java.io.File
  * frontend enables automatically when no dump is installed.
  */
 object DreamcastBios {
+    private const val TAG = "DreamcastBios"
     const val BOOT_ROM_SIZE = 2L * 1024L * 1024L
     const val FLASH_ROM_SIZE = 128L * 1024L
     val bootFileNames = listOf("dc_boot.bin", "dc_bios.bin")
@@ -96,6 +98,8 @@ object DreamcastBios {
     )
 
     private val arcadeArchiveExtensions = setOf("zip", "7z")
+    private val arcadeBootRomMarkers = listOf("NAOMI", "ATOMISWAVE")
+    private const val MAX_BOOT_ROM_SCAN_BYTES = 2 * 1024 * 1024
     private const val MAX_BIOS_BYTES = 64L * 1024L * 1024L
     private const val MAX_PROBE_DIRECTORIES = 64
     private const val MAX_PROBE_FILES = 256
@@ -128,6 +132,61 @@ object DreamcastBios {
     }
 
     fun hasBootRom(systemDir: String): Boolean = findBootRom(systemDir) != null
+
+    /**
+     * Naomi and Atomiswave boot ROMs are 2 MiB as well, so a dump recognized
+     * only by its size can end up installed as the Dreamcast BIOS. Those
+     * firmwares carry their own product names, which a Dreamcast boot ROM never
+     * contains; treating such a dump as absent keeps the core on HLE instead of
+     * booting arcade firmware on Dreamcast hardware.
+     */
+    internal fun looksLikeArcadeBootRom(bytes: ByteArray): Boolean {
+        if (bytes.isEmpty()) return false
+        val text = String(bytes, Charsets.ISO_8859_1)
+        return arcadeBootRomMarkers.any { marker -> text.contains(marker, ignoreCase = true) }
+    }
+
+    fun looksLikeArcadeBootRom(file: File): Boolean = runCatching {
+        if (!file.isFile) return false
+        file.inputStream().use { stream ->
+            val buffer = ByteArray(MAX_BOOT_ROM_SCAN_BYTES)
+            var filled = 0
+            while (filled < buffer.size) {
+                val read = stream.read(buffer, filled, buffer.size - filled)
+                if (read <= 0) break
+                filled += read
+            }
+            looksLikeArcadeBootRom(buffer.copyOf(filled))
+        }
+    }.getOrDefault(false)
+
+    /** CRC32 of an installed boot ROM, for the launch diagnostics line. */
+    fun bootRomFingerprint(file: File?): String {
+        val rom = file?.takeIf { it.isFile } ?: return "none"
+        return runCatching {
+            val crc = CRC32()
+            rom.inputStream().use { input ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read <= 0) break
+                    crc.update(buffer, 0, read)
+                }
+            }
+            "%08x".format(crc.value)
+        }.getOrDefault("?")
+    }
+
+    /** True when the picked file carries the canonical BIOS name already. */
+    private fun isExplicitBiosName(name: String?): Boolean {
+        val fileName = name?.lowercase()?.trim()?.substringAfterLast('/')?.substringAfterLast('\\')
+            ?: return false
+        return fileName in bootFileNames || fileName in flashFileNames
+    }
+
+    /** True for the Dreamcast boot/flash ROMs (the two size-guessed targets). */
+    private fun isConsoleRomName(name: String): Boolean =
+        name in bootFileNames || name in flashFileNames
 
     /** True when at least one Naomi, Naomi 2 or Atomiswave BIOS set is installed. */
     fun hasArcadeBios(systemDir: String): Boolean = arcadeBiosNames.any { name ->
@@ -175,10 +234,23 @@ object DreamcastBios {
             ?: return null
         val directory = directory(systemDir).apply { mkdirs() }
         val target = File(directory, targetName)
+        // A console ROM recognized only by its size must not replace a BIOS the
+        // user already installed under the canonical name.
+        if (isConsoleRomName(targetName) && !isExplicitBiosName(displayName) && target.isFile) return null
         return runCatching {
             context.contentResolver.openInputStream(uri)?.use { input ->
                 target.outputStream().use { output -> input.copyTo(output) }
             } ?: return null
+            if (targetName in bootFileNames && looksLikeArcadeBootRom(target)) {
+                // Naomi and Atomiswave boot ROMs are also 2 MiB, so a size-only
+                // guess can install arcade firmware as the Dreamcast BIOS.
+                target.delete()
+                CrashLogger.logError(
+                    TAG,
+                    "Ignoring $displayName: Naomi/Atomiswave firmware, not a Dreamcast boot ROM"
+                )
+                return null
+            }
             target.takeIf { it.isFile && it.length() == size }
         }.getOrNull()
     }
@@ -214,8 +286,20 @@ object DreamcastBios {
             }
             val size = runCatching { child.length() }.getOrDefault(-1L)
             val targetName = supportedBiosTargetName(displayName, size) ?: continue
+            val target = File(targetDir, targetName)
+            // A console ROM recognized only by its size must not replace a BIOS
+            // the user already installed under the canonical name.
+            if (isConsoleRomName(targetName) && !isExplicitBiosName(displayName) && target.isFile) continue
             val expectedSize = expectedBiosSize(targetName)
-            if (copyToFile(context, child.uri, File(targetDir, targetName), size, expectedSize)) {
+            if (copyToFile(context, child.uri, target, size, expectedSize)) {
+                if (targetName in bootFileNames && looksLikeArcadeBootRom(target)) {
+                    target.delete()
+                    CrashLogger.logError(
+                        TAG,
+                        "Ignoring $displayName: Naomi/Atomiswave firmware, not a Dreamcast boot ROM"
+                    )
+                    continue
+                }
                 installed = true
             }
         }

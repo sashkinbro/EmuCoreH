@@ -485,7 +485,14 @@ internal object CoreRuntime {
         }
         // A Dreamcast BIOS dump is optional: when none is installed the core
         // boots through its HLE BIOS so games still start.
-        val bootRom = DreamcastBios.findBootRom(systemDirectory)
+        val installedBootRom = DreamcastBios.findBootRom(systemDirectory)
+        // Naomi and Atomiswave boot ROMs are 2 MiB as well, so a size-only
+        // import can leave arcade firmware in dc_boot.bin. Booting that as the
+        // Dreamcast BIOS fails with an arcade error screen, so treat it as
+        // absent and stay on HLE.
+        val arcadeFirmware = installedBootRom != null &&
+            DreamcastBios.looksLikeArcadeBootRom(installedBootRom)
+        val bootRom = installedBootRom?.takeUnless { arcadeFirmware }
         if (bootRom == null) {
             bridge.nativeSetOption(FlycastCoreOptions.HLE_BIOS_KEY, "enabled")
         }
@@ -497,10 +504,14 @@ internal object CoreRuntime {
             } else {
                 coreOptionValue(FlycastCoreOptions.HLE_BIOS_KEY) ?: "disabled"
             }
+            val bootName = installedBootRom?.name ?: "none"
+            val bootCrc = DreamcastBios.bootRomFingerprint(installedBootRom)
+            val note = if (arcadeFirmware) " note=arcade-firmware" else ""
             CrashLogger.logStep(
                 "Bios",
-                "dreamcast boot=${bootRom?.name ?: "none"} " +
-                    "flash=${DreamcastBios.findFlashRom(systemDirectory)?.name ?: "none"} hle=$hleMode"
+                "dreamcast boot=$bootName(crc=$bootCrc) " +
+                    "flash=${DreamcastBios.findFlashRom(systemDirectory)?.name ?: "none"} " +
+                    "hle=$hleMode$note"
             )
         }
         // Internal resolution is owned by the app's per-game upscale setting, so
