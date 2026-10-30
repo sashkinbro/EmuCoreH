@@ -144,7 +144,7 @@ All BIOS files are imported through one **BIOS Folder** card in onboarding or Se
 
 Sega CD dumps with descriptive filenames are recognized by their console boot header and region, including word-swapped dumps. Previously selected folders are migrated in the background once; normal startup shows the cached library without waiting for recursive BIOS scans. Sega CD discs are identified through the authorized SAF descriptor on devices that block direct filesystem access.
 
-- Dreamcast: `dc_boot.bin` (2 MiB) or `dc_bios.bin`, plus `dc_flash.bin` (128 KiB)
+- Dreamcast: `dc_boot.bin` (2 MiB) or `dc_bios.bin`, plus the 128 KiB flash ROM (`dc_nvmem.bin`; the standalone `dc_flash.bin` name is accepted on import)
 - Arcade: `naomi.zip`, `naomi2.zip`, `awbios.zip`, and other supported MAME BIOS sets
 - Sega CD: `bios_CD_U.bin`, `bios_CD_E.bin`, or `bios_CD_J.bin` (128 KiB, regional aliases accepted)
 - Sega 32X: `32X_G_BIOS.bin` (256 bytes), `32X_M_BIOS.bin` (2048 bytes), and `32X_S_BIOS.bin` (1024 bytes)

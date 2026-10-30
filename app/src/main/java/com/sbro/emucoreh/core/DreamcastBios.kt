@@ -10,9 +10,10 @@ import java.io.File
 
 /**
  * Dreamcast and arcade BIOS files. Flycast reads them from `<system>/dc/`:
- * `dc_boot.bin` (2 MiB) or `dc_bios.bin`, plus the 128 KiB `dc_flash.bin`.
- * Arcade titles load their BIOS from the MAME sets (`naomi.zip`,
- * `naomi2.zip`, `awbios.zip` and the game-specific sets).
+ * `dc_boot.bin` (2 MiB) or `dc_bios.bin`, plus the 128 KiB flash ROM, which the
+ * core names `dc_nvmem.bin` (`dc_flash.bin` is the standalone Flycast name and
+ * stays accepted on import). Arcade titles load their BIOS from the MAME sets
+ * (`naomi.zip`, `naomi2.zip`, `awbios.zip` and the game-specific sets).
  * Games boot without a console dump through the core's HLE BIOS, which the
  * frontend enables automatically when no dump is installed.
  */
@@ -20,7 +21,14 @@ object DreamcastBios {
     const val BOOT_ROM_SIZE = 2L * 1024L * 1024L
     const val FLASH_ROM_SIZE = 128L * 1024L
     val bootFileNames = listOf("dc_boot.bin", "dc_bios.bin")
-    const val FLASH_FILE_NAME = "dc_flash.bin"
+
+    /**
+     * Name the libretro core uses for the flash ROM (`dc_` prefix + `nvmem.bin`
+     * in its own lookup) and the standalone name still accepted on import.
+     */
+    const val FLASH_FILE_NAME = "dc_nvmem.bin"
+    const val LEGACY_FLASH_FILE_NAME = "dc_flash.bin"
+    val flashFileNames = listOf(FLASH_FILE_NAME, LEGACY_FLASH_FILE_NAME)
 
     /** MAME BIOS set names the core loads for Naomi, Naomi 2 and Atomiswave. */
     val arcadeBiosNames = setOf(
@@ -98,8 +106,26 @@ object DreamcastBios {
         .map { File(directory(systemDir), it) }
         .firstOrNull { it.isFile && it.length() == BOOT_ROM_SIZE }
 
-    fun findFlashRom(systemDir: String): File? =
-        File(directory(systemDir), FLASH_FILE_NAME).takeIf { it.isFile && it.length() == FLASH_ROM_SIZE }
+    fun findFlashRom(systemDir: String): File? = flashFileNames
+        .map { File(directory(systemDir), it) }
+        .firstOrNull { it.isFile && it.length() == FLASH_ROM_SIZE }
+
+    /**
+     * The core reads and writes the flash ROM as `dc_nvmem.bin`. Dumps and older
+     * installs use the standalone name `dc_flash.bin`, so a legacy file is
+     * copied once under the name the core actually opens.
+     */
+    fun migrateLegacyFlash(systemDir: String): Boolean {
+        val dir = directory(systemDir)
+        val canonical = File(dir, FLASH_FILE_NAME)
+        if (canonical.isFile) return false
+        val legacy = File(dir, LEGACY_FLASH_FILE_NAME)
+        if (!legacy.isFile || legacy.length() != FLASH_ROM_SIZE) return false
+        return runCatching {
+            legacy.copyTo(canonical, overwrite = false)
+            canonical.isFile
+        }.getOrDefault(false)
+    }
 
     fun hasBootRom(systemDir: String): Boolean = findBootRom(systemDir) != null
 
@@ -198,7 +224,7 @@ object DreamcastBios {
 
     private fun expectedBiosSize(targetName: String): Long? = when (targetName) {
         in bootFileNames -> BOOT_ROM_SIZE
-        FLASH_FILE_NAME -> FLASH_ROM_SIZE
+        in flashFileNames -> FLASH_ROM_SIZE
         else -> null
     }
 
@@ -246,8 +272,9 @@ object DreamcastBios {
         return when {
             fileName in bootFileNames ->
                 fileName.takeIf { size == BOOT_ROM_SIZE || unknownSize }
-            fileName == FLASH_FILE_NAME ->
-                fileName.takeIf { size == FLASH_ROM_SIZE || unknownSize }
+            // Both flash names land under the name the libretro core opens.
+            fileName in flashFileNames ->
+                FLASH_FILE_NAME.takeIf { size == FLASH_ROM_SIZE || unknownSize }
             extension in arcadeArchiveExtensions &&
                 fileName.substringBeforeLast('.') in arcadeBiosNames -> fileName
             // Dumps carry every kind of file name, so anything with the exact

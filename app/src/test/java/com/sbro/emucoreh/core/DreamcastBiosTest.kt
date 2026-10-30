@@ -14,12 +14,18 @@ class DreamcastBiosTest {
             "dc_bios.bin",
             DreamcastBios.supportedBiosTargetName("dc_bios.bin", DreamcastBios.BOOT_ROM_SIZE)
         )
+        // The core opens the flash as dc_nvmem.bin; the standalone name is
+        // accepted on import and stored under the name the core reads.
         assertEquals(
-            "dc_flash.bin",
+            "dc_nvmem.bin",
             DreamcastBios.supportedBiosTargetName("dc_flash.bin", DreamcastBios.FLASH_ROM_SIZE)
         )
+        assertEquals(
+            "dc_nvmem.bin",
+            DreamcastBios.supportedBiosTargetName("dc_nvmem.bin", DreamcastBios.FLASH_ROM_SIZE)
+        )
         assertEquals("dc_boot.bin", DreamcastBios.supportedBiosTargetName("dc_boot.bin", -1L))
-        assertEquals("dc_flash.bin", DreamcastBios.supportedBiosTargetName("dc_flash.bin", 0L))
+        assertEquals("dc_nvmem.bin", DreamcastBios.supportedBiosTargetName("dc_flash.bin", 0L))
     }
 
     @Test fun acceptsDescriptiveDumpNamesBySize() {
@@ -31,7 +37,7 @@ class DreamcastBiosTest {
             )
         )
         assertEquals(
-            "dc_flash.bin",
+            "dc_nvmem.bin",
             DreamcastBios.supportedBiosTargetName("vmu flash dump.bin", DreamcastBios.FLASH_ROM_SIZE)
         )
         assertEquals(
@@ -43,6 +49,7 @@ class DreamcastBiosTest {
     @Test fun rejectsBiosNamedFilesWithUnexpectedSizes() {
         assertNull(DreamcastBios.supportedBiosTargetName("dc_boot.bin", 1024L))
         assertNull(DreamcastBios.supportedBiosTargetName("dc_flash.bin", DreamcastBios.BOOT_ROM_SIZE))
+        assertNull(DreamcastBios.supportedBiosTargetName("dc_nvmem.bin", DreamcastBios.BOOT_ROM_SIZE))
     }
 
     @Test fun acceptsArcadeBiosSetsRegardlessOfCaseAndSize() {

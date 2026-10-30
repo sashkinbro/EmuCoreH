@@ -295,6 +295,11 @@ internal object CoreRuntime {
         platform = detectedPlatform
         val root = File(app.filesDir, when (platform.coreId) { 1 -> "jgenesis"; 2 -> "supermodel"; 3 -> "saturn"; else -> "flycast" })
         systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath
+        if (platform == EmulationPlatform.DREAMCAST) {
+            // The core opens the flash ROM as dc_nvmem.bin; adopt a legacy
+            // dc_flash.bin once so an imported flash is actually used.
+            DreamcastBios.migrateLegacyFlash(systemDirectory)
+        }
         if (platform.isModel3) {
             val definitions = File(systemDirectory, "supermodel/Games.xml")
             definitions.parentFile?.mkdirs()
@@ -480,8 +485,23 @@ internal object CoreRuntime {
         }
         // A Dreamcast BIOS dump is optional: when none is installed the core
         // boots through its HLE BIOS so games still start.
-        if (!DreamcastBios.hasBootRom(systemDirectory)) {
-            bridge.nativeSetOption("reicast_hle_bios", "enabled")
+        val bootRom = DreamcastBios.findBootRom(systemDirectory)
+        if (bootRom == null) {
+            bridge.nativeSetOption(FlycastCoreOptions.HLE_BIOS_KEY, "enabled")
+        }
+        if (platform == EmulationPlatform.DREAMCAST) {
+            // Record the BIOS mode a launch actually used: "real BIOS crashes"
+            // reports cannot be classified from a tester's log without it.
+            val hleMode = if (bootRom == null) {
+                "forced"
+            } else {
+                coreOptionValue(FlycastCoreOptions.HLE_BIOS_KEY) ?: "disabled"
+            }
+            CrashLogger.logStep(
+                "Bios",
+                "dreamcast boot=${bootRom?.name ?: "none"} " +
+                    "flash=${DreamcastBios.findFlashRom(systemDirectory)?.name ?: "none"} hle=$hleMode"
+            )
         }
         // Internal resolution is owned by the app's per-game upscale setting, so
         // re-assert it after the persisted store so a stale entry cannot shadow it.
