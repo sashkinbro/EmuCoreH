@@ -68,7 +68,9 @@ public:
         dec(value);
     }
 
+    const char* data() const { return begin_; }
     size_t size() const { return static_cast<size_t>(cursor_ - begin_); }
+    void reset() { cursor_ = begin_; }
 
 private:
     char* begin_;
@@ -150,6 +152,29 @@ _Unwind_Reason_Code UnwindCallback(struct _Unwind_Context* context, void* argume
     return _URC_NO_REASON;
 }
 
+/**
+ * Writes everything the report has buffered so far and clears it.
+ *
+ * The report is flushed line by line instead of in one final write: the
+ * unwinder and dladdr() are not async-signal-safe (dladdr() takes the dynamic
+ * linker lock, which the crashing thread may already hold), so a crash inside
+ * them must not be able to erase the signal, fault address and thread that
+ * already explain the death.
+ */
+void FlushReport(Out& out) {
+    const int fd = g_log_fd.load(std::memory_order_relaxed);
+    if (fd < 0) return;
+    const size_t length = out.size();
+    const char* data = out.data();
+    size_t written = 0;
+    while (written < length) {
+        const ssize_t result = write(fd, data + written, length - written);
+        if (result <= 0) break;
+        written += static_cast<size_t>(result);
+    }
+    out.reset();
+}
+
 // Hands the signal back to whatever was installed before us (on Android that
 // is usually the runtime's handler that triggers debuggerd) or restores the
 // default disposition so the kernel kills the process like any fatal signal.
@@ -196,9 +221,6 @@ void CrashHandler(int signal_number, siginfo_t* info, void* context) {
     prctl(PR_GET_NAME, thread_name);
     const long tid = syscall(SYS_gettid);
 
-    UnwindState state{g_frames, 0, kMaxFrames};
-    _Unwind_Backtrace(UnwindCallback, &state);
-
     const bool has_fault_address = signal_number == SIGSEGV || signal_number == SIGBUS ||
                                    signal_number == SIGILL || signal_number == SIGFPE ||
                                    signal_number == SIGTRAP;
@@ -224,6 +246,15 @@ void CrashHandler(int signal_number, siginfo_t* info, void* context) {
     out.str(" tid=");
     out.dec(tid);
     out.ch('\n');
+
+    // The signal, fault address and thread above already explain the death, so
+    // they are flushed before anything that can itself fail in a signal
+    // handler: the unwinder is not async-signal-safe, and dladdr() takes the
+    // dynamic linker lock the crashing thread may still hold.
+    FlushReport(out);
+
+    UnwindState state{g_frames, 0, kMaxFrames};
+    _Unwind_Backtrace(UnwindCallback, &state);
 
     for (int i = 0; i < state.count; ++i) {
         AppendLineStart(out);
@@ -254,19 +285,13 @@ void CrashHandler(int signal_number, siginfo_t* info, void* context) {
             }
         }
         out.ch('\n');
+        FlushReport(out);
     }
 
     AppendLineStart(out);
     out.str("========== END OF CRASH ==========");
     out.ch('\n');
-
-    const size_t length = out.size();
-    size_t written = 0;
-    while (written < length) {
-        const ssize_t result = write(fd, g_report + written, length - written);
-        if (result <= 0) break;
-        written += static_cast<size_t>(result);
-    }
+    FlushReport(out);
 
     ChainToPrevious(signal_number, info, context);
 }
@@ -284,14 +309,7 @@ void LogNativeError(const char* message) {
     out.str("] ERROR: [Native] ");
     out.str(message);
     out.ch('\n');
-
-    const size_t length = out.size();
-    size_t written = 0;
-    while (written < length) {
-        const ssize_t result = write(fd, buffer + written, length - written);
-        if (result <= 0) break;
-        written += static_cast<size_t>(result);
-    }
+    FlushReport(out);
 }
 
 void InstallCrashReporter(const char* log_path) {

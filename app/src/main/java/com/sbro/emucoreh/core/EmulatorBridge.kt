@@ -889,7 +889,11 @@ object EmulatorBridge {
     suspend fun setRenderer(gpuType: Int): Boolean {
         val resolvedRenderer = normalizeRenderer(gpuType)
         val cacheKey = "EmuCoreH/Runtime:Renderer"
-        val rendererChanged = settingsCache[cacheKey] != resolvedRenderer.toString()
+        // The runtime has to know what the session presents on now: the option
+        // below overwrites the requested renderer, so a failed live switch can
+        // only fall back to the value captured here.
+        val previousRenderer = settingsCache[cacheKey]?.toIntOrNull() ?: CoreRuntime.currentRenderer()
+        val rendererChanged = previousRenderer != resolvedRenderer
         NativeApp.logCrashBreadcrumb(
             "renderer change requested renderer=${rendererName(resolvedRenderer)}($resolvedRenderer) vmActive=$isVmActive"
         )
@@ -906,7 +910,17 @@ object EmulatorBridge {
             val restarted = runSerial { NativeApp.restartRenderer(resolvedRenderer) }
             isVmActive = NativeApp.hasOwnedVm()
             if (!restarted) {
+                // CoreRuntime already rebooted on the surviving backend (or
+                // reported the failure); keep every renderer copy on it so the
+                // UI and the next launch agree with what is actually running.
+                val keptRenderer = CoreRuntime.runningRenderer()
+                settingsCache[cacheKey] = keptRenderer.toString()
+                performRuntimeOps(rendererExecutionOps(keptRenderer))
                 if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Renderer restart failed for ${rendererName(resolvedRenderer)}")
+                CrashLogger.logError(
+                    TAG,
+                    "Renderer switch to ${rendererName(resolvedRenderer)} failed; kept ${rendererName(keptRenderer)}"
+                )
                 return false
             }
         }

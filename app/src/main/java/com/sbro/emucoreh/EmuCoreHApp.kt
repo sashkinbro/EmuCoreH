@@ -28,6 +28,7 @@ class EmuCoreHApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        val startupStartedNanos = SystemClock.elapsedRealtimeNanos()
         // The Discord SDK helper must not initialize the emulator-side application graph.
         val processName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             getProcessName()
@@ -55,6 +56,13 @@ class EmuCoreHApp : Application() {
         startupStep("pending_backup") { DriveBackupWork.resumePending(this) }
         startupStep("emulator_bridge") { EmulatorBridge.initializeOnce(this) }
         startupStep("discord") { DiscordIntegration.initialize(this) }
+        // One line per launch, in release builds too: without it, a process that
+        // dies before the first screen leaves nothing but the APP START banner,
+        // and there is no way to tell how far startup got or how long it took.
+        CrashLogger.logStep(
+            "Startup",
+            "application ready elapsedMs=${(SystemClock.elapsedRealtimeNanos() - startupStartedNanos) / 1_000_000}"
+        )
     }
 
     private inline fun startupStep(name: String, block: () -> Unit) {

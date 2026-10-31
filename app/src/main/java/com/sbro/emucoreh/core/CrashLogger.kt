@@ -27,6 +27,7 @@ object CrashLogger {
     private const val TAG = "CrashLogger"
     private const val LOG_DIR = "logs"
     private const val LOG_FILE = "crash.log"
+    private const val LOG_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss"
     private const val MAX_LOG_SIZE_BYTES = 5 * 1024 * 1024L  // 5 MB
     private const val KEEP_BYTES_AFTER_ROTATION = 4 * 1024 * 1024  // keep last 4 MB
 
@@ -47,7 +48,15 @@ object CrashLogger {
     @Volatile
     private var sessionBanner: String = ""
 
-    private val dateFmt by lazy { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US) }
+    // Entries are written from the main thread, the emulation worker and IO
+    // coroutines; a shared SimpleDateFormat is not thread-safe and a corrupted
+    // formatter would drop the very CRASH entry a report depends on.
+    private val dateFmt = object : ThreadLocal<SimpleDateFormat>() {
+        override fun initialValue() = SimpleDateFormat(LOG_TIME_PATTERN, Locale.US)
+    }
+
+    private fun timestamp(millis: Long = System.currentTimeMillis()): String =
+        (dateFmt.get() ?: SimpleDateFormat(LOG_TIME_PATTERN, Locale.US)).format(Date(millis))
 
     private val entries = CrashLogWriter(com.sbro.emucoreh.BuildConfig.DEBUG, ::writeEntry)
 
@@ -242,7 +251,7 @@ object CrashLogger {
         val body = StringBuilder("Previous run terminated abnormally\n")
         body.append("reason = ${exitReasonName(info.reason)} (${info.reason})\n")
         body.append("pid = ${info.pid} | process = ${info.processName} | importance = ${info.importance}\n")
-        body.append("time = ${dateFmt.format(Date(info.timestamp))}\n")
+        body.append("time = ${timestamp(info.timestamp)}\n")
         info.description?.takeIf { it.isNotBlank() }?.let { body.append("description = $it\n") }
         val trace = readExitTrace(info)
         if (trace.isNotEmpty()) {
@@ -311,10 +320,13 @@ object CrashLogger {
     private fun writeEntry(level: String, body: String) {
         if (level == "ERROR") Log.println(Log.ERROR, TAG, body)
         val file = logFile ?: return
-        val timestamp = dateFmt.format(Date())
-        val line = "[$timestamp] $level: $body\n"
 
         try {
+            // Formatting happens inside the guard: entries are written from the
+            // main thread, the emulation worker and IO coroutines, and a
+            // formatter failure here must never be able to take down a caller
+            // (least of all the uncaught-exception handler writing CRASH).
+            val line = "[${timestamp()}] $level: $body\n"
             rotateIfNeeded(file)
             FileWriter(file, /* append = */ true).use { it.write(line) }
         } catch (e: Exception) {
@@ -333,7 +345,7 @@ object CrashLogger {
             while (safeStart < content.size && content[safeStart] != '\n'.code.toByte()) safeStart++
             safeStart++ // skip the newline itself
 
-            val rotationHeader = "=== LOG ROTATED at ${dateFmt.format(Date())} (old entries trimmed) ===\n"
+            val rotationHeader = "=== LOG ROTATED at ${timestamp()} (old entries trimmed) ===\n"
             file.writeBytes(rotationHeader.toByteArray() + content.copyOfRange(safeStart.coerceAtMost(content.size), content.size))
         } catch (e: Exception) {
             Log.e(TAG, "Failed to rotate log", e)

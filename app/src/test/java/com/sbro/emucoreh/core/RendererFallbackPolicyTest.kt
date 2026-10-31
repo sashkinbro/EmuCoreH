@@ -65,4 +65,26 @@ class RendererFallbackPolicyTest {
         assertEquals(RendererDefaults.CORE_OPENGL, RendererDefaults.toCoreRenderer(target!!))
         assertEquals(RendererDefaults.OPENGL, RendererDefaults.normalizeAndroidRenderer(target))
     }
+
+    /**
+     * A live switch reboots on the renderer the running session presents on,
+     * so that mapping has to survive the round trip for every backend.
+     */
+    @Test
+    fun `core renderer maps back to the android renderer in use`() {
+        assertEquals(RendererDefaults.VULKAN, RendererDefaults.androidRendererForCore(RendererDefaults.CORE_VULKAN))
+        assertEquals(RendererDefaults.OPENGL, RendererDefaults.androidRendererForCore(RendererDefaults.CORE_OPENGL))
+        assertEquals(
+            RendererDefaults.SOFTWARE,
+            RendererDefaults.androidRendererForCore(RendererDefaults.CORE_SOFTWARE)
+        )
+        RendererDefaults.OPENGL.let { android ->
+            val core = RendererDefaults.toCoreRenderer(android)
+            assertEquals(android, RendererDefaults.androidRendererForCore(core))
+        }
+        RendererDefaults.VULKAN.let { android ->
+            val core = RendererDefaults.toCoreRenderer(android)
+            assertEquals(android, RendererDefaults.androidRendererForCore(core))
+        }
+    }
 }

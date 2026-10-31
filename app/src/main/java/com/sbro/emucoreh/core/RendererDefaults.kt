@@ -58,6 +58,18 @@ object RendererDefaults {
         else -> "Unknown($value)"
     }
 
+    /**
+     * Android value (12/13/14) of a core renderer. State that has to remember
+     * which backend a running session actually presents on — the renderer to
+     * fall back to when a live switch fails — uses this instead of the user
+     * preference, which already holds the renderer that failed.
+     */
+    fun androidRendererForCore(value: Int): Int = when (value) {
+        CORE_VULKAN -> VULKAN
+        CORE_OPENGL -> OPENGL
+        else -> SOFTWARE
+    }
+
     /** Name for a stored UI preference value (12/13/14) used in crash reports. */
     fun androidRendererName(value: Int): String = when (normalizeAndroidRenderer(value)) {
         SOFTWARE -> "Software"

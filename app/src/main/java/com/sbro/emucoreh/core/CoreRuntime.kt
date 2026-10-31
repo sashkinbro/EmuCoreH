@@ -175,6 +175,16 @@ internal object CoreRuntime {
     fun isRunning(): Boolean = running && failure.value == null && sessionLock.withLock { session != 0L }
     fun hasSession(): Boolean = sessionLock.withLock { session != 0L }
 
+    /** Renderer the runtime would boot the next session with. */
+    internal fun currentRenderer(): Int = requestedRenderer
+
+    /**
+     * Backend the last session that actually booted presents on. A live
+     * renderer switch reboots on this when the requested backend fails, because
+     * [requestedRenderer] has already been overwritten with the new choice.
+     */
+    internal fun runningRenderer(): Int = RendererDefaults.androidRendererForCore(activeCoreRenderer)
+
     /**
      * Consumes a pending renderer fallback request. The ViewModel owns the
      * relaunch: it persists the new renderer and reboots the session.
@@ -217,10 +227,16 @@ internal object CoreRuntime {
      * renderer change on boot, so the game is booted again on the new backend.
      * A savestate is captured first and restored on the new session when the
      * core accepts it, so the player normally continues where they left off.
+     *
+     * The caller has already forwarded the new renderer through
+     * [updateSetting], which overwrites [requestedRenderer], so the fallback
+     * target is taken from the backend the live session presents on. A failed
+     * switch therefore reboots on the renderer that was working instead of
+     * leaving the player with a torn-down session.
      */
     fun restartWithRenderer(renderer: Int): Boolean = lifecycleLock.withLock lock@{
         val normalized = RendererDefaults.normalizeAndroidRenderer(renderer)
-        val previousRenderer = requestedRenderer
+        val runningRenderer = RendererDefaults.androidRendererForCore(activeCoreRenderer)
         val gamePath = currentGamePath
         if (!isRunning() || gamePath.isNullOrBlank()) {
             requestedRenderer = normalized
@@ -238,13 +254,24 @@ internal object CoreRuntime {
         if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "Renderer restart renderer=" +
             RendererDefaults.coreRendererName(RendererDefaults.toCoreRenderer(normalized)) +
             " stateSaved=$stateSaved")
+        CrashLogger.logStep(
+            "Renderer",
+            "restart requested renderer=${RendererDefaults.androidRendererName(normalized)}($normalized) " +
+                "running=${RendererDefaults.androidRendererName(runningRenderer)}($runningRenderer)"
+        )
         shutdownSession()
         requestedRenderer = normalized
         var started = startSession(gamePath, biosOnly)
-        if (!started && normalized != previousRenderer) {
-            if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Renderer restart failed; reverting to " +
-                RendererDefaults.coreRendererName(RendererDefaults.toCoreRenderer(previousRenderer)))
-            requestedRenderer = previousRenderer
+        if (!started && runningRenderer != normalized) {
+            // Never leave a rejected switch as a dead session: reboot on the
+            // backend the player was already running and keep the option store
+            // in sync with it.
+            CrashLogger.logStep(
+                "Renderer",
+                "restart on ${RendererDefaults.androidRendererName(normalized)} failed; " +
+                    "reverting to ${RendererDefaults.androidRendererName(runningRenderer)}"
+            )
+            requestedRenderer = runningRenderer
             started = startSession(gamePath, biosOnly)
         }
         try {
@@ -262,6 +289,14 @@ internal object CoreRuntime {
             stateFile?.delete()
         }
         if (started && wasPaused) pause()
+        if (!started) {
+            // The teardown already happened, so the UI has to stop showing a
+            // frozen frame and explain the failure instead.
+            reportFailure(
+                "Renderer switch failed: unable to restart the session on " +
+                    "${RendererDefaults.androidRendererName(normalized)} or on the previous renderer"
+            )
+        }
         started
     }
 
@@ -326,20 +361,38 @@ internal object CoreRuntime {
         bridge.resetAudioQueue()
         var coreRenderer = candidates.first()
         var created = false
+        var lastFailure = SessionFailure.SESSION
         for (candidate in candidates) {
-            if (createSessionLocked(gamePath, biosOnly, candidate)) {
+            val failure = createSessionLocked(gamePath, biosOnly, candidate)
+            if (failure == SessionFailure.NONE) {
                 coreRenderer = candidate
                 created = true
                 break
             }
+            lastFailure = failure
+            // Name the backend and the step that failed: the summary below is
+            // all a tester's log used to show, which cannot be diagnosed.
+            CrashLogger.logError(
+                TAG,
+                "Unable to boot $platform on ${RendererDefaults.coreRendererName(candidate)}: ${failure.detail}"
+            )
             if (candidate != candidates.last()) {
                 if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "${RendererDefaults.coreRendererName(candidate)} renderer unavailable; " +
                     "falling back to ${RendererDefaults.coreRendererName(candidates.last())}")
             }
         }
         if (!created) {
-            CrashLogger.logError(TAG, "Unable to start $platform: all renderer candidates failed")
+            CrashLogger.logError(TAG, "Unable to start $platform: all renderer candidates failed (last: ${lastFailure.detail})")
             return false
+        }
+        if (coreRenderer != candidates.first()) {
+            // The launch line records the requested renderer, so a silent
+            // fallback would otherwise be invisible in the crash log.
+            CrashLogger.logStep(
+                "Core",
+                "session started platform=$platform renderer=${RendererDefaults.coreRendererName(coreRenderer)} " +
+                    "after ${RendererDefaults.coreRendererName(candidates.first())} failed"
+            )
         }
 
         // A freshly booted session may use its own renderer fallback budget.
@@ -392,8 +445,20 @@ internal object CoreRuntime {
         }
     }
 
+    /**
+     * Which step of a renderer candidate failed. Every failing candidate is
+     * logged with this, so a report tells us whether the backend, the
+     * presentation surface or the content load rejected the session.
+     */
+    private enum class SessionFailure(val detail: String) {
+        NONE(""),
+        SESSION("the core session could not be created"),
+        SURFACE("the presentation surface and renderer could not be initialised"),
+        CONTENT("the content could not be loaded")
+    }
+
     private fun createSessionLocked(gamePath: String, biosOnly: Boolean,
-                                    coreRenderer: Int): Boolean = sessionLock.withLock {
+                                    coreRenderer: Int): SessionFailure = sessionLock.withLock {
         // Publish core options before retro_init so the core's initial settings
         // load already sees them.
         if (platform.isSega) {
@@ -435,32 +500,32 @@ internal object CoreRuntime {
             if (platform.isSaturn) context?.let(SaturnContentPreparer::releasePreparedContent)
             else if (platform.isSega) context?.let(JGenesisContentPreparer::releasePreparedContent)
             if (platform.isModel3) context?.let(Model3ContentPreparer::releasePreparedContent)
-            return@withLock false
+            return@withLock SessionFailure.SESSION
         }
         // Attach the surface before loading content: SET_HW_RENDER fires inside
         // retro_load_game and needs a window to build the render context.
         if (bridge.setSurface(handle, surface, coreRenderer) != 0) {
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.e(TAG, "Failed to initialize ${RendererDefaults.coreRendererName(coreRenderer)} renderer")
             bridge.destroySession(handle)
-            return@withLock false
+            return@withLock SessionFailure.SURFACE
         }
         if (biosOnly) {
             // Boot the core with no content so the GPU/display are created
             // before the frame worker calls retro_run().
             if (bridge.loadBiosOnly(handle) != 0) {
                 bridge.destroySession(handle)
-                return@withLock false
+                return@withLock SessionFailure.CONTENT
             }
         } else if (loadDisc(handle, gamePath) != 0) {
             bridge.destroySession(handle)
             if (platform.isSaturn) context?.let(SaturnContentPreparer::releasePreparedContent)
             else if (platform.isSega) context?.let(JGenesisContentPreparer::releasePreparedContent)
             if (platform.isModel3) context?.let(Model3ContentPreparer::releasePreparedContent)
-            return@withLock false
+            return@withLock SessionFailure.CONTENT
         }
         session = handle
         activeCoreRenderer = coreRenderer
-        true
+        SessionFailure.NONE
     }
 
     private fun applyStartOptions(coreRenderer: Int) {
