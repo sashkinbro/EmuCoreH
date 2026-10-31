@@ -2404,4 +2404,10 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">照準モードでスマートフォンの動きに割り当てるアナログスティックを選びます。ゲーム内のカメラを操作するスティックを選んでください。</string>
     <string name="settings_help_arcade_device">このプレイヤーのエミュレートするコントローラーを選びます。自動ではライトガンモード中はライトガン、それ以外はゲームパッドを使います。</string>
     <string name="settings_help_light_gun_aim">ライトガンの照準方法を選びます。ジャイロ、アナログスティック、方向キー、タッチから選べます。</string>
+    <string name="game_picker_search_hint">ゲームを検索…</string>
+    <string name="game_picker_no_results">一致するゲームが見つかりません</string>
+    <string name="game_picker_tap_to_select">タップしてゲームを選択</string>
+    <string name="game_picker_change_game">ゲームを変更</string>
+    <string name="game_picker_all_filter">すべて</string>
+    <string name="game_picker_clear_search">検索をクリア</string>
 </resources>

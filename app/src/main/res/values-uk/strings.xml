@@ -931,6 +931,12 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_manager_category_hotkeys">Комбінації кнопок</string>
     <string name="cheat_manager_category_other">Інше</string>
     <string name="content_select_game_named">Вибрана гра: %1$s</string>
+    <string name="game_picker_search_hint">Пошук ігор…</string>
+    <string name="game_picker_no_results">Ігор не знайдено за вашим запитом</string>
+    <string name="game_picker_tap_to_select">Натисніть, щоб вибрати гру</string>
+    <string name="game_picker_change_game">Змінити гру</string>
+    <string name="game_picker_all_filter">Всі</string>
+    <string name="game_picker_clear_search">Очистити пошук</string>
     <string name="settings_theme_manager">Менеджер тем</string>
     <string name="settings_theme_manager_desc">Створіть і переглядайте повністю власну тему інтерфейсу</string>
     <string name="theme_manager_title">Менеджер тем</string>

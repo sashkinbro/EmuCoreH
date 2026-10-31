@@ -2419,4 +2419,10 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">Memilih stik analog yang dikendalikan gerakan ponsel dalam mode bidik. Pilih stik yang mengendalikan kamera game.</string>
     <string name="settings_help_arcade_device">Memilih pengontrol yang diemulasikan untuk pemain ini. Otomatis memakai pistol dalam mode light gun, selain itu memakai gamepad.</string>
     <string name="settings_help_light_gun_aim">Memilih cara membidik light gun: giroskop, stik analog, tombol arah, atau sentuhan.</string>
+    <string name="game_picker_search_hint">Cari game…</string>
+    <string name="game_picker_no_results">Tidak ada game yang cocok dengan pencarian Anda</string>
+    <string name="game_picker_tap_to_select">Ketuk untuk memilih game</string>
+    <string name="game_picker_change_game">Ganti game</string>
+    <string name="game_picker_all_filter">Semua</string>
+    <string name="game_picker_clear_search">Hapus pencarian</string>
 </resources>

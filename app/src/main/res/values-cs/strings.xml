@@ -2427,4 +2427,10 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">Vybere analogovou páčku ovládanou pohybem telefonu v režimu míření. Vyberte páčku, která ovládá kameru hry.</string>
     <string name="settings_help_arcade_device">Vybere emulovaný ovladač tohoto hráče. Automatický režim používá světelnou pistoli v režimu pistole, jinak gamepad.</string>
     <string name="settings_help_light_gun_aim">Vybere způsob míření světelnou pistolí: gyroskop, analogovou páčku, směrový kříž nebo dotyk.</string>
+    <string name="game_picker_search_hint">Hledat hry…</string>
+    <string name="game_picker_no_results">Hledání neodpovídají žádné hry</string>
+    <string name="game_picker_tap_to_select">Klepnutím vyberte hru</string>
+    <string name="game_picker_change_game">Změnit hru</string>
+    <string name="game_picker_all_filter">Vše</string>
+    <string name="game_picker_clear_search">Vymazat hledání</string>
 </resources>

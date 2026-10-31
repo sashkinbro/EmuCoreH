@@ -63,7 +63,7 @@ import com.sbro.emucoreh.data.GameItem
 import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.data.SelectedGameIdentity
 import com.sbro.emucoreh.ui.common.AppAlertDialog
-import com.sbro.emucoreh.ui.common.LibraryGamePicker
+import com.sbro.emucoreh.ui.common.ManagerGameSelector
 import com.sbro.emucoreh.ui.common.ScreenTopBar
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import com.sbro.emucoreh.ui.common.navigationBarsHorizontalPaddingValues
@@ -278,7 +278,7 @@ fun CheatManagerScreen(onBackClick: () -> Unit) {
                 }
             }
             item {
-                LibraryGamePicker(
+                ManagerGameSelector(
                     games = games,
                     selectedPath = selectedPath,
                     onSelected = { game ->

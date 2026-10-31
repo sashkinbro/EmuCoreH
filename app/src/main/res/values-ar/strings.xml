@@ -2413,4 +2413,10 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">يحدد العصا التناظرية التي تتحكم بها حركة الهاتف في وضع التصويب. اختر العصا التي تتحكم بكاميرا اللعبة.</string>
     <string name="settings_help_arcade_device">يحدد وحدة التحكم المحاكاة لهذا اللاعب. يستخدم الوضع التلقائي المسدس عند تفعيل وضع المسدس الضوئي، وإلا فيستخدم يد التحكم.</string>
     <string name="settings_help_light_gun_aim">يحدد طريقة تصويب المسدس الضوئي: الجيروسكوب أو العصا التناظرية أو أزرار الاتجاهات أو اللمس.</string>
+    <string name="game_picker_search_hint">بحث عن ألعاب…</string>
+    <string name="game_picker_no_results">لا توجد ألعاب تطابق بحثك</string>
+    <string name="game_picker_tap_to_select">انقر لاختيار لعبة</string>
+    <string name="game_picker_change_game">تغيير اللعبة</string>
+    <string name="game_picker_all_filter">الكل</string>
+    <string name="game_picker_clear_search">مسح البحث</string>
 </resources>

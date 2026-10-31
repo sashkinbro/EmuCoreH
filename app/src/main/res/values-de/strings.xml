@@ -2407,4 +2407,10 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">Wählt den Analogstick, der im Zielmodus durch Telefonbewegungen gesteuert wird. Wähle den Stick für die Spielkamera.</string>
     <string name="settings_help_arcade_device">Wählt den emulierten Controller für diesen Spieler. Automatisch verwendet im Lightgun-Modus die Lichtpistole, sonst ein Gamepad.</string>
     <string name="settings_help_light_gun_aim">Wählt die Zielsteuerung der Lichtpistole: Gyroskop, Analogstick, Steuerkreuz oder Berührung.</string>
+    <string name="game_picker_search_hint">Spiele suchen…</string>
+    <string name="game_picker_no_results">Keine Spiele gefunden, die Ihrer Suche entsprechen</string>
+    <string name="game_picker_tap_to_select">Tippen, um ein Spiel auszuwählen</string>
+    <string name="game_picker_change_game">Spiel ändern</string>
+    <string name="game_picker_all_filter">Alle</string>
+    <string name="game_picker_clear_search">Suche löschen</string>
 </resources>

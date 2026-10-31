@@ -2405,4 +2405,10 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">Nişan alma modunda telefon hareketleriyle kontrol edilen analog çubuğu seçer. Oyunda kamerayı kontrol eden çubuğu seçin.</string>
     <string name="settings_help_arcade_device">Bu oyuncunun emüle edilen denetleyicisini seçer. Otomatik, ışık tabancası modunda tabanca, diğer durumlarda oyun kolu kullanır.</string>
     <string name="settings_help_light_gun_aim">Işık tabancasıyla nişan alma yöntemini seçer: jiroskop, analog çubuk, yön tuşları veya dokunma.</string>
+    <string name="game_picker_search_hint">Oyun ara…</string>
+    <string name="game_picker_no_results">Aramanızla eşleşen oyun bulunamadı</string>
+    <string name="game_picker_tap_to_select">Oyun seçmek için dokunun</string>
+    <string name="game_picker_change_game">Oyunu değiştir</string>
+    <string name="game_picker_all_filter">Tümü</string>
+    <string name="game_picker_clear_search">Aramayı temizle</string>
 </resources>

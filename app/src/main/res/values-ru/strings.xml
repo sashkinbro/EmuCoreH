@@ -2409,4 +2409,10 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">Выбирает аналоговый стик, управляемый движением телефона в режиме прицеливания. Выберите стик, который управляет камерой в игре.</string>
     <string name="settings_help_arcade_device">Выбирает контроллер игрока. Автоматический режим использует пистолет в режиме светового пистолета, иначе — геймпад.</string>
     <string name="settings_help_light_gun_aim">Выбирает способ наведения светового пистолета: гироскоп, аналоговый стик, крестовину или касание.</string>
+    <string name="game_picker_search_hint">Поиск игр…</string>
+    <string name="game_picker_no_results">Игр не найдено по вашему запросу</string>
+    <string name="game_picker_tap_to_select">Нажмите, чтобы выбрать игру</string>
+    <string name="game_picker_change_game">Сменить игру</string>
+    <string name="game_picker_all_filter">Все</string>
+    <string name="game_picker_clear_search">Очистить поиск</string>
 </resources>

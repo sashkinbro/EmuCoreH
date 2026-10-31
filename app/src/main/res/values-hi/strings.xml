@@ -2405,4 +2405,10 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">लक्ष्य मोड में फ़ोन की गति से नियंत्रित होने वाली एनालॉग स्टिक चुनता है। गेम के कैमरे को नियंत्रित करने वाली स्टिक चुनें।</string>
     <string name="settings_help_arcade_device">इस खिलाड़ी का एमुलेटेड कंट्रोलर चुनता है। स्वचालित विकल्प लाइट गन मोड में गन और अन्यथा गेमपैड उपयोग करता है।</string>
     <string name="settings_help_light_gun_aim">लाइट गन से निशाना लगाने का तरीका चुनता है: जाइरोस्कोप, एनालॉग स्टिक, दिशात्मक बटन या स्पर्श।</string>
+    <string name="game_picker_search_hint">गेम खोजें…</string>
+    <string name="game_picker_no_results">आपकी खोज से कोई गेम मेल नहीं खाता</string>
+    <string name="game_picker_tap_to_select">गेम चुनने के लिए टैप करें</string>
+    <string name="game_picker_change_game">गेम बदलें</string>
+    <string name="game_picker_all_filter">सभी</string>
+    <string name="game_picker_clear_search">खोज साफ़ करें</string>
 </resources>

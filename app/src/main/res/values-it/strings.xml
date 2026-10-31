@@ -2405,4 +2405,10 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">Sceglie la levetta analogica controllata dal movimento del telefono in modalità mira. Scegli quella che controlla la telecamera del gioco.</string>
     <string name="settings_help_arcade_device">Sceglie il controller emulato per questo giocatore. Automatico usa la pistola in modalità pistola ottica, altrimenti un gamepad.</string>
     <string name="settings_help_light_gun_aim">Sceglie come mirare con la pistola ottica: giroscopio, levetta analogica, croce direzionale o tocco.</string>
+    <string name="game_picker_search_hint">Cerca giochi…</string>
+    <string name="game_picker_no_results">Nessun gioco corrisponde alla ricerca</string>
+    <string name="game_picker_tap_to_select">Tocca per selezionare un gioco</string>
+    <string name="game_picker_change_game">Cambia gioco</string>
+    <string name="game_picker_all_filter">Tutti</string>
+    <string name="game_picker_clear_search">Cancella ricerca</string>
 </resources>

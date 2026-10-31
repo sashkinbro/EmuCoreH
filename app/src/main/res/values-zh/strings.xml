@@ -2406,4 +2406,10 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">选择瞄准模式下由手机动作控制的模拟摇杆。请选择游戏中控制视角的摇杆。</string>
     <string name="settings_help_arcade_device">选择此玩家模拟的控制器。自动模式在光枪模式下使用光枪，否则使用手柄。</string>
     <string name="settings_help_light_gun_aim">选择光枪瞄准方式：陀螺仪、模拟摇杆、方向键或触摸。</string>
+    <string name="game_picker_search_hint">搜索游戏…</string>
+    <string name="game_picker_no_results">未找到匹配的游戏</string>
+    <string name="game_picker_tap_to_select">点击选择游戏</string>
+    <string name="game_picker_change_game">更换游戏</string>
+    <string name="game_picker_all_filter">全部</string>
+    <string name="game_picker_clear_search">清除搜索</string>
 </resources>

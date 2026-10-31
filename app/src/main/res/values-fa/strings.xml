@@ -2420,4 +2420,10 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">اهرم آنالوگی را انتخاب می‌کند که در حالت نشانه‌گیری با حرکت تلفن کنترل می‌شود. اهرم کنترل دوربین بازی را انتخاب کنید.</string>
     <string name="settings_help_arcade_device">کنترلر شبیه‌سازی‌شده این بازیکن را انتخاب می‌کند. حالت خودکار در حالت تفنگ نوری از تفنگ و در غیر این صورت از دسته استفاده می‌کند.</string>
     <string name="settings_help_light_gun_aim">روش نشانه‌گیری تفنگ نوری را انتخاب می‌کند: ژیروسکوپ، اهرم آنالوگ، کلیدهای جهت یا لمس.</string>
+    <string name="game_picker_search_hint">جستجوی بازی…</string>
+    <string name="game_picker_no_results">هیچ بازی با جستجوی شما مطابقت ندارد</string>
+    <string name="game_picker_tap_to_select">برای انتخاب بازی ضربه بزنید</string>
+    <string name="game_picker_change_game">تغییر بازی</string>
+    <string name="game_picker_all_filter">همه</string>
+    <string name="game_picker_clear_search">پاک کردن جستجو</string>
 </resources>

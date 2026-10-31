@@ -961,6 +961,12 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_manager_category_hotkeys">Button combinations</string>
     <string name="cheat_manager_category_other">Other</string>
     <string name="content_select_game_named">Selected game: %1$s</string>
+    <string name="game_picker_search_hint">Search games…</string>
+    <string name="game_picker_no_results">No games match your search</string>
+    <string name="game_picker_tap_to_select">Tap to select a game</string>
+    <string name="game_picker_change_game">Change game</string>
+    <string name="game_picker_all_filter">All</string>
+    <string name="game_picker_clear_search">Clear search</string>
     <string name="settings_theme_manager">Theme Manager</string>
     <string name="settings_theme_manager_desc">Build and preview a complete custom interface theme</string>
 

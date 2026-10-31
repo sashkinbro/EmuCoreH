@@ -2407,4 +2407,10 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">Choisit le stick analogique contrôlé par les mouvements du téléphone en mode visée. Choisissez celui qui contrôle la caméra du jeu.</string>
     <string name="settings_help_arcade_device">Choisit la manette émulée pour ce joueur. Le mode automatique utilise le pistolet en mode pistolet optique, sinon une manette.</string>
     <string name="settings_help_light_gun_aim">Choisit la méthode de visée du pistolet optique : gyroscope, stick analogique, croix directionnelle ou toucher.</string>
+    <string name="game_picker_search_hint">Rechercher des jeux…</string>
+    <string name="game_picker_no_results">Aucun jeu ne correspond à votre recherche</string>
+    <string name="game_picker_tap_to_select">Appuyez pour sélectionner un jeu</string>
+    <string name="game_picker_change_game">Changer de jeu</string>
+    <string name="game_picker_all_filter">Tous</string>
+    <string name="game_picker_clear_search">Effacer la recherche</string>
 </resources>

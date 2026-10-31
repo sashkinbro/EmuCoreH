@@ -2426,4 +2426,10 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">Wybiera gałkę analogową sterowaną ruchem telefonu w trybie celowania. Wybierz gałkę sterującą kamerą w grze.</string>
     <string name="settings_help_arcade_device">Wybiera emulowany kontroler gracza. Tryb automatyczny używa pistoletu w trybie pistoletu świetlnego, a w pozostałych przypadkach pada.</string>
     <string name="settings_help_light_gun_aim">Wybiera sposób celowania pistoletem świetlnym: żyroskop, gałkę analogową, krzyżak lub dotyk.</string>
+    <string name="game_picker_search_hint">Szukaj gier…</string>
+    <string name="game_picker_no_results">Brak gier pasujących do wyszukiwania</string>
+    <string name="game_picker_tap_to_select">Dotknij, aby wybrać grę</string>
+    <string name="game_picker_change_game">Zmień grę</string>
+    <string name="game_picker_all_filter">Wszystkie</string>
+    <string name="game_picker_clear_search">Wyczyść wyszukiwanie</string>
 </resources>

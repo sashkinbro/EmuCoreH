@@ -2407,4 +2407,10 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_help_gyro_stick">Escolhe o analógico controlado pelo movimento do telefone no modo de mira. Escolha o analógico que controla a câmera do jogo.</string>
     <string name="settings_help_arcade_device">Escolhe o controle emulado para este jogador. No modo automático, usa a pistola no modo de pistola óptica e, caso contrário, um controle.</string>
     <string name="settings_help_light_gun_aim">Escolhe como mirar a pistola óptica: giroscópio, analógico, direcional ou toque.</string>
+    <string name="game_picker_search_hint">Pesquisar jogos…</string>
+    <string name="game_picker_no_results">Nenhum jogo corresponde à sua pesquisa</string>
+    <string name="game_picker_tap_to_select">Toque para selecionar um jogo</string>
+    <string name="game_picker_change_game">Alterar jogo</string>
+    <string name="game_picker_all_filter">Todos</string>
+    <string name="game_picker_clear_search">Limpar pesquisa</string>
 </resources>
