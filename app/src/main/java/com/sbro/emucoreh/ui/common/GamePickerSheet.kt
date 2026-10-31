@@ -167,8 +167,6 @@ private fun GamePickerSheetContent(
             modifier = Modifier.fillMaxSize(),
             state = listState,
             contentPadding = PaddingValues(
-                start = ScreenHorizontalPadding,
-                end = ScreenHorizontalPadding,
                 top = topInset,
                 bottom = 24.dp + navBarPadding
             ),
@@ -185,6 +183,7 @@ private fun GamePickerSheetContent(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(horizontal = ScreenHorizontalPadding)
                         .focusRequester(focusRequester),
                     textStyle = MaterialTheme.typography.bodyMedium,
                     placeholder = {
@@ -237,7 +236,7 @@ private fun GamePickerSheetContent(
                             .fillMaxWidth()
                             .padding(top = 2.dp, bottom = 2.dp)
                             .tvFocusGroup(),
-                        contentPadding = PaddingValues(0.dp),
+                        contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         item(key = "letter-filter-all") {
@@ -276,6 +275,7 @@ private fun GamePickerSheetContent(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = ScreenHorizontalPadding)
                             .padding(top = 40.dp)
                     )
                 }
@@ -366,6 +366,7 @@ private fun GamePickerItem(
     Surface(
         modifier = modifier
             .fillMaxWidth()
+            .padding(horizontal = ScreenHorizontalPadding)
             .padding(vertical = 2.dp)
             .tvGamepadFocusableCard(
                 shape = shape,
@@ -393,7 +394,7 @@ private fun GamePickerItem(
         )
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             GameCoverArt(
@@ -401,10 +402,10 @@ private fun GamePickerItem(
                 fallbackTitle = game.title,
                 contentScale = gameCoverContentScale(game.coverArtPath, ContentScale.Crop),
                 modifier = Modifier
-                    .size(width = 54.dp, height = 76.dp)
+                    .size(width = 76.dp, height = 108.dp)
                     .clip(gameCoverShape(game.coverArtPath, neonShape(12.dp)))
             )
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(12.dp))
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(5.dp)
@@ -481,6 +482,7 @@ private fun GamePickerItem(
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
+                Spacer(Modifier.width(8.dp))
             }
         }
     }

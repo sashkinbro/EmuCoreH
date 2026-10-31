@@ -114,7 +114,7 @@ fun ManagerGameSelector(
             )
         ) {
             Row(
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier.padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (selectedGame != null) {
@@ -123,7 +123,7 @@ fun ManagerGameSelector(
                         fallbackTitle = selectedGame.title,
                         contentScale = gameCoverContentScale(selectedGame.coverArtPath, ContentScale.Crop),
                         modifier = Modifier
-                            .size(width = 52.dp, height = 74.dp)
+                            .size(width = 76.dp, height = 108.dp)
                             .clip(gameCoverShape(selectedGame.coverArtPath, neonShape(10.dp)))
                     )
                     Spacer(Modifier.width(12.dp))
