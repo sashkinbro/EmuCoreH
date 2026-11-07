@@ -801,6 +801,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_game_menu_section_debug_tools">Vývojářská diagnostika</string>
     <string name="settings_game_menu_section_controls_general">Chování překrytí a obrazovky</string>
     <string name="settings_game_menu_section_graphics_display">Vykreslovač, rozlišení a poměr stran</string>
+    <string name="settings_game_menu_section_shaders">Knihovna shaderů</string>
     <string name="settings_game_menu_reset_section">Obnovit rozložení</string>
     <string name="settings_game_menu_reset">Resetovat herní menu</string>
 
@@ -885,6 +886,8 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="content_reinstall">Přeinstalovat</string>
     <string name="content_update">Aktualizovat</string>
     <string name="content_download_install">Stáhnout a nainstalovat</string>
+    <string name="content_downloading_percent">Stahování: %1$d%%</string>
+    <string name="loading">Načítání…</string>
     <string name="content_source">Zdroj</string>
     <string name="content_authors">Autoři: %1$s</string>
     <string name="texture_catalog_title">Balíčky textur pro vaše hry</string>
@@ -1229,6 +1232,20 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_pack_import_desc">Vyberte .zip se soubory .slangp a .slang</string>
     <string name="settings_shader_pack_installed">Balíček shaderů nainstalován</string>
     <string name="settings_shader_pack_failed">Balíček shaderů se nepodařilo nainstalovat</string>
+    <string name="emulation_shaders_tab">Shadery</string>
+    <string name="emulation_shaders_title">Shadery RetroArch</string>
+    <string name="emulation_shaders_pack_title">Balíček shaderů</string>
+    <string name="emulation_shaders_pack_hint">Stáhněte oficiální balíček nebo importujte .zip a vyberte předvolby Slang.</string>
+    <string name="emulation_shaders_pack_ready">Dostupné předvolby: %1$d</string>
+    <string name="emulation_shaders_source_global">Nastavení aplikace</string>
+    <string name="emulation_shaders_source_game">Tato hra</string>
+    <string name="emulation_shaders_global_value">Globální: %1$s</string>
+    <string name="emulation_shaders_help_scope">Změny se ukládají pouze do profilu této hry. Globální shader aplikace zůstane stejný.</string>
+    <string name="emulation_shaders_picker_title">Vybrat předvolbu shaderu</string>
+    <string name="emulation_shaders_search">Hledat shadery</string>
+    <string name="emulation_shaders_empty">Zatím žádné předvolby shaderů. Nejprve stáhněte nebo importujte balíček shaderů.</string>
+    <string name="emulation_shaders_enable">Povolit shadery</string>
+    <string name="emulation_shaders_help_enable">Použije vybranou předvolbu Slang na výsledný obraz hry. Složité předvolby mohou snížit výkon.</string>
     <string name="emulation_swap_disc">Vyměnit disk</string>
     <string name="emulation_swap_disc_success">Disk byl úspěšně vyměněn.</string>
     <string name="emulation_swap_disc_failed">Disk se nepodařilo vyměnit. Předchozí disk byl obnoven.</string>

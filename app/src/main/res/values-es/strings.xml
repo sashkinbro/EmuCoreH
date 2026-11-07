@@ -751,6 +751,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_game_menu_section_debug_tools">Diagnósticos de desarrollador</string>
     <string name="settings_game_menu_section_controls_general">Comportamiento de superposición y pantalla</string>
     <string name="settings_game_menu_section_graphics_display">Renderizador, resolución y relación de aspecto</string>
+    <string name="settings_game_menu_section_shaders">Biblioteca de shaders</string>
     <string name="settings_game_menu_full_reset_desc">Mostrar todas las pestañas y bloques de contenido en el orden original</string>
     <string name="settings_customization_touch_press_effect">Efecto de pulsación</string>
     <string name="settings_customization_touch_press_effect_help">Elige cómo responde cada botón en pantalla, dirección del D-pad y joystick analógico mientras se pulsa. Esto solo cambia la animación; el tamaño del control y las áreas táctiles permanecen sin cambios.</string>
@@ -865,6 +866,8 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="content_reinstall">Reinstalar</string>
     <string name="content_update">Actualizar</string>
     <string name="content_download_install">Descargar e instalar</string>
+    <string name="content_downloading_percent">Descargando: %1$d%%</string>
+    <string name="loading">Cargando…</string>
     <string name="content_source">Fuente</string>
     <string name="content_authors">Autores: %1$s</string>
     <string name="texture_catalog_title">Paquetes de texturas para tus juegos</string>
@@ -1209,6 +1212,20 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="settings_shader_pack_import_desc">Elige un .zip con archivos .slangp y .slang</string>
     <string name="settings_shader_pack_installed">Paquete de shaders instalado</string>
     <string name="settings_shader_pack_failed">No se pudo instalar el paquete de shaders</string>
+    <string name="emulation_shaders_tab">Shaders</string>
+    <string name="emulation_shaders_title">Shaders de RetroArch</string>
+    <string name="emulation_shaders_pack_title">Paquete de shaders</string>
+    <string name="emulation_shaders_pack_hint">Descarga el paquete oficial o importa un .zip para elegir preajustes Slang.</string>
+    <string name="emulation_shaders_pack_ready">Preajustes disponibles: %1$d</string>
+    <string name="emulation_shaders_source_global">Ajuste de la app</string>
+    <string name="emulation_shaders_source_game">Este juego</string>
+    <string name="emulation_shaders_global_value">Global: %1$s</string>
+    <string name="emulation_shaders_help_scope">Los cambios se guardan solo en el perfil de este juego. El shader global de la app no cambia.</string>
+    <string name="emulation_shaders_picker_title">Elegir preajuste de shader</string>
+    <string name="emulation_shaders_search">Buscar shaders</string>
+    <string name="emulation_shaders_empty">Aún no hay preajustes de shader. Descarga o importa un paquete de shaders primero.</string>
+    <string name="emulation_shaders_enable">Activar shaders</string>
+    <string name="emulation_shaders_help_enable">Aplica el preajuste Slang seleccionado a la imagen final del juego. Los preajustes complejos pueden reducir el rendimiento.</string>
     <string name="emulation_swap_disc">Cambiar disco</string>
     <string name="emulation_swap_disc_success">El disco se cambió correctamente.</string>
     <string name="emulation_swap_disc_failed">No se pudo cambiar el disco. Se restauró el disco anterior.</string>

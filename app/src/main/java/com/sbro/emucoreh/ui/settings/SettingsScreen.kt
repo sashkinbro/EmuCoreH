@@ -66,6 +66,7 @@ import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Gamepad
+import androidx.compose.material.icons.rounded.Gradient
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Image
@@ -649,6 +650,11 @@ fun SettingsScreen(
         }
         LaunchedEffect(selectedTab) {
             settingsListState.scrollToItem(0)
+            // A shader pack can be downloaded from the in-game Shaders tab;
+            // re-read presets when the Graphics tab opens so both stay in sync.
+            if (selectedTab == SettingsTab.Graphics) {
+                viewModel.refreshShaderPresets()
+            }
         }
     }
 
@@ -3702,6 +3708,7 @@ private fun gameMenuTabLabel(tab: GameMenuTabId): String = when (tab) {
     GameMenuTabId.CONTROLS -> stringResource(R.string.settings_controls_tab)
     GameMenuTabId.EMULATION -> stringResource(R.string.settings_emulation_tab)
     GameMenuTabId.CHEATS -> stringResource(R.string.emulation_cheats_title)
+    GameMenuTabId.SHADERS -> stringResource(R.string.emulation_shaders_tab)
     GameMenuTabId.GRAPHICS -> stringResource(R.string.settings_graphics_tab)
     GameMenuTabId.ACHIEVEMENTS -> stringResource(R.string.achievements_title)
 }
@@ -3711,6 +3718,7 @@ private fun gameMenuTabIcon(tab: GameMenuTabId): ImageVector = when (tab) {
     GameMenuTabId.CONTROLS -> Icons.Rounded.Gamepad
     GameMenuTabId.EMULATION -> Icons.Rounded.SettingsSuggest
     GameMenuTabId.CHEATS -> Icons.Rounded.Star
+    GameMenuTabId.SHADERS -> Icons.Rounded.Gradient
     GameMenuTabId.GRAPHICS -> Icons.Rounded.Wallpaper
     GameMenuTabId.ACHIEVEMENTS -> Icons.Rounded.EmojiEvents
 }
@@ -3731,6 +3739,7 @@ private fun gameMenuSectionLabel(section: GameMenuSectionId): String = when (sec
     GameMenuSectionId.EMULATION_CPU -> stringResource(R.string.settings_core_cpu)
     GameMenuSectionId.EMULATION_AUDIO -> stringResource(R.string.settings_audio_tab)
     GameMenuSectionId.EMULATION_CHEATS -> stringResource(R.string.settings_enable_cheats)
+    GameMenuSectionId.SHADERS_LIBRARY -> stringResource(R.string.settings_game_menu_section_shaders)
     GameMenuSectionId.GRAPHICS_DISPLAY -> stringResource(R.string.settings_game_menu_section_graphics_display)
     GameMenuSectionId.GRAPHICS_RENDERING -> stringResource(R.string.settings_rendering_section)
     GameMenuSectionId.GRAPHICS_SCREEN -> stringResource(R.string.emulation_screen_tab)
@@ -4555,6 +4564,8 @@ private fun rememberSettingsSearchEntries(): List<SettingsSearchEntry> {
         entry(SettingsTab.Graphics, R.string.settings_renderer),
         entry(SettingsTab.Graphics, R.string.settings_upscale),
         entry(SettingsTab.Graphics, R.string.settings_aspect_ratio),
+        entry(SettingsTab.Graphics, R.string.settings_retroarch_shaders),
+        entry(SettingsTab.Graphics, R.string.settings_shader_preset),
         entry(SettingsTab.Emulation, R.string.settings_show_fps),
         entry(SettingsTab.Emulation, R.string.settings_fps_overlay_mode),
         entry(SettingsTab.Emulation, R.string.settings_fps_overlay_position),
