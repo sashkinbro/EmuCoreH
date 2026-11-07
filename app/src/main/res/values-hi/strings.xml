@@ -272,7 +272,15 @@
     <string name="settings_rendering_section">रेंडरिंग</string>
     <string name="settings_enable_cheats">चीट्स सक्षम करें</string>
     <string name="emulation_cheats_title">चीट्स</string>
-    <string name="emulation_cheats_empty">इस गेम के लिए कोई चीट नहीं मिली।</string>
+    <string name="emulation_cheats_empty">इस गेम के लिए अभी कोई चीट इंस्टॉल नहीं है।</string>
+    <string name="emulation_cheats_empty_hint">ऊपर एक चीट पैक इंस्टॉल करें या PNACH फ़ाइल आयात करें, फिर मनचाही चीट चालू करें।</string>
+    <string name="emulation_cheat_packs_title">चीट पैक</string>
+    <string name="emulation_cheat_packs_hint">इस गेम के लिए एक पैक इंस्टॉल करें, फिर नीचे मनचाही चीट चालू करें।</string>
+    <string name="emulation_cheat_packs_import">PNACH फ़ाइल आयात करें</string>
+    <string name="emulation_cheat_packs_installing">इंस्टॉल हो रहा है…</string>
+    <string name="emulation_cheat_packs_installed">इंस्टॉल हो गया</string>
+    <string name="emulation_cheat_packs_show">चीट पैक दिखाएँ</string>
+    <string name="emulation_cheat_packs_hide">चीट पैक छिपाएँ</string>
     <string name="emulation_cheats_group_enable">समूह में सभी सक्षम करें</string>
     <string name="settings_more_options">अधिक विकल्प</string>
     <string name="settings_reset_all_title">सभी सेटिंग्स रीसेट करें</string>
@@ -885,6 +893,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_manager_import_pnach">चुने गए गेम के लिए चीट फ़ाइल आयात करें</string>
     <string name="cheat_manager_detected_identity">%1$s • CRC %2$s</string>
     <string name="cheat_manager_crc_unavailable">%1$s • CRC नहीं मिला। उपलब्ध संशोधन सीरियल और शीर्षक से मिलाए जाते हैं।</string>
+    <string name="cheat_manager_download_failed">चीट फ़ाइल डाउनलोड नहीं हुई या उसमें समर्थित PNACH ब्लॉक नहीं हैं।</string>
     <string name="cheat_manager_import_success">चीट फ़ाइल आयात हुई। नीचे चालू करने वाले चीट चुनें।</string>
     <string name="cheat_manager_import_failed">चुनी गई फ़ाइल में समर्थित चीट कोड नहीं हैं।</string>
     <string name="cheat_catalog_install_failed">चुना गया चीट पैक इंस्टॉल नहीं हो सका।</string>
@@ -894,6 +903,11 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_catalog_description">चुने गए गेम के लिए EmuCoreH कैटलॉग से सत्यापित चीट पैक डाउनलोड करें। इंस्टॉल किए गए पैक इस गेम के लिए पहले से सहेजे गए चीट के साथ जोड़ दिए जाते हैं।</string>
     <string name="cheat_catalog_title">ऑनलाइन चीट्स</string>
     <string name="cheat_manager_installed">इंस्टॉल किए गए चीट</string>
+    <string name="cheat_manager_installed_packs">इंस्टॉल किए गए पैक</string>
+    <string name="cheat_manager_pack_remove_failed">यह पैक हटाया नहीं जा सका। इसे फिर से इंस्टॉल करके दोबारा कोशिश करें।</string>
+    <string name="cheat_manager_remove_pack_title">“%1$s” हटाएँ?</string>
+    <string name="cheat_manager_remove_pack_body">केवल इस पैक की चीट हटाई जाएगी। अन्य इंस्टॉल किए गए पैक और चालू चीट बने रहेंगे।</string>
+    <string name="cheat_manager_pack_meta">CRC %1$s • %2$d चीट ब्लॉक</string>
     <string name="cheat_manager_delete">इस गेम के चीट हटाएँ</string>
     <string name="cheat_manager_delete_title">इंस्टॉल किए गए चीट हटाएँ?</string>
     <string name="cheat_manager_delete_confirm">आयात की गई चीट फ़ाइल और चालू चीट का चयन हटा दिया जाएगा।</string>

@@ -432,7 +432,15 @@
     <string name="settings_rendering_section">Renderowanie</string>
     <string name="settings_enable_cheats">Włącz kody</string>
     <string name="emulation_cheats_title">Kody</string>
-    <string name="emulation_cheats_empty">Nie znaleziono żadnych kodów dla tej gry.</string>
+    <string name="emulation_cheats_empty">Dla tej gry nie zainstalowano jeszcze żadnych kodów.</string>
+    <string name="emulation_cheats_empty_hint">Zainstaluj pak kodów powyżej lub zaimportuj plik PNACH, a następnie włącz wybrane kody.</string>
+    <string name="emulation_cheat_packs_title">Paki kodów</string>
+    <string name="emulation_cheat_packs_hint">Zainstaluj pakiet dla tej gry, a następnie włącz poniżej wybrane kody.</string>
+    <string name="emulation_cheat_packs_import">Importuj plik PNACH</string>
+    <string name="emulation_cheat_packs_installing">Instalowanie…</string>
+    <string name="emulation_cheat_packs_installed">Zainstalowano</string>
+    <string name="emulation_cheat_packs_show">Pokaż paki kodów</string>
+    <string name="emulation_cheat_packs_hide">Ukryj paki kodów</string>
     <string name="emulation_cheats_group_enable">Włącz wszystko w grupie</string>
     <string name="settings_more_options">Więcej opcji</string>
     <string name="settings_reset_all_title">Zresetuj wszystkie ustawienia</string>
@@ -904,6 +912,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_manager_import_pnach">Importuj plik cheatów dla wybranej gry</string>
     <string name="cheat_manager_detected_identity">%1$s • CRC %2$s</string>
     <string name="cheat_manager_crc_unavailable">%1$s • Kod CRC jest niemożliwy do wyciągnięcia. Powiązane wersje dobierane są wedle numeru seryjnego oraz tytułu.</string>
+    <string name="cheat_manager_download_failed">Kody nie zostały sprowadzone lub instalator nie posiadał powiązanych formacji PNACH.</string>
     <string name="cheat_manager_import_success">Plik cheatów zaimportowany. Poniżej wybierz cheaty do włączenia.</string>
     <string name="cheat_manager_import_failed">Wybrany plik nie zawiera obsługiwanych kodów cheatów.</string>
     <string name="cheat_catalog_install_failed">Nie udało się zainstalować wybranej paczki cheatów.</string>
@@ -913,6 +922,11 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_catalog_description">Pobierz zweryfikowane paczki cheatów dla wybranej gry z katalogu EmuCoreH. Zainstalowane paczki są łączone z cheatami już zapisanymi dla tej gry.</string>
     <string name="cheat_catalog_title">Cheaty online</string>
     <string name="cheat_manager_installed">Zainstalowane kody</string>
+    <string name="cheat_manager_installed_packs">Zainstalowane paki</string>
+    <string name="cheat_manager_pack_remove_failed">Nie udało się usunąć pakietu. Zainstaluj go ponownie i spróbuj jeszcze raz.</string>
+    <string name="cheat_manager_remove_pack_title">Usunąć „%1$s”?</string>
+    <string name="cheat_manager_remove_pack_body">Usunięte zostaną tylko kody tego pakietu. Pozostałe zainstalowane paki i włączone kody zostaną zachowane.</string>
+    <string name="cheat_manager_pack_meta">CRC %1$s • %2$d linijek blokowych</string>
     <string name="cheat_manager_delete">Usuń kody przeznaczone dla tej gry</string>
     <string name="cheat_manager_delete_title">Usunąć wybrane kody?</string>
     <string name="cheat_manager_delete_confirm">Zaimportowany plik cheatów i wybrane włączone cheaty zostaną usunięte.</string>

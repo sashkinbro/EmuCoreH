@@ -12,13 +12,6 @@ data class InstalledRemoteTexture(
     val installedAt: Long
 )
 
-data class InstalledRemoteCheat(
-    val packId: String,
-    val serial: String,
-    val crc: String,
-    val installedAt: Long
-)
-
 class RemoteContentInstallState(context: Context) {
     private val stateFile = File(EmulatorStorage.appStateDir(context.applicationContext), "remote-content.json")
     private val lock = Any()
@@ -45,27 +38,6 @@ class RemoteContentInstallState(context: Context) {
         }
     }
 
-    fun installedCheats(): Map<String, InstalledRemoteCheat> = synchronized(lock) {
-        val cheats = readState().optJSONObject("cheats") ?: return@synchronized emptyMap()
-        buildMap {
-            cheats.keys().forEach { id ->
-                val value = cheats.optJSONObject(id) ?: return@forEach
-                val serial = value.optString("serial").trim()
-                if (serial.isNotEmpty()) {
-                    put(
-                        id,
-                        InstalledRemoteCheat(
-                            packId = id,
-                            serial = serial,
-                            crc = value.optString("crc").trim(),
-                            installedAt = value.optLong("installedAt", 0L)
-                        )
-                    )
-                }
-            }
-        }
-    }
-
     fun recordTexture(pack: RemoteTexturePack, serial: String) =
         recordTexture(pack.id, pack.version, serial)
 
@@ -82,19 +54,6 @@ class RemoteContentInstallState(context: Context) {
         writeState(root)
     }
 
-    fun recordCheat(pack: RemoteCheatPack, serial: String, crc: String?) = synchronized(lock) {
-        val root = readState()
-        val cheats = root.optJSONObject("cheats") ?: JSONObject().also { root.put("cheats", it) }
-        cheats.put(
-            pack.id,
-            JSONObject()
-                .put("serial", serial)
-                .put("crc", crc.orEmpty())
-                .put("installedAt", System.currentTimeMillis())
-        )
-        writeState(root)
-    }
-
     fun removeTexturesForSerial(serial: String) = synchronized(lock) {
         val root = readState()
         val textures = root.optJSONObject("textures") ?: return@synchronized
@@ -103,13 +62,6 @@ class RemoteContentInstallState(context: Context) {
                 textures.remove(id)
             }
         }
-        writeState(root)
-    }
-
-    fun removeCheatsForGame(packIds: Collection<String>) = synchronized(lock) {
-        val root = readState()
-        val cheats = root.optJSONObject("cheats") ?: return@synchronized
-        packIds.forEach { cheats.remove(it) }
         writeState(root)
     }
 

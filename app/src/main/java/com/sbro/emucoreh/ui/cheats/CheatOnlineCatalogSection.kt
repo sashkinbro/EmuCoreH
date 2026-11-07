@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -46,10 +47,9 @@ import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.data.CheatRepository
 import com.sbro.emucoreh.data.GameItem
-import com.sbro.emucoreh.data.InstalledRemoteCheat
+import com.sbro.emucoreh.data.InstalledCheatPack
 import com.sbro.emucoreh.data.RemoteCheatPack
 import com.sbro.emucoreh.data.RemoteContentCatalogRepository
-import com.sbro.emucoreh.data.RemoteContentInstallState
 import com.sbro.emucoreh.data.SelectedGameIdentity
 import com.sbro.emucoreh.ui.common.cheatCatalogGameTitleKey
 import com.sbro.emucoreh.ui.common.rememberRetainedState
@@ -134,6 +134,10 @@ internal fun CheatOnlineCatalogSection(
     identity: SelectedGameIdentity?,
     resolvingIdentity: Boolean,
     gamesLoading: Boolean,
+    // Catalog IDs installed for the selected game. Owned by the caller so the
+    // "Installed packs" row and these badges can never disagree; CheatRepository
+    // is the single source of truth behind both.
+    installedPackIds: Set<String>,
     onInstalled: () -> Unit
 ) {
     val context = LocalContext.current
@@ -141,15 +145,10 @@ internal fun CheatOnlineCatalogSection(
     val scope = rememberCoroutineScope()
     val catalogRepository = remember(context) { RemoteContentCatalogRepository(context) }
     val cheatRepository = remember(context) { CheatRepository(context) }
-    val installState = remember(context) { RemoteContentInstallState(context) }
 
     // Retained so scrolling the card out of view and back does not reset the
     // loaded catalog, re-run the loaders or replay the entrance animation.
     var packs by rememberRetainedState("cheat_online_catalog.packs", emptyList<RemoteCheatPack>())
-    var installed by rememberRetainedState(
-        "cheat_online_catalog.installed",
-        emptyMap<String, InstalledRemoteCheat>()
-    )
     var loading by rememberRetainedState("cheat_online_catalog.loading", true)
     var cached by rememberRetainedState("cheat_online_catalog.cached", false)
     var loadFailed by rememberRetainedState("cheat_online_catalog.load_failed", false)
@@ -160,19 +159,17 @@ internal fun CheatOnlineCatalogSection(
 
     LaunchedEffect(Unit) {
         val loaded = withContext(Dispatchers.IO) {
-            val catalog = catalogRepository.loadCheatCatalog()
-            catalog to installState.installedCheats()
+            catalogRepository.loadCheatCatalog()
         }
         // A failed refresh (offline, bad response) must not wipe a previously
         // loaded catalog: only replace the packs when the new result is usable.
-        if (loaded.first.entries.isNotEmpty() || packs.isEmpty()) {
-            packs = loaded.first.entries
-            cached = loaded.first.fromCache
-            loadFailed = loaded.first.entries.isEmpty()
+        if (loaded.entries.isNotEmpty() || packs.isEmpty()) {
+            packs = loaded.entries
+            cached = loaded.fromCache
+            loadFailed = loaded.entries.isEmpty()
         }
-        installed = loaded.second
         loading = false
-        if (loaded.first.cacheHit) {
+        if (loaded.cacheHit) {
             val refreshed = withContext(Dispatchers.IO) { catalogRepository.loadCheatCatalog(forceRefresh = true) }
             if (refreshed.entries.isNotEmpty()) {
                 packs = refreshed.entries
@@ -283,7 +280,7 @@ internal fun CheatOnlineCatalogSection(
                                 CheatCatalogCard(
                                     pack = pack,
                                     compatible = true,
-                                    installed = installed.containsKey(pack.id),
+                                    installed = pack.id in installedPackIds,
                                     installing = installingPackId == pack.id,
                                     onSource = { runCatching { uriHandler.openUri(pack.sourceUrl) } },
                                     onInstall = {
@@ -303,21 +300,22 @@ internal fun CheatOnlineCatalogSection(
                                                         gameKey = gameKey,
                                                         contents = text,
                                                         enableAllByDefault = false,
-                                                        mergeWithExisting = true
+                                                        mergeWithExisting = true,
+                                                        installedPack = InstalledCheatPack(
+                                                            id = pack.id,
+                                                            title = pack.title,
+                                                            crc = pack.crc,
+                                                            blockCount = pack.blockCount
+                                                        )
                                                     )
-                                                    if (imported > 0) {
-                                                        installState.recordCheat(pack, targetSerial, crc)
-                                                        true
-                                                    } else {
-                                                        false
-                                                    }
+                                                    imported > 0
                                                 }.getOrDefault(false)
                                             }
                                             installingPackId = null
                                             if (success) {
-                                                installed = withContext(Dispatchers.IO) {
-                                                    installState.installedCheats()
-                                                }
+                                                // The manager re-reads the game config and the
+                                                // installed packs, so the badges and the row
+                                                // update together.
                                                 onInstalled()
                                             }
                                             Toast.makeText(
@@ -360,7 +358,7 @@ internal fun CheatOnlineCatalogSection(
 }
 
 @Composable
-private fun CheatCatalogEmptyState() {
+internal fun CheatCatalogEmptyState() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = neonShape(18.dp),
@@ -420,11 +418,7 @@ private fun CheatCatalogCard(
                     )
                 }
                 if (installed) {
-                    Text(
-                        text = stringResource(R.string.content_installed),
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                    InstalledStatusLabel()
                 }
             }
             CheatCompatibilityBadge(compatible = compatible)
@@ -459,7 +453,10 @@ private fun CheatCatalogCard(
                     if (installing) {
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     } else {
-                        Icon(Icons.Rounded.CloudDownload, contentDescription = null)
+                        Icon(
+                            imageVector = if (installed) Icons.Rounded.Refresh else Icons.Rounded.CloudDownload,
+                            contentDescription = null
+                        )
                     }
                     Spacer(Modifier.width(7.dp))
                     Text(
@@ -498,7 +495,7 @@ private fun CheatCatalogSectionTitle(text: String) {
 }
 
 @Composable
-private fun CheatCompatibilityBadge(compatible: Boolean) {
+internal fun CheatCompatibilityBadge(compatible: Boolean) {
     val background = if (compatible) {
         Color(0xFF1B6B3A)
     } else {

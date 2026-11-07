@@ -180,7 +180,15 @@
     <string name="settings_speed_hacks">Speed Hacks</string>
     <string name="settings_enable_cheats">Ativar Cheats</string>
     <string name="emulation_cheats_title">Cheats</string>
-    <string name="emulation_cheats_empty">Nenhum cheat foi encontrado para este jogo.</string>
+    <string name="emulation_cheats_empty">Ainda não há cheats instalados para este jogo.</string>
+    <string name="emulation_cheats_empty_hint">Instale um pacote de cheats acima ou importe um arquivo PNACH e ative os cheats desejados.</string>
+    <string name="emulation_cheat_packs_title">Pacotes de cheats</string>
+    <string name="emulation_cheat_packs_hint">Instale um pacote para este jogo e ative abaixo os cheats desejados.</string>
+    <string name="emulation_cheat_packs_import">Importar arquivo PNACH</string>
+    <string name="emulation_cheat_packs_installing">Instalando…</string>
+    <string name="emulation_cheat_packs_installed">Instalado</string>
+    <string name="emulation_cheat_packs_show">Mostrar pacotes de cheats</string>
+    <string name="emulation_cheat_packs_hide">Ocultar pacotes de cheats</string>
     <string name="emulation_cheats_group_enable">Ativar todos no grupo</string>
     <string name="settings_more_options">Mais opções</string>
     <string name="settings_reset_all_title">Redefinir todas as configurações</string>
@@ -887,6 +895,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_manager_import_pnach">Importar ficheiro de cheats para o jogo selecionado</string>
     <string name="cheat_manager_detected_identity">%1$s • CRC %2$s</string>
     <string name="cheat_manager_crc_unavailable">%1$s • Não foi possível detetar o CRC. As revisões são associadas pelo número de série e título.</string>
+    <string name="cheat_manager_download_failed">Não foi possível transferir o ficheiro ou este não contém blocos PNACH suportados.</string>
     <string name="cheat_manager_import_success">Ficheiro de cheats importado. Escolha abaixo os cheats que pretende ativar.</string>
     <string name="cheat_manager_import_failed">O ficheiro selecionado não contém cheats suportados.</string>
     <string name="cheat_catalog_install_failed">Não foi possível instalar o pacote de cheats selecionado.</string>
@@ -896,6 +905,11 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_catalog_description">Transfira pacotes de cheats verificados para o jogo selecionado a partir do catálogo EmuCoreH. Os pacotes instalados são combinados com os cheats já guardados para este jogo.</string>
     <string name="cheat_catalog_title">Cheats online</string>
     <string name="cheat_manager_installed">Cheats instalados</string>
+    <string name="cheat_manager_installed_packs">Pacotes instalados</string>
+    <string name="cheat_manager_pack_remove_failed">Não foi possível remover o pacote. Reinstale-o e tente novamente.</string>
+    <string name="cheat_manager_remove_pack_title">Remover “%1$s”?</string>
+    <string name="cheat_manager_remove_pack_body">Apenas os cheats deste pacote serão removidos. Os outros pacotes instalados e os cheats ativados permanecem.</string>
+    <string name="cheat_manager_pack_meta">CRC %1$s • %2$d blocos de cheats</string>
     <string name="cheat_manager_delete">Eliminar cheats deste jogo</string>
     <string name="cheat_manager_delete_title">Eliminar os cheats instalados?</string>
     <string name="cheat_manager_delete_confirm">O ficheiro de cheats importado e a seleção de cheats ativados serão removidos.</string>

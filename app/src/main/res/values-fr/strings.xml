@@ -180,7 +180,15 @@
     <string name="settings_speed_hacks">Speed Hacks</string>
     <string name="settings_enable_cheats">Activer les codes de triche</string>
     <string name="emulation_cheats_title">Codes de triche</string>
-    <string name="emulation_cheats_empty">Aucun code de triche n\'a été trouvé pour ce jeu.</string>
+    <string name="emulation_cheats_empty">Les cheats ne sont pas encore installés pour ce jeu.</string>
+    <string name="emulation_cheats_empty_hint">Installez un pack de cheats ci-dessus ou importez un fichier PNACH, puis activez les cheats souhaités.</string>
+    <string name="emulation_cheat_packs_title">Packs de cheats</string>
+    <string name="emulation_cheat_packs_hint">Installez un pack pour ce jeu, puis activez ci-dessous les cheats souhaités.</string>
+    <string name="emulation_cheat_packs_import">Importer un fichier PNACH</string>
+    <string name="emulation_cheat_packs_installing">Installation…</string>
+    <string name="emulation_cheat_packs_installed">Installé</string>
+    <string name="emulation_cheat_packs_show">Afficher les packs de cheats</string>
+    <string name="emulation_cheat_packs_hide">Masquer les packs de cheats</string>
     <string name="emulation_cheats_group_enable">Activer tout dans le groupe</string>
     <string name="settings_more_options">Plus d\'options</string>
     <string name="settings_reset_all_title">Réinitialiser tous les paramètres</string>
@@ -887,6 +895,7 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_manager_import_pnach">Importer un fichier de triche pour le jeu sélectionné</string>
     <string name="cheat_manager_detected_identity">%1$s • CRC %2$s</string>
     <string name="cheat_manager_crc_unavailable">%1$s • CRC non détecté. Les révisions disponibles sont associées par numéro de série et titre.</string>
+    <string name="cheat_manager_download_failed">Le fichier n’a pas pu être téléchargé ou ne contient aucun bloc PNACH compatible.</string>
     <string name="cheat_manager_import_success">Fichier de triche importé. Choisissez ci-dessous les codes à activer.</string>
     <string name="cheat_manager_import_failed">Le fichier sélectionné ne contient aucun code de triche compatible.</string>
     <string name="cheat_catalog_install_failed">Impossible d’installer le pack de triche sélectionné.</string>
@@ -896,6 +905,11 @@ Sega 32X : 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_catalog_description">Téléchargez des packs de triche vérifiés pour le jeu sélectionné depuis le catalogue EmuCoreH. Les packs installés sont fusionnés avec les codes déjà enregistrés pour ce jeu.</string>
     <string name="cheat_catalog_title">Codes de triche en ligne</string>
     <string name="cheat_manager_installed">Codes installés</string>
+    <string name="cheat_manager_installed_packs">Packs installés</string>
+    <string name="cheat_manager_pack_remove_failed">Impossible de supprimer ce pack. Réinstallez-le et réessayez.</string>
+    <string name="cheat_manager_remove_pack_title">Supprimer « %1$s » ?</string>
+    <string name="cheat_manager_remove_pack_body">Seuls les cheats de ce pack seront supprimés. Les autres packs installés et vos cheats activés restent.</string>
+    <string name="cheat_manager_pack_meta">CRC %1$s • %2$d blocs de codes</string>
     <string name="cheat_manager_delete">Supprimer les codes de ce jeu</string>
     <string name="cheat_manager_delete_title">Supprimer les codes installés ?</string>
     <string name="cheat_manager_delete_confirm">Le fichier de triche importé et la sélection des codes activés seront supprimés.</string>

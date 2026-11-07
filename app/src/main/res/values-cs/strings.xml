@@ -435,7 +435,15 @@
     <string name="settings_rendering_section">Vykreslování (Rendering)</string>
     <string name="settings_enable_cheats">Povolit cheaty</string>
     <string name="emulation_cheats_title">Cheaty</string>
-    <string name="emulation_cheats_empty">Nebyly nalezeny žádné cheaty pro tuto hru.</string>
+    <string name="emulation_cheats_empty">Pro tuto hru zatím nejsou nainstalovány žádné cheaty.</string>
+    <string name="emulation_cheats_empty_hint">Nainstalujte balíček cheatů výše nebo importujte soubor PNACH a poté zapněte požadované cheaty.</string>
+    <string name="emulation_cheat_packs_title">Balíčky cheatů</string>
+    <string name="emulation_cheat_packs_hint">Nainstalujte balíček pro tuto hru a níže zapněte požadované cheaty.</string>
+    <string name="emulation_cheat_packs_import">Importovat soubor PNACH</string>
+    <string name="emulation_cheat_packs_installing">Instalace…</string>
+    <string name="emulation_cheat_packs_installed">Nainstalováno</string>
+    <string name="emulation_cheat_packs_show">Zobrazit balíčky cheatů</string>
+    <string name="emulation_cheat_packs_hide">Skrýt balíčky cheatů</string>
     <string name="emulation_cheats_group_enable">Zapnout vše ve skupině</string>
     <string name="settings_more_options">Další možnosti</string>
     <string name="settings_reset_all_title">Obnovit všechna nastavení</string>
@@ -907,6 +915,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_manager_import_pnach">Importovat soubor cheatů pro vybranou hru</string>
     <string name="cheat_manager_detected_identity">%1$s • CRC %2$s</string>
     <string name="cheat_manager_crc_unavailable">%1$s • CRC se nepodařilo detekovat. Dostupné revize jsou spárovány podle sériového čísla a názvu.</string>
+    <string name="cheat_manager_download_failed">Soubor s cheaty se nepodařilo stáhnout nebo neobsahoval podporované PNACH bloky.</string>
     <string name="cheat_manager_import_success">Soubor cheatů byl importován. Níže vyberte, které cheaty chcete povolit.</string>
     <string name="cheat_manager_import_failed">Vybraný soubor neobsahuje podporované cheaty.</string>
     <string name="cheat_catalog_install_failed">Vybranou sadu cheatů se nepodařilo nainstalovat.</string>
@@ -916,6 +925,11 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_catalog_description">Stáhněte si ověřené sady cheatů pro vybranou hru z katalogu EmuCoreH. Nainstalované sady se sloučí s cheaty již uloženými pro tuto hru.</string>
     <string name="cheat_catalog_title">Online cheaty</string>
     <string name="cheat_manager_installed">Nainstalované cheaty</string>
+    <string name="cheat_manager_installed_packs">Nainstalované balíčky</string>
+    <string name="cheat_manager_pack_remove_failed">Balíček se nepodařilo odebrat. Nainstalujte jej znovu a zkuste to znovu.</string>
+    <string name="cheat_manager_remove_pack_title">Odebrat „%1$s“?</string>
+    <string name="cheat_manager_remove_pack_body">Odebrány budou pouze cheaty tohoto balíčku. Ostatní nainstalované balíčky a zapnuté cheaty zůstanou.</string>
+    <string name="cheat_manager_pack_meta">CRC %1$s • cheat bloků: %2$d</string>
     <string name="cheat_manager_delete">Smazat cheaty pro tuto hru</string>
     <string name="cheat_manager_delete_title">Smazat nainstalované cheaty?</string>
     <string name="cheat_manager_delete_confirm">Importovaný soubor cheatů a jeho povolené volby budou odstraněny.</string>

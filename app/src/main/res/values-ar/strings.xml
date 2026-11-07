@@ -312,7 +312,15 @@
     <string name="settings_rendering_section">العرض (Rendering)</string>
     <string name="settings_enable_cheats">تفعيل الشفرات</string>
     <string name="emulation_cheats_title">الشفرات</string>
-    <string name="emulation_cheats_empty">لم يتم العثور على شفرات لهذه اللعبة.</string>
+    <string name="emulation_cheats_empty">لم تُثبَّت أي شفرات لهذه اللعبة بعد.</string>
+    <string name="emulation_cheats_empty_hint">ثبّت حزمة شفرات أعلاه أو استورد ملف PNACH ثم فعّل الشفرات المطلوبة.</string>
+    <string name="emulation_cheat_packs_title">حزم الشفرات</string>
+    <string name="emulation_cheat_packs_hint">ثبّت حزمة لهذه اللعبة ثم فعّل الشفرات المطلوبة أدناه.</string>
+    <string name="emulation_cheat_packs_import">استيراد ملف PNACH</string>
+    <string name="emulation_cheat_packs_installing">جارٍ التثبيت…</string>
+    <string name="emulation_cheat_packs_installed">تم التثبيت</string>
+    <string name="emulation_cheat_packs_show">إظهار حزم الشفرات</string>
+    <string name="emulation_cheat_packs_hide">إخفاء حزم الشفرات</string>
     <string name="emulation_cheats_group_enable">تفعيل الكل في المجموعة</string>
     <string name="settings_more_options">خيارات إضافية</string>
     <string name="settings_reset_all_title">إعادة تعيين جميع الإعدادات</string>
@@ -889,6 +897,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="cheat_manager_import_pnach">استيراد ملف غش للعبة المحددة</string>
     <string name="cheat_manager_detected_identity">%1$s • CRC %2$s</string>
     <string name="cheat_manager_crc_unavailable">%1$s • تعذر اكتشاف CRC. تتم مطابقة الإصدارات بالرقم التسلسلي والعنوان.</string>
+    <string name="cheat_manager_download_failed">تعذر تنزيل ملف الغش أو لا يحتوي على كتل PNACH مدعومة.</string>
     <string name="cheat_manager_import_success">تم استيراد ملف الغش. اختر أدناه الرموز التي تريد تفعيلها.</string>
     <string name="cheat_manager_import_failed">الملف المحدد لا يحتوي على أكواد غش مدعومة.</string>
     <string name="cheat_catalog_install_failed">تعذّر تثبيت حزمة الرموز المحددة.</string>
@@ -898,6 +907,11 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="cheat_catalog_description">نزّل حزم رموز الغش الموثّقة للعبة المحددة من كتالوج EmuCoreH. تُدمج الحزم المثبّتة مع الرموز المحفوظة مسبقًا لهذه اللعبة.</string>
     <string name="cheat_catalog_title">رموز الغش عبر الإنترنت</string>
     <string name="cheat_manager_installed">رموز الغش المثبتة</string>
+    <string name="cheat_manager_installed_packs">الحزم المثبّتة</string>
+    <string name="cheat_manager_pack_remove_failed">تعذّرت إزالة الحزمة. أعد تثبيتها ثم حاول مرة أخرى.</string>
+    <string name="cheat_manager_remove_pack_title">إزالة «%1$s»؟</string>
+    <string name="cheat_manager_remove_pack_body">ستتم إزالة شفرات هذه الحزمة فقط. ستبقى الحزم الأخرى المثبّتة والشفرات المفعّلة.</string>
+    <string name="cheat_manager_pack_meta">CRC %1$s • %2$d كتلة غش</string>
     <string name="cheat_manager_delete">حذف رموز الغش لهذه اللعبة</string>
     <string name="cheat_manager_delete_title">حذف رموز الغش المثبتة؟</string>
     <string name="cheat_manager_delete_confirm">سيتم حذف ملف الغش المستورد والرموز المفعّلة.</string>

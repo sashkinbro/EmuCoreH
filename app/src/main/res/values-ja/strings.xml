@@ -312,7 +312,15 @@
     <string name="settings_rendering_section">レンダリング</string>
     <string name="settings_enable_cheats">チートを有効にする</string>
     <string name="emulation_cheats_title">チート</string>
-    <string name="emulation_cheats_empty">このゲームのチートは見つかりませんでした。</string>
+    <string name="emulation_cheats_empty">このゲームにはまだチートがインストールされていません。</string>
+    <string name="emulation_cheats_empty_hint">上でチートパックをインストールするかPNACHファイルをインポートし、使いたいチートを有効にしてください。</string>
+    <string name="emulation_cheat_packs_title">チートパック</string>
+    <string name="emulation_cheat_packs_hint">このゲーム用のパックをインストールし、下で使いたいチートを有効にしてください。</string>
+    <string name="emulation_cheat_packs_import">PNACHファイルをインポート</string>
+    <string name="emulation_cheat_packs_installing">インストール中…</string>
+    <string name="emulation_cheat_packs_installed">インストール済み</string>
+    <string name="emulation_cheat_packs_show">チートパックを表示</string>
+    <string name="emulation_cheat_packs_hide">チートパックを非表示</string>
     <string name="emulation_cheats_group_enable">グループ内をすべて有効化</string>
     <string name="settings_more_options">その他のオプション</string>
     <string name="settings_reset_all_title">すべての設定をリセット</string>
@@ -884,6 +892,7 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="cheat_manager_import_pnach">選択したゲームのチートファイルをインポート</string>
     <string name="cheat_manager_detected_identity">%1$s • CRC %2$s</string>
     <string name="cheat_manager_crc_unavailable">%1$s • CRC を検出できませんでした。シリアルとタイトルでリビジョンを照合します。</string>
+    <string name="cheat_manager_download_failed">チートファイルを取得できないか、対応 PNACH ブロックが含まれていません。</string>
     <string name="cheat_manager_import_success">チートファイルをインポートしました。下で有効にするチートを選択してください。</string>
     <string name="cheat_manager_import_failed">選択したファイルに対応するチートコードが含まれていません。</string>
     <string name="cheat_catalog_install_failed">選択したチートパックをインストールできませんでした。</string>
@@ -893,6 +902,11 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="cheat_catalog_description">EmuCoreH カタログから、選択したゲームの検証済みチートパックをダウンロードします。インストール済みのパックは、このゲームに保存されているチートと統合されます。</string>
     <string name="cheat_catalog_title">オンラインチート</string>
     <string name="cheat_manager_installed">インストール済みチート</string>
+    <string name="cheat_manager_installed_packs">インストール済みパック</string>
+    <string name="cheat_manager_pack_remove_failed">このパックを削除できませんでした。再インストールしてもう一度お試しください。</string>
+    <string name="cheat_manager_remove_pack_title">「%1$s」を削除しますか？</string>
+    <string name="cheat_manager_remove_pack_body">このパックのチートのみ削除されます。他のインストール済みパックと有効なチートは残ります。</string>
+    <string name="cheat_manager_pack_meta">CRC %1$s • %2$d チートブロック</string>
     <string name="cheat_manager_delete">このゲームのチートを削除</string>
     <string name="cheat_manager_delete_title">インストール済みチートを削除しますか？</string>
     <string name="cheat_manager_delete_confirm">インポートしたチートファイルと有効化の選択が削除されます。</string>

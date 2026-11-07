@@ -414,7 +414,15 @@
     <string name="settings_rendering_section">رندرینگ</string>
     <string name="settings_enable_cheats">فعال کردن تقلب‌ها</string>
     <string name="emulation_cheats_title">کدهای تقلب</string>
-    <string name="emulation_cheats_empty">هیچ کد تقلبی برای این بازی پیدا نشد.</string>
+    <string name="emulation_cheats_empty">هنوز هیچ کد تقلبی برای این بازی نصب نشده است.</string>
+    <string name="emulation_cheats_empty_hint">یک بسته کد تقلب در بالا نصب کنید یا یک فایل PNACH وارد کنید و سپس کدهای تقلب دلخواه را فعال کنید.</string>
+    <string name="emulation_cheat_packs_title">بسته‌های کد تقلب</string>
+    <string name="emulation_cheat_packs_hint">برای این بازی یک بسته نصب کنید و سپس کدهای تقلب دلخواه را در پایین فعال کنید.</string>
+    <string name="emulation_cheat_packs_import">ورود فایل PNACH</string>
+    <string name="emulation_cheat_packs_installing">در حال نصب…</string>
+    <string name="emulation_cheat_packs_installed">نصب شد</string>
+    <string name="emulation_cheat_packs_show">نمایش بسته‌های کد تقلب</string>
+    <string name="emulation_cheat_packs_hide">پنهان کردن بسته‌های کد تقلب</string>
     <string name="emulation_cheats_group_enable">فعال‌کردن همه در گروه</string>
     <string name="settings_more_options">گزینه‌های بیشتر</string>
     <string name="settings_reset_all_title">بازنشانی همه تنظیمات</string>
@@ -900,6 +908,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="cheat_manager_import_pnach">وارد کردن فایل تقلب برای بازی انتخاب‌شده</string>
     <string name="cheat_manager_detected_identity">%1$s • CRC %2$s</string>
     <string name="cheat_manager_crc_unavailable">%1$s • CRC شناسایی نشد. نسخه‌ها با شماره سریال و عنوان تطبیق داده می‌شوند.</string>
+    <string name="cheat_manager_download_failed">فایل تقلب بارگیری نشد یا بلوک PNACH پشتیبانی‌شده ندارد.</string>
     <string name="cheat_manager_import_success">فایل تقلب وارد شد. تقلب‌های دلخواه را در پایین فعال کنید.</string>
     <string name="cheat_manager_import_failed">فایل انتخاب‌شده کد تقلب پشتیبانی‌شده ندارد.</string>
     <string name="cheat_catalog_install_failed">نصب بستهٔ تقلب انتخاب‌شده ممکن نشد.</string>
@@ -909,6 +918,11 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="cheat_catalog_description">بسته‌های تقلب تأییدشده را برای بازی انتخاب‌شده از فهرست EmuCoreH دانلود کنید. بسته‌های نصب‌شده با تقلب‌های ذخیره‌شدهٔ این بازی ادغام می‌شوند.</string>
     <string name="cheat_catalog_title">تقلب‌های آنلاین</string>
     <string name="cheat_manager_installed">تقلب‌های نصب‌شده</string>
+    <string name="cheat_manager_installed_packs">بسته‌های نصب‌شده</string>
+    <string name="cheat_manager_pack_remove_failed">حذف این بسته ممکن نشد. آن را دوباره نصب کنید و دوباره تلاش کنید.</string>
+    <string name="cheat_manager_remove_pack_title">«%1$s» حذف شود؟</string>
+    <string name="cheat_manager_remove_pack_body">فقط تقلب‌های این بسته حذف می‌شوند. سایر بسته‌های نصب‌شده و تقلب‌های فعال باقی می‌مانند.</string>
+    <string name="cheat_manager_pack_meta">CRC %1$s • %2$d بلوک تقلب</string>
     <string name="cheat_manager_delete">حذف تقلب‌های این بازی</string>
     <string name="cheat_manager_delete_title">تقلب‌های نصب‌شده حذف شوند؟</string>
     <string name="cheat_manager_delete_confirm">فایل تقلب واردشده و تقلب‌های فعال حذف می‌شوند.</string>

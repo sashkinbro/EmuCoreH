@@ -187,6 +187,7 @@ import com.sbro.emucoreh.data.DisplayCrop
 import com.sbro.emucoreh.data.OverlayControlLayout
 import com.sbro.emucoreh.data.OverlayLayoutSnapshot
 import com.sbro.emucoreh.data.PerformanceOverlayMetrics
+import com.sbro.emucoreh.data.RemoteCheatPack
 import com.sbro.emucoreh.data.SettingsSnapshot
 import com.sbro.emucoreh.data.TouchControlVisualStyle
 import com.sbro.emucoreh.data.TouchControlPressEffect
@@ -394,6 +395,7 @@ fun EmulationScreen(
     viewModel: EmulationViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val cheatPackBrowserState by viewModel.cheatPackBrowser.collectAsState()
     val presentationSurfaceGeneration by EmulatorBridge.presentationSurfaceGeneration.collectAsState()
     val context = LocalContext.current
     val activity = context as? android.app.Activity
@@ -1871,6 +1873,12 @@ fun EmulationScreen(
                     onToggleCheat = { id, enabled -> viewModel.setCheatEnabled(id, enabled) },
                     onSetCheatGroupEnabled = { ids, enabled -> viewModel.setCheatGroupEnabled(ids, enabled) },
                     onRefreshCheats = { viewModel.refreshAvailableCheats() },
+                    cheatPackBrowserState = cheatPackBrowserState,
+                    onLoadCheatPacks = { forceRefresh -> viewModel.loadCheatPacks(forceRefresh) },
+                    onInstallCheatPack = { pack -> viewModel.installCheatPack(pack) },
+                    onImportCheatPack = { contents, fallbackName ->
+                        viewModel.importCheatPackText(contents, fallbackName)
+                    },
                     onSetAudioVolume = { viewModel.setAudioVolume(it) },
                     onSetAudioMuted = { viewModel.setAudioMuted(it) },
                     onExit = requestExitClick,
@@ -3303,6 +3311,10 @@ private fun EmulationSidebarMenu(
     onToggleCheat: (String, Boolean) -> Unit,
     onSetCheatGroupEnabled: (List<String>, Boolean) -> Unit,
     onRefreshCheats: () -> Unit,
+    cheatPackBrowserState: CheatPackBrowserState,
+    onLoadCheatPacks: (Boolean) -> Unit,
+    onInstallCheatPack: (RemoteCheatPack) -> Unit,
+    onImportCheatPack: (String, String?) -> Unit,
     onSetAudioVolume: (Int) -> Unit,
     onSetAudioMuted: (Boolean) -> Unit,
     onExit: () -> Unit,
@@ -3359,9 +3371,13 @@ private fun EmulationSidebarMenu(
         if (uiState.showMenu) railFocusRequesters[selectedMenuTab]?.requestFocus()
     }
     // Cheats can be toggled or installed from the cheat manager; re-read the
-    // installed list every time the tab is opened so both stay in sync.
+    // installed list every time the tab is opened so both stay in sync. The
+    // pack catalog is fetched at the same time (cached by the repository).
     LaunchedEffect(selectedMenuTab, uiState.showMenu) {
-        if (uiState.showMenu && selectedMenuTab == EmulationMenuTab.Cheats) onRefreshCheats()
+        if (uiState.showMenu && selectedMenuTab == EmulationMenuTab.Cheats) {
+            onRefreshCheats()
+            onLoadCheatPacks(false)
+        }
     }
     val menuTabs = remember(uiState.gameMenuTabOrder, uiState.hiddenGameMenuTabs, platform) {
         uiState.gameMenuTabOrder
@@ -4395,6 +4411,14 @@ private fun EmulationSidebarMenu(
                             horizontalInset = sectionLabelInset
                         )
 
+
+                        EmulationCheatPacksSection(
+                            state = cheatPackBrowserState,
+                            hasInstalledCheats = uiState.availableCheats.isNotEmpty(),
+                            onLoad = onLoadCheatPacks,
+                            onInstallPack = onInstallCheatPack,
+                            onImportText = onImportCheatPack
+                        )
 
                         EmulationCheatsSection(
                             blocks = uiState.availableCheats,

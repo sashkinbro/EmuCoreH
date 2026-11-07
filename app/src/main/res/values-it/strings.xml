@@ -272,7 +272,15 @@
     <string name="settings_rendering_section">Rendering</string>
     <string name="settings_enable_cheats">Abilita trucchi</string>
     <string name="emulation_cheats_title">Trucchi</string>
-    <string name="emulation_cheats_empty">Nessun trucco trovato per questo gioco.</string>
+    <string name="emulation_cheats_empty">Nessun trucco è ancora installato per questo gioco.</string>
+    <string name="emulation_cheats_empty_hint">Installa un pacchetto di trucchi sopra o importa un file PNACH, poi attiva i trucchi che vuoi.</string>
+    <string name="emulation_cheat_packs_title">Pacchetti di trucchi</string>
+    <string name="emulation_cheat_packs_hint">Installa un pacchetto per questo gioco, poi attiva qui sotto i trucchi che vuoi.</string>
+    <string name="emulation_cheat_packs_import">Importa file PNACH</string>
+    <string name="emulation_cheat_packs_installing">Installazione…</string>
+    <string name="emulation_cheat_packs_installed">Installato</string>
+    <string name="emulation_cheat_packs_show">Mostra pacchetti di trucchi</string>
+    <string name="emulation_cheat_packs_hide">Nascondi pacchetti di trucchi</string>
     <string name="emulation_cheats_group_enable">Attiva tutti nel gruppo</string>
     <string name="settings_more_options">Altre opzioni</string>
     <string name="settings_reset_all_title">Ripristina tutte le impostazioni</string>
@@ -885,6 +893,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_manager_import_pnach">Importa file trucchi per il gioco selezionato</string>
     <string name="cheat_manager_detected_identity">%1$s • CRC %2$s</string>
     <string name="cheat_manager_crc_unavailable">%1$s • CRC non rilevato. Le revisioni disponibili vengono associate tramite numero di serie e titolo.</string>
+    <string name="cheat_manager_download_failed">Impossibile scaricare il file o il file non contiene blocchi PNACH supportati.</string>
     <string name="cheat_manager_import_success">File trucchi importato. Scegli qui sotto i trucchi da attivare.</string>
     <string name="cheat_manager_import_failed">Il file selezionato non contiene trucchi supportati.</string>
     <string name="cheat_catalog_install_failed">Impossibile installare il pacchetto di trucchi selezionato.</string>
@@ -894,6 +903,11 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="cheat_catalog_description">Scarica pacchetti di trucchi verificati per il gioco selezionato dal catalogo EmuCoreH. I pacchetti installati vengono uniti ai trucchi già salvati per questo gioco.</string>
     <string name="cheat_catalog_title">Trucchi online</string>
     <string name="cheat_manager_installed">Trucchi installati</string>
+    <string name="cheat_manager_installed_packs">Pacchetti installati</string>
+    <string name="cheat_manager_pack_remove_failed">Impossibile rimuovere il pacchetto. Reinstallalo e riprova.</string>
+    <string name="cheat_manager_remove_pack_title">Rimuovere «%1$s»?</string>
+    <string name="cheat_manager_remove_pack_body">Verranno rimossi solo i trucchi di questo pacchetto. Gli altri pacchetti installati e i trucchi attivati restano.</string>
+    <string name="cheat_manager_pack_meta">CRC %1$s • %2$d blocchi di trucchi</string>
     <string name="cheat_manager_delete">Elimina i trucchi per questo gioco</string>
     <string name="cheat_manager_delete_title">Eliminare i trucchi installati?</string>
     <string name="cheat_manager_delete_confirm">Il file trucchi importato e la selezione dei trucchi attivi verranno rimossi.</string>
