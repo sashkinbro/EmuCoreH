@@ -98,10 +98,23 @@ class SocGpuCatalogTest {
     @Test
     fun `returns null for unknown SoCs and blank input`() {
         assertNull(SocGpuCatalog.forSoc("Unknown SoC"))
-        assertNull(SocGpuCatalog.forSoc("Allwinner H618"))
+        assertNull(SocGpuCatalog.forSoc("Allwinner A999"))
         assertEquals("Mali-450 MP2", SocGpuCatalog.forSoc("Rockchip RK3528")?.displayName)
         assertNull(SocGpuCatalog.forSoc(null))
         assertNull(SocGpuCatalog.forSoc(""))
         assertNull(SocGpuCatalog.forSoc("   "))
+    }
+    @Test
+    fun mapsAllwinnerPartsToTheirActualGpuFamilies() {
+        listOf("A523", "A527", "T527", "H728", "A333", "A537").forEach { part ->
+            assertEquals("Mali-G57 MC1", SocGpuCatalog.forSoc("Allwinner $part")?.displayName)
+        }
+        assertEquals("Mali-G57", SocGpuCatalog.forSoc("Allwinner MR527")?.displayName)
+        assertEquals("Mali-G57 MC1", SocGpuCatalog.forSoc("Allwinner A523/A527/H728/T527")?.displayName)
+        assertEquals("Mali-G31 MP2", SocGpuCatalog.forSoc("Allwinner H616/H618/H700")?.displayName)
+        assertEquals("PowerVR GE8300", SocGpuCatalog.forSoc("Allwinner A133")?.displayName)
+        assertEquals("PowerVR GE8300", SocGpuCatalog.forSoc("Allwinner A133P")?.displayName)
+        assertEquals("PowerVR BXM-4-64 MC1", SocGpuCatalog.forSoc("Allwinner A733")?.displayName)
+        assertEquals("Adreno 830", SocGpuCatalog.forSoc("Snapdragon\u00ae 8 Elite\u2122 for Galaxy")?.displayName)
     }
 }

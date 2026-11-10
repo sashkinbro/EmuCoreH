@@ -345,6 +345,25 @@ object SocGpuCatalog {
         entry("Amlogic S905W", mali("Mali-450 MP3")),
         entry("Amlogic S905", mali("Mali-450 MP3")),
 
+        // Allwinner product briefs: A523/A527/T527/H728 and A333/A537 use G57 MC1.
+        // https://www.allwinnertech.com/index.php?a=index&c=product&id=138 (A537)
+        // https://www.allwinnertech.com/index.php?a=index&c=product&id=137 (A333)
+        // https://www.allwinnertech.com/index.php?a=index&c=product&id=121 (MR527)
+        entry("Allwinner A523", mali("Mali-G57 MC1")),
+        entry("Allwinner A527", mali("Mali-G57 MC1")),
+        entry("Allwinner T527", mali("Mali-G57 MC1")),
+        entry("Allwinner H728", mali("Mali-G57 MC1")),
+        entry("Allwinner A333", mali("Mali-G57 MC1")),
+        entry("Allwinner A537", mali("Mali-G57 MC1")),
+        // https://www.allwinnertech.com/index.php?a=index&c=product&id=139 (A733)
+        entry("Allwinner A733", powerVr("PowerVR BXM-4-64 MC1")),
+        entry("Allwinner MR527", mali("Mali-G57")),
+        entry("Allwinner A133", powerVr("PowerVR GE8300")),
+        entry("Allwinner A133P", powerVr("PowerVR GE8300")),
+        entry("Allwinner H616", mali("Mali-G31 MP2")),
+        entry("Allwinner H618", mali("Mali-G31 MP2")),
+        entry("Allwinner H700", mali("Mali-G31 MP2")),
+
         entry("NVIDIA Tegra X1", GpuModelInfo(GpuVendor.UNKNOWN, "NVIDIA Maxwell")),
         entry("NVIDIA Tegra K1", GpuModelInfo(GpuVendor.UNKNOWN, "NVIDIA Kepler")),
         entry("NVIDIA Tegra 4", GpuModelInfo(GpuVendor.UNKNOWN, "NVIDIA ULP GeForce")),
