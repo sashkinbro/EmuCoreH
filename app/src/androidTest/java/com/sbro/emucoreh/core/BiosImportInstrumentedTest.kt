@@ -248,6 +248,54 @@ class BiosImportInstrumentedTest {
         } finally { root.deleteRecursively() }
     }
 
+    @Test fun renamedSaturnRegionsInstallIndependentlyAndLegacyFirmwareRemainsValid() {
+        val base = ApplicationProvider.getApplicationContext<Context>()
+        val ownerPath = base.contentResolver.persistedUriPermissions.firstOrNull {
+            it.uri.toString().contains("bios", ignoreCase = true)
+        }?.uri
+        org.junit.Assume.assumeTrue("Owner BIOS folder selected", ownerPath != null)
+        val owners = DocumentFile.fromTreeUri(base, requireNotNull(ownerPath))!!
+        val jpSource = owners.findFile("Sega Saturn BIOS (J) (1.01).bin")
+        val euSource = owners.findFile("Sega Saturn BIOS (E) (1.00).bin")
+        org.junit.Assume.assumeTrue("Both owner Saturn regions", jpSource != null && euSource != null)
+        val jp = base.contentResolver.openInputStream(jpSource!!.uri)!!.use { it.readBytes() }
+        val eu = base.contentResolver.openInputStream(euSource!!.uri)!!.use { it.readBytes() }
+        val root = File(base.cacheDir, "saturn-region-import-${System.nanoTime()}").apply { mkdirs() }
+        val context = object : ContextWrapper(base) {
+            override fun getApplicationContext(): Context = this
+            override fun getFilesDir() = File(root, "files").apply { mkdirs() }
+        }
+        try {
+            assertEquals("sega_101.bin", SaturnBios.canonicalFileName(jp))
+            assertEquals("mpr-17933.bin", SaturnBios.canonicalFileName(eu))
+            val system = SaturnBios.directory(context).apply { mkdirs() }
+            val legacy = File(system, SaturnBios.FILE_NAME).apply { writeBytes(jp) }
+            assertTrue("Legacy file continues to satisfy setup", SaturnBios.isInstalled(context))
+            val selected = File(root, "collection").apply { mkdirs() }
+            // Names deliberately describe other consoles and the opposite region.
+            File(selected, "dc_boot.bin").writeBytes(eu)
+            File(selected, "bios_CD_U.bin").writeBytes(jp)
+            val imported = BiosImport.installFromDocument(context, DocumentFile.fromFile(selected),
+                File(root, "flycast").path, File(root, "sega").path)
+            assertEquals(2, imported.saturn)
+            assertEquals(0, imported.dreamcast)
+            assertEquals(0, imported.segaCd)
+            assertArrayEquals(jp, File(system, "sega_101.bin").readBytes())
+            assertArrayEquals(eu, File(system, "mpr-17933.bin").readBytes())
+            assertArrayEquals("Import never mutates legacy firmware", jp, legacy.readBytes())
+            assertTrue(legacy.delete())
+            assertTrue("Region files alone satisfy setup", SaturnBios.isInstalled(context))
+            assertTrue(File(SaturnBios.requireInstalled(context)).isFile)
+            File(selected, "dc_boot.bin").writeBytes(ByteArray(SaturnBios.SIZE))
+            BiosImport.installFromDocument(context, DocumentFile.fromFile(selected),
+                File(root, "flycast").path, File(root, "sega").path)
+            assertArrayEquals(eu, File(system, "mpr-17933.bin").readBytes())
+            File(system, "sega_101.bin").writeBytes(eu)
+            File(system, "mpr-17933.bin").delete()
+            org.junit.Assert.assertFalse("Wrong region in canonical slot is invalid", SaturnBios.isInstalled(context))
+        } finally { root.deleteRecursively() }
+    }
+
     private fun flashFixture() = ByteArray(SegaCdBios.SIZE).apply {
         "Dreamcast  ".toByteArray().copyInto(this, 0x1a005)
         "Dreamcast  ".toByteArray().copyInto(this, 0x1a0a5)

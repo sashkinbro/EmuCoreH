@@ -13,30 +13,34 @@ import java.security.MessageDigest
 object SaturnBios {
     const val SIZE = 512 * 1024
     const val FILE_NAME = "saturn_bios.bin"
-    private val checksums = setOf(
-        "af5828fdff51384f99b3c4926be27762", // Japan 1.00
-        "85ec9ca47d8f6807718151cbcca8b964", // Japan 1.01
-        "3240872c70984b6cbfda1586cab68dbe" // US/Europe
+    private val checksums = mapOf(
+        "af5828fdff51384f99b3c4926be27762" to "sega_101.bin", // Japan 1.00
+        "85ec9ca47d8f6807718151cbcca8b964" to "sega_101.bin", // Japan 1.01
+        "3240872c70984b6cbfda1586cab68dbe" to "mpr-17933.bin" // US/Europe
     )
 
     fun directory(context: Context) = File(context.filesDir, "saturn/system")
 
-    internal fun isValid(bytes: ByteArray): Boolean = bytes.size == SIZE &&
-        MessageDigest.getInstance("MD5").digest(bytes).joinToString("") { "%02x".format(it) } in checksums
+    internal fun canonicalFileName(bytes: ByteArray): String? = if (bytes.size != SIZE) null else
+        checksums[MessageDigest.getInstance("MD5").digest(bytes).joinToString("") { "%02x".format(it) }]
+
+    internal fun isValid(bytes: ByteArray): Boolean = canonicalFileName(bytes) != null
 
     internal fun readValidated(input: InputStream): ByteArray? {
         val bytes = input.readBytesBounded(SIZE + 1)
         return bytes.takeIf(::isValid)
     }
 
-    fun isInstalled(context: Context): Boolean = runCatching {
-        File(directory(context), FILE_NAME).inputStream().use(::readValidated) != null
-    }.getOrDefault(false)
+    private fun installedFile(context: Context): File? = (listOf(FILE_NAME) + checksums.values.distinct())
+        .map { File(directory(context), it) }.firstOrNull { file -> runCatching {
+            val bytes = file.inputStream().use(::readValidated) ?: return@runCatching false
+            file.name == FILE_NAME || canonicalFileName(bytes) == file.name
+        }.getOrDefault(false) }
 
-    fun requireInstalled(context: Context): String {
-        if (!isInstalled(context)) throw IOException("SATURN_BIOS_REQUIRED: Import your Saturn BIOS (saturn_bios.bin, sega_101.bin or mpr-17933.bin) in Settings > Library > BIOS.")
-        return File(directory(context), FILE_NAME).absolutePath
-    }
+    fun isInstalled(context: Context): Boolean = installedFile(context) != null
+
+    fun requireInstalled(context: Context): String = installedFile(context)?.absolutePath
+        ?: throw IOException("SATURN_BIOS_REQUIRED: Import your Saturn BIOS (saturn_bios.bin, sega_101.bin or mpr-17933.bin) in Settings > Library > BIOS.")
 
     internal fun installDetected(context: Context, uri: Uri, size: Long): Boolean = runCatching {
         if (size >= 0 && size != SIZE.toLong()) return false
@@ -46,7 +50,7 @@ object SaturnBios {
         val temporary = File.createTempFile("saturn-bios-", ".tmp", directory)
         try {
             temporary.writeBytes(bytes)
-            Files.move(temporary.toPath(), File(directory, FILE_NAME).toPath(),
+            Files.move(temporary.toPath(), File(directory, requireNotNull(canonicalFileName(bytes))).toPath(),
                 StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
         } finally { temporary.delete() }
         true

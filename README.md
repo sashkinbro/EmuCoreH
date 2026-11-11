@@ -150,7 +150,7 @@ Sega CD dumps with descriptive filenames are recognized by their console boot he
 - Arcade: `naomi.zip`, `naomi2.zip`, `awbios.zip`, and other supported MAME BIOS sets
 - Sega CD: `bios_CD_U.bin`, `bios_CD_E.bin`, or `bios_CD_J.bin` (128 KiB, regional aliases accepted)
 - Sega 32X: `32X_G_BIOS.bin` (256 bytes), `32X_M_BIOS.bin` (2048 bytes), and `32X_S_BIOS.bin` (1024 bytes)
-- Saturn: a validated 512 KiB Japan 1.00/1.01 or US/Europe BIOS, installed as `saturn_bios.bin`; descriptive source filenames are accepted
+- Saturn: a validated 512 KiB Japan 1.00/1.01 or US/Europe BIOS, installed in separate `sega_101.bin` (Japan) and `mpr-17933.bin` (US/Europe) slots; legacy `saturn_bios.bin` remains accepted and descriptive source filenames are accepted
 
 Sega CD and 32X firmware is validated before installation; 32X files must match their exact role size and CRC32. Missing or invalid firmware produces an actionable BIOS message and returns to the library instead of leaving the game on a black screen.
 

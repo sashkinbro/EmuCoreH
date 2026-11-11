@@ -6,10 +6,9 @@ NDK 29.0.14206865 and CMake 3.30.5. All sources are local and pinned; consult
 UPSTREAM.txt and THIRD-PARTY-NOTICES.txt before updating them.
 
 Provide a user-owned Saturn BIOS in the frontend system directory. The app
-installs its validated image as `saturn_bios.bin`; the core also accepts the
-upstream `sega_101.bin` (Japan/Asia NTSC) and `mpr-17933.bin` (North America,
-Europe and other regions) names, preferring the region-specific file when both
-exist. HLE BIOS is not available. Supported disc inputs are CUE/BIN, CCD/IMG,
+installs validated images by checksum into `sega_101.bin` (Japan/Asia NTSC)
+and `mpr-17933.bin` (North America, Europe and other regions). Both regions
+can coexist. The legacy `saturn_bios.bin` remains accepted as a fallback. HLE BIOS is not available. Supported disc inputs are CUE/BIN, CCD/IMG,
 CHD, TOC and M3U. Multidisc selection uses the libretro disk-control interface
 and the app disc menu; this port implements runtime add/replace/remove so a
 tray swap does not relaunch the emulator. PAL regions select 50 Hz, NTSC

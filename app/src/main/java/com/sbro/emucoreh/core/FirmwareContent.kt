@@ -21,7 +21,7 @@ internal object FirmwareContent {
         val crc = CRC32().apply { update(bytes) }.value
         val arcade = ArcadeBiosFingerprints.roms.filter { it.size == bytes.size && it.crc == crc }
         if (arcade.isNotEmpty()) return arcade.map { Rom(Family.ARCADE, it.name, bytes, it.archive) }
-        if (SaturnBios.isValid(bytes)) return listOf(Rom(Family.SATURN, SaturnBios.FILE_NAME, bytes))
+        SaturnBios.canonicalFileName(bytes)?.let { return listOf(Rom(Family.SATURN, it, bytes)) }
         Sega32XBios.Part.entries.firstOrNull { it.size == bytes.size && it.crc32 == crc }?.let {
             return listOf(Rom(Family.SEGA_32X, it.fileName, bytes))
         }
