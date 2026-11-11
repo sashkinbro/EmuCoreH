@@ -212,8 +212,8 @@ const BIOS_t BIOS[] =
 			// BOOT VER 1.01
 			//{ 0, "epr-24236a.ic50", 0x000000, 0x200000, 0xca7df0de },
 
-			{ 1, "mb_eeprom_us.ic54s", 0x000, 0x800, 0x4186d7ab, EepromBE16 },
-			{ 2, "mb_eeprom_exp.ic54s", 0x000, 0x800, 0x947ddfad, EepromBE16 },
+			{ 1, "mb_eeprom_us.ic54s", 0x000, 0x80, 0x4186d7ab, EepromBE16 },
+			{ 2, "mb_eeprom_exp.ic54s", 0x000, 0x80, 0x947ddfad, EepromBE16 },
 		},
 	},
 	{

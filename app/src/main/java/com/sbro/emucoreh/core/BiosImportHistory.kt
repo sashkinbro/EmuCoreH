@@ -31,7 +31,7 @@ internal class BiosImportHistory(
     }
 
     companion object {
-        private const val VERSION = "content-import-v4-saturn-regions"
+        private const val VERSION = "content-import-v5-systemsp-eeprom"
 
         internal fun selectionKey(paths: List<String>): String = MessageDigest.getInstance("SHA-256")
             .digest((VERSION + "\u0000" + paths.distinct().filter(String::isNotBlank).sorted()

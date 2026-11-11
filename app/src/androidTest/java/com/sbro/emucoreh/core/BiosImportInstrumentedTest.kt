@@ -296,6 +296,46 @@ class BiosImportInstrumentedTest {
         } finally { root.deleteRecursively() }
     }
 
+    @Test fun renamedOwnerSystemSpArchiveCannotReplaceNaomiOrDreamcastFirmware() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val ownerPath = context.contentResolver.persistedUriPermissions.firstOrNull {
+            it.uri.toString().contains("bios", ignoreCase = true)
+        }?.uri
+        org.junit.Assume.assumeTrue("Owner BIOS folder selected", ownerPath != null)
+        val source = DocumentFile.fromTreeUri(context, requireNotNull(ownerPath))?.findFile("segasp.zip")
+        org.junit.Assume.assumeTrue("Owner System SP firmware supplied", source != null)
+        val root = File(context.cacheDir, "bios-systemsp-routing-${System.nanoTime()}").apply { mkdirs() }
+        try {
+            val disguised = File(root, "dc_boot.bin")
+            context.contentResolver.openInputStream(requireNotNull(source).uri)!!.use { input ->
+                disguised.outputStream().use(input::copyTo)
+            }
+            val system = File(root, "system")
+            val result = BiosImport.installSelection(context, Uri.fromFile(disguised), system.path,
+                File(root, "sega").path)
+            assertTrue("System SP content imported despite Dreamcast filename", result.arcade > 0)
+            assertEquals(0, result.dreamcast)
+            val installed = File(system, "dc/segasp.zip")
+            assertTrue(installed.isFile)
+            val detected = installed.inputStream().use(FirmwareContent::readSelection)
+            assertTrue(detected.isNotEmpty())
+            assertTrue("Only System SP firmware in its canonical archive", detected.all { it.archive == "segasp" })
+            java.util.zip.ZipFile(disguised).use { original ->
+                java.util.zip.ZipFile(installed).use { canonical ->
+                    for (name in listOf("mb_eeprom_us.ic54s", "mb_eeprom_exp.ic54s")) {
+                        val entry = requireNotNull(canonical.getEntry(name)) { "Regional System SP EEPROM missing: $name" }
+                        assertEquals("System SP EEPROM is 128 bytes", 128L, entry.size)
+                        assertArrayEquals(original.getInputStream(original.getEntry(name)).use { it.readBytes() },
+                            canonical.getInputStream(entry).use { it.readBytes() })
+                    }
+                }
+            }
+            for (name in listOf("dc_boot.bin", "naomi.zip", "naomi2.zip", "awbios.zip")) {
+                org.junit.Assert.assertFalse("System SP must not create $name", File(system, "dc/$name").exists())
+            }
+        } finally { root.deleteRecursively() }
+    }
+
     private fun flashFixture() = ByteArray(SegaCdBios.SIZE).apply {
         "Dreamcast  ".toByteArray().copyInto(this, 0x1a005)
         "Dreamcast  ".toByteArray().copyInto(this, 0x1a0a5)
