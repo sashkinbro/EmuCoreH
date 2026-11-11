@@ -1597,7 +1597,11 @@ object FlycastCoreOptions {
 
     /** Resolve and validate overrides before the core reads its boot options. */
     fun startupOptions(global: Map<String, String>, game: Map<String, String>): Map<String, String> {
-        val result = mutableMapOf<String, String>()
+        // Native option values survive consecutive sessions using the same core.
+        // Reassert defaults too, otherwise an old game's MMU/frame-skip/region
+        // overrides silently leak into the next game after its profile is cleared.
+        val result = optionList.filterNot { isManagedKey(it.key) }
+            .associateTo(mutableMapOf()) { it.key to it.defaultValue }
         for (source in listOf(global, game)) {
             for ((key, value) in source) {
                 if (key == HLE_BIOS_KEY) continue

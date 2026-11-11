@@ -13,6 +13,21 @@ class FlycastOptionCoverageTest {
         assertFalse(FlycastCoreOptions.startupOptions(mapOf(key to "enabled"),
             mapOf(key to "enabled")).containsKey(key))
     }
+    @Test fun consecutiveGameLaunchesRestoreUnconfiguredOptionsWithoutShadowingManagedSettings() {
+        val native = mutableMapOf<String, String>()
+        native.putAll(FlycastCoreOptions.startupOptions(emptyMap(), mapOf(
+            "reicast_frame_skipping" to "3", "reicast_region" to "Japan")))
+        assertEquals("3", native["reicast_frame_skipping"])
+        native.putAll(FlycastCoreOptions.startupOptions(emptyMap(), emptyMap()))
+        assertEquals(FlycastCoreOptions.option("reicast_frame_skipping")!!.defaultValue,
+            native["reicast_frame_skipping"])
+        assertEquals(FlycastCoreOptions.option("reicast_region")!!.defaultValue, native["reicast_region"])
+        for (key in listOf(FlycastCoreOptions.INTERNAL_RESOLUTION_KEY, FlycastCoreOptions.HLE_BIOS_KEY,
+            "reicast_custom_textures", "reicast_preload_custom_textures")) {
+            assertFalse("Managed $key must keep its separate runtime path", native.containsKey(key))
+        }
+    }
+
     @Test fun gameMenusIncludeTheSameCoreOptionsAsSettingsWithoutDuplicateResolution() {
         val emulation = FlycastCoreOptions.gameMenuEmulationOptions().map { it.key }.toSet()
         val expected = FlycastCoreOptions.systemOptions() + FlycastCoreOptions.performanceOptions() +
