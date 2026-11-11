@@ -62,6 +62,8 @@ private val titleDescending = compareByDescending<HomeGameSortKey> { it.title }
 private fun List<GameItem>.sortedByTitle(): List<GameItem> =
     map(::HomeGameSortKey).sortedWith(titleAscending).map { it.game }
 
+private val titleAccents = Regex("\\p{InCombiningDiacriticalMarks}+")
+
 private fun sortToken(value: String): String = Normalizer.normalize(value, Normalizer.Form.NFD)
-    .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+    .replace(titleAccents, "")
     .lowercase(Locale.ROOT).trim()

@@ -121,6 +121,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private const val AUTO_REFRESH_INTERVAL_MS = 15 * 60 * 1000L
+        private val searchAccents = Regex("\\p{InCombiningDiacriticalMarks}+")
+        private val searchSeparators = Regex("[^\\p{L}\\p{N}]+")
     }
 
     private val repository = GameRepository()
@@ -139,6 +141,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var recentEntries: List<RecentGameEntry> = emptyList()
     private var coverSyncJob: Job? = null
     private var coverRetryJob: Job? = null
+    private val libraryProjectionPublisher = HomeLibraryProjectionPublisher<HomeUiState>(viewModelScope)
     private var searchJob: Job? = null
     private var biosInitialized = false
     private var libraryInitialized = false
@@ -878,54 +881,74 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     /** Pure list projection: showing a cached library never waits for cover preferences or files. */
     private fun publishProjectedGames(games: List<GameItem>) {
         val storedState = _uiState.value
-        // The same game is resolved for availability, filtering and sorting.
-        val platformByPath = HashMap<String, LibraryPlatform>(games.size)
-        fun platformOf(game: GameItem): LibraryPlatform = platformByPath.getOrPut(game.path) {
-            LibraryPlatformResolver.resolve(game, arcadeCatalog::find)
-        }
-        val presentPlatforms = games.filterNot { game ->
-            BiosValidator.isLikelyBiosLibraryEntry(game.fileName, game.title, game.serial)
-        }.mapTo(mutableSetOf()) { platformOf(it) }
-        val availablePlatforms = LibraryPlatform.entries.filter { it in presentPlatforms }
-        val state = storedState.copy(
-            platformFilters = pruneHomePlatformFilters(storedState.platformFilters, presentPlatforms)
-        )
-        val query = normalizeSearchToken(state.searchQuery)
-        val platformGames = games.filter { game ->
-            state.platformFilters.isEmpty() || matchesHomePlatformFilters(
-                state.platformFilters, platformOf(game)
+        val root = currentLibraryRoot
+        val recentPaths = recentEntries.map { it.path }
+        libraryProjectionPublisher.publish(compute = {
+            // The same game is resolved for availability, filtering and sorting.
+            val platformByPath = HashMap<String, LibraryPlatform>(games.size)
+            fun platformOf(game: GameItem): LibraryPlatform = platformByPath.getOrPut(game.path) {
+                LibraryPlatformResolver.resolve(game, arcadeCatalog::find)
+            }
+            val presentPlatforms = games.filterNot { game ->
+                BiosValidator.isLikelyBiosLibraryEntry(game.fileName, game.title, game.serial)
+            }.mapTo(mutableSetOf()) { platformOf(it) }
+            val availablePlatforms = LibraryPlatform.entries.filter { it in presentPlatforms }
+            val state = storedState.copy(
+                platformFilters = pruneHomePlatformFilters(storedState.platformFilters, presentPlatforms)
             )
-        }
-        val filtered = platformGames.filter { game ->
-            !BiosValidator.isLikelyBiosLibraryEntry(
-                fileName = game.fileName,
-                title = game.title,
-                serial = game.serial
-            ) && (
-            query.isBlank() ||
-                normalizeSearchToken(game.title).contains(query) ||
-                normalizeSearchToken(game.fileName).contains(query) ||
-                normalizeSearchToken(game.serial).contains(query) ||
-                game.discs.any { disc -> normalizeSearchToken(disc.fileName).contains(query) ||
-                    normalizeSearchToken(disc.serial).contains(query) }
+            val query = normalizeSearchToken(state.searchQuery)
+            val platformGames = games.filter { game ->
+                state.platformFilters.isEmpty() || matchesHomePlatformFilters(
+                    state.platformFilters, platformOf(game)
+                )
+            }
+            val filtered = platformGames.filter { game ->
+                !BiosValidator.isLikelyBiosLibraryEntry(
+                    fileName = game.fileName,
+                    title = game.title,
+                    serial = game.serial
+                ) && (
+                query.isBlank() ||
+                    normalizeSearchToken(game.title).contains(query) ||
+                    normalizeSearchToken(game.fileName).contains(query) ||
+                    normalizeSearchToken(game.serial).contains(query) ||
+                    game.discs.any { disc -> normalizeSearchToken(disc.fileName).contains(query) ||
+                        normalizeSearchToken(disc.serial).contains(query) }
+                )
+            }
+            val sections = buildHomeLibrarySections(filtered, state.sortOption, ::platformOf)
+            val recentGames = recentLibraryGroups(platformGames, recentPaths).filter { game ->
+                query.isBlank() ||
+                    normalizeSearchToken(game.title).contains(query) ||
+                    normalizeSearchToken(game.fileName).contains(query) ||
+                    normalizeSearchToken(game.serial).contains(query) ||
+                    game.discs.any { disc -> normalizeSearchToken(disc.fileName).contains(query) ||
+                        normalizeSearchToken(disc.serial).contains(query) }
+            }.takeIf { state.showRecentGames }.orEmpty()
+            state.copy(
+                games = sections.flatMap { it.games },
+                availablePlatforms = availablePlatforms,
+                platformFilters = state.platformFilters,
+                librarySections = sections,
+                recentGames = recentGames
             )
-        }
-        val sections = buildHomeLibrarySections(filtered, state.sortOption, ::platformOf)
-        val recentGames = recentLibraryGroups(platformGames, recentEntries.map { it.path }).filter { game ->
-            query.isBlank() ||
-                normalizeSearchToken(game.title).contains(query) ||
-                normalizeSearchToken(game.fileName).contains(query) ||
-                normalizeSearchToken(game.serial).contains(query) ||
-                game.discs.any { disc -> normalizeSearchToken(disc.fileName).contains(query) ||
-                    normalizeSearchToken(disc.serial).contains(query) }
-        }.takeIf { state.showRecentGames }.orEmpty()
-        _uiState.value = _uiState.value.copy(
-            games = sections.flatMap { it.games },
-            availablePlatforms = availablePlatforms,
-            platformFilters = state.platformFilters,
-            librarySections = sections,
-            recentGames = recentGames
-        )
+        }, accept = { projected ->
+            val current = _uiState.value
+            if (allGames === games && currentLibraryRoot == root &&
+                current.searchQuery == storedState.searchQuery &&
+                current.platformFilters == storedState.platformFilters &&
+                current.sortOption == storedState.sortOption &&
+                current.showRecentGames == storedState.showRecentGames &&
+                recentEntries.map { it.path } == recentPaths) {
+                _uiState.value = current.copy(
+                    games = projected.games,
+                    availablePlatforms = projected.availablePlatforms,
+                    platformFilters = projected.platformFilters,
+                    librarySections = projected.librarySections,
+                    recentGames = projected.recentGames
+                )
+            }
+        })
     }
 
     /**
@@ -1174,9 +1197,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         if (value.isNullOrBlank()) return ""
         val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
         return normalized
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .replace(searchAccents, "")
             .lowercase(Locale.ROOT)
-            .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+            .replace(searchSeparators, " ")
             .trim()
     }
 
