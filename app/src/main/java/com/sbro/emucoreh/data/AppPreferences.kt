@@ -46,6 +46,7 @@ data class SettingsSnapshot(
     val appFontScale: Float = AppPreferences.DEFAULT_APP_FONT_SCALE,
     val customFontName: String? = null,
     val customFontRevision: Int = 0,
+    val uiSounds: UiSoundSettings = UiSoundSettings(),
     val homeGridScale: Float = AppPreferences.DEFAULT_HOME_GRID_SCALE,
     val homeBackgroundType: HomeBackgroundType = HomeBackgroundType.NONE,
     val homeBackgroundPreset: HomeBackgroundPreset = HomeBackgroundPreset.OLYMPUS,
@@ -382,6 +383,12 @@ class AppPreferences(private val context: Context) {
         private val APP_FONT_SCALE = floatPreferencesKey("app_font_scale")
         private val CUSTOM_FONT_NAME = stringPreferencesKey("custom_font_name")
         private val CUSTOM_FONT_REVISION = intPreferencesKey("custom_font_revision")
+        private fun uiSoundEnabledKey(kind: UiSoundKind) = booleanPreferencesKey("ui_sound_${kind.id}_enabled")
+        private fun uiSoundVolumeKey(kind: UiSoundKind) = intPreferencesKey("ui_sound_${kind.id}_volume")
+        private fun uiSoundCustomNameKey(kind: UiSoundKind) = stringPreferencesKey("ui_sound_${kind.id}_custom_name")
+        private fun uiSoundCustomKey(kind: UiSoundKind) = booleanPreferencesKey("ui_sound_${kind.id}_custom")
+        private fun uiSoundPresetKey(kind: UiSoundKind) = stringPreferencesKey("ui_sound_${kind.id}_preset")
+        private fun uiSoundRevisionKey(kind: UiSoundKind) = intPreferencesKey("ui_sound_${kind.id}_revision")
         private val HOME_GRID_SCALE = floatPreferencesKey("home_grid_scale")
         private val HOME_BACKGROUND_TYPE = intPreferencesKey("home_background_type")
         private val HOME_BACKGROUND_PRESET = intPreferencesKey("home_background_preset")
@@ -653,6 +660,10 @@ class AppPreferences(private val context: Context) {
         .map { prefs -> (prefs[CUSTOM_FONT_REVISION] ?: 0).coerceAtLeast(0) }
         .distinctUntilChanged()
 
+    val uiSoundSettings: Flow<UiSoundSettings> = context.dataStore.data
+        .map { prefs -> readUiSoundSettings(prefs) }
+        .distinctUntilChanged()
+
     val homeGridScale: Flow<Float> = context.dataStore.data
         .map { prefs -> (prefs[HOME_GRID_SCALE] ?: DEFAULT_HOME_GRID_SCALE).coerceIn(MIN_HOME_GRID_SCALE, MAX_HOME_GRID_SCALE) }
         .distinctUntilChanged()
@@ -806,6 +817,103 @@ class AppPreferences(private val context: Context) {
 
     suspend fun setAppFontChoice(choice: AppFontChoice) {
         context.dataStore.edit { it[APP_FONT_CHOICE] = choice.preferenceValue }
+    }
+
+    suspend fun setUiSoundEnabled(kind: UiSoundKind, enabled: Boolean) {
+        context.dataStore.edit { it[uiSoundEnabledKey(kind)] = enabled }
+    }
+
+    suspend fun setUiSoundVolume(kind: UiSoundKind, volume: Int) {
+        context.dataStore.edit {
+            it[uiSoundVolumeKey(kind)] = volume.coerceIn(UiSoundSettings.MIN_VOLUME, UiSoundSettings.MAX_VOLUME)
+        }
+    }
+
+    /** Selects a built-in preset; this also drops any custom file selection for [kind]. */
+    suspend fun setUiSoundPreset(kind: UiSoundKind, presetId: String) {
+        context.dataStore.edit { prefs ->
+            prefs[uiSoundPresetKey(kind)] = UiSoundPresets.sanitizeId(kind, presetId)
+            prefs.remove(uiSoundCustomNameKey(kind))
+            prefs.remove(uiSoundCustomKey(kind))
+            prefs[uiSoundRevisionKey(kind)] = (prefs[uiSoundRevisionKey(kind)] ?: 0) + 1
+        }
+    }
+
+    suspend fun setUiSoundCustomInstalled(kind: UiSoundKind, displayName: String?) {
+        context.dataStore.edit { prefs ->
+            prefs[uiSoundCustomKey(kind)] = true
+            val cleanName = displayName?.trim()?.takeIf(String::isNotEmpty)
+            if (cleanName == null) prefs.remove(uiSoundCustomNameKey(kind)) else prefs[uiSoundCustomNameKey(kind)] = cleanName
+            prefs[uiSoundRevisionKey(kind)] = (prefs[uiSoundRevisionKey(kind)] ?: 0) + 1
+        }
+    }
+
+    suspend fun clearUiSoundCustom(kind: UiSoundKind) {
+        context.dataStore.edit { prefs ->
+            prefs.remove(uiSoundCustomNameKey(kind))
+            prefs.remove(uiSoundCustomKey(kind))
+            prefs[uiSoundRevisionKey(kind)] = (prefs[uiSoundRevisionKey(kind)] ?: 0) + 1
+        }
+    }
+
+    suspend fun resetUiSounds() {
+        context.dataStore.edit { prefs ->
+            UiSoundKind.entries.forEach { kind ->
+                prefs.remove(uiSoundEnabledKey(kind))
+                prefs.remove(uiSoundVolumeKey(kind))
+                prefs.remove(uiSoundCustomNameKey(kind))
+                prefs.remove(uiSoundCustomKey(kind))
+                prefs.remove(uiSoundPresetKey(kind))
+                prefs[uiSoundRevisionKey(kind)] = (prefs[uiSoundRevisionKey(kind)] ?: 0) + 1
+            }
+        }
+    }
+
+    private fun readUiSoundSettings(prefs: Preferences): UiSoundSettings {
+        fun read(kind: UiSoundKind) = UiSoundSetting(
+            enabled = prefs[uiSoundEnabledKey(kind)] ?: false,
+            volume = (prefs[uiSoundVolumeKey(kind)] ?: UiSoundSettings.DEFAULT_VOLUME)
+                .coerceIn(UiSoundSettings.MIN_VOLUME, UiSoundSettings.MAX_VOLUME),
+            custom = prefs[uiSoundCustomKey(kind)] ?: false,
+            customName = prefs[uiSoundCustomNameKey(kind)]?.takeIf(String::isNotBlank),
+            preset = UiSoundPresets.sanitizeId(kind, prefs[uiSoundPresetKey(kind)]),
+            revision = (prefs[uiSoundRevisionKey(kind)] ?: 0).coerceAtLeast(0)
+        )
+        return UiSoundSettings(
+            music = read(UiSoundKind.BACKGROUND_MUSIC),
+            click = read(UiSoundKind.BUTTON_CLICK),
+            menu = read(UiSoundKind.GAME_MENU)
+        )
+    }
+
+    private fun encodeUiSounds(settings: UiSoundSettings): JSONObject = JSONObject().apply {
+        UiSoundKind.entries.forEach { kind ->
+            val setting = settings[kind]
+            put(kind.id, JSONObject().apply {
+                put("enabled", setting.enabled)
+                put("volume", setting.volume)
+                put("custom", setting.custom)
+                put("customName", setting.customName)
+                put("preset", setting.preset)
+            })
+        }
+    }
+
+    private fun importUiSounds(prefs: MutablePreferences, json: JSONObject?) {
+        UiSoundKind.entries.forEach { kind ->
+            val entry = json?.optJSONObject(kind.id)
+            prefs[uiSoundEnabledKey(kind)] = entry?.optBoolean("enabled", false) ?: false
+            prefs[uiSoundVolumeKey(kind)] = (entry?.optInt("volume", UiSoundSettings.DEFAULT_VOLUME)
+                ?: UiSoundSettings.DEFAULT_VOLUME)
+                .coerceIn(UiSoundSettings.MIN_VOLUME, UiSoundSettings.MAX_VOLUME)
+            val importedName = entry?.optString("customName")?.trim()?.takeIf(String::isNotEmpty)
+            if (importedName != null) prefs[uiSoundCustomNameKey(kind)] = importedName else prefs.remove(uiSoundCustomNameKey(kind))
+            // Backups made before presets existed have no "preset" field: fall back to the default.
+            prefs[uiSoundPresetKey(kind)] = UiSoundPresets.sanitizeId(kind, entry?.optString("preset", null))
+            val importedCustom = entry?.optBoolean("custom", importedName != null) ?: false
+            if (importedCustom) prefs[uiSoundCustomKey(kind)] = true else prefs.remove(uiSoundCustomKey(kind))
+            prefs[uiSoundRevisionKey(kind)] = (prefs[uiSoundRevisionKey(kind)] ?: 0) + 1
+        }
     }
 
     suspend fun setCustomFontInstalled(displayName: String?) {
@@ -1472,6 +1580,7 @@ class AppPreferences(private val context: Context) {
                     .coerceIn(MIN_APP_FONT_SCALE, MAX_APP_FONT_SCALE),
                 customFontName = prefs[CUSTOM_FONT_NAME]?.takeIf(String::isNotBlank),
                 customFontRevision = (prefs[CUSTOM_FONT_REVISION] ?: 0).coerceAtLeast(0),
+                uiSounds = readUiSoundSettings(prefs),
                 homeGridScale = (prefs[HOME_GRID_SCALE] ?: DEFAULT_HOME_GRID_SCALE)
                     .coerceIn(MIN_HOME_GRID_SCALE, MAX_HOME_GRID_SCALE),
                 homeBackgroundType = HomeBackgroundType.fromPreference(prefs[HOME_BACKGROUND_TYPE]),
@@ -3171,6 +3280,7 @@ class AppPreferences(private val context: Context) {
             put("appFontChoice", prefs[APP_FONT_CHOICE] ?: AppFontChoice.SYSTEM.preferenceValue)
             put("appFontScale", (prefs[APP_FONT_SCALE] ?: DEFAULT_APP_FONT_SCALE).toDouble())
             put("customFontName", prefs[CUSTOM_FONT_NAME])
+            put("uiSounds", encodeUiSounds(readUiSoundSettings(prefs)))
             put("homeGridScale", (prefs[HOME_GRID_SCALE] ?: DEFAULT_HOME_GRID_SCALE).toDouble())
             put("homeBackgroundDim", prefs[HOME_BACKGROUND_DIM] ?: DEFAULT_HOME_BACKGROUND_DIM)
             put(
@@ -3407,6 +3517,7 @@ class AppPreferences(private val context: Context) {
             json.optString("customFontName").trim().takeIf(String::isNotEmpty)?.let {
                 prefs[CUSTOM_FONT_NAME] = it
             } ?: prefs.remove(CUSTOM_FONT_NAME)
+            importUiSounds(prefs, json.optJSONObject("uiSounds"))
             prefs[HOME_GRID_SCALE] = json.optDouble("homeGridScale", DEFAULT_HOME_GRID_SCALE.toDouble())
                 .toFloat().coerceIn(MIN_HOME_GRID_SCALE, MAX_HOME_GRID_SCALE)
             prefs[HOME_BACKGROUND_DIM] = json.optInt("homeBackgroundDim", DEFAULT_HOME_BACKGROUND_DIM)

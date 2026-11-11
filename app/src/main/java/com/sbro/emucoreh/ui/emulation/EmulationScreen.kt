@@ -167,6 +167,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.AudioDefaults
 import com.sbro.emucoreh.core.AndroidTouchHaptics
+import com.sbro.emucoreh.core.UiSoundManager
 import com.sbro.emucoreh.core.AndroidGyroscopeInput
 import com.sbro.emucoreh.core.ArcadeInputPolicy
 import com.sbro.emucoreh.core.LightGunAimGeometry
@@ -1780,6 +1781,10 @@ fun EmulationScreen(
         // used to make the first open lag and stutter.
         val menuUiState = gameMenuExitState.present(uiState)
         val gameMenuVisible = menuUiState.showMenu && !showControlsEditor
+        // Game menu open/close sound (no-op unless enabled in Settings -> Customization).
+        LaunchedEffect(gameMenuVisible) {
+            UiSoundManager.setGameMenuOpen(gameMenuVisible)
+        }
         val menuSlideProgress by animateFloatAsState(
             targetValue = if (gameMenuVisible) 0f else 1f,
             animationSpec = tween(durationMillis = if (gameMenuVisible) 260 else 220),
@@ -5111,7 +5116,10 @@ private fun EmulationMenuRailButton(
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClick = onClick
+                onClick = {
+                    UiSoundManager.onUiInteraction()
+                    onClick()
+                }
             )
             .focusable(interactionSource = interactionSource),
         shape = shape,
