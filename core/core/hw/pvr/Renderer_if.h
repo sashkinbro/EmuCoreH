@@ -16,6 +16,9 @@ bool rend_single_frame(const bool& enabled);
 void rend_swap_frame(u32 fb_r_sof1);
 void rend_set_fb_write_addr(u32 fb_w_sof1);
 void rend_reset();
+#ifdef LIBRETRO
+void rend_rethrow_deferred_exception();
+#endif
 void rend_disable_rollback();
 void rend_start_rollback();
 void rend_allow_rollback();

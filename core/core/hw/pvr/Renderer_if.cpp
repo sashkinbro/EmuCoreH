@@ -14,6 +14,11 @@
 
 #include <mutex>
 #include <deque>
+#include <memory>
+#ifdef LIBRETRO
+#include "util/deferred_exception.h"
+static DeferredException renderFailure;
+#endif
 
 #ifdef LIBRETRO
 void retro_rend_present();
@@ -127,10 +132,21 @@ public:
 		else
 		{
 			setDefaultRoundingMode();
+#ifdef LIBRETRO
+			const bool succeeded = renderFailure.run([&] {
+#endif
 			// drain the queue after switching to !threaded rendering
 			while (!queue.empty())
 				waitAndExecute();
 			execute(msg);
+#ifdef LIBRETRO
+			});
+			if (!succeeded) {
+				renderEnd.Set();
+				rend_allow_rollback();
+				emu.getSh4Executor()->Stop();
+			}
+#endif
 			Sh4cntx.restoreHostRoundingMode();
 		}
 	}
@@ -212,6 +228,7 @@ private:
 		TA_context *taContext = DequeueRender();
 		if (taContext == nullptr)
 			return;
+		const std::unique_ptr<TA_context, decltype(&FinishRender)> finish(taContext, FinishRender);
 
 		// tile clipping is used to calculate framebuffer size in RTT below
 		setTileClipping(taContext->rend);
@@ -232,7 +249,6 @@ private:
 			} catch (...) {
 				renderEnd.Set();
 				rend_allow_rollback();
-				FinishRender(taContext);
 				throw;
 			}
 		}
@@ -248,7 +264,6 @@ private:
 			} catch (...) {
 				if (!renderToScreen)
 					renderEnd.Set();
-				FinishRender(taContext);
 				throw;
 			}
 		}
@@ -259,7 +274,6 @@ private:
 			present();
 
 		//clear up & free data ..
-		FinishRender(taContext);
 	}
 
 	void renderFramebuffer(const FramebufferInfo& config)
@@ -296,6 +310,12 @@ private:
 };
 
 static PvrMessageQueue pvrQueue;
+
+#ifdef LIBRETRO
+void rend_rethrow_deferred_exception() {
+	renderFailure.rethrow();
+}
+#endif
 
 bool rend_single_frame(const bool& enabled)
 {
@@ -508,6 +528,9 @@ void rend_term_renderer()
 
 void rend_reset()
 {
+#ifdef LIBRETRO
+	renderFailure.reset();
+#endif
 	FinishRender(DequeueRender());
 	render_called = false;
 	pend_rend = false;

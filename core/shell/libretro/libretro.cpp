@@ -1342,9 +1342,13 @@ void retro_run()
 			startTime = sh4_sched_now64();
 			emu.render();
 		}
-	} catch (const FlycastException& e) {
+		rend_rethrow_deferred_exception();
+	} catch (const std::exception& e) {
 		ERROR_LOG(COMMON, "%s", e.what());
 		os_notify(e.what(), 5000);
+		environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+	} catch (...) {
+		os_notify("Renderer failed", 5000);
 		environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 	}
 

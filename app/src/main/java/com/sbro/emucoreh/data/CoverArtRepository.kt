@@ -346,6 +346,12 @@ class CoverArtRepository(context: Context) {
             downloadCoverResolved(game, primaryKey, effectiveMode).also {
                 flight.result = it
             }
+        } catch (failure: BoxartRetryException) {
+            // Console-specific paths (including Saturn) must share the same
+            // retry boundary as the Dreamcast/arcade CoverFetchOrder path.
+            noteRetry(failure.retryAtMillis)
+            findCachedCoverPath(game.serial, title = game.title, ignoreDisabled = true, platform = gamePlatform(game))
+                .also { flight.result = it }
         } finally {
             synchronized(downloadFlightsLock) {
                 downloadFlights.remove(primaryKey, flight)

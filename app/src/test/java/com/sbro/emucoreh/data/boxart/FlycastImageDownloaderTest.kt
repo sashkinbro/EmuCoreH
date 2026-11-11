@@ -9,6 +9,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class FlycastImageDownloaderTest {
+    @Test fun `download recreates cache removed after repository initialization`() = withImage(200, "valid cover") { downloader, url, root ->
+        root.deleteRecursively()
+        val stored = downloader.download(url, "daytona")
+        assertNotNull(stored)
+        assertEquals("valid cover", File(stored!!).readText())
+    }
+
     private fun withImage(status: Int, body: String, test: (FlycastImageDownloader, String, File) -> Unit) {
         val root = Files.createTempDirectory("flycast-cover-download").toFile()
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)

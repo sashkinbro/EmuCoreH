@@ -86,7 +86,7 @@ object DocumentPathResolver {
                 return treeUri
             }
 
-            val root = DocumentFile.fromTreeUri(context, treeUri) ?: continue
+            val root = openPersistedTree(context, treeUri) ?: continue
             val relativeSegments = normalizedRawPath
                 .removePrefix(treePath)
                 .trim('/')
@@ -337,7 +337,7 @@ object DocumentPathResolver {
             .sortedByDescending { (_, rootId, _) -> rootId.length }
 
         for ((treeUri, _, segments) in persistedTrees) {
-            val root = DocumentFile.fromTreeUri(context, treeUri) ?: continue
+            val root = openPersistedTree(context, treeUri) ?: continue
             return DocumentLocation(root, segments)
         }
         return null
@@ -431,15 +431,20 @@ object DocumentPathResolver {
 
     private fun findFileInPersistedTree(context: Context, targetUri: Uri, fileName: String): String? {
         val persistedTrees = context.contentResolver.persistedUriPermissions
-            .mapNotNull { permission -> DocumentFile.fromTreeUri(context, permission.uri) }
+            .mapNotNull { permission -> openPersistedTree(context, permission.uri) }
 
         for (tree in persistedTrees) {
-            val resolved = findFileRecursive(tree, targetUri, fileName)
+            val resolved = runCatching { findFileRecursive(tree, targetUri, fileName) }.getOrNull()
             if (resolved != null) return resolved
         }
 
         return null
     }
+
+    internal fun openPersistedTree(context: Context, uri: Uri): DocumentFile? = runCatching {
+        // Persisted grants also include individual OPEN_DOCUMENT selections.
+        if (DocumentsContract.isTreeUri(uri)) DocumentFile.fromTreeUri(context, uri) else null
+    }.getOrNull()
 
     private fun findFileRecursive(root: DocumentFile, targetUri: Uri, fileName: String): String? {
         for (child in root.listFiles()) {

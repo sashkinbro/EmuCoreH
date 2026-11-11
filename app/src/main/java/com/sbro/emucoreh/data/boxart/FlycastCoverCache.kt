@@ -1,6 +1,7 @@
 package com.sbro.emucoreh.data.boxart
 
 import java.io.File
+import java.io.IOException
 
 internal class FlycastCoverCache(private val directory: File, private val usable: (File) -> Boolean) {
     private val extensions = listOf("png", "jpg", "jpeg", "webp")
@@ -10,14 +11,19 @@ internal class FlycastCoverCache(private val directory: File, private val usable
 
     fun storeOffline(key: String, extract: (File) -> Unit): File? {
         val target = offlineFile(key)
-        val temp = File.createTempFile("${key.take(40)}.disc.", ".tmp", directory)
+        var temp: File? = null
         try {
-            extract(temp)
-            if (!usable(temp)) return target.takeIf(usable)
-            if (!temp.renameTo(target)) temp.copyTo(target, overwrite = true)
+            if (!directory.isDirectory && !directory.mkdirs()) return target.takeIf(usable)
+            val staged = File.createTempFile("${key.take(40)}.disc.", ".tmp", directory)
+            temp = staged
+            extract(staged)
+            if (!usable(staged)) return target.takeIf(usable)
+            if (!staged.renameTo(target)) staged.copyTo(target, overwrite = true)
+            return target.takeIf(usable)
+        } catch (_: IOException) {
             return target.takeIf(usable)
         } finally {
-            temp.delete()
+            temp?.delete()
         }
     }
 

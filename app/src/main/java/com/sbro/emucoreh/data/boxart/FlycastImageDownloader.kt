@@ -27,6 +27,7 @@ internal class FlycastImageDownloader(private val directory: File, private val u
             val is3d = url.contains("/3d/") || extension == "webp"
             val isLight = url.contains("/3d/light/") || url.contains("_light.")
             val target = cache.onlineFile(key, extension, if (is3d) isLight else null)
+            if (!directory.isDirectory && !directory.mkdirs()) retry("Cannot create artwork directory")
             val temp = File.createTempFile("${key.take(40)}.", ".tmp", directory)
             try {
                 connection.inputStream.use { input ->

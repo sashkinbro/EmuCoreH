@@ -6,6 +6,24 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class FlycastCoverCacheTest {
+    @Test fun `offline extraction recreates an evicted cache directory`() = withCache { root, cache ->
+        root.deleteRecursively()
+        assertEquals("disc artwork", cache.storeOffline("soul") { it.writeText("disc artwork") }?.readText())
+    }
+
+    @Test fun `offline IO failure retains a previously usable label`() = withCache { root, cache ->
+        val label = cache.offlineFile("soul").apply { writeText("cached label") }
+        assertEquals(label, cache.storeOffline("soul") { throw java.io.IOException("Cache storage unavailable") })
+        assertEquals("cached label", label.readText())
+        assertFalse(root.listFiles().orEmpty().any { it.extension == "tmp" })
+    }
+
+    @Test fun `unavailable cache directory does not terminate artwork synchronization`() = withCache { root, cache ->
+        root.deleteRecursively()
+        root.writeText("file blocks directory")
+        assertNull(cache.storeOffline("soul") { error("No extraction into unavailable directory") })
+    }
+
     private fun withCache(test: (File, FlycastCoverCache) -> Unit) {
         val root = Files.createTempDirectory("flycast-cover-cache").toFile()
         try {
