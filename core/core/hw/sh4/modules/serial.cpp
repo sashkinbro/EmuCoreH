@@ -127,14 +127,15 @@ void SCIFSerialPort::rxSched()
 	}
 }
 
-void SCIFSerialPort::updateBaudRate()
+void SCIFSerialPort::updateBaudRate(bool reschedule)
 {
 	// 1 start bit, 7 or 8 data bits, optional parity bit, 1 or 2 stop bits
 	frameSize = 1 + 8 - SCIF_SCSMR2.CHR + SCIF_SCSMR2.PE + 1 + SCIF_SCSMR2.STOP;
 	int bauds = SH4_MAIN_CLOCK / 4 / (SCIF_SCBRR2 + 1) / 32 / (1 << (SCIF_SCSMR2.CKS * 2));
 	cyclesPerBit = SH4_MAIN_CLOCK / bauds;
 	INFO_LOG(SH4, "SCIF: Frame size %d cycles/bit %d (%d bauds) pipe %p", frameSize, cyclesPerBit, bauds, pipe);
-	sh4_sched_request(schedId, frameSize * cyclesPerBit);
+	if (reschedule)
+		sh4_sched_request(schedId, frameSize * cyclesPerBit);
 }
 
 // SCIF SCFTDR2 - Transmit FIFO Data Register

@@ -110,8 +110,8 @@ public:
 	void reset();
 	void serialize(Serializer& ser);
 	void deserialize(Deserializer& deser);
-	void postDeserialize() {
-		updateBaudRate();
+	void postDeserialize(bool restoreLegacySchedule) {
+		updateBaudRate(restoreLegacySchedule);
 	}
 
 	u8 SCFRDR2_read();
@@ -143,7 +143,7 @@ private:
 	void setStatusBit(StatusBit bit);
 	bool isTDFE() const;
 	bool isRDF() const;
-	void updateBaudRate();
+	void updateBaudRate(bool reschedule = true);
 	void setBreak(bool on);
 	void sendBreak();
 	bool txDone();
