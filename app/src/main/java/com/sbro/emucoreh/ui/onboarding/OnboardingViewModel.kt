@@ -10,7 +10,6 @@ import com.sbro.emucoreh.core.BiosImport
 import com.sbro.emucoreh.core.EmulatorBridge
 import com.sbro.emucoreh.core.EmulatorDataLocation
 import com.sbro.emucoreh.core.EmulatorStorage
-import com.sbro.emucoreh.core.FlycastCoreOptions
 import com.sbro.emucoreh.core.GpuHardwareProfiles
 import com.sbro.emucoreh.core.NativeApp
 import com.sbro.emucoreh.core.PerformanceProfiles
@@ -81,7 +80,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
                 preferences.biosPaths.distinctUntilChanged().collect { paths ->
                     val biosValid = withContext(Dispatchers.IO) {
                         BiosImport.restoreSelections(getApplication(), paths)
-                        BiosImport.hasAnyBios(getApplication())
+                        BiosImport.hasBootableBios(getApplication())
                     }
                     updateState(
                         biosPath = paths.lastOrNull(),
@@ -133,15 +132,12 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             }
             if (installed) {
                 preferences.addBiosPath(uri.toString())
-                // Adding a dump must not silently switch the core to the real
-                // BIOS path; keep HLE BIOS enabled so boot behaviour is stable.
-                NativeApp.setCoreOption(FlycastCoreOptions.HLE_BIOS_KEY, "enabled")
             }
             val activePath = preferences.biosPath.first()
             updateState(
                 biosPath = activePath,
                 biosPaths = preferences.biosPaths.first(),
-                biosValid = BiosImport.hasAnyBios(application)
+                biosValid = BiosImport.hasBootableBios(application)
             )
             val audioSettings = preferences.settingsSnapshot.first()
             EmulatorBridge.applyRuntimeConfig(
@@ -268,7 +264,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             sdCardDataPath = sdCardDataPath,
             biosValid = biosValid,
             gamePathValid = gamePathValid,
-            canContinue = gamePathValid,
+            canContinue = gamePathValid && biosValid,
             currentPage = currentPage.coerceIn(0, 4),
             totalPages = 5,
             isProUnlocked = isProUnlocked,

@@ -396,7 +396,7 @@
     <string name="onboarding_title">Oynamak için hazırlanın</string>
     <string name="onboarding_subtitle">Oyun klasörlerinizi seçin ve dosya erişimine izin verin.</string>
     <string name="onboarding_bios_desc">BIOS dosyalarınızın bulunduğu bir klasör seçin. Başka klasör eklemek için tekrar dokunun; geçerli Dreamcast, arcade, Sega CD ve 32X dosyaları birlikte kurulur.</string>
-    <string name="onboarding_bios_optional">İsteğe bağlı, ancak önerilir</string>
+    <string name="onboarding_bios_required">BIOS gerekli</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
 Arcade: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
@@ -2176,7 +2176,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
     <string name="naomi_guide_subtitle">Naomi, Naomi 2 ve Atomiswave oyunları MAME ROM setlerinden çalışır.</string>
     <string name="naomi_guide_intro">Her ROM setini kendi arşivinde tut ve klasörü kitaplığa ekle. EmuCoreH BIOS’u bulur, kartuşu veya GD-ROM’u başlatır ve kapak resmini otomatik indirir.</string>
-    <string name="naomi_guide_step_bios">BIOS — arcade BIOS setlerini içeren bir klasör seç: Naomi için naomi.zip, Naomi 2 için naomi2.zip ve Atomiswave için awbios.zip. Bazı oyunlar f355bios.zip veya segasp.zip gibi kendi setini ister. Dreamcast dökümleri isteğe bağlıdır.</string>
+    <string name="naomi_guide_step_bios">BIOS — arcade BIOS setlerini içeren bir klasör seç: Naomi için naomi.zip, Naomi 2 için naomi2.zip ve Atomiswave için awbios.zip. Bazı oyunlar f355bios.zip veya segasp.zip gibi kendi setini ister. BIOS gerekli: Dreamcast oyunlarını başlatmadan önce kendi dc_boot.bin (2 MiB) veya dc_bios.bin dosyanı içe aktar.</string>
     <string name="naomi_guide_step_game">ROM setleri — MAME .zip veya .7z setleri kullan ve arşiv adı MAME kimliği olmalı (örneğin vf4tuned.zip). Kartuş oyunları yalnızca bu dosyayı ister. Eski .lst, .dat ve .bin dökümleri de açılır.</string>
     <string name="naomi_guide_step_gdrom">GD-ROM oyunları — ayrıca arşivden çıkarılmış diske ihtiyaç duyar: ikaruga.zip yanında ikaruga klasörü oluştur ve içine gdl-0010.chd dosyasını normal dosya olarak koy. Zip içinde kalan CHD okunmaz; Naomi disklerinin GDI/CUE dökümleri çalışmaz.</string>
     <string name="naomi_guide_step_launch">Başlatma — ROM setini kitaplıktan başlat. Arşivden çıkarılan dosyaları başlatma: düz bir ROM klasörü açılmaz.</string>
@@ -2351,7 +2351,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="supported_systems_intro">Oyun klasörlerinizi aşağıdan ekleyin. Kendi BIOS dosyalarınızı BIOS bölümünden içe aktarın.</string>
     <string name="supported_systems_no_bios_title">BIOS olmadan oynamaya hazır</string>
     <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
-    <string name="supported_systems_dreamcast_body">BIOS isteğe bağlıdır: yerleşik BIOS emülasyonu, BIOS dosyası olmadan oynamanızı sağlar.</string>
+    <string name="supported_systems_dreamcast_body">BIOS gerekli: Dreamcast oyunlarını başlatmadan önce kendi dc_boot.bin (2 MiB) veya dc_bios.bin dosyanı içe aktar.</string>
     <string name="supported_systems_required_title">Bu sistemler BIOS gerektirir</string>
     <string name="supported_systems_required_body">Sega CD / Mega-CD: oyunun bölgesine uygun BIOS.\n32X: üç BIOS dosyasının tamamı.\nSaturn: bir adet 512 KiB BIOS dosyası.</string>
     <string name="supported_systems_arcade_body">Her sistem için uygun arcade BIOS setini içe aktarın.</string>

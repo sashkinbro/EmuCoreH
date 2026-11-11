@@ -525,7 +525,7 @@
     <string name="onboarding_title">Připravte se hrát</string>
     <string name="onboarding_subtitle">Vyberte složky s hrami a povolte přístup k souborům.</string>
     <string name="onboarding_bios_desc">Vyberte složku s BIOS soubory. Dalším klepnutím přidáte další složku; platné soubory Dreamcast, arkád, Sega CD a 32X se nainstalují společně.</string>
-    <string name="onboarding_bios_optional">Nepovinné, ale doporučené</string>
+    <string name="onboarding_bios_required">BIOS je vyžadován</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
 Arkády: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
@@ -2198,7 +2198,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
     <string name="naomi_guide_subtitle">Hry Naomi, Naomi 2 a Atomiswave běží z MAME ROM sad.</string>
     <string name="naomi_guide_intro">Každou ROM sadu ponech v samostatném archivu a přidej složku do knihovny. EmuCoreH najde BIOS, spustí cartridge nebo GD-ROM a sám stáhne obal.</string>
-    <string name="naomi_guide_step_bios">BIOS — vyber složku s arcade BIOS sadami: naomi.zip pro Naomi, naomi2.zip pro Naomi 2 a awbios.zip pro Atomiswave. Některé hry potřebují vlastní sadu, např. f355bios.zip nebo segasp.zip. Dreamcast dumpy jsou volitelné.</string>
+    <string name="naomi_guide_step_bios">BIOS — vyber složku s arcade BIOS sadami: naomi.zip pro Naomi, naomi2.zip pro Naomi 2 a awbios.zip pro Atomiswave. Některé hry potřebují vlastní sadu, např. f355bios.zip nebo segasp.zip. BIOS je vyžadován: před spuštěním her Dreamcast importujte vlastní dc_boot.bin (2 MiB) nebo dc_bios.bin.</string>
     <string name="naomi_guide_step_game">ROM sady — používej MAME sady .zip nebo .7z a název archivu musí být MAME ID (např. vf4tuned.zip). Kartridžové hry potřebují jen tento soubor. Staré dumpy .lst, .dat a .bin také fungují.</string>
     <string name="naomi_guide_step_gdrom">Hry GD-ROM — potřebují i disk vybalený z archivu: vedle ikaruga.zip vytvoř složku ikaruga a vlož do ní gdl-0010.chd jako běžný soubor. CHD ponechané v zipu se nečte; dumpy GDI/CUE disků Naomi nefungují.</string>
     <string name="naomi_guide_step_launch">Spuštění — spouštěj ROM sadu z knihovny. Nikdy nespouštěj soubory rozbalené z archivu: obyčejná složka s ROM se nespustí.</string>
@@ -2373,7 +2373,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="supported_systems_intro">Níže přidejte složky s hrami. Vlastní soubory BIOS importujte v části BIOS.</string>
     <string name="supported_systems_no_bios_title">Připraveno ke hraní bez BIOSu</string>
     <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
-    <string name="supported_systems_dreamcast_body">BIOS je volitelný: vestavěná emulace BIOSu umožňuje hrát bez samostatného souboru.</string>
+    <string name="supported_systems_dreamcast_body">BIOS je vyžadován: před spuštěním her Dreamcast importujte vlastní dc_boot.bin (2 MiB) nebo dc_bios.bin.</string>
     <string name="supported_systems_required_title">Tyto systémy vyžadují BIOS</string>
     <string name="supported_systems_required_body">Sega CD / Mega-CD: BIOS pro region hry.\n32X: všechny tři soubory BIOS.\nSaturn: jeden soubor BIOS o velikosti 512 KiB.</string>
     <string name="supported_systems_arcade_body">Pro každý systém importujte odpovídající sadu arkádového BIOSu.</string>

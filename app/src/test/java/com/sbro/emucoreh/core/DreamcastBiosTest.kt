@@ -8,75 +8,36 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DreamcastBiosTest {
-    @Test fun acceptsDreamcastBootAndFlashDumps() {
-        assertEquals(
-            "dc_boot.bin",
-            DreamcastBios.supportedBiosTargetName("dc_boot.bin", DreamcastBios.BOOT_ROM_SIZE)
-        )
-        assertEquals(
-            "dc_bios.bin",
-            DreamcastBios.supportedBiosTargetName("dc_bios.bin", DreamcastBios.BOOT_ROM_SIZE)
-        )
-        // The core opens the flash as dc_nvmem.bin; the standalone name is
-        // accepted on import and stored under the name the core reads.
-        assertEquals(
-            "dc_nvmem.bin",
-            DreamcastBios.supportedBiosTargetName("dc_flash.bin", DreamcastBios.FLASH_ROM_SIZE)
-        )
-        assertEquals(
-            "dc_nvmem.bin",
-            DreamcastBios.supportedBiosTargetName("dc_nvmem.bin", DreamcastBios.FLASH_ROM_SIZE)
-        )
-        assertEquals("dc_boot.bin", DreamcastBios.supportedBiosTargetName("dc_boot.bin", -1L))
-        assertEquals("dc_nvmem.bin", DreamcastBios.supportedBiosTargetName("dc_flash.bin", 0L))
+    @Test fun consoleDiscsAndBiosBootRequireFirmwareButArcadeArchivesKeepTheirOwnBios() {
+        for (extension in GameFormats.discExtensions + GameFormats.playlistExtensions) {
+            assertTrue(DreamcastBios.requiresConsoleBios(false, "GAME.${extension.uppercase()}"))
+        }
+        for (extension in GameFormats.romExtensions + "bin") {
+            assertFalse(DreamcastBios.requiresConsoleBios(false, "game.$extension"))
+        }
+        assertTrue(DreamcastBios.requiresConsoleBios(true, ""))
     }
 
-    @Test fun acceptsDescriptiveDumpNamesBySize() {
-        assertEquals(
-            "dc_boot.bin",
-            DreamcastBios.supportedBiosTargetName(
-                "Sega Dreamcast BIOS v1.01d (1998)(Sega)(Eu).bin",
-                DreamcastBios.BOOT_ROM_SIZE
-            )
-        )
-        assertEquals(
-            "dc_nvmem.bin",
-            DreamcastBios.supportedBiosTargetName("vmu flash dump.bin", DreamcastBios.FLASH_ROM_SIZE)
-        )
-        assertEquals(
-            "dc_boot.bin",
-            DreamcastBios.supportedBiosTargetName("Sega BIOS dump", DreamcastBios.BOOT_ROM_SIZE)
-        )
+    @Test fun missingTruncatedAndArcadeFirmwareCannotSatisfyConsoleLaunch() {
+        val root = java.nio.file.Files.createTempDirectory("dreamcast-required-bios").toFile()
+        try {
+            val dc = DreamcastBios.directory(root.path).apply { mkdirs() }
+            assertFalse(DreamcastBios.hasUsableBootRom(root.path))
+            File(dc, "dc_flash.bin").writeBytes(ByteArray(DreamcastBios.FLASH_ROM_SIZE.toInt()))
+            assertFalse(DreamcastBios.hasUsableBootRom(root.path))
+            val boot = File(dc, "dc_boot.bin")
+            boot.writeBytes(ByteArray(1024))
+            assertFalse(DreamcastBios.hasUsableBootRom(root.path))
+            val bytes = ByteArray(DreamcastBios.BOOT_ROM_SIZE.toInt()) { 0x11 }
+            "SEGA NAOMI".toByteArray().copyInto(bytes)
+            boot.writeBytes(bytes)
+            assertFalse(DreamcastBios.hasUsableBootRom(root.path))
+            boot.writeBytes(ByteArray(DreamcastBios.BOOT_ROM_SIZE.toInt()).apply {
+                "SEGA SEGAKATANA  KABUTO Ver.1.01d Copyright(c) SEGA ENTERPRISES, LTD.".toByteArray().copyInto(this, 0x7b0)
+            })
+            assertTrue(DreamcastBios.hasUsableBootRom(root.path))
+        } finally { root.deleteRecursively() }
     }
-
-    @Test fun rejectsBiosNamedFilesWithUnexpectedSizes() {
-        assertNull(DreamcastBios.supportedBiosTargetName("dc_boot.bin", 1024L))
-        assertNull(DreamcastBios.supportedBiosTargetName("dc_flash.bin", DreamcastBios.BOOT_ROM_SIZE))
-        assertNull(DreamcastBios.supportedBiosTargetName("dc_nvmem.bin", DreamcastBios.BOOT_ROM_SIZE))
-    }
-
-    @Test fun acceptsArcadeBiosSetsRegardlessOfCaseAndSize() {
-        assertEquals(
-            "naomi.zip",
-            DreamcastBios.supportedBiosTargetName("naomi.zip", 4L * 1024L * 1024L)
-        )
-        assertEquals("naomi2.zip", DreamcastBios.supportedBiosTargetName("NAOMI2.ZIP", 1L))
-        assertEquals("awbios.7z", DreamcastBios.supportedBiosTargetName("awbios.7z", -1L))
-    }
-
-    @Test fun ignoresUnrelatedFiles() {
-        assertNull(DreamcastBios.supportedBiosTargetName("sonic.gdi", 1024L))
-        assertNull(DreamcastBios.supportedBiosTargetName("random.zip", 1024L))
-        assertNull(DreamcastBios.supportedBiosTargetName(null, 1024L))
-    }
-
-    @Test fun segaBiosNamesAreNeverImportedAsDreamcastDumps() {
-        assertNull(DreamcastBios.supportedBiosTargetName("bios_CD_U.bin", DreamcastBios.FLASH_ROM_SIZE))
-        assertNull(DreamcastBios.supportedBiosTargetName("bios_cd_jp.bin", DreamcastBios.FLASH_ROM_SIZE))
-        assertNull(DreamcastBios.supportedBiosTargetName("32X_G_BIOS.bin", 256L))
-        assertNull(DreamcastBios.supportedBiosTargetName("32X_M_BIOS.bin", 2048L))
-    }
-
     @Test fun arcadeFirmwareIsNeverUsedAsTheDreamcastBootRom() {
         // A size-only import can pick up a Naomi or Atomiswave 2 MiB boot ROM;
         // those dumps carry their own product names.

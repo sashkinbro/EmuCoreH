@@ -396,7 +396,7 @@
     <string name="onboarding_title">プレイの準備をしましょう</string>
     <string name="onboarding_subtitle">ゲームフォルダを選択し、ファイルへのアクセスを許可してください。</string>
     <string name="onboarding_bios_desc">BIOSファイルを含むフォルダを選択します。もう一度タップすると別のフォルダを追加でき、有効なDreamcast、アーケード、Sega CD、32Xのファイルがまとめてインストールされます。</string>
-    <string name="onboarding_bios_optional">任意ですが推奨されます</string>
+    <string name="onboarding_bios_required">BIOSが必要です</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB)、dc_flash.bin (128 KiB)
 アーケード: naomi.zip、naomi2.zip、awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin、bios_CD_E.bin、bios_CD_J.bin (128 KiB)
@@ -2175,7 +2175,7 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
     <string name="naomi_guide_subtitle">Naomi、Naomi 2、AtomiswaveのゲームはMAME ROMセットから起動します。</string>
     <string name="naomi_guide_intro">ROMセットはアーカイブのまま保管し、フォルダをライブラリに追加してください。EmuCoreHがBIOSを見つけ、カートリッジまたはGD-ROMを起動し、カバーを自動で取得します。</string>
-    <string name="naomi_guide_step_bios">BIOS — アーケードBIOSセットを入れたフォルダを選びます。Naomiはnaomi.zip、Naomi 2はnaomi2.zip、Atomiswaveはawbios.zip。f355bios.zipやsegasp.zipなど専用セットが必要なゲームもあります。Dreamcastのダンプは任意です。</string>
+    <string name="naomi_guide_step_bios">BIOS — アーケードBIOSセットを入れたフォルダを選びます。Naomiはnaomi.zip、Naomi 2はnaomi2.zip、Atomiswaveはawbios.zip。f355bios.zipやsegasp.zipなど専用セットが必要なゲームもあります。 Dreamcastのゲームを起動する前に、ご自身のdc_boot.bin（2 MiB）またはdc_bios.binをインポートしてください。</string>
     <string name="naomi_guide_step_game">ROMセット — MAMEの.zipまたは.7zを使い、アーカイブ名はMAME ID（例：vf4tuned.zip）にしてください。カートリッジゲームはこのファイルだけで動きます。旧形式の.lst、.dat、.binも開けます。</string>
     <string name="naomi_guide_step_gdrom">GD-ROMゲーム — アーカイブから展開したディスクも必要です。ikaruga.zipの隣にikarugaフォルダを作り、gdl-0010.chdを通常ファイルとして入れてください。zip内のCHDは読めません。NaomiディスクのGDI/CUEダンプは動作しません。</string>
     <string name="naomi_guide_step_launch">起動 — ライブラリからROMセットを起動します。アーカイブから展開したファイルは起動しないでください。ROMフォルダだけではブートしません。</string>
@@ -2350,7 +2350,7 @@ Sega 32X: 32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="supported_systems_intro">下からゲームフォルダーを追加してください。お持ちのBIOSファイルはBIOS欄から取り込めます。</string>
     <string name="supported_systems_no_bios_title">BIOSなしで遊べるシステム</string>
     <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
-    <string name="supported_systems_dreamcast_body">BIOSは任意です。内蔵のBIOSエミュレーションにより、BIOSファイルなしで遊べます。</string>
+    <string name="supported_systems_dreamcast_body">Dreamcastのゲームを起動する前に、ご自身のdc_boot.bin（2 MiB）またはdc_bios.binをインポートしてください。</string>
     <string name="supported_systems_required_title">BIOSが必要なシステム</string>
     <string name="supported_systems_required_body">Sega CD / Mega-CD：ゲームの地域に対応するBIOS。\n32X：3つすべてのBIOSファイル。\nSaturn：512 KiBのBIOSファイル1つ。</string>
     <string name="supported_systems_arcade_body">各システムに対応するアーケードBIOSセットを取り込んでください。</string>

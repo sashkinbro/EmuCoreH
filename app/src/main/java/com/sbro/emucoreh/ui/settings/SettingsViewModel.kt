@@ -1189,9 +1189,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
             if (installed) {
                 preferences.addBiosPath(uri.toString())
-                // Adding a dump must not silently switch the core to the real
-                // BIOS path; keep HLE BIOS enabled so boot behaviour is stable.
-                NativeApp.setCoreOption(FlycastCoreOptions.HLE_BIOS_KEY, "enabled")
             }
             val activePath = preferences.biosPath.first()
             _uiState.update { it.copy(

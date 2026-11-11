@@ -1574,9 +1574,7 @@ object FlycastCoreOptions {
     const val INTERNAL_RESOLUTION_KEY = "reicast_internal_resolution"
 
     /**
-     * HLE BIOS toggle. The app enables it when a BIOS dump is installed so the
-     * core keeps booting through its built-in BIOS instead of silently
-     * switching to the dump.
+     * Legacy option retained for migration; the app always uses imported firmware.
      */
     const val HLE_BIOS_KEY = "reicast_hle_bios"
 
@@ -1585,21 +1583,24 @@ object FlycastCoreOptions {
         "reicast_dump_replaced_textures",
         "reicast_dump_textures",
         INTERNAL_RESOLUTION_KEY,
+        HLE_BIOS_KEY,
         "reicast_preload_custom_textures",
     )
 
-    fun forCategory(categoryKey: String): List<Option> = optionList.filter { it.category == categoryKey }
+    fun forCategory(categoryKey: String): List<Option> =
+        optionList.filter { it.category == categoryKey && it.key != HLE_BIOS_KEY }
 
     fun option(key: String): Option? = optionsByKey[key]
 
     fun isManagedKey(key: String): Boolean = key in managedKeys
-    fun supportsGameOverride(key: String): Boolean = key != INTERNAL_RESOLUTION_KEY
+    fun supportsGameOverride(key: String): Boolean = key != INTERNAL_RESOLUTION_KEY && key != HLE_BIOS_KEY
 
     /** Resolve and validate overrides before the core reads its boot options. */
     fun startupOptions(global: Map<String, String>, game: Map<String, String>): Map<String, String> {
         val result = mutableMapOf<String, String>()
         for (source in listOf(global, game)) {
             for ((key, value) in source) {
+                if (key == HLE_BIOS_KEY) continue
                 val option = option(key) ?: continue
                 if (option.choices.any { it.value == value }) result[key] = value
             }

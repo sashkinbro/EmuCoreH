@@ -1235,7 +1235,7 @@ private fun OnboardingSetupContent(
             runCatching { firstSetupFocusRequester.requestFocus() }
         }
     }
-    val completionProgress = if (gamePathValid) 1 else 0
+    val completionProgress = (if (gamePathValid) 1 else 0) + (if (biosValid) 1 else 0)
     Row(
         modifier = modifier.padding(end = endInset),
         verticalAlignment = Alignment.Top
@@ -1259,7 +1259,7 @@ private fun OnboardingSetupContent(
                 status = when {
                     biosValid -> stringResource(R.string.onboarding_status_ready)
                     !biosPath.isNullOrBlank() -> stringResource(R.string.onboarding_status_invalid_bios)
-                    else -> stringResource(R.string.onboarding_bios_optional)
+                    else -> stringResource(R.string.onboarding_bios_required)
                 },
                 statusColor = when {
                     biosValid -> Color(0xFF1B8A5A)
@@ -1396,7 +1396,7 @@ private fun OnboardingSetupContent(
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = stringResource(R.string.onboarding_hint_body, completionProgress, 1),
+                        text = stringResource(R.string.onboarding_hint_body, completionProgress, 2),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

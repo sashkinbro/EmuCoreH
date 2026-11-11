@@ -1,7 +1,9 @@
 [versions]
 agp = "9.5.1"
+commonsCompress = "1.28.0"
 coreKtx = "1.19.1"
 coreSplashscreen = "1.2.0"
+json = "20260814"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
@@ -27,14 +29,17 @@ browser = "1.10.0"
 credentials = "1.6.0"
 googleId = "1.2.1"
 googleAuth = "22.0.0"
+xz = "1.12"
 
 [libraries]
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 androidx-credentials-play-services = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 google-identity = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleId" }
 google-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "googleAuth" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
+json = { module = "org.json:json", version.ref = "json" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -70,6 +75,7 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "browser" }
+xz = { module = "org.tukaani:xz", version.ref = "xz" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

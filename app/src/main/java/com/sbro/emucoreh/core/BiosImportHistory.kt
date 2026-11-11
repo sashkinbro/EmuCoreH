@@ -31,7 +31,7 @@ internal class BiosImportHistory(
     }
 
     companion object {
-        private const val VERSION = "header-import-v2-saturn"
+        private const val VERSION = "content-import-v3-platform-firmware"
 
         internal fun selectionKey(paths: List<String>): String = MessageDigest.getInstance("SHA-256")
             .digest((VERSION + "\u0000" + paths.distinct().filter(String::isNotBlank).sorted()

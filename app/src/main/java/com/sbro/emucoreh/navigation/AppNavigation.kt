@@ -237,11 +237,8 @@ fun AppNavigation(
             val hasGameFolder = withContext(Dispatchers.IO) {
                 SetupValidator.isAnyGameFolderPresentForStartup(context, gamePaths)
             }
-            // Dreamcast boots through the HLE BIOS without a dump, so only a
-            // game folder is required before the home screen opens. Completed
-            // setups always land on Home: removable/FUSE storage can be briefly
-            // unavailable while the device is still booting, and relaunching
-            // onboarding in that window makes a configured library look lost.
+            // Completed setups land on Home even if removable storage is briefly
+            // unavailable. Each launch validates the firmware for its own platform.
             val shouldOpenHome = onboardingCompleted
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(
                 TAG,

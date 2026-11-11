@@ -484,6 +484,8 @@ fn exercise_sega_cd(directory: &Path) {
     assert!(unsafe { CStr::from_ptr(jgenesis_boot_error()) }.to_string_lossy().contains("BIOS"));
     let mut bios = genesis_rom();
     bios.resize(128 * 1024, 0);
+    bios[0x120..0x12d].copy_from_slice(b"CD2 BOOT ROM ");
+    bios[0x1f0] = b'U';
     // BIOS uses only STOP; no Sega firmware or retail content.
     bios[0x200..0x206].copy_from_slice(&[0x4e, 0x72, 0x27, 0x00, 0x60, 0xfa]);
     std::fs::write(directory.join("bios_CD_U.bin"), &bios).unwrap();

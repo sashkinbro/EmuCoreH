@@ -12,7 +12,7 @@ Google Play: [EmuCoreH on Google Play](https://play.google.com/store/apps/detail
 
 ![Status](https://img.shields.io/badge/Status-Active%20Development-blue)
 
-The project is under active development. Use your own legally obtained games. Flycast emulates the Dreamcast without a BIOS file when no BIOS dump is installed.
+The project is under active development. Use your own legally obtained games. Dreamcast requires an imported user-owned BIOS.
 
 ## Highlights
 
@@ -138,7 +138,9 @@ On an Anbernic RG556, Sega Rally 2, Daytona USA 2, and The Lost World have been 
 
 ### BIOS
 
-Dreamcast can boot through Flycast HLE without an installed BIOS. Arcade ROM sets may require their matching firmware.
+Dreamcast requires an imported 2 MiB console boot ROM; BIOS emulation is disabled. Arcade ROM sets may require their matching firmware.
+
+BIOS setup is required during onboarding. Firmware is identified by content, checksums and console headers rather than filenames. Renamed raw files, ZIP and 7z collections are routed to the matching console; Sega CD region follows its boot header, and Naomi/Naomi 2/Atomiswave ROMs are validated against the bundled core BIOS table and repacked into the correct sets. Invalid input cannot replace an installed BIOS.
 
 All BIOS files are imported through one **BIOS Folder** card in onboarding or Settings → Library. Select any folder containing your files; every valid BIOS in that folder is installed together. Tap the card again to add BIOS files from another folder, and remove folders from the list without touching the installed copies. The app keeps multiple BIOS source folders for users whose dumps are split across different locations.
 

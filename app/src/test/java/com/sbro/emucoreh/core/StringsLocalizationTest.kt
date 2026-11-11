@@ -9,6 +9,15 @@ import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
 class StringsLocalizationTest {
+    @Test fun mandatoryBiosSetupTextExistsInEveryLocaleWithoutTheOldOptionalKey() {
+        val res = resolveResDir()
+        for (file in res.listFiles().orEmpty().map { File(it, "strings.xml") }.filter(File::isFile)) {
+            val strings = readStrings(file)
+            assertTrue("Missing required BIOS status: ${file.parent}", !strings["onboarding_bios_required"].isNullOrBlank())
+            assertTrue("Old optional BIOS status: ${file.parent}", "onboarding_bios_optional" !in strings)
+            assertTrue("Dreamcast boot file guidance: ${file.parent}", strings["supported_systems_dreamcast_body"]!!.contains("dc_boot.bin"))
+        }
+    }
     @Test fun saturnSettingsLabelsHaveFullLocaleCoverage() {
         val res = resolveResDir()
         val english = readStrings(File(res, "values/strings.xml"))

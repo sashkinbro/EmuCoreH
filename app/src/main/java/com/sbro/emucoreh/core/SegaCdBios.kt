@@ -75,7 +75,8 @@ object SegaCdBios {
 
     fun isInstalled(context: Context, region: Region): Boolean =
         directory(context).listFiles().orEmpty().any {
-            it.name.lowercase() in region.matchedNames && it.isFile && it.length() == SIZE.toLong()
+            it.name.lowercase() in region.matchedNames && it.isFile && it.length() == SIZE.toLong() &&
+                runCatching { detectRegion(it.readBytes()) == region }.getOrDefault(false)
         }
 
     fun install(context: Context, uri: Uri, region: Region): Boolean =
@@ -84,7 +85,8 @@ object SegaCdBios {
     internal fun installTo(context: Context, uri: Uri, region: Region, directory: File): Boolean = runCatching {
         val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
             readValidated(input)
-        } ?: return false
+        }?.let(::normalizeDetected) ?: return false
+        if (detectRegion(bytes) != region) return false
         writeFirmware(bytes, region, directory)
         true
     }.getOrDefault(false)

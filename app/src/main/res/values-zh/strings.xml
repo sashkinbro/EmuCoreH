@@ -420,7 +420,7 @@
     <string name="settings_bios_picker_desc">选择包含 Dreamcast BIOS（dc_boot.bin、dc_flash.bin）和街机 BIOS 集（naomi.zip、naomi2.zip、awbios.zip）的文件夹。</string>
     <string name="settings_bios_picker_action">选择文件夹</string>
     <string name="onboarding_bios_desc">选择一个包含 BIOS 文件的文件夹。再次点击可添加其他文件夹；有效的 Dreamcast、街机、Sega CD 和 32X 文件会一起安装。</string>
-    <string name="onboarding_bios_optional">可选，但推荐</string>
+    <string name="onboarding_bios_required">必须导入 BIOS</string>
     <string name="bios_supported_files">Dreamcast：dc_boot.bin（2 MiB）、dc_flash.bin（128 KiB）
 街机：naomi.zip、naomi2.zip、awbios.zip, segasp.zip
 Sega CD：bios_CD_U.bin、bios_CD_E.bin、bios_CD_J.bin（128 KiB）
@@ -2177,7 +2177,7 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
     <string name="naomi_guide_subtitle">Naomi、Naomi 2 和 Atomiswave 游戏通过 MAME ROM 集运行。</string>
     <string name="naomi_guide_intro">让每个 ROM 集保持为独立压缩包，并把所在文件夹加入游戏库。EmuCoreH 会自动找到 BIOS、启动卡带或 GD-ROM 并下载封面。</string>
-    <string name="naomi_guide_step_bios">BIOS — 选择包含街机 BIOS 集的文件夹：Naomi 用 naomi.zip，Naomi 2 用 naomi2.zip，Atomiswave 用 awbios.zip。部分游戏需要专属集，如 f355bios.zip 或 segasp.zip。Dreamcast 转储是可选的。</string>
+    <string name="naomi_guide_step_bios">BIOS — 选择包含街机 BIOS 集的文件夹：Naomi 用 naomi.zip，Naomi 2 用 naomi2.zip，Atomiswave 用 awbios.zip。部分游戏需要专属集，如 f355bios.zip 或 segasp.zip。 启动 Dreamcast 游戏前，必须导入你自己的 dc_boot.bin（2 MiB）或 dc_bios.bin。</string>
     <string name="naomi_guide_step_game">ROM 集 — 使用 MAME 的 .zip 或 .7z，压缩包名必须是 MAME ID（例如 vf4tuned.zip）。卡带游戏只需此文件。旧式 .lst、.dat 和 .bin 转储也能打开。</string>
     <string name="naomi_guide_step_gdrom">GD-ROM 游戏 — 还需要从压缩包中解出的光盘：在 ikaruga.zip 旁新建 ikaruga 文件夹，把 gdl-0010.chd 作为普通文件放入。留在 zip 里的 CHD 无法读取；Naomi 光盘的 GDI/CUE 转储不可用。</string>
     <string name="naomi_guide_step_launch">启动 — 请从游戏库启动 ROM 集。不要启动从压缩包解出的文件：普通 ROM 文件夹无法启动。</string>
@@ -2352,7 +2352,7 @@ Sega 32X：32X_G_BIOS.bin、32X_M_BIOS.bin、32X_S_BIOS.bin</string>
     <string name="supported_systems_intro">在下方添加游戏文件夹。请在 BIOS 区域导入您自己的 BIOS 文件。</string>
     <string name="supported_systems_no_bios_title">无需 BIOS，即可游玩</string>
     <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
-    <string name="supported_systems_dreamcast_body">BIOS 为可选项：内置 BIOS 模拟功能可让您在没有 BIOS 文件的情况下游玩。</string>
+    <string name="supported_systems_dreamcast_body">启动 Dreamcast 游戏前，必须导入你自己的 dc_boot.bin（2 MiB）或 dc_bios.bin。</string>
     <string name="supported_systems_required_title">以下系统需要 BIOS</string>
     <string name="supported_systems_required_body">Sega CD / Mega-CD：与游戏地区对应的 BIOS。\n32X：全部三个 BIOS 文件。\nSaturn：一个 512 KiB 的 BIOS 文件。</string>
     <string name="supported_systems_arcade_body">请为每个系统导入对应的街机 BIOS 文件集。</string>

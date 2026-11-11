@@ -502,7 +502,7 @@
     <string name="onboarding_title">Bersiaplah untuk bermain</string>
     <string name="onboarding_subtitle">Pilih folder game dan izinkan akses file.</string>
     <string name="onboarding_bios_desc">Pilih satu folder berisi file BIOS. Ketuk lagi untuk menambah folder lain; file Dreamcast, arkade, Sega CD, dan 32X yang valid dipasang bersama.</string>
-    <string name="onboarding_bios_optional">Opsional, tetapi disarankan</string>
+    <string name="onboarding_bios_required">BIOS wajib</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
 Arkade: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
@@ -2190,7 +2190,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
     <string name="naomi_guide_subtitle">Game Naomi, Naomi 2, dan Atomiswave berjalan dari set ROM MAME.</string>
     <string name="naomi_guide_intro">Simpan setiap set ROM dalam arsipnya sendiri dan tambahkan foldernya ke pustaka. EmuCoreH menemukan BIOS, menjalankan kartrid atau GD-ROM, dan mengunduh sampulnya otomatis.</string>
-    <string name="naomi_guide_step_bios">BIOS — pilih folder berisi set BIOS arcade: naomi.zip untuk Naomi, naomi2.zip untuk Naomi 2, dan awbios.zip untuk Atomiswave. Sebagian game butuh set sendiri, seperti f355bios.zip atau segasp.zip. Dump Dreamcast opsional.</string>
+    <string name="naomi_guide_step_bios">BIOS — pilih folder berisi set BIOS arcade: naomi.zip untuk Naomi, naomi2.zip untuk Naomi 2, dan awbios.zip untuk Atomiswave. Sebagian game butuh set sendiri, seperti f355bios.zip atau segasp.zip. BIOS wajib: impor dc_boot.bin (2 MiB) atau dc_bios.bin milikmu sebelum memulai game Dreamcast.</string>
     <string name="naomi_guide_step_game">Set ROM — gunakan set MAME .zip atau .7z dan nama arsipnya harus MAME ID (misalnya vf4tuned.zip). Game kartrid hanya butuh file ini. Dump lama .lst, .dat, dan .bin juga bisa dibuka.</string>
     <string name="naomi_guide_step_gdrom">Game GD-ROM — juga butuh disk yang diekstrak dari arsipnya: di samping ikaruga.zip buat folder ikaruga dan taruh gdl-0010.chd sebagai file biasa. CHD yang masih di dalam zip tidak terbaca; dump GDI/CUE disk Naomi tidak berfungsi.</string>
     <string name="naomi_guide_step_launch">Menjalankan — jalankan set ROM dari pustaka. Jangan jalankan file hasil ekstrak arsip: folder ROM biasa tidak bisa boot.</string>
@@ -2365,7 +2365,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="supported_systems_intro">Tambahkan folder game di bawah. Impor file BIOS milik Anda di bagian BIOS.</string>
     <string name="supported_systems_no_bios_title">Siap dimainkan tanpa BIOS</string>
     <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
-    <string name="supported_systems_dreamcast_body">BIOS opsional: emulasi BIOS bawaan memungkinkan Anda bermain tanpa file BIOS.</string>
+    <string name="supported_systems_dreamcast_body">BIOS wajib: impor dc_boot.bin (2 MiB) atau dc_bios.bin milikmu sebelum memulai game Dreamcast.</string>
     <string name="supported_systems_required_title">Sistem ini memerlukan BIOS</string>
     <string name="supported_systems_required_body">Sega CD / Mega-CD: BIOS sesuai wilayah game.\n32X: ketiga file BIOS.\nSaturn: satu file BIOS berukuran 512 KiB.</string>
     <string name="supported_systems_arcade_body">Impor set BIOS arcade yang sesuai untuk setiap sistem.</string>

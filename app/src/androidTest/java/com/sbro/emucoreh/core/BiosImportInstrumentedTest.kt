@@ -65,7 +65,7 @@ class BiosImportInstrumentedTest {
                 })
             }
             // A Dreamcast flash file has the same size and must not be mistaken for CD firmware.
-            File(source, "dc_flash.bin").writeBytes(ByteArray(SegaCdBios.SIZE))
+            File(source, "dc_flash.bin").writeBytes(flashFixture())
             val result = BiosImport.installFromDocument(context, DocumentFile.fromFile(source),
                 File(root, "flycast").absolutePath, destination.absolutePath)
             assertEquals(2, result.segaCd)
@@ -75,7 +75,7 @@ class BiosImportInstrumentedTest {
         } finally { root.deleteRecursively() }
     }
 
-    @Test fun oneFolderImportsDreamcastArcadeSegaCdAnd32X() {
+    @Test fun oneFolderRoutesConsoleFirmwareAndRejectsUnrecognizedArchive() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val root = File(context.cacheDir, "bios-import-qa").apply {
             deleteRecursively()
@@ -85,11 +85,13 @@ class BiosImportInstrumentedTest {
             val source = File(root, "bios").apply { mkdirs() }
             val flycast = File(root, "flycast").apply { mkdirs() }
             val sega = File(root, "jgenesis").apply { mkdirs() }
-            source.resolve("dc_boot.bin").writeBytes(ByteArray(DreamcastBios.BOOT_ROM_SIZE.toInt()) { 0x11 })
-            source.resolve("dc_flash.bin").writeBytes(ByteArray(DreamcastBios.FLASH_ROM_SIZE.toInt()) { 0x22 })
+            source.resolve("dc_boot.bin").writeBytes(ByteArray(DreamcastBios.BOOT_ROM_SIZE.toInt()).apply {
+                "SEGA SEGAKATANA  KABUTO Ver.1.01d Copyright(c) SEGA ENTERPRISES, LTD.".toByteArray().copyInto(this, 0x7b0)
+            })
+            source.resolve("dc_flash.bin").writeBytes(flashFixture())
             source.resolve("naomi.zip").writeBytes(ByteArray(1024) { 0x5a })
-            source.resolve("bios_CD_U.bin").writeBytes(ByteArray(SegaCdBios.SIZE) { 0x33 })
-            source.resolve("bios_CD_J.bin").writeBytes(ByteArray(SegaCdBios.SIZE) { 0x44 })
+            source.resolve("bios_CD_U.bin").writeBytes(cdFixture('U'))
+            source.resolve("bios_CD_J.bin").writeBytes(cdFixture('J'))
             val firmware32x = find32xFirmware(context)
             if (firmware32x != null) {
                 Sega32XBios.Part.entries.forEach { part ->
@@ -105,12 +107,12 @@ class BiosImportInstrumentedTest {
             )
 
             assertEquals(2, result.dreamcast)
-            assertEquals(1, result.arcade)
+            assertEquals(0, result.arcade)
             assertEquals(2, result.segaCd)
             assertEquals(if (firmware32x != null) 3 else 0, result.sega32x)
             assertTrue(File(flycast, "dc/dc_boot.bin").isFile)
-            assertTrue(File(flycast, "dc/dc_flash.bin").isFile)
-            assertTrue(File(flycast, "dc/naomi.zip").isFile)
+            assertTrue(File(flycast, "dc/dc_nvmem.bin").isFile)
+            org.junit.Assert.assertFalse(File(flycast, "dc/naomi.zip").isFile)
             assertTrue(File(sega, "bios_CD_U.bin").isFile)
             assertTrue(File(sega, "bios_CD_J.bin").isFile)
             if (firmware32x != null) {
@@ -191,6 +193,69 @@ class BiosImportInstrumentedTest {
         } finally {
             root.deleteRecursively()
         }
+    }
+
+    @Test fun renamedOwnerFirmwareCannotCrossConsoleOrArcadeSlots() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val ownerPath = androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("releaseQaBios")
+            ?: context.contentResolver.persistedUriPermissions.firstOrNull {
+                it.uri.toString().contains("bios", ignoreCase = true)
+            }?.uri?.toString()
+        org.junit.Assume.assumeTrue("Owner BIOS folder selected in app", ownerPath != null)
+        val owners = DocumentFile.fromTreeUri(context, Uri.parse(requireNotNull(ownerPath)))!!
+        val root = File(context.cacheDir, "bios-content-routing-${System.nanoTime()}").apply { mkdirs() }
+        try {
+            val source = File(root, "renamed").apply { mkdirs() }
+            val dc = owners.findFile("Sega Dreamcast BIOS v1.01d (1998)(Sega)(Eu).bin")!!
+            val naomi = owners.findFile("naomi.zip")!!
+            val naomi2 = owners.findFile("naomi2.zip")!!
+            val aw = owners.findFile("awbios.zip")!!
+            org.junit.Assume.assumeTrue("Owner console and arcade BIOS", listOf(dc, naomi, naomi2, aw).all { it.isFile })
+            fun bytes(file: DocumentFile) = context.contentResolver.openInputStream(file.uri)!!.use { it.readBytes() }
+            File(source, "naomi.zip").writeBytes(bytes(dc))
+            File(source, "dc_boot.bin").writeBytes(bytes(naomi))
+            File(source, "32X_G_BIOS.bin").writeBytes(bytes(naomi2))
+            File(source, "saturn_bios.bin").writeBytes(bytes(aw))
+            val flycast = File(root, "system")
+            val result = BiosImport.installFromDocument(context, DocumentFile.fromFile(source),
+                flycast.path, File(root, "sega").path)
+            assertEquals(1, result.dreamcast)
+            assertTrue(result.arcade >= 3)
+            assertEquals(0, result.sega32x)
+            assertEquals(0, result.saturn)
+            assertArrayEquals(bytes(dc), File(flycast, "dc/dc_boot.bin").readBytes())
+            for (set in listOf("naomi", "naomi2", "awbios")) {
+                val detected = File(flycast, "dc/$set.zip").inputStream().use(FirmwareContent::readSelection)
+                assertTrue("$set has its own recognized firmware", detected.any { it.archive == set })
+                assertTrue("No Dreamcast ROM in $set", detected.none { it.family == FirmwareContent.Family.DREAMCAST })
+            }
+            val sevenZip = File(root, "renamed-collection.data")
+            org.apache.commons.compress.archivers.sevenz.SevenZOutputFile(sevenZip).use { output ->
+                val entry = org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry()
+                entry.name = "naomi2.zip"
+                output.putArchiveEntry(entry)
+                output.write(bytes(dc))
+                output.closeArchiveEntry()
+            }
+            val sevenResult = BiosImport.installSelection(context, Uri.fromFile(sevenZip),
+                File(root, "seven-system").path, File(root, "seven-sega").path)
+            assertEquals(1, sevenResult.dreamcast)
+            assertEquals(0, sevenResult.arcade)
+            // A corrupt replacement with a correct label must leave the known firmware intact.
+            File(source, "naomi.zip").writeBytes(ByteArray(DreamcastBios.BOOT_ROM_SIZE.toInt()))
+            BiosImport.installFromDocument(context, DocumentFile.fromFile(source), flycast.path, File(root, "sega").path)
+            assertArrayEquals(bytes(dc), File(flycast, "dc/dc_boot.bin").readBytes())
+        } finally { root.deleteRecursively() }
+    }
+
+    private fun flashFixture() = ByteArray(SegaCdBios.SIZE).apply {
+        "Dreamcast  ".toByteArray().copyInto(this, 0x1a005)
+        "Dreamcast  ".toByteArray().copyInto(this, 0x1a0a5)
+    }
+    private fun cdFixture(region: Char) = ByteArray(SegaCdBios.SIZE).apply {
+        "SEGA MEGA DRIVE ".toByteArray().copyInto(this, 0x100)
+        "CD2 BOOT ROM".toByteArray().copyInto(this, 0x120)
+        this[0x1f0] = region.code.toByte()
     }
 
     private fun find32xFirmware(context: Context): File? =

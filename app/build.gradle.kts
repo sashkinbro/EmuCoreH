@@ -178,6 +178,9 @@ android {
 }
 
 dependencies {
+    // Bounded, content-based BIOS detection also accepts renamed 7z archives.
+    implementation(libs.commons.compress)
+    implementation(libs.xz)
     implementation(project(":core-android"))
     implementation(project(":core-jgenesis-android"))
     implementation(project(":core-supermodel-android"))
@@ -221,7 +224,7 @@ dependencies {
         implementation(files(sdkDir.resolve("discord_partner_sdk.aar")))
     }
     testImplementation(libs.junit)
-    testImplementation("org.json:json:20240303")
+    testImplementation(libs.json)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -196,42 +196,48 @@ pub fn read_cartridge(path: &Path) -> Result<(Vec<u8>, String), String> {
     Ok((bytes, extension))
 }
 
-pub fn read_bios_file(path: &Path) -> Result<Vec<u8>, String> {
-    fs::read(path).map_err(|error| format!("Unable to read BIOS {}: {error}", path.display()))
+fn sega_cd_bios_region(bytes: &[u8]) -> Option<GenesisRegion> {
+    if bytes.len() != 128 * 1024 || &bytes[0x100..0x104] != b"SEGA" {
+        return None;
+    }
+    let title = std::str::from_utf8(&bytes[0x120..0x180]).ok()?;
+    let words: Vec<_> = title.split_ascii_whitespace().collect();
+    if !words.windows(3).any(|part| {
+        matches!(part[0], "CD" | "CD1" | "CD2") && part[1] == "BOOT" && part[2] == "ROM"
+    }) {
+        return None;
+    }
+    let regions: std::collections::HashSet<_> = bytes[0x1f0..0x200]
+        .iter().copied().filter(|byte| matches!(byte, b'U' | b'E' | b'J')).collect();
+    if regions.len() != 1 { return None; }
+    match regions.into_iter().next()? {
+        b'U' => Some(GenesisRegion::Americas),
+        b'E' => Some(GenesisRegion::Europe),
+        b'J' => Some(GenesisRegion::Japan),
+        _ => None,
+    }
+}
+
+pub fn read_bios_file(path: &Path, region: GenesisRegion) -> Result<Vec<u8>, String> {
+    let mut bytes = fs::read(path)
+        .map_err(|error| format!("Unable to read BIOS {}: {error}", path.display()))?;
+    if sega_cd_bios_region(&bytes) == Some(region) { return Ok(bytes); }
+    if bytes.len() == 128 * 1024 {
+        for word in bytes.chunks_exact_mut(2) { word.swap(0, 1); }
+        if sega_cd_bios_region(&bytes) == Some(region) { return Ok(bytes); }
+    }
+    Err(format!("Sega CD BIOS {} has invalid content or the wrong region", path.display()))
 }
 
 pub fn sega_cd_bios_path(system_dir: &Path, region: GenesisRegion) -> Option<PathBuf> {
-    let specific = match region {
-        GenesisRegion::Americas => ["bios_cd_u.bin", "bios_cd_us.bin", "scd_us.bin", "bios_us.bin"],
-        GenesisRegion::Europe => ["bios_cd_e.bin", "bios_cd_eu.bin", "scd_eu.bin", "bios_eu.bin"],
-        GenesisRegion::Japan => ["bios_cd_j.bin", "bios_cd_jp.bin", "scd_jp.bin", "bios_jp.bin"],
-    };
-
-    let entries = fs::read_dir(system_dir).ok()?;
-    let mut candidates = Vec::new();
-
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if !path.is_file() {
-            continue;
-        }
-        let name =
-            path.file_name().and_then(OsStr::to_str).unwrap_or_default().to_ascii_lowercase();
-        let size = entry.metadata().ok().map(|metadata| metadata.len());
-        if size != Some(128 * 1024) {
-            continue;
-        }
-        if specific.contains(&name.as_str()) {
-            candidates.push(path.clone());
-        }
-    }
-
+    // Revalidate old installations too: a plausible filename and 128 KiB size
+    // must never route a Dreamcast flash ROM or another region into Sega CD.
+    let mut candidates: Vec<_> = fs::read_dir(system_dir).ok()?.flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_file() && path.metadata().ok().map(|meta| meta.len()) == Some(128 * 1024))
+        .collect();
     candidates.sort();
-    if let Some(path) = candidates.into_iter().next() {
-        return Some(path);
-    }
-
-    None
+    candidates.into_iter().find(|path| read_bios_file(path, region).is_ok())
 }
 
 pub fn base_name_for_saves(path: &Path) -> String {
@@ -437,9 +443,20 @@ mod tests {
     fn bios_lookup_requires_requested_region_and_correct_size() {
         let directory = std::env::temp_dir().join(format!("jgenesis-bios-{}", std::process::id()));
         fs::create_dir_all(&directory).unwrap();
-        fs::write(directory.join("bios_CD_J.bin"), vec![0; 128 * 1024]).unwrap();
+        let mut japan = vec![0; 128 * 1024];
+        japan[0x100..0x104].copy_from_slice(b"SEGA");
+        japan[0x120..0x12d].copy_from_slice(b"CD2 BOOT ROM ");
+        japan[0x1f0] = b'J';
+        fs::write(directory.join("bios_CD_J.bin"), &japan).unwrap();
         assert!(sega_cd_bios_path(&directory, GenesisRegion::Americas).is_none());
         assert!(sega_cd_bios_path(&directory, GenesisRegion::Japan).is_some());
+        // The misleading US label must not change a Japanese ROM's region.
+        fs::write(directory.join("bios_CD_U.bin"), &japan).unwrap();
+        assert!(sega_cd_bios_path(&directory, GenesisRegion::Americas).is_none());
+        fs::remove_file(directory.join("bios_CD_J.bin")).unwrap();
+        assert!(sega_cd_bios_path(&directory, GenesisRegion::Japan).is_some());
+        fs::write(directory.join("bios_CD_U.bin"), vec![0; 128 * 1024]).unwrap();
+        assert!(sega_cd_bios_path(&directory, GenesisRegion::Americas).is_none());
         fs::write(directory.join("bios_CD_U.bin"), vec![0; 1024]).unwrap();
         assert!(sega_cd_bios_path(&directory, GenesisRegion::Americas).is_none());
         fs::remove_dir_all(directory).unwrap();

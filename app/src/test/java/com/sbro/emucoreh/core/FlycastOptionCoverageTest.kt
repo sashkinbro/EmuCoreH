@@ -4,6 +4,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class FlycastOptionCoverageTest {
+    @Test fun legacyHlePreferencesCannotRestoreBioslessBoot() {
+        val key = FlycastCoreOptions.HLE_BIOS_KEY
+        assertFalse(FlycastCoreOptions.systemOptions().any { it.key == key })
+        assertFalse(FlycastCoreOptions.gameMenuEmulationOptions().any { it.key == key })
+        assertFalse(FlycastCoreOptions.supportsGameOverride(key))
+        assertTrue(FlycastCoreOptions.isManagedKey(key))
+        assertFalse(FlycastCoreOptions.startupOptions(mapOf(key to "enabled"),
+            mapOf(key to "enabled")).containsKey(key))
+    }
     @Test fun gameMenusIncludeTheSameCoreOptionsAsSettingsWithoutDuplicateResolution() {
         val emulation = FlycastCoreOptions.gameMenuEmulationOptions().map { it.key }.toSet()
         val expected = FlycastCoreOptions.systemOptions() + FlycastCoreOptions.performanceOptions() +

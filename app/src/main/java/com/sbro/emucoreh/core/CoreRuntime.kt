@@ -331,6 +331,13 @@ internal object CoreRuntime {
         val root = File(app.filesDir, when (platform.coreId) { 1 -> "jgenesis"; 2 -> "supermodel"; 3 -> "saturn"; else -> "flycast" })
         systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath
         if (platform == EmulationPlatform.DREAMCAST) {
+            val contentName = if (gamePath.startsWith("content://"))
+                DocumentPathResolver.getDisplayName(app, gamePath) else gamePath
+            if (DreamcastBios.requiresConsoleBios(biosOnly, contentName) &&
+                !DreamcastBios.hasUsableBootRom(systemDirectory)) {
+                CrashLogger.logError(TAG, "Dreamcast BIOS is missing or invalid")
+                return false
+            }
             // The core opens the flash ROM as dc_nvmem.bin; adopt a legacy
             // dc_flash.bin once so an imported flash is actually used.
             DreamcastBios.migrateLegacyFlash(systemDirectory)
@@ -548,35 +555,14 @@ internal object CoreRuntime {
         FlycastCoreOptions.startupOptions(CoreOptionStore.persistedEntries(), launchCoreOptions).forEach { (key, value) ->
             bridge.nativeSetOption(key, value)
         }
-        // A Dreamcast BIOS dump is optional: when none is installed the core
-        // boots through its HLE BIOS so games still start.
-        val installedBootRom = DreamcastBios.findBootRom(systemDirectory)
-        // Naomi and Atomiswave boot ROMs are 2 MiB as well, so a size-only
-        // import can leave arcade firmware in dc_boot.bin. Booting that as the
-        // Dreamcast BIOS fails with an arcade error screen, so treat it as
-        // absent and stay on HLE.
-        val arcadeFirmware = installedBootRom != null &&
-            DreamcastBios.looksLikeArcadeBootRom(installedBootRom)
-        val bootRom = installedBootRom?.takeUnless { arcadeFirmware }
-        if (bootRom == null) {
-            bridge.nativeSetOption(FlycastCoreOptions.HLE_BIOS_KEY, "enabled")
-        }
+        // Ignore legacy global and per-game HLE preferences, including restored backups.
+        bridge.nativeSetOption(FlycastCoreOptions.HLE_BIOS_KEY, "disabled")
         if (platform == EmulationPlatform.DREAMCAST) {
-            // Record the BIOS mode a launch actually used: "real BIOS crashes"
-            // reports cannot be classified from a tester's log without it.
-            val hleMode = if (bootRom == null) {
-                "forced"
-            } else {
-                coreOptionValue(FlycastCoreOptions.HLE_BIOS_KEY) ?: "disabled"
-            }
-            val bootName = installedBootRom?.name ?: "none"
-            val bootCrc = DreamcastBios.bootRomFingerprint(installedBootRom)
-            val note = if (arcadeFirmware) " note=arcade-firmware" else ""
+            val bootRom = DreamcastBios.findBootRom(systemDirectory)
             CrashLogger.logStep(
                 "Bios",
-                "dreamcast boot=$bootName(crc=$bootCrc) " +
-                    "flash=${DreamcastBios.findFlashRom(systemDirectory)?.name ?: "none"} " +
-                    "hle=$hleMode$note"
+                "dreamcast boot=${bootRom?.name ?: "none"}(crc=${DreamcastBios.bootRomFingerprint(bootRom)}) " +
+                    "flash=${DreamcastBios.findFlashRom(systemDirectory)?.name ?: "none"} hle=disabled"
             )
         }
         // Internal resolution is owned by the app's per-game upscale setting, so
@@ -615,7 +601,8 @@ internal object CoreRuntime {
 
     /** Effective value of a core option (user override or core default). */
     fun coreOptionValue(key: String): String? =
-        if (key.startsWith("jgenesis_")) context?.let { SegaCoreOptions.value(it, key) }
+        if (key == FlycastCoreOptions.HLE_BIOS_KEY) "disabled"
+        else if (key.startsWith("jgenesis_")) context?.let { SegaCoreOptions.value(it, key) }
             ?: SegaCoreOptions.options(platform).firstOrNull { it.key == key }?.defaultValue
         else if (key.startsWith("beetle_saturn_")) context?.let { SaturnCoreOptions.value(it, key) }
             ?: SaturnCoreOptions.options().firstOrNull { it.key == key }?.defaultValue
@@ -632,6 +619,10 @@ internal object CoreRuntime {
      * that must not pollute the global option store.
      */
     fun applyCoreOption(key: String, value: String) {
+        if (key == FlycastCoreOptions.HLE_BIOS_KEY) {
+            if (platform.coreId == 0) bridge.nativeSetOption(key, "disabled")
+            return
+        }
         if (platform.isModel3) return
         if (platform.isSaturn) {
             if (key.startsWith("beetle_saturn_") && !SaturnCoreOptions.requiresRestart(key)) bridge.nativeSetOption(key, value)

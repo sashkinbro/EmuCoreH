@@ -683,7 +683,7 @@ fn load_sega_cd(
             system_dir.display()
         )
     })?;
-    let bios = read_bios_file(&bios_path)?;
+    let bios = read_bios_file(&bios_path, region)?;
     if bios.len() != 128 * 1024 {
         return Err(format!(
             "Sega CD BIOS {} is {} bytes, expected 131072",

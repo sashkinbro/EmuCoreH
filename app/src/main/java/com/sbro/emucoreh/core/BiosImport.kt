@@ -21,12 +21,19 @@ data class BiosInstallResult(
 object BiosImport {
     private const val MAX_FILES = 256
     private const val MAX_DIRECTORIES = 64
-    private val arcadeExtensions = setOf("zip", "7z")
 
     fun hasAnyBios(context: Context): Boolean =
         SaturnBios.isInstalled(context) || DreamcastBios.hasAnyBios(flycastSystemDir(context)) ||
             SegaCdBios.Region.entries.any { SegaCdBios.isInstalled(context, it) } ||
             Sega32XBios.Part.entries.any { Sega32XBios.isInstalled(context, it) }
+
+    /** A flash ROM or an incomplete 32X set cannot satisfy required setup. */
+    fun hasBootableBios(context: Context): Boolean =
+        SaturnBios.isInstalled(context) ||
+            DreamcastBios.hasUsableBootRom(flycastSystemDir(context)) ||
+            DreamcastBios.hasArcadeBios(flycastSystemDir(context)) ||
+            SegaCdBios.Region.entries.any { SegaCdBios.isInstalled(context, it) } ||
+            Sega32XBios.Part.entries.all { Sega32XBios.isInstalled(context, it) }
 
     /** Re-import persisted user selections after upgrades and when dumps are added to a folder. */
     @Synchronized
@@ -77,9 +84,8 @@ object BiosImport {
         val size = runCatching {
             context.contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize }
         }.getOrNull() ?: -1L
-        val name = DocumentPathResolver.getDisplayName(context, uri.toString())
         val counts = Counts()
-        installFile(context, uri, name, size, flycastSystemDir, segaSystemDir, counts)
+        installFile(context, uri, size, flycastSystemDir, segaSystemDir, counts)
         return counts.result()
     }
 
@@ -109,48 +115,29 @@ object BiosImport {
                 continue
             }
             if (!budget.checkFile()) continue
-            val name = runCatching { child.name }.getOrNull().orEmpty().ifBlank {
-                DocumentPathResolver.getDisplayName(context, child.uri.toString())
-            }
             val size = runCatching { child.length() }.getOrDefault(-1L)
-            installFile(context, child.uri, name, size, flycastSystemDir, segaSystemDir, counts)
+            installFile(context, child.uri, size, flycastSystemDir, segaSystemDir, counts)
         }
     }
 
     private fun installFile(
         context: Context,
         uri: Uri,
-        name: String,
         size: Long,
         flycastSystemDir: String,
         segaSystemDir: String,
         counts: Counts
     ) {
-        if (SaturnBios.installDetected(context, uri, size)) {
-            counts.saturn++
-            return
+        if (size > FirmwareContent.MAX_INPUT) return
+        FirmwareInstaller.install(context, uri, flycastSystemDir, File(segaSystemDir)).forEach { installed ->
+            when (installed.family) {
+                FirmwareContent.Family.DREAMCAST -> counts.dreamcast++
+                FirmwareContent.Family.ARCADE -> counts.arcade++
+                FirmwareContent.Family.SEGA_CD -> counts.segaCd++
+                FirmwareContent.Family.SEGA_32X -> counts.sega32x++
+                FirmwareContent.Family.SATURN -> counts.saturn++
+            }
         }
-        Sega32XBios.partForFileName(name)?.let { part ->
-            if (Sega32XBios.installTo(context, uri, part, File(segaSystemDir))) counts.sega32x++
-            return
-        }
-        SegaCdBios.regionForFileName(name)?.let { region ->
-            if (SegaCdBios.installTo(context, uri, region, File(segaSystemDir))) counts.segaCd++
-            return
-        }
-        // Some providers expose the three 32X dumps under unrelated names.
-        // Identify them by their unique sizes and verify the CRC before use.
-        if (Sega32XBios.installDetectedTo(context, uri, size, File(segaSystemDir)) != null) {
-            counts.sega32x++
-            return
-        }
-        if (SegaCdBios.installDetectedTo(context, uri, size, File(segaSystemDir)) != null) {
-            counts.segaCd++
-            return
-        }
-        if (DreamcastBios.supportedBiosTargetName(name, size) == null) return
-        val installed = DreamcastBios.import(context, uri, flycastSystemDir) ?: return
-        if (installed.extension.lowercase() in arcadeExtensions) counts.arcade++ else counts.dreamcast++
     }
 
     private fun flycastSystemDir(context: Context): String =

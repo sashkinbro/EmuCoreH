@@ -356,7 +356,7 @@
     <string name="onboarding_title">खेलने के लिए तैयार हो जाएं</string>
     <string name="onboarding_subtitle">अपने गेम फ़ोल्डर चुनें और फ़ाइलों तक पहुँच की अनुमति दें।</string>
     <string name="onboarding_bios_desc">BIOS फ़ाइलों वाला एक फ़ोल्डर चुनें। दूसरा फ़ोल्डर जोड़ने के लिए फिर टैप करें; मान्य Dreamcast, आर्केड, Sega CD और 32X फ़ाइलें एक साथ इंस्टॉल होती हैं।</string>
-    <string name="onboarding_bios_optional">वैकल्पिक, लेकिन अनुशंसित</string>
+    <string name="onboarding_bios_required">BIOS आवश्यक है</string>
     <string name="bios_supported_files">Dreamcast: dc_boot.bin (2 MiB), dc_flash.bin (128 KiB)
 आर्केड: naomi.zip, naomi2.zip, awbios.zip, segasp.zip
 Sega CD: bios_CD_U.bin, bios_CD_E.bin, bios_CD_J.bin (128 KiB)
@@ -2176,7 +2176,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="naomi_guide_title">Naomi 1–2 / Atomiswave</string>
     <string name="naomi_guide_subtitle">Naomi, Naomi 2 और Atomiswave गेम MAME ROM सेट से चलते हैं।</string>
     <string name="naomi_guide_intro">हर ROM सेट को अलग आर्काइव में रखें और फ़ोल्डर को लाइब्रेरी में जोड़ें। EmuCoreH खुद BIOS ढूँढता है, कार्ट्रिज या GD-ROM बूट करता है और कवर डाउनलोड करता है।</string>
-    <string name="naomi_guide_step_bios">BIOS — अपने आर्केड BIOS सेट वाला फ़ोल्डर चुनें: Naomi के लिए naomi.zip, Naomi 2 के लिए naomi2.zip और Atomiswave के लिए awbios.zip। कुछ गेम को अपना सेट चाहिए, जैसे f355bios.zip या segasp.zip। Dreamcast डंप वैकल्पिक हैं।</string>
+    <string name="naomi_guide_step_bios">BIOS — अपने आर्केड BIOS सेट वाला फ़ोल्डर चुनें: Naomi के लिए naomi.zip, Naomi 2 के लिए naomi2.zip और Atomiswave के लिए awbios.zip। कुछ गेम को अपना सेट चाहिए, जैसे f355bios.zip या segasp.zip। BIOS आवश्यक है: Dreamcast गेम शुरू करने से पहले अपनी dc_boot.bin (2 MiB) या dc_bios.bin फ़ाइल आयात करें।</string>
     <string name="naomi_guide_step_game">ROM सेट — MAME .zip या .7z सेट इस्तेमाल करें और आर्काइव का नाम MAME ID होना चाहिए (जैसे vf4tuned.zip)। कार्ट्रिज गेम को सिर्फ़ यही फ़ाइल चाहिए। पुराने .lst, .dat और .bin डंप भी चलते हैं।</string>
     <string name="naomi_guide_step_gdrom">GD-ROM गेम — डिस्क भी चाहिए, आर्काइव से निकाली हुई: ikaruga.zip के पास ikaruga फ़ोल्डर बनाएँ और उसमें gdl-0010.chd सामान्य फ़ाइल के रूप में रखें। zip में छोड़ा CHD नहीं पढ़ा जाता; Naomi डिस्क के GDI/CUE डंप नहीं चलते।</string>
     <string name="naomi_guide_step_launch">लॉन्च — ROM सेट को लाइब्रेरी से शुरू करें। आर्काइव से निकाली गई फ़ाइलें न चलाएँ: सादा ROM फ़ोल्डर बूट नहीं होता।</string>
@@ -2351,7 +2351,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="supported_systems_intro">नीचे अपने गेम फ़ोल्डर जोड़ें। BIOS अनुभाग में अपनी BIOS फ़ाइलें आयात करें।</string>
     <string name="supported_systems_no_bios_title">BIOS के बिना खेलने के लिए तैयार</string>
     <string name="supported_systems_no_bios_body">Mega Drive / Genesis · Master System · Game Gear · SG-1000 · Model 3</string>
-    <string name="supported_systems_dreamcast_body">BIOS वैकल्पिक है: अंतर्निहित BIOS अनुकरण से आप BIOS फ़ाइल के बिना खेल सकते हैं।</string>
+    <string name="supported_systems_dreamcast_body">BIOS आवश्यक है: Dreamcast गेम शुरू करने से पहले अपनी dc_boot.bin (2 MiB) या dc_bios.bin फ़ाइल आयात करें।</string>
     <string name="supported_systems_required_title">इन सिस्टम के लिए BIOS चाहिए</string>
     <string name="supported_systems_required_body">Sega CD / Mega-CD: गेम के क्षेत्र के अनुसार BIOS।\n32X: तीनों BIOS फ़ाइलें।\nSaturn: एक 512 KiB BIOS फ़ाइल।</string>
     <string name="supported_systems_arcade_body">हर सिस्टम के लिए उपयुक्त आर्केड BIOS सेट आयात करें।</string>

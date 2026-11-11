@@ -1049,7 +1049,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
         } else {
             path.substringAfterLast('/')
         }
-        return name.substringAfterLast('.', "").lowercase(Locale.ROOT) in GameFormats.romExtensions
+        return !DreamcastBios.requiresConsoleBios(false, name)
     }
 
     fun startEmulation(
@@ -1141,11 +1141,14 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     else com.sbro.emucoreh.core.SegaPlatformDetector.detect(getApplication(), path))
                 currentTouchPlatformIdentity = currentGamePath
                 val config = loadLaunchConfig()
-                if (currentTouchPlatform == EmulationPlatform.SEGA_CD ||
+                if (currentTouchPlatform == EmulationPlatform.DREAMCAST ||
+                    currentTouchPlatform == EmulationPlatform.SEGA_CD ||
                     currentTouchPlatform == EmulationPlatform.SEGA_32X || currentTouchPlatform.isSaturn) {
                     com.sbro.emucoreh.core.BiosImport.restoreSelections(
                         getApplication(), preferences.biosPaths.first(),
-                        force = if (currentTouchPlatform.isSaturn) !com.sbro.emucoreh.core.SaturnBios.isInstalled(getApplication())
+                        force = if (currentTouchPlatform == EmulationPlatform.DREAMCAST)
+                            !DreamcastBios.hasUsableBootRom(EmulatorStorage.flycastSystemDir(getApplication()).absolutePath)
+                        else if (currentTouchPlatform.isSaturn) !com.sbro.emucoreh.core.SaturnBios.isInstalled(getApplication())
                         else if (currentTouchPlatform == EmulationPlatform.SEGA_32X)
                             com.sbro.emucoreh.core.Sega32XBios.Part.entries.any {
                                 !com.sbro.emucoreh.core.Sega32XBios.isInstalled(getApplication(), it)
@@ -1157,9 +1160,6 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 }
                 val renderer = rendererOverride ?: config.renderer
                 com.sbro.emucoreh.core.CoreRuntime.selectedGpuDriverPath = config.gpuDriverPath
-
-                // Flycast boots without a firmware dump when no BIOS is
-                // installed; a configured dump is staged by DreamcastBios.
 
                 _uiState.value = _uiState.value.copy(
                     statusMessage = "status_applying_config"
@@ -1572,6 +1572,8 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                                 com.sbro.emucoreh.core.SegaCdBios.isInstalled(getApplication(), it)
                             } || com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
                                 ?.contains("BIOS", ignoreCase = true) == true) -> "sega_bios_missing"
+                        currentTouchPlatform == EmulationPlatform.DREAMCAST && !isArcadeContentPath(pathToLaunch) &&
+                            !DreamcastBios.hasUsableBootRom(EmulatorStorage.flycastSystemDir(getApplication()).absolutePath) -> "bios_missing"
                         arcadeWithoutBios -> "bios_missing"
                         else -> "launch_failed"
                     }
