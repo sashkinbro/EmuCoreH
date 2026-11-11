@@ -142,7 +142,7 @@ import kotlinx.coroutines.withContext
 import com.sbro.emucoreh.ui.theme.neon.neonChipShape
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 
-private enum class GameSettingsManagerTab {
+internal enum class GameSettingsManagerTab {
     Core,
     Runtime,
     Network,
@@ -921,7 +921,7 @@ private fun GameSettingsManagerEditorPanel(
 }
 
 @Composable
-private fun GameSettingsTabContent(
+internal fun GameSettingsTabContent(
     platform: EmulationPlatform,
     draft: PerGameSettings,
     defaultProfile: PerGameSettings,
@@ -1037,6 +1037,8 @@ private fun GameSettingsTabContent(
                         draft = draft,
                         onDraftChange = onDraftChange
                     )
+                }
+                EditorSection(title = stringResource(R.string.settings_retroarch_shaders)) {
                     val globalShaderPresetName = shaderPresets
                         .firstOrNull { it.absolutePath == settingsSnapshot.shaderChainPreset }
                         ?.label

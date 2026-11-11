@@ -2157,7 +2157,7 @@ private fun SettingsContent(
                                 .let { if (platform.isSega && it == RendererDefaults.SOFTWARE) RendererDefaults.OPENGL else it },
                             onSelect = { if (platform.isModel3) viewModel.setModel3Renderer(it) else viewModel.setRenderer(it) },
                             helpText = stringResource(R.string.settings_help_renderer),
-                            onResetToDefault = { if (platform.isModel3) viewModel.setModel3Renderer(RendererDefaults.VULKAN) else viewModel.setRenderer(defaults.renderer) }
+                            onResetToDefault = { if (platform.isModel3) viewModel.setModel3Renderer(RendererDefaults.MODEL3_DEFAULT) else viewModel.setRenderer(defaults.renderer) }
                         )
                         }
                         if (platform.supportsCustomGpuDrivers() &&

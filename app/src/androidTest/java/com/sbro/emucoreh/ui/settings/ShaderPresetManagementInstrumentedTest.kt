@@ -47,7 +47,8 @@ class ShaderPresetManagementInstrumentedTest {
             }
         }
         val delete = context.getString(R.string.delete)
-        compose.onNodeWithText("Shader choice").performClick()
+        // Activate the card action rather than its nested help-button hit target.
+        compose.onNodeWithText("Shader choice").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick) { it() }
         compose.onNodeWithText(context.getString(R.string.settings_shader_presets_manage)).performClick()
         compose.onNodeWithText(context.getString(R.string.settings_general_tab)).performClick()
         // Opening a category scrolls to its current shader; protected leading options may be offscreen.

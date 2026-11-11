@@ -15,7 +15,7 @@ class InternalResolutionPolicyTest {
         assertEquals(4, EmulationPlatform.MODEL_3.maxInternalResolutionMultiplier)
         assertEquals(20, EmulationPlatform.DREAMCAST.maxInternalResolutionMultiplier)
         assertEquals("reicast_internal_resolution" to "12800x9600", internalResolutionCoreOption(EmulationPlatform.DREAMCAST, 20f))
-        for (platform in EmulationPlatform.entries.filter { it.isSega }) {
+        for (platform in EmulationPlatform.entries.filter { it.isSega || it.isSaturn }) {
             assertFalse(platform.supportsInternalResolution)
             assertNull(internalResolutionCoreOption(platform, 4f))
         }
