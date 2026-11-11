@@ -427,7 +427,10 @@ int MDFNSS_LoadSM(void *st_p, uint32_t ver)
 	}
 
 	// Call out to main save state function.
-	success = LibRetro_StateAction( st, 1 /*LOAD*/, false );
+	// Mednafen components use the load argument as the source state version.
+	// Passing boolean 1 falsely runs every legacy migration on current states
+	// (notably resetting VDP2 window latches after loading an active game).
+	success = LibRetro_StateAction( st, stateversion, false );
 
 	// Success?
 	return success;

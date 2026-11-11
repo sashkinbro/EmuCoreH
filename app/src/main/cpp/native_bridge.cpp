@@ -1252,6 +1252,19 @@ void PresentSoftwareFrame(const void* data, unsigned width, unsigned height, siz
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, static_cast<GLsizei>(width),
                         static_cast<GLsizei>(height), GL_BGRA_EXT, GL_UNSIGNED_BYTE, bgra.data());
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        // Libretro XRGB8888's high byte is unused, not transparency. Saturn
+        // writes zero there. Direct BGRA upload otherwise makes its entire
+        // surface transparent on Android, unlike the RGBA conversion fallback.
+        // Fix alpha on the GPU so the software rasterizer needs no extra
+        // per-pixel CPU conversion, and shader inputs/thumbnails are opaque too.
+        if (g_core_id.load() != 1) {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, g_gl.fbo);
+            glDisable(GL_SCISSOR_TEST);
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        }
         PresentHardwareFrame(static_cast<GLsizei>(width), static_cast<GLsizei>(height));
         return;
     }

@@ -25,6 +25,8 @@ Local modifications:
   saturn_boot_error() diagnostics for a missing/invalid BIOS and load failure;
   make state serialization fail cleanly before a game is loaded and reset the
   cached state size between sessions.
+- mednafen/state.cpp: forward the verified state version during load, so
+  current states do not enter legacy VDP2 and other component migrations.
 - disc.cpp: implement runtime image removal/replacement through the libretro
   disk-control callbacks so the frontend tray menu can add and swap discs
   without restarting the core.
