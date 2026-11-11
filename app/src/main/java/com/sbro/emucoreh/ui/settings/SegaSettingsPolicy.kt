@@ -30,7 +30,7 @@ internal fun settingsSearchEntryAvailable(platform: EmulationPlatform, tab: Stri
     if (title == R.string.settings_upscale) return segaSettingsTabAvailable(tab) && platform.supportsInternalResolution
     if (!segaSettingsTabAvailable(tab) || title in flycastOnlySearchSettings) return false
     if (title == R.string.settings_renderer && platform.isSaturn) return false
-    if (title == R.string.settings_renderer && platform.isModel3) return tab == "Graphics"
+    if (title == R.string.settings_renderer && platform.isModel3) return false
     return platform.supportsAnalogControlSettings() || title !in analogSearchSettings
 }
 
@@ -49,6 +49,7 @@ private val analogSearchSettings = setOf(
 )
 
 private val flycastOnlySearchSettings = setOf(
+    R.string.settings_gpu_driver_manager_title,
     R.string.settings_racing_mode,
     R.string.settings_gyro_mode, R.string.settings_gyro_mode_light_gun, R.string.settings_gyro_stick,
     R.string.settings_arcade_device_player_1, R.string.settings_arcade_device_player_2,

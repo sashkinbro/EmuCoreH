@@ -4509,7 +4509,7 @@ private fun EmulationSidebarMenu(
                             horizontalInset = sectionLabelInset
                         )
 
-                        if (platform.coreId == 0 || platform.isModel3 || platform.isSega) {
+                        if (platform.coreId == 0 || platform.isSega) {
                         LiveSelectionRow(
                             title = stringResource(R.string.settings_renderer),
                             options = listOf(
@@ -4519,7 +4519,7 @@ private fun EmulationSidebarMenu(
                             currentValue = uiState.renderer,
                             onValueChange = onSetRenderer,
                             helpText = stringResource(R.string.settings_help_renderer),
-                            onResetToDefault = { onSetRenderer(if (platform.isModel3) globalDefaults.model3Renderer else globalDefaults.renderer) }
+                            onResetToDefault = { onSetRenderer(globalDefaults.renderer) }
                         )
                         }
 

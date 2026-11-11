@@ -11,13 +11,7 @@ object RendererDefaults {
     // OpenGL ES is the reliable default; Vulkan stays selectable per game.
     const val DEFAULT = VULKAN
 
-    /**
-     * Model 3 ships its own renderer choice. Its experimental Vulkan scene
-     * re-creates and re-uploads both tile layers every frame and waits for the
-     * shared queue to go idle before each frame, which measures at roughly half
-     * the frame rate of the GLES presenter on current Android GPUs. GLES is
-     * therefore the default; Vulkan stays selectable in Graphics settings.
-     */
+    /** Model 3 exposes only OpenGL in the app; its native Vulkan backend remains available for development. */
     const val MODEL3_DEFAULT = OPENGL
 
     // Stable C API renderer values. Keep this translation at the frontend
@@ -37,13 +31,9 @@ object RendererDefaults {
         }
     }
 
-    /**
-     * Model 3 has two hardware backends. An absent preference (null) means the
-     * user never chose one, so the fast GLES default applies; an explicit
-     * Vulkan choice is preserved.
-     */
+    /** Ignore legacy/backup Vulkan selections while the Model 3 UI is OpenGL-only. */
     fun normalizeModel3Renderer(value: Int?): Int =
-        if (value == VULKAN) VULKAN else MODEL3_DEFAULT
+        value?.takeIf { it == OPENGL } ?: MODEL3_DEFAULT
 
     fun toCoreRenderer(value: Int): Int = when (normalizeAndroidRenderer(value)) {
         SOFTWARE -> CORE_SOFTWARE

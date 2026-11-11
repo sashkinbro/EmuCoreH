@@ -947,8 +947,8 @@ internal fun GameSettingsTabContent(
         when (selectedTab) {
             GameSettingsManagerTab.Core -> {
                 EditorSection(title = stringResource(R.string.game_settings_manager_section_profile)) {
-                    if (platform.coreId == 0 || platform.isSega || platform.isModel3) {
-                    val rendererOptions = if (platform.isSega || platform.isModel3) {
+                    if (platform.coreId == 0 || platform.isSega) {
+                    val rendererOptions = if (platform.isSega) {
                         listOf(
                             12 to stringResource(R.string.settings_renderer_opengl),
                             14 to stringResource(R.string.settings_renderer_vulkan)
@@ -964,14 +964,14 @@ internal fun GameSettingsTabContent(
                         title = stringResource(R.string.settings_renderer),
                         options = rendererOptions,
                         selectedValue = normalizeManagerRenderer(draft.renderer)
-                            .let { if ((platform.isSega || platform.isModel3) && it == RendererDefaults.SOFTWARE) RendererDefaults.OPENGL else it },
+                            .let { if (platform.isSega && it == RendererDefaults.SOFTWARE) RendererDefaults.OPENGL else it },
                         onSelected = { onDraftChange(draft.copy(renderer = it)) },
                         helpText = stringResource(R.string.settings_help_renderer),
                         onResetToDefault = {
                             onDraftChange(draft.copy(renderer = normalizeManagerRenderer(defaultProfile.renderer)))
                         }
                     )
-                    if (platform.supportsCustomGpuDrivers() && gpuDriverSupported) {
+                    if (platform.coreId == 0 && gpuDriverSupported) {
                         ManagerActionButton(
                             modifier = Modifier.fillMaxWidth(),
                             icon = Icons.Rounded.Tune,

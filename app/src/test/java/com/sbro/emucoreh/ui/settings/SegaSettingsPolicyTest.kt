@@ -76,7 +76,8 @@ class SegaSettingsPolicyTest {
             assertTrue(settingsSearchEntryAvailable(EmulationPlatform.DREAMCAST, "Controls", title))
         }
         assertTrue(settingsSearchEntryAvailable(EmulationPlatform.MODEL_3, "Graphics", R.string.settings_upscale))
-        assertTrue(settingsSearchEntryAvailable(EmulationPlatform.MODEL_3, "Graphics", R.string.settings_renderer))
+        assertFalse(settingsSearchEntryAvailable(EmulationPlatform.MODEL_3, "Graphics", R.string.settings_renderer))
+        assertFalse(settingsSearchEntryAvailable(EmulationPlatform.MODEL_3, "Graphics", R.string.settings_gpu_driver_manager_title))
         for (platform in EmulationPlatform.entries.filter { it.isSega }) {
             assertFalse(settingsSearchEntryAvailable(platform, "Graphics", R.string.settings_upscale))
         }

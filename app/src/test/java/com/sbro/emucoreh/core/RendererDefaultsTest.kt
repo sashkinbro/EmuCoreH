@@ -12,8 +12,8 @@ class RendererDefaultsTest {
     }
 
     @Test
-    fun explicitModel3VulkanChoiceIsPreserved() {
-        assertEquals(RendererDefaults.VULKAN, RendererDefaults.normalizeModel3Renderer(RendererDefaults.VULKAN))
+    fun legacyModel3VulkanChoiceUsesOpenGl() {
+        assertEquals(RendererDefaults.OPENGL, RendererDefaults.normalizeModel3Renderer(RendererDefaults.VULKAN))
     }
 
     @Test

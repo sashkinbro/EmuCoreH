@@ -1158,7 +1158,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                         }
                     )
                 }
-                val renderer = rendererOverride ?: config.renderer
+                val renderer = if (currentTouchPlatform.isModel3) RendererDefaults.MODEL3_DEFAULT else rendererOverride ?: config.renderer
                 com.sbro.emucoreh.core.CoreRuntime.selectedGpuDriverPath = config.gpuDriverPath
 
                 _uiState.value = _uiState.value.copy(
@@ -2297,6 +2297,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun setRenderer(renderer: Int) {
+        if (currentTouchPlatform.isModel3) return
         viewModelScope.launch {
             if (!EmulatorBridge.setRenderer(renderer)) return@launch
             // A renderer switch recreates the core session, which drops the
@@ -3380,7 +3381,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             return if (keys == null || key in keys) profile.value() else current
         }
         return copy(
-            renderer = pick("renderer", renderer) { renderer },
+            renderer = if (currentTouchPlatform.isModel3) RendererDefaults.MODEL3_DEFAULT else pick("renderer", renderer) { renderer },
             upscaleMultiplier = pick("upscaleMultiplier", upscaleMultiplier) { upscaleMultiplier },
             aspectRatio = pick("aspectRatio", aspectRatio) { aspectRatio },
             localMultiplayerMode = pick("localMultiplayerMode", localMultiplayerMode) { localMultiplayerMode },
@@ -3445,7 +3446,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             pressureModifierAmount = pick("pressureModifierAmount", pressureModifierAmount) { pressureModifierAmount },
             autoSaveOnExit = pick("autoSaveOnExit", autoSaveOnExit) { autoSaveOnExit },
             autoLoadOnStart = pick("autoLoadOnStart", autoLoadOnStart) { autoLoadOnStart },
-            renderer = pick("renderer", renderer) { renderer },
+            renderer = if (currentTouchPlatform.isModel3) RendererDefaults.MODEL3_DEFAULT else pick("renderer", renderer) { renderer },
             upscale = pick("upscaleMultiplier", upscale) { upscaleMultiplier },
             aspectRatio = pick("aspectRatio", aspectRatio) { aspectRatio },
             localMultiplayerMode = pick("localMultiplayerMode", localMultiplayerMode) { localMultiplayerMode },

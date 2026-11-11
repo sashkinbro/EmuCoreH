@@ -28,6 +28,26 @@ import org.junit.Test
 class SharedGraphicsSettingsInstrumentedTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun model3HidesRendererAndCustomDriverChoicesForLegacyVulkanProfiles() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val platform = mutableStateOf(EmulationPlatform.MODEL_3)
+        val legacy = PerGameSettings("qa-model3-renderer", "QA Model 3", renderer = 14)
+        compose.setContent {
+            EmuCoreHTheme {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    GameSettingsTabContent(platform.value, legacy, legacy, GameSettingsManagerTab.Core,
+                        4, emptyList(), { true }, {}, true, {})
+                }
+            }
+        }
+        compose.onNodeWithText(context.getString(R.string.settings_renderer)).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.settings_gpu_driver_manage)).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.settings_renderer_vulkan)).assertDoesNotExist()
+        compose.runOnIdle { platform.value = EmulationPlatform.DREAMCAST }
+        compose.onNodeWithText(context.getString(R.string.settings_renderer)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.settings_gpu_driver_manage)).assertExists()
+    }
+
     @Test fun everyCoreExposesShadersAndOnlySupportedCoresExposeInternalResolution() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val platform = mutableStateOf(EmulationPlatform.DREAMCAST)

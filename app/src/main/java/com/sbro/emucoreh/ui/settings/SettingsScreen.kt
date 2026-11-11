@@ -2134,8 +2134,8 @@ private fun SettingsContent(
                         }
                     }
                     SettingsSection(title = stringResource(R.string.settings_graphics_tab)) {
-                        if (platform.coreId == 0 || platform.isSega || platform.isModel3) {
-                        val rendererOptions = if (platform.isSega || platform.isModel3) {
+                        if (platform.coreId == 0 || platform.isSega) {
+                        val rendererOptions = if (platform.isSega) {
                             // jgenesis always emulates on the CPU, but its
                             // frames are presented through one of our GPU
                             // output backends.
@@ -2153,14 +2153,14 @@ private fun SettingsContent(
                         ChoiceSection(
                             title = stringResource(R.string.settings_renderer),
                             options = rendererOptions,
-                            selectedValue = if (platform.isModel3) uiState.model3Renderer else RendererDefaults.normalizeAndroidRenderer(uiState.renderer)
+                            selectedValue = RendererDefaults.normalizeAndroidRenderer(uiState.renderer)
                                 .let { if (platform.isSega && it == RendererDefaults.SOFTWARE) RendererDefaults.OPENGL else it },
-                            onSelect = { if (platform.isModel3) viewModel.setModel3Renderer(it) else viewModel.setRenderer(it) },
+                            onSelect = viewModel::setRenderer,
                             helpText = stringResource(R.string.settings_help_renderer),
-                            onResetToDefault = { if (platform.isModel3) viewModel.setModel3Renderer(RendererDefaults.MODEL3_DEFAULT) else viewModel.setRenderer(defaults.renderer) }
+                            onResetToDefault = { viewModel.setRenderer(defaults.renderer) }
                         )
                         }
-                        if (platform.supportsCustomGpuDrivers() &&
+                        if (platform.coreId == 0 &&
                             gpuDriverSupported) {
                             SettingsItem(
                                 icon = Icons.Rounded.Tune,
