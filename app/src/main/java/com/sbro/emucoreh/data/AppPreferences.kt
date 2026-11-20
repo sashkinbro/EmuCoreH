@@ -413,6 +413,12 @@ class AppPreferences(private val context: Context) {
         private val MEDIATEK_SETTINGS_NOTICE_SHOWN =
             booleanPreferencesKey("mediatek_settings_notice_shown")
         private val PRO_UNLOCKED = booleanPreferencesKey("pro_unlocked")
+        private val AGE_LOWER = intPreferencesKey("age_signals_lower")
+        private val AGE_UPPER = intPreferencesKey("age_signals_upper")
+        private val AGE_CHANGE_STATUS = intPreferencesKey("age_signals_change_status")
+        private val AGE_SOURCE = intPreferencesKey("age_signals_source")
+        private val AGE_INSTALL_ID = stringPreferencesKey("age_signals_install_id")
+        private val AGE_TIMESTAMP = longPreferencesKey("age_signals_timestamp")
         private val WELCOME_DIALOG_SHOWN = booleanPreferencesKey("welcome_dialog_shown")
         private val LAST_CORE_BINARY_FINGERPRINT =
             stringPreferencesKey("last_core_binary_fingerprint")
@@ -1060,6 +1066,34 @@ class AppPreferences(private val context: Context) {
     fun getProUnlockedSync(): Boolean {
         return runBlocking {
             context.dataStore.data.map { prefs -> prefs[PRO_UNLOCKED] ?: false }.first()
+        }
+    }
+
+    /** Last Play Age Signals result. Local only: not part of backup/cloud export. */
+    suspend fun getAgeSignals(): com.sbro.emucoreh.core.AgeSignalsSnapshot {
+        val prefs = context.dataStore.data.first()
+        return com.sbro.emucoreh.core.AgeSignalsSnapshot(
+            ageLower = prefs[AGE_LOWER],
+            ageUpper = prefs[AGE_UPPER],
+            significantChangeStatus = prefs[AGE_CHANGE_STATUS],
+            installId = prefs[AGE_INSTALL_ID],
+            ageRangeSource = prefs[AGE_SOURCE],
+            timestampMs = prefs[AGE_TIMESTAMP] ?: 0L
+        )
+    }
+
+    suspend fun setAgeSignals(snapshot: com.sbro.emucoreh.core.AgeSignalsSnapshot) {
+        context.dataStore.edit { prefs ->
+            fun MutablePreferences.putOrRemove(key: Preferences.Key<Int>, value: Int?) {
+                if (value != null) this[key] = value else remove(key)
+            }
+            prefs.putOrRemove(AGE_LOWER, snapshot.ageLower)
+            prefs.putOrRemove(AGE_UPPER, snapshot.ageUpper)
+            prefs.putOrRemove(AGE_CHANGE_STATUS, snapshot.significantChangeStatus)
+            prefs.putOrRemove(AGE_SOURCE, snapshot.ageRangeSource)
+            val installId = snapshot.installId
+            if (installId != null) prefs[AGE_INSTALL_ID] = installId else prefs.remove(AGE_INSTALL_ID)
+            prefs[AGE_TIMESTAMP] = snapshot.timestampMs
         }
     }
 
