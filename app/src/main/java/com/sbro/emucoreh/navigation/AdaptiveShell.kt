@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -85,6 +84,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import com.sbro.emucoreh.R
@@ -320,6 +320,13 @@ private fun CompactAdaptiveShell(
         isLandscapeCompact -> 0.46f
         else -> 0.74f
     }
+    // Explicit, clamped sheet width. `fillMaxWidth(f).widthIn(..)` never clamped (fillMaxWidth
+    // fixes the constraints first), so the landscape sheet grew to over twice the portrait one.
+    // On rotation Material3 re-anchors the drawer to the anchor nearest its old offset, so the
+    // old closed offset ended up nearer "open" and the drawer opened by itself. Clamping the
+    // width to [292, 360]dp keeps the ratio well below 2.
+    val drawerSheetWidth = (configuration.screenWidthDp.dp * drawerWidthFraction)
+        .coerceIn(292.dp, if (isTabletClass) 360.dp else 320.dp)
     val selectedDrawerItemFocusRequester = remember { FocusRequester() }
     // A drawer should never be restored as open after a configuration change.
     // This is especially important for back-only destinations such as Feedback and Settings.
@@ -448,8 +455,7 @@ private fun CompactAdaptiveShell(
                 modifier = Modifier
                     .testTag("adaptive_shell_drawer_sheet")
                     .fillMaxHeight()
-                    .fillMaxWidth(drawerWidthFraction)
-                    .widthIn(min = 292.dp, max = if (isTabletClass) 360.dp else 320.dp),
+                    .width(drawerSheetWidth),
                 drawerShape = when (drawerVisualStyle) {
                     DrawerVisualStyle.COMPACT -> neonShapeCorners(topEnd = 12.dp, bottomEnd = 12.dp)
                     DrawerVisualStyle.GLASS -> neonShapeCorners(topEnd = 38.dp, bottomEnd = 38.dp)
