@@ -2426,6 +2426,8 @@ bool retro_serialize(void *data, size_t size)
    StateMem st;
    bool ret          = false;
    uint8_t *_dat     = (uint8_t*)malloc(size);
+   if (!_dat)
+      return false;
 
    st.data           = _dat;
    st.loc            = 0;
@@ -2435,7 +2437,16 @@ bool retro_serialize(void *data, size_t size)
 
    ret               = MDFNSS_SaveSM(&st, MEDNAFEN_CORE_VERSION_NUMERIC, NULL, NULL, NULL);
 
-   memcpy(data,st.data,size);
+   /* EmuCoreH: never hand the frontend uninitialised heap bytes or a truncated
+      state. SaveSM may grow (realloc) the buffer or fail part way through. */
+   if (!ret || !st.data || st.len > size)
+   {
+      free(st.data);
+      return false;
+   }
+   memcpy(data, st.data, st.len);
+   if (st.len < size)
+      memset((uint8_t*)data + st.len, 0, size - st.len);
    free(st.data);
    return ret;
 }

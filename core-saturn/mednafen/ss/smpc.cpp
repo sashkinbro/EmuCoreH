@@ -413,6 +413,9 @@ void SMPC_Init(const uint8 area_code_arg, const int32 master_clock_arg)
   SMPC_SetInput(i, "none", NULL);
  }
 
+ // EmuCoreH: the core library stays loaded between sessions, so the static RTC
+ // sub-second accumulator must not leak from the previous game into this one.
+ RTC.ClockAccum = 0;
  SMPC_SetRTC(NULL, 0);
 }
 
