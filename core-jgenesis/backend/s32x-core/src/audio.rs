@@ -173,6 +173,13 @@ impl PwmResampler {
     }
 
     pub fn update_source_frequency(&mut self, source_frequency: f64) {
+        // EmuCoreH: the PWM tick reports its frequency on every 68000-instruction sync.
+        // The filter and resampler are always kept at `filter.pwm_frequency`, so an
+        // unchanged frequency would only recompute identical ratios and buffer sizes.
+        #[allow(clippy::float_cmp)]
+        if source_frequency == self.filter.pwm_frequency {
+            return;
+        }
         self.filter.update_pwm_frequency(source_frequency);
         self.resampler.update_source_frequency(source_frequency);
     }
