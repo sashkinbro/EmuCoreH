@@ -270,7 +270,7 @@ fun OnboardingScreen(
             onPurchase = { tier ->
                 showProSupportOptions = false
                 (context as? Activity)?.let { activity ->
-                    viewModel.purchasePro(activity, tier)
+                    viewModel.purchasePro(activity, tier, "onboarding")
                 }
             },
             onDismiss = { showProSupportOptions = false }
@@ -488,7 +488,7 @@ fun OnboardingScreen(
                                         proPrice = uiState.proPrice,
                                         isProductLoading = uiState.isProProductLoading,
                                         isPurchaseInProgress = uiState.isProPurchaseInProgress,
-                                        onPurchase = { (context as? Activity)?.let(viewModel::purchasePro) },
+                                        onPurchase = { (context as? Activity)?.let { viewModel.purchasePro(it, source = "onboarding") } },
                                         onShowSupportOptions = if (supportOffers.isNotEmpty()) {
                                             { showProSupportOptions = true }
                                         } else {
@@ -637,7 +637,7 @@ fun OnboardingScreen(
                                     proPrice = uiState.proPrice,
                                     isProductLoading = uiState.isProProductLoading,
                                     isPurchaseInProgress = uiState.isProPurchaseInProgress,
-                                    onPurchase = { (context as? Activity)?.let(viewModel::purchasePro) },
+                                    onPurchase = { (context as? Activity)?.let { viewModel.purchasePro(it, source = "onboarding") } },
                                     onShowSupportOptions = if (supportOffers.isNotEmpty()) {
                                         { showProSupportOptions = true }
                                     } else {

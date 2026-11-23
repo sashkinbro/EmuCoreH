@@ -48,6 +48,9 @@ import com.sbro.emucoreh.data.OverlayControlLayout
 import com.sbro.emucoreh.data.CheatRepository
 import com.sbro.emucoreh.data.GameLibraryCacheRepository
 import com.sbro.emucoreh.data.GameRepository
+import com.sbro.emucoreh.core.AnalyticsDimensions
+import com.sbro.emucoreh.core.AppAnalytics
+import com.sbro.emucoreh.core.PerformanceProfiles
 import com.sbro.emucoreh.data.PlayerPlayTimeDelta
 import com.sbro.emucoreh.data.PlayerProfileRepository
 import com.sbro.emucoreh.data.PlayTimeSyncCacheRepository
@@ -1013,6 +1016,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             actionLabel = if (showActionProgress) null else after.actionLabel
         )
         refreshSaveStateMetadata()
+        AppAnalytics.logSaveStateAction(action = "save", automatic = true, success = success)
         return success
     }
 
@@ -1224,6 +1228,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 }
 
                 if (!bootToBios && launchPath.isNullOrBlank()) {
+                    AppAnalytics.logEmulationStartFailed(AnalyticsDimensions.launchType(bootToBios), "path_unavailable")
                     _uiState.value = _uiState.value.copy(
                         isStarting = false,
                         statusMessage = null,
@@ -1443,6 +1448,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
 
                     delay(500.milliseconds)
                     val loaded = EmulatorBridge.loadState(normalizedSlotToLoad)
+                    AppAnalytics.logSaveStateAction(action = "load", automatic = false, success = loaded)
                     _uiState.value = _uiState.value.copy(
                         isRunning = true,
                         statusMessage = if (loaded) "status_running" else null,
@@ -1511,6 +1517,13 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
             }
             if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.i(TAG, "EmulatorBridge.startEmulation returned $started path=$pathToLaunch")
             if (started) {
+                AppAnalytics.logEmulationStarted(
+                    launchType = AnalyticsDimensions.launchType(bootToBios),
+                    renderer = _uiState.value.renderer,
+                    upscaleMultiplier = _uiState.value.upscale,
+                    performanceProfile = PerformanceProfiles.SAFE,
+                    saveStateLoad = hasPendingStateLoad
+                )
                 // A background callback can arrive before the native VM exists.
                 // Reconcile its retained intent after startup, without resuming a
                 // manually paused/menu session or a launch already being canceled.
@@ -1555,11 +1568,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     !DreamcastBios.hasArcadeBios(
                         EmulatorStorage.flycastSystemDir(getApplication()).absolutePath
                     )
-                _uiState.value = _uiState.value.copy(
-                    isRunning = false,
-                    launchFailed = true,
-                    statusMessage = null,
-                    toastMessage = when {
+                val failureToast = when {
                         currentTouchPlatform.isSaturn && !com.sbro.emucoreh.core.SaturnBios.isInstalled(getApplication()) -> "saturn_bios_missing"
                         com.sbro.emucoreh.core.CoreRuntime.bridge.nativeLastBootError()
                             ?.startsWith("SEGA_32X_BIOS_REQUIRED:") == true -> "sega_32x_bios_missing"
@@ -1576,7 +1585,16 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                             !DreamcastBios.hasUsableBootRom(EmulatorStorage.flycastSystemDir(getApplication()).absolutePath) -> "bios_missing"
                         arcadeWithoutBios -> "bios_missing"
                         else -> "launch_failed"
-                    }
+                }
+                AppAnalytics.logEmulationStartFailed(
+                    AnalyticsDimensions.launchType(bootToBios),
+                    if (failureToast.endsWith("bios_missing")) "bios_missing" else "native_start"
+                )
+                _uiState.value = _uiState.value.copy(
+                    isRunning = false,
+                    launchFailed = true,
+                    statusMessage = null,
+                    toastMessage = failureToast
                 )
                 delay(if (_uiState.value.toastMessage in setOf("sega_ds_collection_unsupported", "sega_aleste_collection_unsupported", "sega_32x_bios_missing"))
                     8000.milliseconds else 2500.milliseconds)
@@ -3835,6 +3853,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             }
             val success = scheduled && path != null && waitForSaveStateUpdate(path, slot, previousModified)
+            AppAnalytics.logSaveStateAction(action = "save", automatic = false, success = success)
             _uiState.value = _uiState.value.copy(
                 isActionInProgress = false,
                 actionLabel = null,
@@ -3864,6 +3883,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     } catch (_: Exception) { false }
                 }
             }
+            AppAnalytics.logSaveStateAction(action = "load", automatic = false, success = success)
             _uiState.value = _uiState.value.copy(
                 isActionInProgress = false,
                 actionLabel = null,
@@ -3889,6 +3909,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                     } catch (_: Exception) { false }
                 }
             }
+            AppAnalytics.logSaveStateAction(action = "load", automatic = true, success = success)
             _uiState.value = _uiState.value.copy(
                 isActionInProgress = false,
                 actionLabel = null,
@@ -3920,6 +3941,7 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             }
         }
+        AppAnalytics.logSaveStateAction(action = "load", automatic = true, success = success)
         _uiState.value = _uiState.value.copy(
             isActionInProgress = false,
             actionLabel = null,
@@ -4059,6 +4081,12 @@ class EmulationViewModel(application: Application) : AndroidViewModel(applicatio
                 syncNativePerformanceOverlayState(_uiState.value)
                 clearCrashContext()
                 RetroAchievementsRepository.get(getApplication()).onGameStopped()
+                if (completedRunningSession) {
+                    AppAnalytics.logEmulationEnded(
+                        activePlayTimeMs = analyticsState.activePlayTimeMs,
+                        renderer = analyticsState.renderer
+                    )
+                }
             } finally {
                 isShuttingDown = false
             }

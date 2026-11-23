@@ -1872,7 +1872,7 @@ Sega 32X: 32X_G_BIOS.bin، 32X_M_BIOS.bin، 32X_S_BIOS.bin</string>
     <string name="pro_promo_controls_body">أزرار بإجراءاتك وأشكالك وألوانك.</string>
     <string name="pro_promo_profile_title">إحصاءات متقدمة وبطاقة لاعب</string>
     <string name="pro_promo_profile_body">إحصاءات أسبوعية وشهرية وسلاسل ورتبة وبطاقة لاعب.</string>
-    <string name="pro_promo_hide">إخفاء الآن</string>
+    <string name="pro_promo_hide">إخفاء مؤقتًا</string>
     <string name="pro_purchase_busy">جاري فتح متجر Play</string>
     <string name="pro_reminder_title">افتح EmuCoreH Pro</string>
     <string name="pro_reminder_later">لاحقًا</string>

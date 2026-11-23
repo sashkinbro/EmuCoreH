@@ -1152,6 +1152,9 @@ class AppPreferences(private val context: Context) {
         return streak
     }
 
+    suspend fun proPromoDismissStreak(id: String): Int =
+        context.dataStore.data.first()[proPromoDismissStreakKey(id)] ?: 0
+
     suspend fun resetProPromoDismissStreak(id: String) {
         context.dataStore.edit { prefs -> prefs.remove(proPromoDismissStreakKey(id)) }
     }

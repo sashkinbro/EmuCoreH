@@ -98,6 +98,10 @@ class ProPurchaseManager private constructor(context: Context) : PurchasesUpdate
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var productDetailsById: Map<String, ProductDetails> = emptyMap()
 
+    // Funnel analytics: source/tier of the flow started by purchase(); restores never set these.
+    @Volatile private var pendingSource: String? = null
+    @Volatile private var pendingTier: ProPurchaseTier? = null
+
     private val billingClient = BillingClient.newBuilder(appContext)
         .setListener(this)
         .enablePendingPurchases(
@@ -149,7 +153,8 @@ class ProPurchaseManager private constructor(context: Context) : PurchasesUpdate
 
     fun purchase(
         activity: Activity,
-        tier: ProPurchaseTier = ProPurchaseTier.BASE
+        tier: ProPurchaseTier = ProPurchaseTier.BASE,
+        source: String = "other"
     ) {
         val currentState = _state.value
         if (currentState.isPurchaseInProgress) return
@@ -190,8 +195,11 @@ class ProPurchaseManager private constructor(context: Context) : PurchasesUpdate
             purchaseProductId = tier.productId,
             messageResId = null
         )
+        pendingSource = source
+        pendingTier = tier
         val result = billingClient.launchBillingFlow(activity, flowParams)
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+            logPendingPurchaseResult("failed")
             _state.value = _state.value.copy(
                 isPurchaseInProgress = false,
                 purchaseProductId = null,
@@ -233,6 +241,11 @@ class ProPurchaseManager private constructor(context: Context) : PurchasesUpdate
                     ownedProductIds = ownedProductIds
                 )
                 if (hasPro) {
+                    // A purchase that was PENDING in this session and is now active completes here.
+                    val pending = pendingTier
+                    if (pending != null && activePurchases.any { pending.productId in it.products }) {
+                        logPendingPurchaseResult("completed")
+                    }
                     handlePurchases(activePurchases, showUnlockMessage = showMessage)
                 } else {
                     lockPro()
@@ -254,16 +267,23 @@ class ProPurchaseManager private constructor(context: Context) : PurchasesUpdate
         when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
                 if (!purchases.isNullOrEmpty()) {
+                    when {
+                        purchases.any(::isActiveProPurchase) -> logPendingPurchaseResult("completed")
+                        purchases.any { it.purchaseState == Purchase.PurchaseState.PENDING } ->
+                            logPendingPurchaseResult("pending", keepPending = true)
+                    }
                     handlePurchases(purchases, showUnlockMessage = true)
                 }
             }
             BillingClient.BillingResponseCode.USER_CANCELED -> {
+                logPendingPurchaseResult("canceled")
                 _state.value = _state.value.copy(
                     isPurchaseInProgress = false,
                     purchaseProductId = null
                 )
             }
             else -> {
+                logPendingPurchaseResult("failed")
                 _state.value = _state.value.copy(
                     isPurchaseInProgress = false,
                     purchaseProductId = null,
@@ -271,6 +291,16 @@ class ProPurchaseManager private constructor(context: Context) : PurchasesUpdate
                 )
             }
         }
+    }
+
+    private fun logPendingPurchaseResult(result: String, keepPending: Boolean = false) {
+        val source = pendingSource ?: return
+        val tier = pendingTier ?: return
+        if (!keepPending) {
+            pendingSource = null
+            pendingTier = null
+        }
+        AppAnalytics.logProPurchaseResult(source, tier.name.lowercase(), result)
     }
 
     private fun queryProductDetails(showMessage: Boolean) {
