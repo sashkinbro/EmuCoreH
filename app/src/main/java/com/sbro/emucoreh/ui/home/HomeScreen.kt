@@ -6,7 +6,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseIn
@@ -17,9 +16,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.BorderStroke
@@ -169,6 +165,7 @@ import com.sbro.emucoreh.ui.common.rememberDebouncedClick
 import com.sbro.emucoreh.ui.common.skipGamepadTextFieldFocus
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
 import com.sbro.emucoreh.ui.customization.HomeBackgroundMedia
+import com.sbro.emucoreh.ui.dcshell.DreamcastShellScreen
 import com.sbro.emucoreh.ui.theme.GradientEnd
 import com.sbro.emucoreh.ui.theme.GradientStart
 import com.sbro.emucoreh.ui.theme.ScreenHorizontalPadding
@@ -187,6 +184,8 @@ import com.sbro.emucoreh.ui.theme.neon.neonShape
 @Composable
 fun HomeScreen(
     onGameClick: (GameItem) -> Unit,
+    onGamePathClick: (String) -> Unit,
+    onSaveSelected: (String, Int) -> Unit,
     onContinueGame: (GameItem) -> Unit,
     onLoadSaveClick: (GameItem) -> Unit,
     onManageGameClick: (GameItem) -> Unit,
@@ -443,121 +442,55 @@ fun HomeScreen(
                 },
                 topInset = topInset
             )
+        } else if (isShelfView) {
+            DreamcastShellScreen(
+                games = uiState.games,
+                recentGames = uiState.recentGames,
+                isLoadingGames = uiState.isLoading || uiState.isBootstrapping,
+                isCoverArtDisabled = uiState.isCoverArtDisabled,
+                onGamePathSelected = onGamePathClick,
+                onSaveSelected = onSaveSelected,
+                onManageGame = onManageGameClick,
+                onExitShell = viewModel::toggleShelfMode,
+                modifier = Modifier.fillMaxSize(),
+            )
         } else {
-            AnimatedContent(
-                targetState = isShelfView,
-                transitionSpec = {
-                    if (targetState) {
-                        (
-                            slideInHorizontally(
-                                initialOffsetX = { it / 5 },
-                                animationSpec = tween(440, easing = EaseOut)
-                            ) +
-                                fadeIn(animationSpec = tween(360, easing = EaseOut)) +
-                                scaleIn(
-                                    initialScale = 0.97f,
-                                    animationSpec = tween(440, easing = EaseOut)
-                                )
-                            ) togetherWith
-                            (
-                                slideOutHorizontally(
-                                    targetOffsetX = { -it / 8 },
-                                    animationSpec = tween(300, easing = EaseIn)
-                                ) +
-                                    fadeOut(animationSpec = tween(260, easing = EaseIn)) +
-                                    scaleOut(
-                                        targetScale = 0.985f,
-                                        animationSpec = tween(300, easing = EaseIn)
-                                    )
-                                )
-                    } else {
-                        (
-                            slideInHorizontally(
-                                initialOffsetX = { -it / 5 },
-                                animationSpec = tween(420, easing = EaseOut)
-                            ) +
-                                fadeIn(animationSpec = tween(350, easing = EaseOut)) +
-                                scaleIn(
-                                    initialScale = 0.985f,
-                                    animationSpec = tween(420, easing = EaseOut)
-                                )
-                            ) togetherWith
-                            (
-                                slideOutHorizontally(
-                                    targetOffsetX = { it / 5 },
-                                    animationSpec = tween(340, easing = EaseIn)
-                                ) +
-                                    fadeOut(animationSpec = tween(290, easing = EaseIn)) +
-                                    scaleOut(
-                                        targetScale = 0.97f,
-                                        animationSpec = tween(340, easing = EaseIn)
-                                    )
-                                )
-                    }
-                },
-                label = "home-library-mode"
-            ) { shelfMode ->
-                if (shelfMode) {
-                    HomeShelfMode(
-                        games = uiState.games,
-                        recentGames = uiState.recentGames,
-                        isCoverArtDisabled = uiState.isCoverArtDisabled,
-                        // Keep the outgoing shelf edge-to-edge until its exit animation finishes.
-                        // The parent state already points at the standard Home layout at that time.
-                        topInset = 0.dp,
-                        bottomInset = 0.dp,
-                        horizontalInset = horizontalInset,
-                        modifier = Modifier.fillMaxSize(),
-                        onExitShelfMode = viewModel::toggleShelfMode,
-                        onEnableBoxart = viewModel::enableBoxart,
-                        onGameClick = onGameClick,
-                        onLongClickStart = onGameClick,
-                        onLongClickContinue = onContinueGame,
-                        onLongClickLoadSave = onLoadSaveClick,
-                        onLongClickManage = onManageGameClick,
-                        onLongClickCreateShortcut = onCreateShortcutClick,
-                        onLongClickCustomCover = { game ->
-                            gameAwaitingPickerLaunch = game
-                        },
-                        onLongClickRestoreCover = { game -> restoreCustomCover(game) }
-                    )
-                } else {
-                    val columns = if (isListView) GridCells.Fixed(1) else GridCells.Adaptive(minSize = minCellSize)
+            val columns = if (isListView) GridCells.Fixed(1) else GridCells.Adaptive(minSize = minCellSize)
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .onSizeChanged { libraryAreaSizePx = it }
-                    ) {
-                        LazyVerticalGrid(
-                            columns = columns,
-                            state = gridState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                top = topInset,
-                                bottom = 76.dp + bottomInset
-                            ),
-                            horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 8.dp)
-                        ) {
-                            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                                HomeHeader(
-                                    gamesCount = uiState.games.size,
-                                    isWide = isWide,
-                                    isLandscape = isLandscape,
-                                    horizontalInset = horizontalInset,
-                                    sectionTopSpacing = sectionTopSpacing,
-                                    isRefreshing = uiState.isRefreshing,
-                                    refreshEnabled = !uiState.isRefreshing,
-                                    isShelfView = false,
-                                    standardViewMode = standardViewMode,
-                                    sortOption = uiState.sortOption,
-                                    onSortSelected = viewModel::updateSortOption,
-                                    onRefresh = viewModel::refreshGames,
-                                    onToggleShelfMode = viewModel::toggleShelfMode,
-                                    onToggleLibraryViewMode = viewModel::toggleLibraryViewMode,
-                                    onMenuClick = onMenuClick
-                                )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onSizeChanged { libraryAreaSizePx = it }
+            ) {
+                LazyVerticalGrid(
+                    columns = columns,
+                    state = gridState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        top = topInset,
+                        bottom = 76.dp + bottomInset
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(if (isListView) 12.dp else 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (isListView) 10.dp else 8.dp)
+                ) {
+                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                        HomeHeader(
+                            gamesCount = uiState.games.size,
+                            isWide = isWide,
+                            isLandscape = isLandscape,
+                            horizontalInset = horizontalInset,
+                            sectionTopSpacing = sectionTopSpacing,
+                            isRefreshing = uiState.isRefreshing,
+                            refreshEnabled = !uiState.isRefreshing,
+                            isShelfView = false,
+                            standardViewMode = standardViewMode,
+                            sortOption = uiState.sortOption,
+                            onSortSelected = viewModel::updateSortOption,
+                            onRefresh = viewModel::refreshGames,
+                            onToggleShelfMode = viewModel::toggleShelfMode,
+                            onToggleLibraryViewMode = viewModel::toggleLibraryViewMode,
+                            onMenuClick = onMenuClick
+                        )
                             }
 
                             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
@@ -748,8 +681,6 @@ fun HomeScreen(
                     }
                 }
             }
-        }
-    }
     val canShowWelcomeDialog = !uiState.isBootstrapping &&
         !uiState.isLoading &&
         !uiState.isRefreshing

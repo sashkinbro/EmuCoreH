@@ -42,6 +42,7 @@ import com.sbro.emucoreh.data.AppPreferences
 import com.sbro.emucoreh.data.AppFontChoice
 import com.sbro.emucoreh.data.CustomFontRepository
 import com.sbro.emucoreh.data.CustomThemeConfig
+import com.sbro.emucoreh.dcui.DcShellHost
 import com.sbro.emucoreh.navigation.AppNavigation
 import com.sbro.emucoreh.ui.common.GamepadUiInputRouter
 import com.sbro.emucoreh.ui.theme.EmuCoreHTheme
@@ -410,6 +411,7 @@ open class MainActivity : ComponentActivity() {
 
     @SuppressLint("RestrictedApi", "GestureBackNavigation")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (DcShellHost.handleKeyEvent(event)) return true
         if (KeyboardMouseManager.handleKeyBindingCapture(event)) return true
 
         if (GamepadManager.isGameController(event.device)) {
@@ -456,6 +458,7 @@ open class MainActivity : ComponentActivity() {
     }
 
     override fun onGenericMotionEvent(event: MotionEvent?): Boolean {
+        if (event != null && DcShellHost.handleMotionEvent(event)) return true
         if (event != null && GamepadManager.isGameController(event.device) && !GamepadManager.isEmulationInputEnabled()) {
             if (GamepadUiInputRouter.handleMotionEvent(event)) return true
         }

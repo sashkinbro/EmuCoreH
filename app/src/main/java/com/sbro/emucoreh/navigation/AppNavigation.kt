@@ -490,6 +490,16 @@ fun AppNavigation(
                         onGameClick = { game ->
                             requestDiscAction(game, LibraryDiscAction.START)
                         },
+                        onGamePathClick = { gamePath ->
+                            navController.navigate(EmulationRoute(gamePath = gamePath)) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onSaveSelected = { gamePath, saveSlot ->
+                            navController.navigate(EmulationRoute(gamePath = gamePath, saveSlot = saveSlot)) {
+                                launchSingleTop = true
+                            }
+                        },
                         onContinueGame = { game ->
                             scope.launch {
                                 val saved = withContext(Dispatchers.IO) {
