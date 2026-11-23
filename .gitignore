@@ -42,3 +42,7 @@ firestore-debug.log*
 
 # Local Firebase app configuration (contains project API keys)
 app/google-services.json
+
+# Claude Code local state
+/.claude/worktrees/
+/.claude/scheduled_tasks.lock
