@@ -1210,6 +1210,33 @@ bool BgraTextureUploadSupported() {
     return supported;
 }
 
+// The software frame occupies the bottom-left corner of the larger FBO texture and
+// PresentHardwareFrame scales it with linear filtering, which also samples the
+// texel row/column just outside the frame. Replicate the frame's edge pixels
+// there so the top and right edges never blend with stale texture contents
+// (a darker, partly transparent line along the top of jgenesis frames).
+void PadSoftwareFrameEdges(const uint8_t* flipped, unsigned width, unsigned height, GLenum format) {
+    const size_t row_bytes = static_cast<size_t>(width) * 4;
+    const bool pad_row = height < static_cast<unsigned>(g_gl.fbo_height);
+    const bool pad_column = width < static_cast<unsigned>(g_gl.fbo_width);
+    if (pad_row) {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, static_cast<GLint>(height), static_cast<GLsizei>(width), 1,
+                        format, GL_UNSIGNED_BYTE, flipped + static_cast<size_t>(height - 1) * row_bytes);
+    }
+    if (pad_column) {
+        static thread_local std::vector<uint8_t> column;
+        const unsigned rows = height + (pad_row ? 1u : 0u);
+        column.resize(static_cast<size_t>(rows) * 4);
+        for (unsigned y = 0; y < rows; ++y) {
+            const unsigned source_row = std::min(y, height - 1);
+            std::memcpy(column.data() + static_cast<size_t>(y) * 4,
+                        flipped + static_cast<size_t>(source_row) * row_bytes + row_bytes - 4, 4);
+        }
+        glTexSubImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(width), 0, 1, static_cast<GLsizei>(rows),
+                        format, GL_UNSIGNED_BYTE, column.data());
+    }
+}
+
 void PresentSoftwareFrame(const void* data, unsigned width, unsigned height, size_t pitch) {
     if (data == nullptr || width == 0 || height == 0) return;
     const size_t row_bytes = static_cast<size_t>(width) * sizeof(uint32_t);
@@ -1251,6 +1278,7 @@ void PresentSoftwareFrame(const void* data, unsigned width, unsigned height, siz
         glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, static_cast<GLsizei>(width),
                         static_cast<GLsizei>(height), GL_BGRA_EXT, GL_UNSIGNED_BYTE, bgra.data());
+        PadSoftwareFrameEdges(bgra.data(), width, height, GL_BGRA_EXT);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         // Libretro XRGB8888's high byte is unused, not transparency. Saturn
         // writes zero there. Direct BGRA upload otherwise makes its entire
@@ -1288,6 +1316,7 @@ void PresentSoftwareFrame(const void* data, unsigned width, unsigned height, siz
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, static_cast<GLsizei>(width),
                     static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+    PadSoftwareFrameEdges(rgba.data(), width, height, GL_RGBA);
     PresentHardwareFrame(static_cast<GLsizei>(width), static_cast<GLsizei>(height));
 }
 
