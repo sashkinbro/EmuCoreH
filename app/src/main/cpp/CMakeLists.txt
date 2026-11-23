@@ -120,6 +120,11 @@ target_link_libraries(emucoreh_jni PRIVATE
 target_compile_options(emucoreh_jni PRIVATE
     -Wall -Wextra
     $<$<NOT:$<CONFIG:Debug>>:-O3>
+    $<$<NOT:$<CONFIG:Debug>>:-flto=thin>
+)
+target_link_options(emucoreh_jni PRIVATE
+    $<$<NOT:$<CONFIG:Debug>>:-flto=thin>
+    $<$<NOT:$<CONFIG:Debug>>:-Wl,--icf=safe>
 )
 
 set_target_properties(emucoreh_jni PROPERTIES

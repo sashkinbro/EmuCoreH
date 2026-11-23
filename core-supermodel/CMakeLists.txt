@@ -25,8 +25,8 @@ target_compile_definitions(supermodel_libretro PRIVATE ANDROID __ANDROID__ EMUCO
 # Release contains only terminal adapter error reporting, not guest diagnostics.
 target_compile_definitions(supermodel_libretro PRIVATE
   "$<$<NOT:$<CONFIG:Debug>>:MODEL3_RELEASE_SILENT_LOGS=1>")
-target_compile_options(supermodel_libretro PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden -O3)
-target_link_options(supermodel_libretro PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384" "-Wl,--no-undefined" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libretro/$<IF:$<CONFIG:Debug>,exports.map,exports-release.map>")
+target_compile_options(supermodel_libretro PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden -O3 -flto=thin)
+target_link_options(supermodel_libretro PRIVATE -flto=thin "-Wl,--icf=safe" "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384" "-Wl,--no-undefined" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libretro/$<IF:$<CONFIG:Debug>,exports.map,exports-release.map>")
 target_link_libraries(supermodel_libretro PRIVATE log android z EGL GLESv3)
 option(MODEL3_ENABLE_EXPERIMENTAL_VULKAN "Build the experimental Real3D Vulkan consumer" OFF)
 option(MODEL3_TEST_ACCURATE_GLES "Use upstream accurate GLES passes for renderer comparison probes" OFF)

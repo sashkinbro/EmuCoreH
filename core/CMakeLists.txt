@@ -232,6 +232,14 @@ elseif(LIBRETRO)
 		target_compile_definitions(${PROJECT_NAME} PRIVATE GLES GLES3 HAVE_OPENGLES HAVE_OPENGLES3 HAVE_OIT)
 		if(ANDROID)
 			target_link_libraries(${PROJECT_NAME} PRIVATE android)
+			# ThinLTO across the emulator sources: cross-TU inlining of the SH4/ARM7
+			# interpreters, memory handlers and PVR/TA paths. Generated dynarec code
+			# only reaches C++ through function pointers, so no symbol is lost.
+			option(EMUCORE_ENABLE_LTO "Build the Android libretro core with ThinLTO" ON)
+			if(EMUCORE_ENABLE_LTO)
+				target_compile_options(${PROJECT_NAME} PRIVATE -flto=thin)
+				target_link_options(${PROJECT_NAME} PRIVATE -flto=thin -Wl,--icf=safe)
+			endif()
 		endif()
     elseif(IOS)
 		target_compile_definitions(${PROJECT_NAME} PRIVATE GLES GLES3 HAVE_OPENGLES HAVE_OPENGLES3)
@@ -454,7 +462,8 @@ if(USE_OPENMP)
 			target_compile_options(${PROJECT_NAME} PRIVATE -fopenmp)
 		elseif(ANDROID)
 			# Reference: https://android.googlesource.com/platform/ndk/+/refs/heads/master/tests/device/openmp/CMakeLists.txt
-			set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_OPTIONS -fopenmp)
+			# EmuCoreH: append, do not replace, so earlier target options (ThinLTO) survive.
+			target_compile_options(${PROJECT_NAME} PRIVATE -fopenmp)
 			target_link_libraries(${PROJECT_NAME} PRIVATE -fopenmp -static-openmp)
 		else()
 			target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
