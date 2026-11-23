@@ -53,6 +53,7 @@
 #include <libretro_d3d.h>
 #include "rend/dx11/dx11context_lr.h"
 #endif
+#include "hw/aica/aica_if.h"
 #include "emulator.h"
 #include "hw/gdrom/gdromv3.h"
 #include "hw/sh4/sh4_mem.h"
@@ -872,6 +873,13 @@ static void update_variables(bool first_startup)
 	config::Settings::instance().load(false);
 
 	retro_variable var;
+
+	// Hidden EmuCoreH test option (not in the option definitions, so never shown
+	// to players): pins the RTC so regression oracle runs are reproducible.
+	var.key = CORE_OPTION_NAME "_emucoreh_fixed_rtc";
+	var.value = nullptr;
+	aica::emucorehFixedRtc = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value != nullptr
+			&& !strcmp(var.value, "enabled");
 
 	var.key = CORE_OPTION_NAME "_per_content_vmus";
 	unsigned previous_per_content_vmus = per_content_vmus;

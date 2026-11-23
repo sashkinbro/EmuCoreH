@@ -31,13 +31,17 @@ static u32 VREG;
 static u32 ARMRST;
 static u32 rtc_EN;
 int dma_sched_id = -1;
+// EmuCoreH: set by the libretro adapter for deterministic oracle runs only;
+// a plain flag so config::Settings::reset() on game load does not clear it.
+bool emucorehFixedRtc = false;
+
 static u32 RealTimeClock;
 int rtc_schid = -1;
 
 u32 GetRTC_now()
 {
 	// rtc kept static for netplay when savestate is not loaded
-	if (config::GGPOEnable)
+	if (config::GGPOEnable || emucorehFixedRtc)
 		// 1/1/70 00:00:00
 		return (20 * 365 + 5) * 24 * 60 * 60;
 

@@ -7,6 +7,8 @@ namespace aica
 
 extern RamRegion aica_ram;
 u32 GetRTC_now();
+// EmuCoreH: pin the RTC for deterministic oracle runs (hidden libretro option).
+extern bool emucorehFixedRtc;
 template<typename T> T readRtcReg(u32 addr);
 template<typename T> void writeRtcReg(u32 addr, T data);
 template<typename T> T readAicaReg(u32 addr);

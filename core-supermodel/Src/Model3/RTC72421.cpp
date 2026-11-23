@@ -62,8 +62,16 @@ void CRTC72421::Reset(void)
  Initialization and Shutdown
 ******************************************************************************/
 
+// EmuCoreH: regression oracle runs pin the guest calendar (set by the libretro
+// adapter from the hidden supermodel_emucoreh_fixed_rtc variable).
+bool g_model3FixedRtc = false;
+
 void CRTC72421::Init(void)
 {
+	if (g_model3FixedRtc) {
+		m_clock = Model3Clock::Calendar{2000u, 1u, 1u, 6u, 0u, 0u, 0u, 0u};
+		return;
+	}
 	const time_t now = time(nullptr);
 	if (const auto* local = localtime(&now)) {
 		Model3Clock::Calendar initial{static_cast<uint32_t>(local->tm_year + 1900),

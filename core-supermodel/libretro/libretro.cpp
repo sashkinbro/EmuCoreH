@@ -5,6 +5,7 @@
 #include "adapter_helpers.h"
 #include "input_mapping.h"
 #include "runtime_guard.h"
+extern bool g_model3FixedRtc;
 #include "resolution.h"
 #include "state_safety.h"
 #include "Supermodel.h"
@@ -338,6 +339,8 @@ RETRO_API bool retro_load_game(const retro_game_info* game_info){
     if(host->game.driveboard_type==Game::DRIVE_BOARD_SKI)host->config.Set("EmulateSkiBoard",true);
     host->directory=fs::path(save)/"supermodel"/host->game.name;fs::create_directories(host->directory);
     if(host->game.name.rfind("von2",0)==0)host->config.Set("AndroidSimpleShader",true);
+    {retro_variable accurate{"supermodel_emucoreh_accurate",nullptr};if(environment(RETRO_ENVIRONMENT_GET_VARIABLE,&accurate)&&accurate.value&&std::string(accurate.value)=="enabled")host->config.Set("New3DAccurate",true);}
+    {retro_variable fixed{"supermodel_emucoreh_fixed_rtc",nullptr};g_model3FixedRtc=environment(RETRO_ENVIRONMENT_GET_VARIABLE,&fixed)&&fixed.value&&std::string(fixed.value)=="enabled";}
     host->model=std::make_unique<CModel3>(host->config);
     if(host->model->Init()!=OKAY||host->model->LoadGame(host->game,roms)!=OKAY){host.reset();return fail("Model 3 initialization failed");}
     host->outputs.SetGame(host->game);host->model->AttachInputs(&host->inputs);host->model->AttachOutputs(&host->outputs);host->model->AttachRenderers(&host->render2d,&host->null3d);host->model->Reset();host->loaded=true;nvram(false);
