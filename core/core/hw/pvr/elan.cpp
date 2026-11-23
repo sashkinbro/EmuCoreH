@@ -269,6 +269,45 @@ static glm::vec4 gmpSpecularColor0;
 static glm::vec4 gmpDiffuseColor1;
 static glm::vec4 gmpSpecularColor1;
 
+// Vertex colors packed with the current packColor, cached so the per-vertex path does
+// not round-trip every color through floats. Each value is produced by the exact same
+// float expressions as packColor(unpackColor(...)), so the output is bit-identical.
+static u32 packedWhite = 0xffffffff;	// packColor(glm::vec4(1))
+static u32 packedZero = 0;				// packColor(glm::vec4(0))
+static u32 gmpPacked[4];				// packColor(gmpDiffuseColor0, gmpSpecularColor0, gmpDiffuseColor1, gmpSpecularColor1)
+static u8 channelLut[256];				// per-channel packColor(unpackColor(c))
+
+static void refreshPackedGmp()
+{
+	gmpPacked[0] = packColor(gmpDiffuseColor0);
+	gmpPacked[1] = packColor(gmpSpecularColor0);
+	gmpPacked[2] = packColor(gmpDiffuseColor1);
+	gmpPacked[3] = packColor(gmpSpecularColor1);
+}
+
+static void refreshPackedColors()
+{
+	packedWhite = packColor(glm::vec4(1));
+	packedZero = packColor(glm::vec4(0));
+	for (u32 c = 0; c < 256; c++)
+		channelLut[c] = (u8)packColorRGBA(glm::vec4((float)c / 255.f, 0.f, 0.f, 0.f));
+	refreshPackedGmp();
+}
+static const bool packedColorsInitialized = (refreshPackedColors(), true);
+
+// packColor(unpackColor(argb)) without the float round trip
+static inline u32 packArgb(u32 argb)
+{
+	const u32 a = channelLut[argb >> 24];
+	const u32 r = channelLut[(argb >> 16) & 0xff];
+	const u32 g = channelLut[(argb >> 8) & 0xff];
+	const u32 b = channelLut[argb & 0xff];
+	if (packColor == packColorBGRA)
+		return a << 24 | r << 16 | g << 8 | b;
+	else
+		return r | g << 8 | b << 16 | a << 24;
+}
+
 struct State
 {
 	static constexpr u32 Null = 0xffffffff;
@@ -299,6 +338,7 @@ struct State
 			packColor = packColorBGRA;
 		else
 			packColor = packColorRGBA;
+		refreshPackedColors();
 	}
 	void setMatrix(InstanceMatrix *pinstance)
 	{
@@ -426,6 +466,7 @@ struct State
 			else
 				gmpSpecularColor1 = glm::vec4(0);
 		}
+		refreshPackedGmp();
 	}
 
 	void setLightModel(void *p)
@@ -597,6 +638,25 @@ static void setNormal(Vertex& vd, const T& vs)
 	vd.nz = normal.z;
 }
 
+static inline void setPackedColors(Vertex& vd, u32 baseCol0, u32 offsetCol0, u32 baseCol1, u32 offsetCol1)
+{
+	if (curGmp != nullptr)
+	{
+		if (curGmp->paramSelect.d0)
+			baseCol0 = gmpPacked[0];
+		if (curGmp->paramSelect.s0)
+			offsetCol0 = gmpPacked[1];
+		if (curGmp->paramSelect.d1)
+			baseCol1 = gmpPacked[2];
+		if (curGmp->paramSelect.s1)
+			offsetCol1 = gmpPacked[3];
+	}
+	memcpy(vd.col, &baseCol0, 4);
+	memcpy(vd.spc, &offsetCol0, 4);
+	memcpy(vd.col1, &baseCol1, 4);
+	memcpy(vd.spc1, &offsetCol1, 4);
+}
+
 static void setModelColors(glm::vec4& baseCol0, glm::vec4& offsetCol0, glm::vec4& baseCol1, glm::vec4& offsetCol1)
 {
 	if (curGmp == nullptr)
@@ -620,16 +680,7 @@ void convertVertex(const N2_VERTEX& vs, Vertex& vd)
 	setCoords(vd, vs.x, vs.y, vs.z);
 	setNormal(vd, vs);
 	SetEnvMapUV(vd);
-	glm::vec4 baseCol0(1);
-	glm::vec4 offsetCol0(0);
-	glm::vec4 baseCol1(1);
-	glm::vec4 offsetCol1(0);
-	setModelColors(baseCol0, offsetCol0, baseCol1, offsetCol1);
-
-	*(u32 *)vd.col = packColor(baseCol0);
-	*(u32 *)vd.spc = packColor(offsetCol0);
-	*(u32 *)vd.col1 = packColor(baseCol1);
-	*(u32 *)vd.spc1 = packColor(offsetCol1);
+	setPackedColors(vd, packedWhite, packedZero, packedWhite, packedZero);
 }
 
 template<>
@@ -638,15 +689,7 @@ void convertVertex(const N2_VERTEX_VR& vs, Vertex& vd)
 	setCoords(vd, vs.x, vs.y, vs.z);
 	setNormal(vd, vs);
 	SetEnvMapUV(vd);
-	glm::vec4 baseCol0 = unpackColor(vs.rgb.argb0);
-	glm::vec4 offsetCol0(0);
-	glm::vec4 baseCol1 = unpackColor(vs.rgb.argb1);
-	glm::vec4 offsetCol1(0);
-	setModelColors(baseCol0, offsetCol0, baseCol1, offsetCol1);
-	*(u32 *)vd.col = packColor(baseCol0);
-	*(u32 *)vd.spc = packColor(offsetCol0);
-	*(u32 *)vd.col1 = packColor(baseCol1);
-	*(u32 *)vd.spc1 = packColor(offsetCol1);
+	setPackedColors(vd, packArgb(vs.rgb.argb0), packedZero, packArgb(vs.rgb.argb1), packedZero);
 }
 
 template<>
@@ -655,15 +698,7 @@ void convertVertex(const N2_VERTEX_VU& vs, Vertex& vd)
 	setCoords(vd, vs.x, vs.y, vs.z);
 	setNormal(vd, vs);
 	setUV(vs, vd);
-	glm::vec4 baseCol0(1);
-	glm::vec4 offsetCol0(0);
-	glm::vec4 baseCol1(1);
-	glm::vec4 offsetCol1(0);
-	setModelColors(baseCol0, offsetCol0, baseCol1, offsetCol1);
-	*(u32 *)vd.col = packColor(baseCol0);
-	*(u32 *)vd.spc = packColor(offsetCol0);
-	*(u32 *)vd.col1 = packColor(baseCol1);
-	*(u32 *)vd.spc1 = packColor(offsetCol1);
+	setPackedColors(vd, packedWhite, packedZero, packedWhite, packedZero);
 }
 
 template<>
@@ -672,15 +707,7 @@ void convertVertex(const N2_VERTEX_VUR& vs, Vertex& vd)
 	setCoords(vd, vs.x, vs.y, vs.z);
 	setNormal(vd, vs);
 	setUV(vs, vd);
-	glm::vec4 baseCol0 = unpackColor(vs.rgb.argb0);
-	glm::vec4 offsetCol0(0);
-	glm::vec4 baseCol1 = unpackColor(vs.rgb.argb1);
-	glm::vec4 offsetCol1(0);
-	setModelColors(baseCol0, offsetCol0, baseCol1, offsetCol1);
-	*(u32 *)vd.col = packColor(baseCol0);
-	*(u32 *)vd.spc = packColor(offsetCol0);
-	*(u32 *)vd.col1 = packColor(baseCol1);
-	*(u32 *)vd.spc1 = packColor(offsetCol1);
+	setPackedColors(vd, packArgb(vs.rgb.argb0), packedZero, packArgb(vs.rgb.argb1), packedZero);
 }
 
 template<>
@@ -765,6 +792,9 @@ class TriangleStripClipper
 {
 public:
 	TriangleStripClipper(bool enabled) : enabled(enabled) {}
+	// p, q and spare point into this object's own history
+	TriangleStripClipper(const TriangleStripClipper&) = delete;
+	TriangleStripClipper& operator=(const TriangleStripClipper&) = delete;
 
 	void add(const Vertex& vtx)
 	{
@@ -800,16 +830,16 @@ private:
 		{
 			switch (clipCode >> 1) {
 			case 0: // Q and R inside
-				sendVertex(q);
+				sendVertex(*q);
 				sendVertex(r);
 				break;
 			case 1: // Q outside, R inside
-				sendVertex(interpolate(q, qDist, r, rDist));
+				sendVertex(interpolate(*q, qDist, r, rDist));
 				sendVertex(r);
 				break;
 			case 2: // Q inside, R outside
-				sendVertex(q);
-				sendVertex(interpolate(q, qDist, r, rDist));
+				sendVertex(*q);
+				sendVertex(interpolate(*q, qDist, r, rDist));
 				break;
 			case 3: // Q and R outside
 				break;
@@ -823,36 +853,36 @@ private:
 				sendVertex(r);
 				break;
 			case 1: // P outside, Q and R inside
-				sendVertex(interpolate(r, rDist, p, pDist));
-				sendVertex(q);
+				sendVertex(interpolate(r, rDist, *p, pDist));
+				sendVertex(*q);
 				sendVertex(r);
 				break;
 			case 2: // P inside, Q outside and R inside
 				sendVertex(r);
-				sendVertex(interpolate(q, qDist, r, rDist));
+				sendVertex(interpolate(*q, qDist, r, rDist));
 				sendVertex(r);
 				break;
 			case 3: // P and Q outside, R inside
 				{
-					Vertex tmp = interpolate(r, rDist, p, pDist);
+					Vertex tmp = interpolate(r, rDist, *p, pDist);
 					sendVertex(tmp);
 					sendVertex(tmp);
 					sendVertex(tmp); // One more to preserve strip swap order
-					sendVertex(interpolate(q, qDist, r, rDist));
+					sendVertex(interpolate(*q, qDist, r, rDist));
 					sendVertex(r);
 				}
 				break;
 			case 4: // P and Q inside, R outside
-				sendVertex(interpolate(r, rDist, p, pDist));
-				sendVertex(q);
-				sendVertex(interpolate(q, qDist, r, rDist));
+				sendVertex(interpolate(r, rDist, *p, pDist));
+				sendVertex(*q);
+				sendVertex(interpolate(*q, qDist, r, rDist));
 				break;
 			case 5: // P outside, Q inside, R outside
-				sendVertex(interpolate(q, qDist, r, rDist));
+				sendVertex(interpolate(*q, qDist, r, rDist));
 				break;
 			case 6: // P inside, Q and R outside
 				{
-					Vertex tmp = interpolate(r, rDist, p, pDist);
+					Vertex tmp = interpolate(r, rDist, *p, pDist);
 					sendVertex(tmp);
 					sendVertex(tmp);
 					sendVertex(tmp); // One more to preserve strip swap order
@@ -863,10 +893,14 @@ private:
 				break;
 			}
 		}
+		// Rotate the P/Q history without copying Q into P
+		*spare = r;
+		Vertex *oldP = p;
 		p = q;
 		pDist = qDist;
-		q = r;
+		q = spare;
 		qDist = rDist;
+		spare = oldP;
 	}
 
 	Vertex interpolate(const Vertex& v1, float f1, const Vertex& v2, float f2)
@@ -900,10 +934,12 @@ private:
 	bool enabled;
 	int count = 0;
 	int clipCode = 0;
-	Vertex p;
+	Vertex history[3] {};
+	Vertex *p = &history[0];
 	float pDist = 0;
-	Vertex q;
+	Vertex *q = &history[1];
 	float qDist = 0;
+	Vertex *spare = &history[2];
 	bool dupeNext = false;
 };
 
