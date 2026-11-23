@@ -177,3 +177,28 @@ must leave it holding `Data{pc, opcode}` of the last executed instruction at eve
 
 Each step is accepted only when the 24 oracle suites match bit-exactly with the feature ON and the 32X suites
 are faster in paired runs.
+
+## 10. Measurements that shape phases (b)-(d)
+
+Collected on the Lenovo with the phase (a) executor (32X, 1800 frames per suite):
+
+* **Slices are tiny.** `execute_cpus` leapfrogs the two SH-2s against the global cycle budget, so an
+  `execute(50)` call ends on `should_stop_execution` after only ~6 instructions on average (x_mk2: 118 M
+  stop returns, 738 M instructions, 265 M block entries, i.e. 2.8 instructions per block entry; 69 M block
+  exits are taken branches). Anything with a per-entry cost (block lookup, validation, register
+  load/store in generated code) pays that cost every ~3 instructions. Codegen must therefore make entry and
+  exit nearly free (validation by a single global counter, no register-file marshalling on the fast path)
+  or it cannot win.
+* **No uncached code.** All executed code was cache-resident (`pc >> 29 == 0`); formation misses are
+  0.15 % of lookups. Uncached-code blocks are not needed for the 32X titles tested.
+* **Instruction mix is dominated by spin loops, not computation** (share of executed instructions, mean of
+  x_mk2/doom/x_spiderman): nop 12.8 %, bra 10.0 %, bt 9.9 %, cmp/eq 5.2 %, tst #imm 4.8 %,
+  mov.l @Rm,Rn 4.4 %, mov.w @(d,GBR),R0 3.9 %, swap.b 3.7 %, add #imm 2.9 %, bf/s 2.9 %, tst 2.7 %, bf 2.5 %.
+  Roughly 45-50 % of executed instructions are poll/delay loops (`bra`-to-self + `nop`, `mov.w @(d,GBR),R0;
+  tst #imm,R0; bt`, `cmp/eq`+`bt`). Compiling them removes interpreter overhead but not their cycle
+  charges; extending bit-exact idle-loop fast-forwarding (`idle.rs`) to the polling shapes it still rejects
+  is worth more than faster dispatch of ALU instructions.
+* **Phase (a) result.** Bit-exact (fuzz test plus all oracle suites), speed within noise of the
+  interpreter (paired OFF/ON medians 0.96-1.04 per suite, mean about 0.99): the interpreter's fetch is
+  already memoized and its dispatch is a direct table call, so predecoding alone removes too little per
+  instruction to pay for the per-entry cost above. It therefore stays default OFF.

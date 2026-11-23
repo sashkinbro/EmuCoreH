@@ -114,13 +114,16 @@ const INVALID_LINE: u32 = u32::MAX;
 /// fetches exactly the same instruction words from exactly the same ways while the values stay.
 #[derive(Debug, Clone)]
 pub(crate) struct LineGens {
+    // Bumped together with every other counter: lets a block skip per-line validation while
+    // nothing in the cache has changed since it was last validated
+    any: u32,
     conf: u32,
     lines: [u32; WAYS * CACHE_ENTRIES],
 }
 
 impl Default for LineGens {
     fn default() -> Self {
-        Self { conf: 0, lines: [0; WAYS * CACHE_ENTRIES] }
+        Self { any: 0, conf: 0, lines: [0; WAYS * CACHE_ENTRIES] }
     }
 }
 
@@ -172,6 +175,7 @@ impl CpuCache {
     fn bump_line(&mut self, way_idx: usize, entry_idx: usize) {
         let line_gen = &mut self.gens.lines[(way_idx << 6) | entry_idx];
         *line_gen = line_gen.wrapping_add(1);
+        self.gens.any = self.gens.any.wrapping_add(1);
     }
 
     #[inline(always)]
@@ -184,6 +188,12 @@ impl CpuCache {
     #[inline(always)]
     fn bump_conf(&mut self) {
         self.gens.conf = self.gens.conf.wrapping_add(1);
+        self.gens.any = self.gens.any.wrapping_add(1);
+    }
+
+    #[inline(always)]
+    pub(crate) fn any_gen(&self) -> u32 {
+        self.gens.any
     }
 
     #[inline(always)]

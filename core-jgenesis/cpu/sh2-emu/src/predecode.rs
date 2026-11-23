@@ -16,18 +16,20 @@
 //! * Instruction fetch hits have two side effects, the pseudo-LRU update and the host fetch memo.
 //!   Both are re-applied through `CpuCache::fetch_hit` exactly when the interpreter's fetch would
 //!   have applied them (memo does not cover the line).
-//! * Control flow is verified, not assumed: before each instruction the program counter must equal
-//!   the address the block was recorded at, so a taken branch, exception or any other pc change
-//!   simply leaves the block.
+//! * Control flow is verified, not assumed: after every instruction that is not provably
+//!   straight-line (conditional branches, exceptions, anything unrecognized) the program counter
+//!   must equal the address the block was recorded at, so a taken branch or an exception simply
+//!   leaves the block.
 //!
-//! The block cache is host-only state (`HostCache`): never serialized, dropped on clone.
+//! The block cache is host-only state (`HostCache`): never serialized, dropped on clone. Buses
+//! that run it must not be debugger buses (`BusInterface::IDLE_LOOPS` contract), which is why the
+//! per-instruction `check_execute` hook is not called.
 
 use crate::bus::BusInterface;
-use crate::debug::BusDebugExt;
 use crate::instructions::{OpcodeFn, OpcodeTable};
 use crate::{AccessContext, ExecutionBody, Sh2};
 use std::fmt::{self, Debug, Formatter};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
 
@@ -46,6 +48,12 @@ const MAX_OPS: usize = 16;
 const MAX_LINES: usize = 4;
 const SLOTS: usize = 2048;
 
+// Op flags
+// Reads or writes through the CPU cache (anything not provably register-only)
+const MEM: u8 = 1;
+// May leave straight-line flow (conditional branch, exception, unrecognized opcode)
+const CTL: u8 = 2;
+
 #[derive(Clone, Copy)]
 struct Op {
     // `OpcodeFn<Bus>` of the bus type the cache was built for (see `BlockCache::ensure_table`)
@@ -53,8 +61,7 @@ struct Op {
     pc: u32,
     opcode: u16,
     line: u8,
-    // May read or write through the cache (anything not provably register-only)
-    mem: bool,
+    flags: u8,
 }
 
 #[derive(Clone, Copy)]
@@ -66,10 +73,34 @@ struct LineRef {
     entry: u8,
 }
 
-#[derive(Clone, Copy)]
+// Interior-mutable validation stamp (relaxed atomic only to keep `Sh2` `Sync`)
+#[derive(Default)]
+struct Seen(AtomicU32);
+
+impl Clone for Seen {
+    fn clone(&self) -> Self {
+        Self(AtomicU32::new(self.get()))
+    }
+}
+
+impl Seen {
+    #[inline(always)]
+    fn get(&self) -> u32 {
+        self.0.load(Ordering::Relaxed)
+    }
+
+    #[inline(always)]
+    fn set(&self, value: u32) {
+        self.0.store(value, Ordering::Relaxed);
+    }
+}
+
+#[derive(Clone)]
 struct Block {
     start: u32,
     conf: u32,
+    // Value of the cache's global change counter at the last successful validation
+    seen: Seen,
     n: u8,
     nlines: u8,
     lines: [LineRef; MAX_LINES],
@@ -77,31 +108,40 @@ struct Block {
     ops: [Op; MAX_OPS + 1],
 }
 
-const EMPTY_OP: Op = Op { handler: 0, pc: 0, opcode: 0, line: 0, mem: false };
+const EMPTY_OP: Op = Op { handler: 0, pc: 0, opcode: 0, line: 0, flags: 0 };
 const EMPTY_LINE: LineRef = LineRef { addr: 0, gen_value: 0, way: 0, entry: 0 };
-const EMPTY_BLOCK: Block = Block {
-    start: 0,
-    conf: 0,
-    n: 0,
-    nlines: 0,
-    lines: [EMPTY_LINE; MAX_LINES],
-    ops: [EMPTY_OP; MAX_OPS + 1],
-};
+
+fn empty_block() -> Block {
+    Block {
+        start: 0,
+        conf: 0,
+        seen: Seen::default(),
+        n: 0,
+        nlines: 0,
+        lines: [EMPTY_LINE; MAX_LINES],
+        ops: [EMPTY_OP; MAX_OPS + 1],
+    }
+}
 
 impl Block {
+    /// Whether every line the block was recorded from is still exactly as recorded
     #[inline(always)]
     fn valid(&self, cache: &crate::cache::CpuCache) -> bool {
+        self.seen.get() == cache.any_gen() || self.revalidate(cache)
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn revalidate(&self, cache: &crate::cache::CpuCache) -> bool {
         if cache.conf_gen() != self.conf {
             return false;
         }
-        let mut i = 0;
-        while i < usize::from(self.nlines) {
-            let line = &self.lines[i];
+        for line in &self.lines[..usize::from(self.nlines)] {
             if cache.line_gen(line.way, line.entry) != line.gen_value {
                 return false;
             }
-            i += 1;
         }
+        self.seen.set(cache.any_gen());
         true
     }
 }
@@ -135,8 +175,9 @@ impl BlockCache {
     /// Handlers are stored as raw addresses of the bus-specific functions of one opcode table
     #[inline(always)]
     pub(crate) fn ensure_table(&mut self, table_id: usize) {
-        if self.table_id != table_id {
+        if self.table_id != table_id || self.table.is_empty() {
             self.table.clear();
+            self.table.resize(SLOTS, empty_block());
             self.table_id = table_id;
         }
     }
@@ -228,28 +269,60 @@ fn is_register_only(opcode: u16) -> bool {
                 | 0x2B
                 | 0x2E
         ),
-        0x0 => matches!(
-            opcode & 0xFF,
-            0x02 | 0x03
-                | 0x07
-                | 0x08
-                | 0x09
-                | 0x0A
-                | 0x0B
-                | 0x12
-                | 0x18
-                | 0x19
-                | 0x1A
-                | 0x22
-                | 0x23
-                | 0x28
-                | 0x29
-                | 0x2A
-        ) || low == 0x7,
+        0x0 => {
+            matches!(
+                opcode & 0xFF,
+                0x02 | 0x03
+                    | 0x07
+                    | 0x08
+                    | 0x09
+                    | 0x0A
+                    | 0x0B
+                    | 0x12
+                    | 0x18
+                    | 0x19
+                    | 0x1A
+                    | 0x22
+                    | 0x23
+                    | 0x28
+                    | 0x29
+                    | 0x2A
+            ) || low == 0x7
+        }
         0x8 => matches!((opcode >> 8) & 0xF, 0x8 | 0x9 | 0xB | 0xD | 0xF),
         0xC => matches!((opcode >> 8) & 0xF, 0x7 | 0x8 | 0x9 | 0xA | 0xB),
         _ => false,
     }
+}
+
+/// Instructions that touch the cache but are known to continue with the next instruction (or
+/// with the delay slot) and never raise an exception
+fn is_straight_memory(opcode: u16) -> bool {
+    let low = opcode & 0xF;
+    match opcode >> 12 {
+        0x1 | 0x5 | 0x9 | 0xD => true,
+        0x2 | 0x6 => matches!(low, 0x0 | 0x1 | 0x2 | 0x4 | 0x5 | 0x6),
+        0x0 => matches!(low, 0x4 | 0x5 | 0x6 | 0xC | 0xD | 0xE | 0xF),
+        0x4 => {
+            low == 0xF
+                || matches!(
+                    opcode & 0xFF,
+                    0x02 | 0x03 | 0x06 | 0x07 | 0x12 | 0x13 | 0x16 | 0x17 | 0x1B | 0x22 | 0x23
+                        | 0x26 | 0x27
+                )
+        }
+        0x8 => matches!((opcode >> 8) & 0xF, 0x0 | 0x1 | 0x4 | 0x5),
+        0xC => matches!((opcode >> 8) & 0xF, 0x0 | 0x1 | 0x2 | 0x4 | 0x5 | 0x6 | 0xC..=0xF),
+        _ => false,
+    }
+}
+
+/// Instructions whose successor is not guaranteed to be the next sequential fetch (the delay
+/// slot of a delayed branch counts as sequential): taken-able `BT`/`BF`, `TRAPA`, and everything
+/// not positively known to be straight-line, including illegal opcodes, `SLEEP` and `RTE`
+fn leaves_straight_line(opcode: u16) -> bool {
+    matches!(opcode >> 8, 0x89 | 0x8B | 0xC3)
+        || !(is_register_only(opcode) || is_straight_memory(opcode))
 }
 
 /// The handler the interpreter would call, with the opcode groups that share a decode closure
@@ -284,9 +357,10 @@ impl Sh2 {
     /// Records the block starting at `pc` from cache-resident code only, without side effects
     fn form_block<Bus: BusInterface>(&self, pc: u32) -> Option<Block> {
         let table = Bus::opcode_table();
-        let mut block = EMPTY_BLOCK;
+        let mut block = empty_block();
         block.start = pc;
         block.conf = self.cache.conf_gen();
+        block.seen.set(self.cache.any_gen());
 
         let mut addr = pc;
         let mut delay_slot_next = false;
@@ -317,12 +391,19 @@ impl Sh2 {
                 block.nlines += 1;
             }
 
+            let mut flags = 0;
+            if !is_register_only(opcode) {
+                flags |= MEM;
+            }
+            if leaves_straight_line(opcode) {
+                flags |= CTL;
+            }
             block.ops[n] = Op {
                 handler: handler_for::<Bus>(opcode, table) as usize,
                 pc: addr,
                 opcode,
                 line: block.nlines - 1,
-                mem: !is_register_only(opcode),
+                flags,
             };
             block.n += 1;
             addr = addr.wrapping_add(2);
@@ -346,14 +427,13 @@ impl Sh2 {
     #[inline]
     pub(crate) fn run_block<Bus: BusInterface>(&mut self, bus: &mut Bus, ticks: u64) -> (u64, bool) {
         let pc = self.registers.pc;
-        if pc >> 29 != 0 || pc & 1 != 0 {
+        // A delay slot at the entry is the second half of a branch the interpreter executed: its
+        // successor is the branch target, which a straight-line block cannot know
+        if pc >> 29 != 0 || pc & 1 != 0 || self.registers.next_op_in_delay_slot {
             return (0, false);
         }
 
         let slot = slot_index(pc);
-        if self.blocks.table.is_empty() {
-            self.blocks.table = vec![EMPTY_BLOCK; SLOTS];
-        }
         let cached = &self.blocks.table[slot];
         let block: *const Block = if cached.n != 0 && cached.start == pc && cached.valid(&self.cache)
         {
@@ -370,16 +450,17 @@ impl Sh2 {
         // allocation. The block therefore stays untouched until this function returns.
         let block = unsafe { &*block };
 
-        let limit = u64::from(block.n).min(ticks) as usize;
+        let mut limit = u64::from(block.n).min(ticks) as usize;
+        // Arrival at a watched loop head is handled by the caller. The watch only changes in
+        // handlers of taken branches, after which this function leaves the block anyway.
+        let watch_idx = (self.idle_watch.0.0.wrapping_sub(pc) >> 1) as usize;
+        if self.idle_watch.0.0.wrapping_sub(pc) & 1 == 0 && watch_idx < limit {
+            limit = watch_idx;
+        }
+
         let mut i = 0;
         while i < limit {
             let op = &block.ops[i];
-            // Control flow and the loop-skipping watch point are checked, not assumed
-            if self.registers.pc != op.pc
-                || (op.pc == self.idle_watch.0.0 && !self.registers.next_op_in_delay_slot)
-            {
-                break;
-            }
 
             let line = &block.lines[usize::from(op.line)];
             if self.cache.fetch_memo_line() != line.addr {
@@ -389,26 +470,43 @@ impl Sh2 {
             self.registers.pc = self.registers.next_pc;
             self.registers.next_pc = self.registers.pc.wrapping_add(2);
             self.registers.next_op_in_delay_slot = false;
-            self.data_ctx = AccessContext::Data { pc: op.pc, opcode: op.opcode };
-            bus.check_execute(op.pc, op.opcode, self);
+            if op.flags != 0 {
+                self.data_ctx = AccessContext::Data { pc: op.pc, opcode: op.opcode };
+            }
 
             // SAFETY: `handler` was taken from this bus type's opcode table, which
             // `BlockCache::ensure_table` keyed the cache on
-            let handler =
-                unsafe { std::mem::transmute::<usize, OpcodeFn<Bus>>(op.handler) };
+            let handler = unsafe { std::mem::transmute::<usize, OpcodeFn<Bus>>(op.handler) };
             handler(self, op.opcode, bus);
             bus.increment_cycle_counter(1);
             i += 1;
 
             if bus.should_stop_execution() {
-                return (i as u64, true);
+                return (self.finish_block(block, i), true);
             }
-            if op.mem && !block.valid(&self.cache) {
+            if op.flags == 0 {
+                continue;
+            }
+            if op.flags & MEM != 0 && !block.valid(&self.cache) {
+                break;
+            }
+            if op.flags & CTL != 0 && i < limit && self.registers.pc != block.ops[i].pc {
                 break;
             }
         }
 
-        (i as u64, false)
+        (self.finish_block(block, i), false)
+    }
+
+    /// `data_ctx` is only written before instructions that can observe it; it must still hold
+    /// the last executed instruction when the block is left
+    #[inline(always)]
+    fn finish_block(&mut self, block: &Block, executed: usize) -> u64 {
+        if executed != 0 {
+            let last = &block.ops[executed - 1];
+            self.data_ctx = AccessContext::Data { pc: last.pc, opcode: last.opcode };
+        }
+        executed as u64
     }
 }
 
@@ -416,6 +514,7 @@ impl Sh2 {
 mod tests {
     use super::*;
     use crate::bus::OpSize;
+    use crate::registers::Sh2Registers;
 
     const RAM_BASE: u32 = 0x0600_0000;
     const RAM_LEN: usize = 0x4000;
@@ -670,6 +769,7 @@ mod tests {
 
     struct Outcome {
         states: Vec<u8>,
+        regs: Vec<(u64, u64, Sh2Registers)>,
         mem: Vec<u8>,
         log: Vec<LogEntry>,
         counter: u64,
@@ -679,6 +779,7 @@ mod tests {
         let (mut cpu, mut bus) = build(seed);
         let mut rng = Rng(seed ^ 0xDEAD_BEEF_1234_5678 | 1);
         let mut states = Vec::new();
+        let mut regs = Vec::new();
         for _ in 0..60 {
             if rng.below(4) == 0 {
                 let r = rng.below(16) as usize;
@@ -697,8 +798,9 @@ mod tests {
                 cpu.execute_with_body(ticks, &mut bus, &mut crate::Interpreter);
             }
             states.extend(state(&cpu));
+            regs.push((ticks, bus.counter, cpu.registers.clone()));
         }
-        Outcome { states, mem: bus.mem, log: bus.log, counter: bus.counter }
+        Outcome { states, regs, mem: bus.mem, log: bus.log, counter: bus.counter }
     }
 
     #[test]
@@ -706,15 +808,32 @@ mod tests {
         let seeds: u64 =
             std::env::var("PREDECODE_SEEDS").ok().and_then(|v| v.parse().ok()).unwrap_or(400);
         let mut skipped = 0;
-        std::panic::set_hook(Box::new(|_| {}));
-        for seed in 1..=seeds {
+        let first: u64 = std::env::var("PREDECODE_FIRST").ok().and_then(|v| v.parse().ok()).unwrap_or(1);
+        for seed in first..=seeds {
             // Wild register values can hit unimplemented internal registers, which panics in
             // the interpreter too; such programs are not comparable
-            let Ok(expected) = std::panic::catch_unwind(|| run(seed, false)) else {
+            std::panic::set_hook(Box::new(|_| {}));
+            let reference = std::panic::catch_unwind(|| run(seed, false));
+            let _ = std::panic::take_hook();
+            let Ok(expected) = reference else {
                 skipped += 1;
                 continue;
             };
             let actual = run(seed, true);
+            if expected.states != actual.states {
+                let i = expected.regs.iter().zip(&actual.regs).position(|(a, b)| a.2 != b.2 || a.1 != b.1);
+                if let Some(i) = i {
+                    panic!(
+                        "slice {i} diverged, seed {seed}
+prev {:?}
+expected {:?}
+actual   {:?}",
+                        expected.regs.get(i.wrapping_sub(1)),
+                        expected.regs[i],
+                        actual.regs[i]
+                    );
+                }
+            }
             assert!(expected.states == actual.states, "cpu state diverged, seed {seed}");
             assert!(expected.mem == actual.mem, "memory diverged, seed {seed}");
             if expected.log != actual.log {
@@ -727,7 +846,6 @@ mod tests {
             }
             assert_eq!(expected.counter, actual.counter, "cycle counter diverged, seed {seed}");
         }
-        let _ = std::panic::take_hook();
         println!("compared {} programs, skipped {skipped}", seeds - skipped);
         assert!(skipped < seeds / 2, "too many programs hit unimplemented registers");
     }
