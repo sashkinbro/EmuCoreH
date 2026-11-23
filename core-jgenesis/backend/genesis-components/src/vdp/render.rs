@@ -565,46 +565,50 @@ impl Vdp {
         let shadow_highlight = self.latched_registers.shadow_highlight_flag;
         let debug_register = self.debug_register;
 
-        let pixel_color_at = |frame_buffer_col: u32| {
-            let pixel = frame_buffer_col as i16 - fb_pixel_offset;
+        // A macro rather than a closure: it must be inlined into both pixel loops
+        macro_rules! pixel_color_at {
+            ($frame_buffer_col:expr) => {{
+                let frame_buffer_col: u32 = $frame_buffer_col;
+                let pixel = frame_buffer_col as i16 - fb_pixel_offset;
 
-            let sprite_pixel = if sprites_enabled {
-                sprite_pixels.get(pixel as usize).copied().unwrap_or(TilePixel::default())
-            } else {
-                TilePixel::default()
-            };
+                let sprite_pixel = if sprites_enabled {
+                    sprite_pixels.get(pixel as usize).copied().unwrap_or(TilePixel::default())
+                } else {
+                    TilePixel::default()
+                };
 
-            let scroll_a_pixel = plane_a_pixels[frame_buffer_col as usize];
-            let scroll_b_pixel = plane_b_pixels[frame_buffer_col as usize];
+                let scroll_a_pixel = plane_a_pixels[frame_buffer_col as usize];
+                let scroll_b_pixel = plane_b_pixels[frame_buffer_col as usize];
 
-            let pixel_color_args = PixelColorArgs {
-                sprite_pixel,
-                scroll_a_pixel,
-                scroll_b_pixel,
-                bg_cram_idx,
-                in_h_border: !(0..active_display_pixels as i16).contains(&pixel),
-                in_v_border,
-            };
-            if shadow_highlight {
-                determine_pixel_color::<true>(debug_register, pixel_color_args)
-            } else {
-                determine_pixel_color::<false>(debug_register, pixel_color_args)
-            }
-        };
+                let pixel_color_args = PixelColorArgs {
+                    sprite_pixel,
+                    scroll_a_pixel,
+                    scroll_b_pixel,
+                    bg_cram_idx,
+                    in_h_border: !(0..active_display_pixels as i16).contains(&pixel),
+                    in_v_border,
+                };
+                if shadow_highlight {
+                    determine_pixel_color::<true>(debug_register, pixel_color_args)
+                } else {
+                    determine_pixel_color::<false>(debug_register, pixel_color_args)
+                }
+            }};
+        }
 
         if let Some(palette) = &normal_palette {
             let row_start = (frame_buffer_row * screen_width) as usize;
             let row = &mut self.frame_buffer
                 [row_start + fb_start_col as usize..row_start + fb_end_col as usize];
             for (frame_buffer_col, out) in (fb_start_col..fb_end_col).zip(row) {
-                let (pixel_cram_idx, _) = pixel_color_at(frame_buffer_col);
+                let (pixel_cram_idx, _) = pixel_color_at!(frame_buffer_col);
                 *out = palette[(pixel_cram_idx & 63) as usize];
             }
             return;
         }
 
         for frame_buffer_col in fb_start_col..fb_end_col {
-            let (pixel_cram_idx, color_modifier) = pixel_color_at(frame_buffer_col);
+            let (pixel_cram_idx, color_modifier) = pixel_color_at!(frame_buffer_col);
 
             if let Some(palette) = &normal_palette {
                 self.frame_buffer[(frame_buffer_row * screen_width + frame_buffer_col) as usize] =

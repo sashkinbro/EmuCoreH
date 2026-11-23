@@ -639,10 +639,15 @@ impl Vdp {
 
         // Progress times in FIFO
         let cycle_diff = cycles - self.state.last_fb_write_cycles;
-        for _ in 0..cycle_diff {
+        // Equivalent to decrementing the front entry once per elapsed cycle (entries are pushed
+        // as 5 and popped on reaching 0, so they are never 0 here), done one entry at a time
+        let mut remaining = cycle_diff;
+        while remaining != 0 {
             let Some(front) = self.state.fb_write_timing_fifo.front_mut() else { break };
 
-            *front -= 1;
+            let elapsed = cmp::min(*front, remaining);
+            *front -= elapsed;
+            remaining -= elapsed;
             if *front == 0 {
                 self.state.fb_write_timing_fifo.pop_front();
             }

@@ -172,6 +172,7 @@ impl PwmResampler {
         self.output.pop_front()
     }
 
+    #[inline]
     pub fn update_source_frequency(&mut self, source_frequency: f64) {
         // EmuCoreH: the PWM tick reports its frequency on every 68000-instruction sync.
         // The filter and resampler are always kept at `filter.pwm_frequency`, so an
@@ -180,6 +181,11 @@ impl PwmResampler {
         if source_frequency == self.filter.pwm_frequency {
             return;
         }
+        self.retune_source_frequency(source_frequency);
+    }
+
+    #[inline(never)]
+    fn retune_source_frequency(&mut self, source_frequency: f64) {
         self.filter.update_pwm_frequency(source_frequency);
         self.resampler.update_source_frequency(source_frequency);
     }
