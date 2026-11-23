@@ -644,33 +644,16 @@ impl BusInterface for Sh2Bus {
         }
         #[cfg(test)]
         comm_tests::TABLE_DISPATCHES.set(comm_tests::TABLE_DISPATCHES.get() + 1);
-        const BYTE_FNS: [fn(&mut Sh2Bus, u32, AccessContext) -> u32; 4] = [
-            |bus, address, ctx| bus.read_00::<{ OpSize::BYTE }>(address, ctx),
-            |bus, address, _ctx| bus.read_02::<{ OpSize::BYTE }>(address),
-            |bus, address, ctx| bus.read_04::<{ OpSize::BYTE }>(address, ctx),
-            |bus, address, ctx| bus.read_06::<{ OpSize::BYTE }>(address, ctx),
-        ];
-
-        const WORD_FNS: [fn(&mut Sh2Bus, u32, AccessContext) -> u32; 4] = [
-            |bus, address, ctx| bus.read_00::<{ OpSize::WORD }>(address, ctx),
-            |bus, address, _ctx| bus.read_02::<{ OpSize::WORD }>(address),
-            |bus, address, ctx| bus.read_04::<{ OpSize::WORD }>(address, ctx),
-            |bus, address, ctx| bus.read_06::<{ OpSize::WORD }>(address, ctx),
-        ];
-
-        const LONGWORD_FNS: [fn(&mut Sh2Bus, u32, AccessContext) -> u32; 4] = [
-            |bus, address, ctx| bus.read_00::<{ OpSize::LONGWORD }>(address, ctx),
-            |bus, address, _ctx| bus.read_02::<{ OpSize::LONGWORD }>(address),
-            |bus, address, ctx| bus.read_04::<{ OpSize::LONGWORD }>(address, ctx),
-            |bus, address, ctx| bus.read_06::<{ OpSize::LONGWORD }>(address, ctx),
-        ];
-
-        let idx = ((address >> 25) & 3) as usize;
-        match SIZE {
-            OpSize::BYTE => BYTE_FNS[idx](self, address, ctx),
-            OpSize::WORD => WORD_FNS[idx](self, address, ctx),
-            OpSize::LONGWORD => LONGWORD_FNS[idx](self, address, ctx),
-            _ => invalid_size!(SIZE),
+        // Direct calls instead of a function-pointer table: the region functions can inline
+        // and the branch predictor sees ordinary conditional branches.
+        if SIZE > OpSize::LONGWORD {
+            invalid_size!(SIZE);
+        }
+        match (address >> 25) & 3 {
+            0 => self.read_00::<SIZE>(address, ctx),
+            1 => self.read_02::<SIZE>(address),
+            2 => self.read_04::<SIZE>(address, ctx),
+            _ => self.read_06::<SIZE>(address, ctx),
         }
     }
 
@@ -690,33 +673,15 @@ impl BusInterface for Sh2Bus {
 
     #[inline]
     fn write<const SIZE: u8>(&mut self, address: u32, value: u32, ctx: AccessContext) {
-        const BYTE_FNS: [fn(&mut Sh2Bus, u32, u32, AccessContext); 4] = [
-            |bus, address, value, ctx| bus.write_00::<{ OpSize::BYTE }>(address, value, ctx),
-            |_, _, _, _| {}, // SH-2s cannot write to the cartridge
-            |bus, address, value, ctx| bus.write_04::<{ OpSize::BYTE }>(address, value, ctx),
-            |bus, address, value, ctx| bus.write_06::<{ OpSize::BYTE }>(address, value, ctx),
-        ];
-
-        const WORD_FNS: [fn(&mut Sh2Bus, u32, u32, AccessContext); 4] = [
-            |bus, address, value, ctx| bus.write_00::<{ OpSize::WORD }>(address, value, ctx),
-            |_, _, _, _| {}, // SH-2s cannot write to the cartridge
-            |bus, address, value, ctx| bus.write_04::<{ OpSize::WORD }>(address, value, ctx),
-            |bus, address, value, ctx| bus.write_06::<{ OpSize::WORD }>(address, value, ctx),
-        ];
-
-        const LONGWORD_FNS: [fn(&mut Sh2Bus, u32, u32, AccessContext); 4] = [
-            |bus, address, value, ctx| bus.write_00::<{ OpSize::LONGWORD }>(address, value, ctx),
-            |_, _, _, _| {}, // SH-2s cannot write to the cartridge
-            |bus, address, value, ctx| bus.write_04::<{ OpSize::LONGWORD }>(address, value, ctx),
-            |bus, address, value, ctx| bus.write_06::<{ OpSize::LONGWORD }>(address, value, ctx),
-        ];
-
-        let idx = ((address >> 25) & 3) as usize;
-        match SIZE {
-            OpSize::BYTE => BYTE_FNS[idx](self, address, value, ctx),
-            OpSize::WORD => WORD_FNS[idx](self, address, value, ctx),
-            OpSize::LONGWORD => LONGWORD_FNS[idx](self, address, value, ctx),
-            _ => invalid_size!(SIZE),
+        if SIZE > OpSize::LONGWORD {
+            invalid_size!(SIZE);
+        }
+        match (address >> 25) & 3 {
+            0 => self.write_00::<SIZE>(address, value, ctx),
+            // SH-2s cannot write to the cartridge
+            1 => {}
+            2 => self.write_04::<SIZE>(address, value, ctx),
+            _ => self.write_06::<SIZE>(address, value, ctx),
         }
     }
 

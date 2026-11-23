@@ -216,6 +216,7 @@ impl CpuCache {
         None
     }
 
+    #[inline]
     pub fn read_u8(&mut self, address: u32) -> Option<u8> {
         self.cache_read(address, move |cache, way_idx, entry_idx| {
             let address = cache_ram_addr(way_idx, entry_idx) | ((address as usize) & 0xF);
@@ -231,6 +232,7 @@ impl CpuCache {
         })
     }
 
+    #[inline]
     pub fn read_u32(&mut self, address: u32) -> Option<u32> {
         self.cache_read(address, move |cache, way_idx, entry_idx| {
             let address = (cache_ram_addr(way_idx, entry_idx) | ((address as usize) & 0xC)) >> 1;
