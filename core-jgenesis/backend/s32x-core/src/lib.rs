@@ -7,6 +7,7 @@ mod registers;
 mod vdp;
 
 pub use bootrom::BootRoms;
+pub use sh2_emu::set_predecode_enabled as set_sh2_predecode;
 
 type GenesisVdp = genesis_components::vdp::Vdp;
 
