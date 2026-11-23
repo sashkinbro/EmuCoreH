@@ -6,6 +6,7 @@ use crate::api::Sega32XAudioOutput;
 use crate::registers::SystemRegisters;
 use bincode::{Decode, Encode};
 use jgenesis_common::frontend::TimingMode;
+use jgenesis_common::hostcache::HostCache;
 use jgenesis_common::num::GetBit;
 use std::cmp;
 use std::collections::VecDeque;
@@ -150,6 +151,8 @@ pub struct PwmChip {
     timer_counter: u16,
     dreq1: bool,
     genesis_mclk_frequency: f64,
+    // (genesis_mclk_frequency bits, cycle register) -> compute_sample_rate result
+    sample_rate_memo: HostCache<Option<(u64, u16, f64)>>,
 }
 
 // Cycle register and pulse width are unsigned 12-bit values
@@ -172,7 +175,24 @@ impl PwmChip {
                 TimingMode::Ntsc => genesis_components::NTSC_GENESIS_MCLK_FREQUENCY,
                 TimingMode::Pal => genesis_components::PAL_GENESIS_MCLK_FREQUENCY,
             },
+            sample_rate_memo: HostCache::default(),
         }
+    }
+
+    // compute_sample_rate() performs two float divisions and is reported on every tick;
+    // its inputs almost never change, so reuse the identical previously computed value.
+    #[inline]
+    fn sample_rate(&mut self, cycle_register: u16) -> f64 {
+        let mclk_bits = self.genesis_mclk_frequency.to_bits();
+        if let Some((bits, register, rate)) = *self.sample_rate_memo
+            && bits == mclk_bits
+            && register == cycle_register
+        {
+            return rate;
+        }
+        let rate = compute_sample_rate(self.genesis_mclk_frequency, cycle_register);
+        *self.sample_rate_memo = Some((mclk_bits, cycle_register, rate));
+        rate
     }
 
     pub fn tick(
@@ -185,10 +205,7 @@ impl PwmChip {
         {
             // PWM counters are stopped when both channels are off
             // Output 0 samples at ~22 KHz
-            audio_output.update_pwm_source_frequency(compute_sample_rate(
-                self.genesis_mclk_frequency,
-                TWENTY_TWO_KHZ_CYCLE_REGISTER,
-            ));
+            audio_output.update_pwm_source_frequency(self.sample_rate(TWENTY_TWO_KHZ_CYCLE_REGISTER));
 
             while sh2_cycles != 0 {
                 let prev_cycle_counter = self.off_cycle_counter;
@@ -204,10 +221,7 @@ impl PwmChip {
             return;
         }
 
-        audio_output.update_pwm_source_frequency(compute_sample_rate(
-            self.genesis_mclk_frequency,
-            self.cycle_register,
-        ));
+        audio_output.update_pwm_source_frequency(self.sample_rate(self.cycle_register));
 
         while sh2_cycles != 0 {
             let prev_cycle_counter = self.cycle_counter;

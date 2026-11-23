@@ -463,7 +463,12 @@ impl Sh2 {
         address: u32,
         bus: &mut Bus,
     ) -> u16 {
-        if let Some(value) = self.cache.read_u16(address) {
+        let cached = if INSTRUCTION {
+            self.cache.read_instruction_u16(address)
+        } else {
+            self.cache.read_u16(address)
+        };
+        if let Some(value) = cached {
             return value;
         }
 

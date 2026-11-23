@@ -3,6 +3,7 @@ pub mod boxedarray;
 pub mod cheats;
 pub mod debug;
 pub mod frontend;
+pub mod hostcache;
 pub mod input;
 pub mod macros;
 pub mod num;

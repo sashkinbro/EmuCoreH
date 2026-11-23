@@ -17,6 +17,7 @@
 use crate::debug::CacheDebugState;
 use bincode::{Decode, Encode};
 use jgenesis_common::debug::{DebugMemoryView, DebugWordsView, Endian};
+use jgenesis_common::hostcache::HostCache;
 use jgenesis_common::num::{GetBit, U16Ext};
 use std::array;
 
@@ -90,6 +91,27 @@ impl CacheMode {
     }
 }
 
+/// Host-only memo of the cache line that satisfied the most recent instruction fetch hit.
+///
+/// While valid, the line is resident at `ram_base` and its entry's LRU bits already equal the
+/// value a hit on it would produce (LRU updates are idempotent), so another fetch from the same
+/// line can read cache RAM directly with identical results. Any operation that could change the
+/// line's residency, its entry's LRU bits, or the cache configuration invalidates the memo.
+#[derive(Debug, Clone, Copy)]
+struct FetchMemo {
+    // Address bits 4-31 of the memoized line; INVALID_LINE never matches a fetch address
+    line: u32,
+    ram_base: u16,
+}
+
+const INVALID_LINE: u32 = u32::MAX;
+
+impl Default for FetchMemo {
+    fn default() -> Self {
+        Self { line: INVALID_LINE, ram_base: 0 }
+    }
+}
+
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CpuCache {
     // Store cache as u16s because the most common fetches are opcodes which are 16-bit
@@ -97,6 +119,7 @@ pub struct CpuCache {
     ways: Box<[Way; WAYS]>,
     lru_bits: Box<[u8; CACHE_ENTRIES]>,
     control: CacheControlRegister,
+    fetch_memo: HostCache<FetchMemo>,
 }
 
 impl CpuCache {
@@ -106,7 +129,54 @@ impl CpuCache {
             ways: Box::new(array::from_fn(|_| Way::new())),
             lru_bits: Box::new(array::from_fn(|_| 0)),
             control: CacheControlRegister::default(),
+            fetch_memo: HostCache::default(),
         }
+    }
+
+    #[inline(always)]
+    fn invalidate_fetch_memo(&mut self) {
+        self.fetch_memo.line = INVALID_LINE;
+    }
+
+    #[inline(always)]
+    fn invalidate_fetch_memo_entry(&mut self, entry_idx: usize) {
+        if cache_entry_index(self.fetch_memo.line) == entry_idx {
+            self.invalidate_fetch_memo();
+        }
+    }
+
+    /// Cached read for an instruction fetch. Identical to `read_u16`, including LRU updates.
+    #[inline(always)]
+    pub fn read_instruction_u16(&mut self, address: u32) -> Option<u16> {
+        let memo = *self.fetch_memo;
+        if address & !0xF == memo.line {
+            return Some(self.ram[usize::from(memo.ram_base) | (((address as usize) & 0xE) >> 1)]);
+        }
+
+        self.read_instruction_u16_slow(address)
+    }
+
+    #[inline(always)]
+    fn read_instruction_u16_slow(&mut self, address: u32) -> Option<u16> {
+        if !self.control.cache_enabled {
+            return None;
+        }
+
+        let entry_idx = cache_entry_index(address);
+        let tag = tag_address(address);
+
+        for way_idx in (0..4).rev() {
+            if self.ways[way_idx].valid_bits.bit(entry_idx as u8)
+                && self.ways[way_idx].tags[entry_idx] == tag
+            {
+                self.update_lru_bits(way_idx, entry_idx);
+                let ram_base = cache_ram_addr(way_idx, entry_idx) >> 1;
+                *self.fetch_memo = FetchMemo { line: address & !0xF, ram_base: ram_base as u16 };
+                return Some(self.ram[ram_base | (((address as usize) & 0xE) >> 1)]);
+            }
+        }
+
+        None
     }
 
     pub fn read_u8(&mut self, address: u32) -> Option<u8> {
@@ -145,6 +215,7 @@ impl CpuCache {
 
         let entry_idx = cache_entry_index(address);
         let tag = tag_address(address);
+        self.invalidate_fetch_memo_entry(entry_idx);
 
         // Iterate in reverse for slightly better performance when cache is in 2-way mode.
         // Per SH7604 documentation, all 4 ways are checked even in 2-way mode; 2-way mode only
@@ -198,6 +269,7 @@ impl CpuCache {
     #[must_use]
     pub fn replace(&mut self, address: u32, cache_line: [u16; 8]) -> u32 {
         let entry_idx = cache_entry_index(address);
+        self.invalidate_fetch_memo_entry(entry_idx);
 
         let lru_bits = self.lru_bits[entry_idx];
         let way_idx = match self.control.mode {
@@ -285,6 +357,7 @@ impl CpuCache {
 
         let entry_idx = cache_entry_index(address);
         let tag = tag_address(address);
+        self.invalidate_fetch_memo_entry(entry_idx);
 
         // Iterate in reverse for slightly better performance when cache is in 2-way mode
         for way_idx in (0..4).rev() {
@@ -305,6 +378,7 @@ impl CpuCache {
 
     // $FFFFFE92: CCR (Cache control register)
     pub fn write_control(&mut self, value: u8) {
+        self.invalidate_fetch_memo();
         self.control.write(value);
 
         if value.bit(4) {
@@ -313,6 +387,7 @@ impl CpuCache {
     }
 
     pub fn purge_all(&mut self) {
+        self.invalidate_fetch_memo();
         for way in self.ways.as_mut() {
             way.valid_bits = 0;
         }
@@ -324,6 +399,7 @@ impl CpuCache {
     pub fn associative_purge(&mut self, address: u32) {
         // Invalidates a single cache line
         let idx = cache_entry_index(address);
+        self.invalidate_fetch_memo_entry(idx);
         let mask = !(1 << idx);
         for way in self.ways.as_mut() {
             way.valid_bits &= mask;
@@ -345,6 +421,7 @@ impl CpuCache {
 
     // A29-31 = 011
     pub fn write_address_array(&mut self, address: u32, value: u32) {
+        self.invalidate_fetch_memo();
         let entry_idx = cache_entry_index(address);
         let way_idx = self.control.way as usize;
         let tag = tag_address(address);
@@ -457,6 +534,8 @@ impl CpuCache {
     /// The owning Sh2 remains exclusively borrowed throughout generated execution.
     /// Cache callbacks mutate these live values but never replace their allocations.
     pub(crate) fn native_view(&mut self) -> NativeCacheView {
+        // Generated code may update LRU bits without going through CpuCache methods
+        self.invalidate_fetch_memo();
         NativeCacheView {
             enabled: &self.control.cache_enabled,
             ram: self.ram.as_ptr(),
