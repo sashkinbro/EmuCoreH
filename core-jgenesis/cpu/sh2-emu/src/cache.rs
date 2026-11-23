@@ -120,6 +120,10 @@ pub struct CpuCache {
     lru_bits: Box<[u8; CACHE_ENTRIES]>,
     control: CacheControlRegister,
     fetch_memo: HostCache<FetchMemo>,
+    // Host-only counter bumped whenever cache contents, residency or configuration change.
+    // LRU-only updates (hits) never bump it. Idle-loop skipping uses it to prove that the
+    // cached code and data an observed iteration used are still exactly the same.
+    epoch: HostCache<u32>,
 }
 
 impl CpuCache {
@@ -130,7 +134,40 @@ impl CpuCache {
             lru_bits: Box::new(array::from_fn(|_| 0)),
             control: CacheControlRegister::default(),
             fetch_memo: HostCache::default(),
+            epoch: HostCache::default(),
         }
+    }
+
+    #[inline(always)]
+    pub(crate) fn epoch(&self) -> u32 {
+        *self.epoch
+    }
+
+    #[inline(always)]
+    fn bump_epoch(&mut self) {
+        *self.epoch = self.epoch.wrapping_add(1);
+    }
+
+    /// Side-effect-free hit check: the `(entry, way)` a cached access to `address` would hit.
+    pub(crate) fn lookup(&self, address: u32) -> Option<(u8, u8)> {
+        if !self.control.cache_enabled {
+            return None;
+        }
+
+        let entry_idx = cache_entry_index(address);
+        let tag = tag_address(address);
+        (0..4).rev().find_map(|way_idx| {
+            (self.ways[way_idx].valid_bits.bit(entry_idx as u8)
+                && self.ways[way_idx].tags[entry_idx] == tag)
+                .then_some((entry_idx as u8, way_idx as u8))
+        })
+    }
+
+    /// Applies the LRU update of a hit on `(entry, way)`, exactly as a cached access would.
+    pub(crate) fn touch(&mut self, entry: u8, way: u8) {
+        let entry_idx = usize::from(entry);
+        self.invalidate_fetch_memo_entry(entry_idx);
+        self.update_lru_bits(usize::from(way), entry_idx);
     }
 
     #[inline(always)]
@@ -270,6 +307,7 @@ impl CpuCache {
     pub fn replace(&mut self, address: u32, cache_line: [u16; 8]) -> u32 {
         let entry_idx = cache_entry_index(address);
         self.invalidate_fetch_memo_entry(entry_idx);
+        self.bump_epoch();
 
         let lru_bits = self.lru_bits[entry_idx];
         let way_idx = match self.control.mode {
@@ -327,10 +365,14 @@ impl CpuCache {
     pub fn write_through_u8(&mut self, address: u32, value: u8) {
         self.cache_write_through(address, move |cache, way_idx, entry_idx| {
             let address = cache_ram_addr(way_idx, entry_idx) | ((address as usize) & 0xF);
+            let old = cache.ram[address >> 1];
             if !address.bit(0) {
                 cache.ram[address >> 1].set_msb(value);
             } else {
                 cache.ram[address >> 1].set_lsb(value);
+            }
+            if cache.ram[address >> 1] != old {
+                cache.bump_epoch();
             }
         });
     }
@@ -338,18 +380,26 @@ impl CpuCache {
     pub fn write_through_u16(&mut self, address: u32, value: u16) {
         self.cache_write_through(address, move |cache, way_idx, entry_idx| {
             let address = cache_ram_addr(way_idx, entry_idx) | ((address as usize) & 0xE);
-            cache.ram[address >> 1] = value;
+            if cache.ram[address >> 1] != value {
+                cache.ram[address >> 1] = value;
+                cache.bump_epoch();
+            }
         });
     }
 
     pub fn write_through_u32(&mut self, address: u32, value: u32) {
         self.cache_write_through(address, move |cache, way_idx, entry_idx| {
             let address = (cache_ram_addr(way_idx, entry_idx) | ((address as usize) & 0xC)) >> 1;
-            cache.ram[address] = (value >> 16) as u16;
-            cache.ram[address + 1] = value as u16;
+            let (high, low) = ((value >> 16) as u16, value as u16);
+            if cache.ram[address] != high || cache.ram[address + 1] != low {
+                cache.ram[address] = high;
+                cache.ram[address + 1] = low;
+                cache.bump_epoch();
+            }
         });
     }
 
+    #[inline(always)]
     fn cache_write_through(&mut self, address: u32, set_fn: impl FnOnce(&mut Self, usize, usize)) {
         if !self.control.cache_enabled {
             return;
@@ -379,6 +429,7 @@ impl CpuCache {
     // $FFFFFE92: CCR (Cache control register)
     pub fn write_control(&mut self, value: u8) {
         self.invalidate_fetch_memo();
+        self.bump_epoch();
         self.control.write(value);
 
         if value.bit(4) {
@@ -388,6 +439,7 @@ impl CpuCache {
 
     pub fn purge_all(&mut self) {
         self.invalidate_fetch_memo();
+        self.bump_epoch();
         for way in self.ways.as_mut() {
             way.valid_bits = 0;
         }
@@ -400,6 +452,7 @@ impl CpuCache {
         // Invalidates a single cache line
         let idx = cache_entry_index(address);
         self.invalidate_fetch_memo_entry(idx);
+        self.bump_epoch();
         let mask = !(1 << idx);
         for way in self.ways.as_mut() {
             way.valid_bits &= mask;
@@ -422,6 +475,7 @@ impl CpuCache {
     // A29-31 = 011
     pub fn write_address_array(&mut self, address: u32, value: u32) {
         self.invalidate_fetch_memo();
+        self.bump_epoch();
         let entry_idx = cache_entry_index(address);
         let way_idx = self.control.way as usize;
         let tag = tag_address(address);
@@ -459,6 +513,7 @@ impl CpuCache {
 
     // A29-31 = 110
     pub fn write_data_array_u8(&mut self, address: u32, value: u8) {
+        self.bump_epoch();
         let word_addr = ((address >> 1) as usize) & (CACHE_RAM_LEN_WORDS - 1);
         if !address.bit(0) {
             self.ram[word_addr].set_msb(value);
@@ -469,11 +524,13 @@ impl CpuCache {
 
     // A29-31 = 110
     pub fn write_data_array_u16(&mut self, address: u32, value: u16) {
+        self.bump_epoch();
         self.ram[((address >> 1) as usize) & (CACHE_RAM_LEN_WORDS - 1)] = value;
     }
 
     // A29-31 = 110
     pub fn write_data_array_u32(&mut self, address: u32, value: u32) {
+        self.bump_epoch();
         let address = ((address >> 1) as usize) & (CACHE_RAM_LEN_WORDS - 1) & !1;
         self.ram[address] = (value >> 16) as u16;
         self.ram[address + 1] = value as u16;
@@ -536,6 +593,8 @@ impl CpuCache {
     pub(crate) fn native_view(&mut self) -> NativeCacheView {
         // Generated code may update LRU bits without going through CpuCache methods
         self.invalidate_fetch_memo();
+        // Generated code can also change residency and contents behind the cache's back
+        self.bump_epoch();
         NativeCacheView {
             enabled: &self.control.cache_enabled,
             ram: self.ram.as_ptr(),

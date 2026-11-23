@@ -11,6 +11,7 @@ mod disassemble;
 mod divu;
 mod dma;
 mod frt;
+mod idle;
 mod instructions;
 #[cfg(feature = "native-arm64")]
 pub mod native;
@@ -36,6 +37,7 @@ pub use disassemble::{
 };
 pub use instructions::OpcodeTable;
 use jgenesis_common::debug::DebugMemoryView;
+use jgenesis_common::hostcache::HostCache;
 #[cfg(debug_assertions)]
 use std::env;
 use std::fmt::Debug;
@@ -72,6 +74,11 @@ pub struct Sh2 {
     data_ctx: AccessContext,
     name: String,
     trace_log_enabled: bool,
+    // Host-only idle-loop memo (never serialized); see the `idle` module
+    idle_watch: HostCache<idle::IdleWatch>,
+    idle_rejected: HostCache<idle::RejectedFilter>,
+    idle_recording: HostCache<bool>,
+    idle: HostCache<Box<idle::IdleState>>,
 }
 
 #[cfg(debug_assertions)]
@@ -84,6 +91,8 @@ fn trace_log_enabled(name: &str) -> bool {
 
 // Both backends share reset, DMA, delay-slot and interrupt scheduling.
 trait ExecutionBody<Bus: BusInterface> {
+    // Idle-loop skipping observes iterations through the interpreter's own access paths
+    const IDLE_LOOPS: bool = false;
     fn opcode(&mut self, cpu: &mut Sh2, bus: &mut Bus, opcode: u16) -> bool;
     fn block(&mut self, _cpu: &mut Sh2, _bus: &mut Bus, _ticks: u64) -> (u64, bool) {
         (0, false)
@@ -92,6 +101,8 @@ trait ExecutionBody<Bus: BusInterface> {
 
 struct Interpreter;
 impl<Bus: BusInterface> ExecutionBody<Bus> for Interpreter {
+    const IDLE_LOOPS: bool = true;
+
     #[inline(always)]
     fn opcode(&mut self, _: &mut Sh2, _: &mut Bus, _: u16) -> bool {
         false
@@ -122,6 +133,10 @@ impl Sh2 {
             data_ctx: AccessContext::Data { pc: 0, opcode: 0 },
             name,
             trace_log_enabled,
+            idle_watch: HostCache::default(),
+            idle_rejected: HostCache::default(),
+            idle_recording: HostCache::default(),
+            idle: HostCache::default(),
         }
     }
 
@@ -189,11 +204,11 @@ impl Sh2 {
     }
 
     #[inline]
-    fn execute_with_body<Bus: BusInterface>(
+    fn execute_with_body<Bus: BusInterface, B: ExecutionBody<Bus>>(
         &mut self,
         mut ticks: u64,
         bus: &mut Bus,
-        body: &mut impl ExecutionBody<Bus>,
+        body: &mut B,
     ) {
         if ticks == 0 {
             return;
@@ -285,6 +300,16 @@ impl Sh2 {
                     return;
                 }
                 continue;
+            }
+            if Bus::IDLE_LOOPS
+                && B::IDLE_LOOPS
+                && self.registers.pc == self.idle_watch.0.0
+                && !self.registers.next_op_in_delay_slot
+            {
+                match self.idle_arrival(bus, opcode_table, ticks) {
+                    Some(remaining) if remaining != 0 => ticks = remaining,
+                    _ => return,
+                }
             }
             self.execute_single_instruction(bus, body, opcode_table);
             ticks -= 1;
@@ -379,6 +404,9 @@ impl Sh2 {
     }
 
     fn read_byte<Bus: BusInterface>(&mut self, address: u32, bus: &mut Bus) -> u8 {
+        if Bus::IDLE_LOOPS && *self.idle_recording {
+            return self.idle_record_read::<{ bus::OpSize::BYTE }, _>(address, bus) as u8;
+        }
         bus.check_read_byte(address, self);
 
         match address >> 29 {
@@ -418,6 +446,9 @@ impl Sh2 {
     }
 
     fn read_word<Bus: BusInterface>(&mut self, address: u32, bus: &mut Bus) -> u16 {
+        if Bus::IDLE_LOOPS && *self.idle_recording {
+            return self.idle_record_read::<{ bus::OpSize::WORD }, _>(address, bus) as u16;
+        }
         self.read_word_generic::<false, _>(address, bus)
     }
 
@@ -486,6 +517,9 @@ impl Sh2 {
     }
 
     fn read_longword<Bus: BusInterface>(&mut self, address: u32, bus: &mut Bus) -> u32 {
+        if Bus::IDLE_LOOPS && *self.idle_recording {
+            return self.idle_record_read::<{ bus::OpSize::LONGWORD }, _>(address, bus);
+        }
         bus.check_read_longword(address, self);
 
         match address >> 29 {
@@ -527,6 +561,9 @@ impl Sh2 {
     }
 
     fn write_byte<Bus: BusInterface>(&mut self, address: u32, value: u8, bus: &mut Bus) {
+        if Bus::IDLE_LOOPS && *self.idle_recording {
+            return self.idle_record_write::<{ bus::OpSize::BYTE }, _>(address, value.into(), bus);
+        }
         bus.check_write_byte(address, value, self);
 
         match address >> 29 {
@@ -550,6 +587,9 @@ impl Sh2 {
     }
 
     fn write_word<Bus: BusInterface>(&mut self, address: u32, value: u16, bus: &mut Bus) {
+        if Bus::IDLE_LOOPS && *self.idle_recording {
+            return self.idle_record_write::<{ bus::OpSize::WORD }, _>(address, value.into(), bus);
+        }
         bus.check_write_word(address, value, self);
 
         match address >> 29 {
@@ -574,6 +614,9 @@ impl Sh2 {
 
     #[allow(clippy::match_same_arms)]
     fn write_longword<Bus: BusInterface>(&mut self, address: u32, value: u32, bus: &mut Bus) {
+        if Bus::IDLE_LOOPS && *self.idle_recording {
+            return self.idle_record_write::<{ bus::OpSize::LONGWORD }, _>(address, value, bus);
+        }
         bus.check_write_longword(address, value, self);
 
         match address >> 29 {

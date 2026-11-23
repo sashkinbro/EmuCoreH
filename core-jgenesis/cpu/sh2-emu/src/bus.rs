@@ -194,6 +194,51 @@ pub trait BusInterface: Sized {
     }
 
     fn opcode_table<'a>() -> &'a OpcodeTable<Self>;
+
+    /// Opt-in to bit-exact idle-loop skipping (see the `idle` module). A bus that sets this must
+    /// implement every `idle_*` method below exactly; it must not be a debugger bus.
+    const IDLE_LOOPS: bool = false;
+
+    /// Current cycle counter, as incremented by `increment_cycle_counter`
+    fn idle_cycle_counter(&self) -> u64 {
+        0
+    }
+
+    /// `should_stop_execution()` is exactly `idle_cycle_counter() >= idle_cycle_limit()`
+    fn idle_cycle_limit(&self) -> u64 {
+        0
+    }
+
+    /// Whether `idle_replay_read` supports this (aligned, external) address and size
+    fn idle_read_supported(&self, _address: u32, _size: u8) -> bool {
+        false
+    }
+
+    /// Whether `idle_write_is_noop` supports this (aligned, external) address and size
+    fn idle_write_supported(&self, _address: u32, _size: u8) -> bool {
+        false
+    }
+
+    /// Latest cycle count at which a supported read of this address may start (`None`: never)
+    /// without performing any synchronization with other processors, which would change state
+    /// that `idle_replay_read` could not undo. Skipping assumes nothing else runs meanwhile.
+    fn idle_read_deadline(&self, _address: u32, _size: u8) -> Option<u64> {
+        Some(u64::MAX)
+    }
+
+    /// Performs a read exactly as `read` would with the cycle counter at `counter` and returns its
+    /// value; the cycle counter is left unchanged. Only reads whose side effects are a cycle
+    /// charge that does not depend on any state may be supported (synchronization is excluded by
+    /// `idle_read_deadline`).
+    fn idle_replay_read(&mut self, _address: u32, _size: u8, _counter: u64) -> Option<u32> {
+        None
+    }
+
+    /// Whether writing `value` would leave all state except the cycle counter unchanged, with a
+    /// cycle charge that does not depend on any state
+    fn idle_write_is_noop(&mut self, _address: u32, _size: u8, _value: u32) -> bool {
+        false
+    }
 }
 
 #[macro_export]

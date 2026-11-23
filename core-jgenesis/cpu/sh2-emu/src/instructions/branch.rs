@@ -4,19 +4,25 @@ use crate::bus::BusInterface;
 use crate::instructions::rn;
 use crate::{SP, Sh2};
 
+// Idle loop candidates are bounded by the iteration length the idle module can observe
+const MAX_IDLE_BODY_BYTES: i32 = 24;
+
 fn i12(opcode: u16) -> i16 {
     ((opcode as i16) << 4) >> 4
 }
 
 macro_rules! impl_conditional_branch {
     ($name:ident $(, $not:tt)?) => {
-        pub(crate) fn $name(&mut self, opcode: u16, bus: &mut impl BusInterface) {
+        pub(crate) fn $name<Bus: BusInterface>(&mut self, opcode: u16, bus: &mut Bus) {
             if $($not)? self.registers.sr.t {
                 let disp = i32::from(opcode as i8) << 1;
                 self.registers.pc = self.registers.next_pc.wrapping_add(disp as u32);
                 self.registers.next_pc = self.registers.pc.wrapping_add(2);
 
                 bus.increment_cycle_counter(2);
+                if (-MAX_IDLE_BODY_BYTES..0).contains(&disp) {
+                    self.note_backward_branch::<Bus>(self.registers.pc);
+                }
             }
         }
     }
@@ -24,13 +30,16 @@ macro_rules! impl_conditional_branch {
 
 macro_rules! impl_delayed_conditional_branch {
     ($name:ident $(, $not:tt)?) => {
-        pub(crate) fn $name(&mut self, opcode: u16, bus: &mut impl BusInterface) {
+        pub(crate) fn $name<Bus: BusInterface>(&mut self, opcode: u16, bus: &mut Bus) {
             if $($not)? self.registers.sr.t {
                 let disp = i32::from(opcode as i8) << 1;
                 self.registers.next_pc = self.registers.next_pc.wrapping_add(disp as u32);
                 self.registers.next_op_in_delay_slot = true;
 
                 bus.increment_cycle_counter(1);
+                if (-MAX_IDLE_BODY_BYTES..0).contains(&disp) {
+                    self.note_backward_branch::<Bus>(self.registers.next_pc);
+                }
             }
         }
     }
@@ -56,12 +65,15 @@ impl Sh2 {
 
     // BRA label
     // Unconditional branch
-    pub(crate) fn bra(&mut self, opcode: u16, bus: &mut impl BusInterface) {
+    pub(crate) fn bra<Bus: BusInterface>(&mut self, opcode: u16, bus: &mut Bus) {
         let disp = i12(opcode) << 1;
         self.registers.next_pc = self.registers.next_pc.wrapping_add(disp as u32);
         self.registers.next_op_in_delay_slot = true;
 
         bus.increment_cycle_counter(1);
+        if (-MAX_IDLE_BODY_BYTES..0).contains(&i32::from(disp)) {
+            self.note_backward_branch::<Bus>(self.registers.next_pc);
+        }
     }
 
     // BRAF Rm

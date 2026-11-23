@@ -200,7 +200,9 @@ impl Sh2 {
         let n = rn(opcode);
         let address = self.registers.gpr[n];
 
-        // TAS never performs cached reads; read from the bus directly
+        // TAS never performs cached reads; read from the bus directly. That read bypasses idle
+        // loop recording, so an iteration containing TAS can never be fast-forwarded
+        self.note_unrecorded_bus_access();
         let value = bus.read_byte(address & crate::EXTERNAL_ADDRESS_MASK, self.data_ctx);
         self.write_byte(address, value | 0x80, bus);
 

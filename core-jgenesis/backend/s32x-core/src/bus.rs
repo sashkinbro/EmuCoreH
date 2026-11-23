@@ -799,6 +799,110 @@ impl BusInterface for Sh2Bus {
     }
 
     sh2_emu::impl_sh2_opcode_table!(Sh2Bus);
+
+    const IDLE_LOOPS: bool = true;
+
+    #[inline(always)]
+    fn idle_cycle_counter(&self) -> u64 {
+        self.cycle_counter
+    }
+
+    #[inline(always)]
+    fn idle_cycle_limit(&self) -> u64 {
+        self.cycle_limit
+    }
+
+    fn idle_read_deadline(&self, address: u32, size: u8) -> Option<u64> {
+        if !self.need_to_sync_other(address) {
+            return Some(u64::MAX);
+        }
+
+        // Reading a communication port first runs the other SH-2 up to the cycle count after the
+        // read's charge; that is a no-op only while the other SH-2 is already at or past it
+        let other = self.other_sh2.as_ref()?;
+        // SAFETY: Same pointer `sync_other_cpu` reads; valid for the lifetime of the bus
+        let other_counter = unsafe { other.cycle_counter.read() };
+        let charge = if size == OpSize::LONGWORD { 2 } else { 1 };
+        other_counter.checked_sub(charge)
+    }
+
+    fn idle_read_supported(&self, address: u32, size: u8) -> bool {
+        idle_pure_read(address, size)
+    }
+
+    fn idle_write_supported(&self, address: u32, size: u8) -> bool {
+        idle_sdram(address, size)
+    }
+
+    fn idle_replay_read(&mut self, address: u32, size: u8, counter: u64) -> Option<u32> {
+        if !idle_pure_read(address, size) {
+            return None;
+        }
+
+        // Reads from these regions only charge fixed cycles; `idle_read_deadline` has already
+        // made sure communication port reads do not synchronize the other SH-2. Run the real path
+        let saved = self.cycle_counter;
+        self.cycle_counter = counter;
+        let value = match size {
+            OpSize::BYTE => self.read::<{ OpSize::BYTE }>(address, AccessContext::Fetch),
+            OpSize::WORD => self.read::<{ OpSize::WORD }>(address, AccessContext::Fetch),
+            _ => self.read::<{ OpSize::LONGWORD }>(address, AccessContext::Fetch),
+        };
+        self.cycle_counter = saved;
+        Some(value)
+    }
+
+    fn idle_write_is_noop(&mut self, address: u32, size: u8, value: u32) -> bool {
+        // SDRAM writes charge a fixed cycle and only store the value
+        idle_sdram(address, size)
+            && match size {
+                OpSize::BYTE => {
+                    sh2_read_memory_u16::<{ OpSize::BYTE }, _>(&self.s32x_bus().sdram, address)
+                        == value
+                }
+                OpSize::WORD => {
+                    sh2_read_memory_u16::<{ OpSize::WORD }, _>(&self.s32x_bus().sdram, address)
+                        == value
+                }
+                _ => {
+                    sh2_read_memory_u16::<{ OpSize::LONGWORD }, _>(
+                        &self.s32x_bus().sdram,
+                        address,
+                    ) == value
+                }
+            }
+    }
+}
+
+fn idle_len(size: u8) -> u32 {
+    match size {
+        OpSize::BYTE => 1,
+        OpSize::WORD => 2,
+        _ => 4,
+    }
+}
+
+// SDRAM: fixed-cost reads and writes with no side effects beyond storing a written value
+fn idle_sdram(address: u32, size: u8) -> bool {
+    let end = address + idle_len(size) - 1;
+    (0x06000000..0x06040000).contains(&address) && end < 0x06040000
+}
+
+// Regions whose reads have no side effects other than a fixed cycle charge (communication ports
+// additionally synchronize the other SH-2, which `idle_replay_read` performs exactly)
+fn idle_pure_read(address: u32, size: u8) -> bool {
+    let end = address + idle_len(size) - 1;
+    let within = |start: u32, last: u32| address >= start && end <= last;
+    let overlaps_fifo = address <= 0x4013 && end >= 0x4012;
+    idle_sdram(address, size)
+        // Boot ROM
+        || within(0x0000, 0x3FFF)
+        // System registers and communication ports, excluding the DREQ FIFO (reads pop it)
+        || (within(0x4000, 0x402F) && !overlaps_fifo)
+        // PWM registers
+        || within(0x4030, 0x403F)
+        // VDP registers and CRAM
+        || within(0x4100, 0x43FF)
 }
 
 #[inline]

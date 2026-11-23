@@ -8,7 +8,7 @@ use crate::{RESET_INTERRUPT_MASK, Sh2};
 use bincode::{Decode, Encode};
 use jgenesis_common::num::{GetBit, U16Ext};
 
-#[derive(Debug, Clone, Copy, Encode, Decode)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Encode, Decode)]
 pub struct StatusRegister {
     // Interrupt levels <= this value are masked
     pub interrupt_mask: u8,
@@ -49,7 +49,7 @@ impl From<StatusRegister> for u32 {
     }
 }
 
-#[derive(Debug, Clone, Default, Encode, Decode)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Encode, Decode)]
 pub struct Sh2Registers {
     // General-purpose registers
     pub gpr: [u32; 16],
