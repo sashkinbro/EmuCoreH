@@ -44,6 +44,7 @@ public:
   ~CRender2D() = default;
 
   static void SetAndroidTileBlit(AndroidTileBlitFn fn);
+  static bool HasAndroidTileBlit();
 
   // Capture live tile memory before executing each visible scanline's CPU work.
   void BeginScanlineFrame();

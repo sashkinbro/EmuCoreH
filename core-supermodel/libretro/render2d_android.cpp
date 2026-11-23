@@ -142,6 +142,8 @@ static void DrawLayerLine(uint32_t *pixels, int layerNum, const uint32_t *vram, 
 
 CRender2D::CRender2D(const Util::Config::Node &config) : m_config(config) {}
 
+bool CRender2D::HasAndroidTileBlit() { return g_tileBlit != nullptr; }
+
 void CRender2D::SetAndroidTileBlit(AndroidTileBlitFn fn)
 {
   g_tileBlit = fn;
@@ -273,14 +275,18 @@ void CRender2D::RenderFrameBottom(void)
 {
   if (m_frame.empty())
     return;
+  if (g_tileBlit) {
+    // EmuCoreH: the GLES path presents the tile surfaces directly; m_frame is only
+    // consumed by the software/Vulkan compositors, so skip the CPU copy and blend.
+    if (m_surfacesPresent.second)
+      g_tileBlit(m_bottomSurface.data(), (int)m_xPixels, (int)m_yPixels, false);
+    return;
+  }
   if (m_surfacesPresent.second)
     std::memcpy(m_frame.data(), m_bottomSurface.data(), m_frame.size() * sizeof(uint32_t));
   else
     std::fill(m_frame.begin(), m_frame.end(), ARGB(0xFF, 0, 0, 0));
 
-  if (g_tileBlit && m_surfacesPresent.second) {
-    g_tileBlit(m_bottomSurface.data(), (int)m_xPixels, (int)m_yPixels, false);
-  }
 }
 
 void CRender2D::CompositeTopOntoFrame()
@@ -317,6 +323,8 @@ void CRender2D::CompositeTopOntoFrame()
 void CRender2D::RenderFrameTop(void)
 {
   if (m_frame.empty())
+    return;
+  if (g_tileBlit)
     return;
   CompositeTopOntoFrame();
 }

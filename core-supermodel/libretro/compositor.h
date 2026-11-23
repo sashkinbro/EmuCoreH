@@ -10,7 +10,11 @@ public:
 
   void RenderFrame(void) override
   {
-    if (m_presenter && m_render2d && m_render2d->HasFrame())
+    // EmuCoreH: with the Android tile blit installed, CRender2D::RenderFrameBottom has
+    // already drawn the bottom tile surface (opaque) into this framebuffer, and an
+    // absent bottom surface leaves the frontend's opaque black clear. Re-uploading
+    // and redrawing the same pixels here cost a 496x384 swizzle + upload per frame.
+    if (!CRender2D::HasAndroidTileBlit() && m_presenter && m_render2d && m_render2d->HasFrame())
     {
       const uint32_t* pixels = m_render2d->GetFrameBufferARGB();
       m_presenter->UpdateFrameARGB(pixels, (int)m_render2d->GetFrameWidth(), (int)m_render2d->GetFrameHeight());
