@@ -52,8 +52,8 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments += listOf(
-                        "-DCMAKE_C_FLAGS_DEBUG=-O3 -g",
-                        "-DCMAKE_CXX_FLAGS_DEBUG=-O3 -g"
+                        "-DCMAKE_C_FLAGS_DEBUG=-O3 -g -DNDEBUG",
+                        "-DCMAKE_CXX_FLAGS_DEBUG=-O3 -g -DNDEBUG"
                     )
                 }
             }
