@@ -520,6 +520,11 @@ void DcRenderer::DrawMainMenu(const LayoutMetrics& m, float alpha) {
     DrawText(activeItem.subtitle, labelX, labelY + 35.0f, 13.5f, STYLE_BODY_BOLD,
              SecondaryTextColor(alpha), labelW - 28.0f, 1, 1, labelW);
 
+    // The title capsule acts as the active orb's button: tapping "Play" etc. confirms it.
+    if (overlay_ == OVERLAY_NONE) {
+        RegisterHit(labelX, labelY, labelW, labelH, HIT_HUB_ORB, main_index_);
+    }
+
     // Lower Live Dreamcast Clock + Multi-Core Library Summary Cards
     const float infoTop = labelY + labelH + 14.0f;
     const float infoAvailH = std::max(64.0f, m.bodyBot - infoTop);
