@@ -129,6 +129,9 @@ internal object CoreRuntime {
         }
         val task = FrameTask(block, CountDownLatch(1))
         frameTasks.add(task)
+        // The pacing wait parks the worker until the next frame deadline; wake it so
+        // queued state operations still run immediately.
+        java.util.concurrent.locks.LockSupport.unpark(activeWorker)
         return try {
             if (!task.completed.await(30, TimeUnit.SECONDS)) {
                 if (com.sbro.emucoreh.BuildConfig.DEBUG) Log.w(TAG, "Timed out waiting for the frame worker to run a state operation")
@@ -1214,7 +1217,14 @@ internal object CoreRuntime {
                             drainFrameTasks()
                             val remainingNanos = framePacer.remainingNanos(System.nanoTime(), pacedRate)
                             if (remainingNanos <= 0L) break
-                            if (remainingNanos > FRAME_PACING_SPIN_NANOS) Thread.sleep(1)
+                            // Park until shortly before the deadline instead of a 1 ms sleep
+                            // followed by a 2 ms busy spin: the spin used to burn ~10 % of a
+                            // big core per frame on silent scenes and muted devices.
+                            if (remainingNanos > FRAME_PACING_SPIN_NANOS) {
+                                java.util.concurrent.locks.LockSupport.parkNanos(remainingNanos - FRAME_PACING_SPIN_NANOS)
+                            } else {
+                                Thread.yield()
+                            }
                         }
                     }
                 } else {
@@ -1449,7 +1459,7 @@ internal object CoreRuntime {
     }
 
     private const val PAD_ANALOG_MODE_BIT = 1 shl 16
-    private const val FRAME_PACING_SPIN_NANOS = 2_000_000L
+    private const val FRAME_PACING_SPIN_NANOS = 400_000L
     // App aspect-ratio preference values (mirrors the display settings UI).
     private const val ASPECT_RATIO_STRETCH = 0
     private const val ASPECT_RATIO_AUTO = 1
