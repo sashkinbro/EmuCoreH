@@ -2543,7 +2543,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="dcui_theme_pearl">Dreamcast Жемчужный</string>
     <string name="dcui_theme_pal_blue">Dreamcast PAL Синий</string>
     <string name="dcui_theme_sports">Sega Sports Чёрный</string>
-    <string name="dcui_theme_katana">Katana Девкит</string>
+    <string name="dcui_theme_katana">Katana Devkit</string>
     <string name="dcui_theme_saturn">Saturn Полночь</string>
     <string name="dcui_aspect_auto">Авто во весь экран</string>
     <string name="dcui_aspect_16_9">16:9</string>

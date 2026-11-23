@@ -430,14 +430,15 @@ private:
     void DrawVmuCardsTab(const LayoutMetrics& m, float topY, float botY, float alpha);
     void DrawSettingsScreen(const LayoutMetrics& m, float alpha);
     void DrawLaunchStage();
-    void DrawOverlay(const LayoutMetrics& m);
+    void DrawOverlay(const LayoutMetrics& m, float alpha = 1.0f);
     void DrawConfirmDialog(
         const LayoutMetrics& m,
         const std::string& title,
         const std::string& message,
         const std::string& yesText,
         const std::string& noText,
-        int focusedBtn);
+        int focusedBtn,
+        float alpha = 1.0f);
 
     // State & Navigation Helpers
     void RegisterHit(float x, float y, float w, float h, int kind, int index = 0);
@@ -554,7 +555,12 @@ private:
     std::chrono::steady_clock::time_point last_frame_tp_;
     bool has_frame_tp_ = false;
     float time_sec_ = 0.0f;
+    int prev_screen_ = -1;
     float screen_fade_t_ = 1.0f;
+    int last_overlay_ = OVERLAY_NONE;
+    float overlay_fade_t_ = 1.0f;
+    bool exiting_shell_ = false;
+    float exit_t_ = 0.0f;
     float spin_angle_ = 0.0f;
     float hub_visual_pos_ = 0.0f;
     int static_idle_frames_ = 0;

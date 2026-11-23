@@ -62,11 +62,24 @@ object VmuFilesystem {
         return if (m != null) "VMU ${m.groupValues[1].uppercase(Locale.US)}" else fileName.substringBeforeLast('.')
     }
 
+    /**
+     * Guards shared `<system>/dc` files so Dreamcast BIOS blobs (`dc_boot.bin`, `dc_flash.bin`)
+     * are never treated or formatted as VMU cards.
+     */
+    fun isVmuImageFile(file: File): Boolean {
+        if (!file.isFile) return false
+        val lower = file.name.lowercase(Locale.ROOT)
+        if (!lower.endsWith(".bin")) return false
+        if (lower == "dc_boot.bin" || lower == "dc_flash.bin") return false
+        if (lower.startsWith("dc_") || lower.contains("bios")) return false
+        return portRegex.matches(file.name) || file.length() == VMU_SIZE_BYTES.toLong()
+    }
+
     fun inspectCard(file: File, iconCacheDir: File?): VmuCardSummary {
         val portName = portLabelForFileName(file.name)
         val sizeBytes = file.length()
         val modifiedAt = file.lastModified()
-        if (!file.isFile || sizeBytes != VMU_SIZE_BYTES.toLong()) {
+        if (!isVmuImageFile(file) || sizeBytes != VMU_SIZE_BYTES.toLong()) {
             return VmuCardSummary(
                 portName = portName,
                 fileName = file.name,
@@ -192,7 +205,7 @@ object VmuFilesystem {
     }
 
     fun deleteFile(file: File, item: VmuSaveItem): Boolean = runCatching {
-        if (!file.isFile || file.length() != VMU_SIZE_BYTES.toLong()) return false
+        if (!isVmuImageFile(file) || file.length() != VMU_SIZE_BYTES.toLong()) return false
         val data = file.readBytes()
         if (data.size != VMU_SIZE_BYTES) return false
 
@@ -228,6 +241,7 @@ object VmuFilesystem {
     }.getOrDefault(false)
 
     fun formatCard(file: File, nowMillis: Long = System.currentTimeMillis()): Boolean = runCatching {
+        if (!isVmuImageFile(file)) return false
         val data = ByteArray(VMU_SIZE_BYTES)
 
         // Root block (255)

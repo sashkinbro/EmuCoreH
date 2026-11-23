@@ -51,7 +51,7 @@ void main() {
 
 // Dreamcast BIOS Luminous Atmospheric Backdrop + Floating Refractive Glass Orbs
 inline constexpr const char* kDcBgFragmentShader = R"(#version 300 es
-precision mediump float;
+precision highp float;
 
 in vec2 v_uv;
 uniform vec2 u_screen;
@@ -65,6 +65,8 @@ const vec3 kLightDir = normalize(vec3(-0.32, 0.44, 0.84));
 const vec3 kHalfVec = normalize(vec3(-0.18, 0.24, 0.95));
 
 float hash21(vec2 p) {
+    // Wrap screen coordinates before large multiplications to stay numerically well-conditioned
+    p = mod(p, 64.0);
     p = fract(p * vec2(123.34, 456.21));
     p += dot(p, p + 45.32);
     return fract(p.x * p.y);
@@ -115,7 +117,9 @@ vec4 evalGlassSphere(vec2 px, vec4 sphere, vec3 tintCol, vec3 rimCol, vec3 specC
 void main() {
     vec2 px = vec2(v_uv.x * u_screen.x, (1.0 - v_uv.y) * u_screen.y);
     vec2 norm = (px / max(u_screen, vec2(1.0))) - 0.5;
-    float rad2 = dot(norm * vec2(1.15, 1.35), norm * vec2(1.15, 1.35));
+    vec2 normScaled = norm * vec2(1.15, 1.35);
+    float rad2 = dot(normScaled, normScaled);
+    float rad = sqrt(rad2);
     float bloom = exp(-rad2 * 2.1);
 
     vec3 bg = vec3(0.0);
@@ -127,7 +131,8 @@ void main() {
     // Gentle Dreamcast BIOS sweeping light ribbon across backdrop
     float wavePhase = v_uv.x * 3.8 + u_time * 0.18;
     float waveY = 0.52 + 0.14 * sin(wavePhase) + 0.05 * cos(wavePhase * 2.1);
-    float ribbon = exp(-pow((v_uv.y - waveY) * 4.2, 2.0));
+    float wy = (v_uv.y - waveY) * 4.2;
+    float ribbon = exp(-(wy * wy));
 
     if (u_theme == 0) {
         // Theme 0: Dreamcast Pearl (classic luminous white-ice BIOS)
@@ -135,7 +140,7 @@ void main() {
         vec3 outerIce = vec3(0.79, 0.85, 0.94);
         vec3 midPearl = vec3(0.90, 0.94, 0.985);
         vec3 centerGlow = vec3(0.975, 0.985, 1.0);
-        bg = mix(outerIce, midPearl, smoothstep(1.1, 0.15, sqrt(rad2)));
+        bg = mix(outerIce, midPearl, smoothstep(1.1, 0.15, rad));
         bg = mix(bg, centerGlow, bloom * 0.88);
         bg += vec3(0.03, 0.045, 0.07) * ribbon;
         orbTint = vec3(0.38, 0.68, 0.96);
@@ -146,7 +151,7 @@ void main() {
         vec3 outerSky = vec3(0.56, 0.73, 0.94);
         vec3 midSky = vec3(0.76, 0.86, 0.98);
         vec3 innerFrost = vec3(0.92, 0.965, 1.0);
-        bg = mix(outerSky, midSky, smoothstep(1.1, 0.15, sqrt(rad2)));
+        bg = mix(outerSky, midSky, smoothstep(1.1, 0.15, rad));
         bg = mix(bg, innerFrost, bloom * 0.85);
         bg += vec3(0.05, 0.07, 0.10) * ribbon;
         orbTint = vec3(0.18, 0.48, 0.92);
@@ -289,7 +294,7 @@ void main() {
 
 // Frosted Glass Acrylic Panel / Pill / Card Shader
 inline constexpr const char* kDcPanelFragmentShader = R"(#version 300 es
-precision mediump float;
+precision highp float;
 
 in vec2 v_uv;
 
@@ -354,7 +359,7 @@ void main() {
 
 // Procedural 3D-shaded Sega / Dreamcast Icons (GD-ROM, VMU, Crystal, Gear, Cartridge, Arcade, Droplet)
 inline constexpr const char* kDcIconFragmentShader = R"(#version 300 es
-precision mediump float;
+precision highp float;
 
 in vec2 v_uv;
 
@@ -513,7 +518,7 @@ void main() {
 
 // Subtle VGA / CRT Scanlines Overlay
 inline constexpr const char* kDcScanlineFragmentShader = R"(#version 300 es
-precision mediump float;
+precision highp float;
 
 in vec2 v_uv;
 uniform vec2 u_viewport_px;

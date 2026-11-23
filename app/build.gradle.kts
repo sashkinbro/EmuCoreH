@@ -55,7 +55,9 @@ val releaseSigningConfigured = listOf(
 android {
     namespace = "com.sbro.emucoreh"
     compileSdk {
-        version = release(37)
+        version = release(37) {
+            minorApiLevel = 2
+        }
     }
     ndkVersion = "29.0.14206865"
 

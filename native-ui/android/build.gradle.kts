@@ -5,7 +5,9 @@ plugins {
 android {
     namespace = "com.sbro.emucoreh.dcui"
     compileSdk {
-        version = release(37)
+        version = release(37) {
+            minorApiLevel = 2
+        }
     }
     ndkVersion = "29.0.14206865"
 
@@ -18,7 +20,7 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++17"
-                arguments += listOf("-DANDROID_STL=c++_shared")
+                arguments += listOf("-DANDROID_STL=c++_shared", "-DDCUI_ENABLE_LTO=ON")
             }
         }
     }

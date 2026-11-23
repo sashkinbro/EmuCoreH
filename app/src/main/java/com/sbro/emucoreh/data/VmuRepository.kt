@@ -25,7 +25,7 @@ class VmuRepository(private val context: Context) {
     }.getOrDefault(false)
 
     fun vmus(): List<VmuFile> = saveDirectory.listFiles().orEmpty()
-        .filter { it.isFile && it.name.endsWith(".bin", ignoreCase = true) }
+        .filter { VmuFilesystem.isVmuImageFile(it) }
         .map { file -> VmuFile(file.name, file.length(), file.lastModified()) }
         .sortedBy { it.name.lowercase() }
 
@@ -44,7 +44,7 @@ class VmuRepository(private val context: Context) {
         val root = saveDirectory.canonicalFile
         context.contentResolver.openOutputStream(uri)?.use { output ->
             ZipOutputStream(output).use { zip ->
-                root.listFiles().orEmpty().filter { it.isFile && it.name.endsWith(".bin", true) }.forEach { file ->
+                root.listFiles().orEmpty().filter { VmuFilesystem.isVmuImageFile(it) }.forEach { file ->
                     zip.putNextEntry(ZipEntry("VMU/${file.name}"))
                     file.inputStream().use { it.copyTo(zip) }
                     zip.closeEntry()

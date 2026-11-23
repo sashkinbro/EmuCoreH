@@ -2563,7 +2563,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="dcui_theme_sports">Sega Sports Černý</string>
     <string name="dcui_theme_katana">Katana Vývojářský</string>
     <string name="dcui_theme_saturn">Saturn Půlnoc</string>
-    <string name="dcui_aspect_auto">Automaticky celá obrazovka</string>
+    <string name="dcui_aspect_auto">Auto celá obrazovka</string>
     <string name="dcui_aspect_16_9">16:9</string>
     <string name="dcui_aspect_16_10">16:10</string>
     <string name="dcui_aspect_4_3">4:3</string>

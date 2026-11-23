@@ -175,7 +175,8 @@ void DcRenderer::DrawTopBar(const LayoutMetrics& m, const std::string& title, bo
     DrawSwirl(swirlCx, swirlCy, swirlR, 1.0f, spin_angle_ * 0.35f, alpha, SwirlAccentColor(1.0f));
 
     float titleX = swirlCx + swirlR + 12.0f;
-    const bool showBackOrExitPill = (touch_mode_active_ && settings_.touchControls) || showExitBtn;
+    // Show touch Back pill only on sub-screens; Main Menu already has [B] Exit in bottom bar.
+    const bool showBackPill = !showExitBtn && touch_mode_active_ && settings_.touchControls;
     float leftUsedEnd = titleX;
 
     float tw = 0.0f, th = 0.0f;
@@ -185,10 +186,8 @@ void DcRenderer::DrawTopBar(const LayoutMetrics& m, const std::string& title, bo
              PrimaryTextColor(alpha), maxTitleW, 1, 0);
     leftUsedEnd = titleX + tw + 12.0f;
 
-    if (showBackOrExitPill && overlay_ == OVERLAY_NONE) {
-        const std::string pillText = showExitBtn
-            ? TextOr("dcui_btn_exit", "Exit")
-            : TextOr("dcui_hint_back", "Back");
+    if (showBackPill && overlay_ == OVERLAY_NONE) {
+        const std::string pillText = TextOr("dcui_hint_back", "Back");
         float pw = 0.0f, ph = 0.0f;
         MeasureText(pillText, 13.5f, STYLE_BODY_BOLD, 100.0f, 1, pw, ph);
         const float btnW = std::max(60.0f, pw + 24.0f);
@@ -203,8 +202,7 @@ void DcRenderer::DrawTopBar(const LayoutMetrics& m, const std::string& title, bo
                 PanelBorderColor(0.75f * alpha));
             DrawText(pillText, btnX, btnY + (btnH - ph) * 0.5f, 13.5f, STYLE_BODY_BOLD,
                      PrimaryTextColor(alpha), btnW - 10.0f, 1, 1, btnW);
-            RegisterHit(btnX, btnY, btnW, btnH, showExitBtn ? HIT_TOP_EXIT : HIT_BOTTOM_ACTION,
-                        showExitBtn ? 0 : KEY_BACK);
+            RegisterHit(btnX, btnY, btnW, btnH, HIT_BOTTOM_ACTION, KEY_BACK);
         }
     }
 
@@ -529,7 +527,7 @@ void DcRenderer::DrawMainMenu(const LayoutMetrics& m, float alpha) {
 
     if (!m.portrait) {
         const float gap = 14.0f;
-        const float cardW = std::min(280.0f, (m.bodyW - gap) * 0.5f);
+        const float cardW = std::min(314.0f, (m.bodyW - gap) * 0.5f);
         const float groupX = hubCx - (cardW * 2.0f + gap) * 0.5f;
 
         // Left: Live Analog + Digital Dreamcast Clock
@@ -548,14 +546,14 @@ void DcRenderer::DrawMainMenu(const LayoutMetrics& m, float alpha) {
         const float rxCard = groupX + cardW + gap;
         DrawPanel(rxCard, infoTop, cardW, cardH, 16.0f, 1.2f,
                   PanelTopColor(0.85f * alpha), PanelBotColor(0.92f * alpha), PanelBorderColor(0.75f * alpha));
-        const float sIconX = rxCard + 32.0f;
+        const float sIconX = rxCard + 30.0f;
         DrawSwirl(sIconX, infoTop + cardH * 0.5f, 18.0f, 1.0f, -spin_angle_ * 0.25f, alpha * 0.9f, SecondaryAccentColor(1.0f));
-        const float rtx = rxCard + 60.0f;
-        const float rtw = cardW - 72.0f;
+        const float rtx = rxCard + 56.0f;
+        const float rtw = cardW - 66.0f;
         DrawText(TextOr("dcui_hub_systems_title", "Sega BIOS Hub"), rtx, infoTop + cardH * 0.5f - 18.0f,
                  15.0f, STYLE_BODY_BOLD, PrimaryTextColor(alpha), rtw, 1, 0);
         DrawText(status_.biosSummary.empty() ? "Dreamcast · Saturn · Mega Drive · Arcade" : status_.biosSummary,
-                 rtx, infoTop + cardH * 0.5f + 3.0f, 12.5f, STYLE_BODY,
+                 rtx, infoTop + cardH * 0.5f + 4.0f, 11.8f, STYLE_BODY,
                  SecondaryTextColor(alpha), rtw, 1, 0);
     } else {
         // Portrait: stack Live Clock & BIOS Summary cleanly
@@ -580,7 +578,7 @@ void DcRenderer::DrawMainMenu(const LayoutMetrics& m, float alpha) {
             DrawText(TextOr("dcui_hub_systems_title", "Sega BIOS Hub"), cxCard + 68.0f, y2 + pCardH * 0.5f - 18.0f,
                      15.5f, STYLE_BODY_BOLD, PrimaryTextColor(alpha), cardW - 82.0f, 1, 0);
             DrawText(status_.biosSummary.empty() ? "Dreamcast · Saturn · Mega Drive · Arcade" : status_.biosSummary,
-                     cxCard + 68.0f, y2 + pCardH * 0.5f + 4.0f, 13.0f, STYLE_BODY,
+                     cxCard + 68.0f, y2 + pCardH * 0.5f + 4.0f, 12.0f, STYLE_BODY,
                      SecondaryTextColor(alpha), cardW - 82.0f, 1, 0);
         }
     }
@@ -658,26 +656,34 @@ void DcRenderer::DrawGameShowcase(
 
         const float infoX = artX + artW + 12.0f;
         const float infoW = x + w - pad - infoX;
+        float tw = 0.0f, th = 0.0f;
+        MeasureText(game.title, 17.5f, STYLE_ORB_TITLE, infoW, 2, tw, th);
         DrawText(game.title, infoX, y + pad, 17.5f, STYLE_ORB_TITLE, PrimaryTextColor(alpha), infoW, 2, 0);
+
+        const float btnY = y + h - pad - btnH;
+        const float platY = y + pad + std::max(24.0f, th + 5.0f);
+        DrawText(game.platformLabel, infoX, platY, 12.5f, STYLE_BODY_BOLD, platCol, infoW, 1, 0);
 
         char meta[128];
         if (!game.serial.empty() && !game.sizeStr.empty()) {
-            std::snprintf(meta, sizeof(meta), "%s · %s · %s",
-                          game.platformLabel.c_str(), game.serial.c_str(), game.sizeStr.c_str());
+            std::snprintf(meta, sizeof(meta), "%s · %s", game.serial.c_str(), game.sizeStr.c_str());
+        } else if (!game.serial.empty()) {
+            std::snprintf(meta, sizeof(meta), "%s", game.serial.c_str());
         } else {
-            std::snprintf(meta, sizeof(meta), "%s · %s",
-                          game.platformLabel.c_str(), game.sizeStr.c_str());
+            std::snprintf(meta, sizeof(meta), "%s", game.sizeStr.c_str());
         }
-        DrawText(meta, infoX, y + pad + 46.0f, 12.5f, STYLE_BODY, SecondaryTextColor(alpha), infoW, 1, 0);
+        const float metaY = platY + 18.0f;
+        if (meta[0] != '\0' && metaY + 14.0f < btnY - 4.0f) {
+            DrawText(meta, infoX, metaY, 12.0f, STYLE_MONO, SecondaryTextColor(alpha), infoW, 1, 0);
+        }
 
-        if (game.saveCount > 0) {
+        if (game.saveCount > 0 && metaY + 32.0f < btnY - 2.0f) {
             char sv[48];
             std::snprintf(sv, sizeof(sv), "%d %s", game.saveCount, TextOr("dcui_saves_word", "Saves").c_str());
-            DrawText(sv, infoX, y + pad + 65.0f, 12.5f, STYLE_MONO, SecondaryAccentColor(alpha), infoW, 1, 0);
+            DrawText(sv, infoX, metaY + 18.0f, 12.0f, STYLE_BODY_BOLD, SecondaryAccentColor(alpha), infoW, 1, 0);
         }
 
         // Action Buttons Row at bottom right
-        const float btnY = y + h - pad - btnH;
         const bool hasContinue = (game.latestSaveSlot >= 0);
         const float gap = 8.0f;
         const float optW = 42.0f;
@@ -720,7 +726,7 @@ void DcRenderer::DrawGameShowcase(
     }
 
     // Landscape tall Showcase Panel
-    const float artH = std::clamp(h * 0.50f, 120.0f, 224.0f);
+    const float artH = std::clamp(h * 0.45f, 112.0f, 204.0f);
     const float artW = w - pad * 2.0f;
     const float artX = x + pad;
     const float artY = y + pad;
@@ -738,29 +744,42 @@ void DcRenderer::DrawGameShowcase(
 
     const float textTop = artY + artH + 10.0f;
     const float textW = w - pad * 2.0f;
+    float tw = 0.0f, th = 0.0f;
+    MeasureText(game.title, 18.0f, STYLE_ORB_TITLE, textW, 2, tw, th);
     DrawText(game.title, x + pad, textTop, 18.0f, STYLE_ORB_TITLE, PrimaryTextColor(alpha), textW, 2, 0);
 
-    // Console pill + serial/size
+    // Console pill on its own row
     float pw = 0.0f, ph = 0.0f;
-    MeasureText(game.platformLabel, 12.0f, STYLE_BODY_BOLD, 160.0f, 1, pw, ph, 1);
-    const float chipW = pw + 18.0f;
+    MeasureText(game.platformLabel, 12.0f, STYLE_BODY_BOLD, textW - 20.0f, 1, pw, ph, 1);
+    const float chipW = std::min(textW, pw + 18.0f);
     const float chipH = 22.0f;
-    const float chipY = textTop + 48.0f;
+    const float chipY = textTop + std::max(26.0f, th + 8.0f);
     DrawPanel(x + pad, chipY, chipW, chipH, 11.0f, 0.0f,
               {platCol.r, platCol.g, platCol.b, alpha},
               {platCol.r * 0.80f, platCol.g * 0.80f, platCol.b * 0.80f, alpha},
               {1.0f, 1.0f, 1.0f, 0.0f});
     DrawText(game.platformLabel, x + pad, chipY + (chipH - ph) * 0.5f, 12.0f, STYLE_BODY_BOLD,
-             {1.0f, 1.0f, 1.0f, alpha}, chipW, 1, 1, chipW, 1);
+             {1.0f, 1.0f, 1.0f, alpha}, chipW - 8.0f, 1, 1, chipW, 1);
 
+    // Full-width metadata row (serial · size) placed cleanly below platform pill
+    const float btnY = y + h - pad - btnH;
     char metaBuf[128];
     if (!game.serial.empty() && !game.sizeStr.empty()) {
         std::snprintf(metaBuf, sizeof(metaBuf), "%s · %s", game.serial.c_str(), game.sizeStr.c_str());
+    } else if (!game.serial.empty()) {
+        std::snprintf(metaBuf, sizeof(metaBuf), "%s", game.serial.c_str());
     } else {
         std::snprintf(metaBuf, sizeof(metaBuf), "%s", game.sizeStr.c_str());
     }
-    DrawText(metaBuf, x + pad + chipW + 10.0f, chipY + 3.0f, 13.0f, STYLE_MONO,
-             SecondaryTextColor(alpha), textW - chipW - 12.0f, 1, 0);
+    const float metaY = chipY + chipH + 8.0f;
+    float mw = 0.0f, mh = 0.0f;
+    if (metaBuf[0] != '\0') {
+        MeasureText(metaBuf, 13.0f, STYLE_MONO, textW, 2, mw, mh);
+        if (metaY + mh <= btnY - 6.0f) {
+            DrawText(metaBuf, x + pad, metaY, 13.0f, STYLE_MONO,
+                     SecondaryTextColor(alpha), textW, 2, 0);
+        }
+    }
 
     if (game.saveCount > 0 || game.discCount > 1) {
         char extraBuf[96] = {};
@@ -775,12 +794,14 @@ void DcRenderer::DrawGameShowcase(
             std::snprintf(extraBuf, sizeof(extraBuf), "%s: %d",
                           TextOr("dcui_quick_saves_lbl", "Quick Saves").c_str(), game.saveCount);
         }
-        DrawText(extraBuf, x + pad, chipY + 28.0f, 12.5f, STYLE_BODY_BOLD,
-                 SecondaryAccentColor(alpha), textW, 1, 0);
+        const float extraY = (mh > 0.0f) ? (metaY + mh + 5.0f) : metaY;
+        if (extraY + 15.0f <= btnY - 4.0f) {
+            DrawText(extraBuf, x + pad, extraY, 12.5f, STYLE_BODY_BOLD,
+                     SecondaryAccentColor(alpha), textW, 1, 0);
+        }
     }
 
     // Bottom Action Buttons
-    const float btnY = y + h - pad - btnH;
     const bool hasContinue = (game.latestSaveSlot >= 0);
     const float gap = 8.0f;
     const float optW = 78.0f;
@@ -855,14 +876,16 @@ void DcRenderer::DrawGamesScreen(const LayoutMetrics& m, float alpha) {
 
         {
             FlushQuadBatch();
+            // Scissor to full viewport width so scrolled platform tabs glide cleanly to screen edges
+            // while preserving stripX (m.padX) content padding at scroll start and end.
             ScopedScissor scissor(view_x_, view_y_, view_width_, view_height_,
-                                  screen_width_, screen_height_, stripX, stripY, stripW, stripH);
+                                  screen_width_, screen_height_, 0.0f, stripY, screen_width_, stripH);
             float curX = stripX - tab_scroll_x_;
             for (size_t i = 0; i < display_tabs_.size(); ++i) {
                 const float w = tabWidths[i];
                 const bool sel = (static_cast<int>(i) == tab_index_);
                 const RgbaColor ac = display_tabs_[i].accent;
-                if (curX + w >= stripX - 10.0f && curX <= stripX + stripW + 10.0f) {
+                if (curX + w >= -10.0f && curX <= screen_width_ + 10.0f) {
                     if (sel) {
                         DrawPanel(curX, stripY + 2.0f, w, stripH - 4.0f, 16.0f, 1.5f,
                                   {ac.r, ac.g, ac.b, 0.94f * alpha},
@@ -884,8 +907,11 @@ void DcRenderer::DrawGamesScreen(const LayoutMetrics& m, float alpha) {
                              sel ? RgbaColor{1.0f, 1.0f, 1.0f, alpha} : PrimaryTextColor(0.88f * alpha),
                              210.0f, 1, 1, w, sMode);
                     if (overlay_ == OVERLAY_NONE) {
-                        RegisterHit(std::max(stripX, curX), stripY, std::min(w, stripX + stripW - std::max(stripX, curX)),
-                                    stripH, HIT_CONSOLE_TAB, static_cast<int>(i));
+                        const float hitL = std::max(0.0f, curX);
+                        const float hitR = std::min(screen_width_, curX + w);
+                        if (hitR > hitL) {
+                            RegisterHit(hitL, stripY, hitR - hitL, stripH, HIT_CONSOLE_TAB, static_cast<int>(i));
+                        }
                     }
                 }
                 curX += w + 8.0f;
@@ -1695,19 +1721,20 @@ void DcRenderer::DrawConfirmDialog(
     const std::string& message,
     const std::string& yesText,
     const std::string& noText,
-    int focusedBtn) {
+    int focusedBtn,
+    float alpha) {
     const float dlgW = std::min(m.bodyW - 16.0f, 440.0f);
     const float dlgH = 210.0f;
     const float dx = (screen_width_ - dlgW) * 0.5f;
     const float dy = (screen_height_ - dlgH) * 0.5f;
 
     DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f,
-              PanelTopColor(0.97f), PanelBotColor(0.99f), SelectedBorderColor(0.92f));
+              PanelTopColor(0.97f * alpha), PanelBotColor(0.99f * alpha), SelectedBorderColor(0.92f * alpha));
 
     DrawText(title, dx + 20.0f, dy + 22.0f, 20.0f, STYLE_ORB_TITLE,
-             PrimaryTextColor(1.0f), dlgW - 40.0f, 1, 1, dlgW - 40.0f);
+             PrimaryTextColor(alpha), dlgW - 40.0f, 1, 1, dlgW - 40.0f);
     DrawText(message, dx + 22.0f, dy + 62.0f, 14.5f, STYLE_BODY,
-             SecondaryTextColor(1.0f), dlgW - 44.0f, 3, 1, dlgW - 44.0f);
+             SecondaryTextColor(alpha), dlgW - 44.0f, 3, 1, dlgW - 44.0f);
 
     const float btnW = (dlgW - 56.0f) * 0.5f;
     const float btnH = 40.0f;
@@ -1719,51 +1746,52 @@ void DcRenderer::DrawConfirmDialog(
         const bool foc = (focusedBtn == i);
         const std::string& txt = (i == 0) ? yesText : noText;
         DrawPanel(bx, by, btnW, btnH, 11.0f, foc ? 2.0f : 1.0f,
-                  foc ? RgbaColor{ac.r, ac.g, ac.b, 0.96f} : PanelTopColor(0.88f),
-                  foc ? RgbaColor{ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f} : PanelBotColor(0.94f),
-                  foc ? RgbaColor{1, 1, 1, 0.7f} : PanelBorderColor(0.75f));
+                  foc ? RgbaColor{ac.r, ac.g, ac.b, 0.96f * alpha} : PanelTopColor(0.88f * alpha),
+                  foc ? RgbaColor{ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f * alpha} : PanelBotColor(0.94f * alpha),
+                  foc ? RgbaColor{1, 1, 1, 0.7f * alpha} : PanelBorderColor(0.75f * alpha));
         float bw = 0.0f, bh = 0.0f;
         const int sMode = foc ? 1 : DefaultShadowMode();
         MeasureText(txt, 15.0f, STYLE_BODY_BOLD, btnW - 8.0f, 1, bw, bh, sMode);
         DrawText(txt, bx, by + (btnH - bh) * 0.5f, 15.0f, STYLE_BODY_BOLD,
-                 foc ? RgbaColor{1, 1, 1, 1} : PrimaryTextColor(1.0f), btnW - 8.0f, 1, 1, btnW, sMode);
+                 foc ? RgbaColor{1, 1, 1, alpha} : PrimaryTextColor(alpha), btnW - 8.0f, 1, 1, btnW, sMode);
         RegisterHit(bx, by, btnW, btnH, HIT_OVERLAY_ITEM, i);
     }
 }
 
-void DcRenderer::DrawOverlay(const LayoutMetrics& m) {
-    PushQuad(white_tex_, 0.0f, 0.0f, screen_width_, screen_height_, {0.01f, 0.02f, 0.06f, 0.62f});
+void DcRenderer::DrawOverlay(const LayoutMetrics& m, float alpha) {
+    if (alpha <= 0.005f) return;
+    PushQuad(white_tex_, 0.0f, 0.0f, screen_width_, screen_height_, {0.01f, 0.02f, 0.06f, 0.62f * alpha});
     RegisterHit(0.0f, 0.0f, screen_width_, screen_height_, HIT_OVERLAY_BACKDROP, 0);
 
     if (overlay_ == OVERLAY_EXIT_CONFIRM) {
         DrawConfirmDialog(m, TextOr("dcui_exit_title", "Exit BIOS Mode"),
                           TextOr("dcui_exit_msg", "Return to standard EmuCoreH library?"),
-                          TextOr("dcui_yes", "Yes"), TextOr("dcui_no", "No"), dialog_btn_);
+                          TextOr("dcui_yes", "Yes"), TextOr("dcui_no", "No"), dialog_btn_, alpha);
     } else if (overlay_ == OVERLAY_DELETE_SAVE_CONFIRM) {
         DrawConfirmDialog(m, TextOr("dcui_del_title", "Delete Quick Save"),
                           TextOr("dcui_del_msg", "Permanently delete this quick save state?"),
-                          TextOr("dcui_yes", "Yes"), TextOr("dcui_no", "No"), dialog_btn_);
+                          TextOr("dcui_yes", "Yes"), TextOr("dcui_no", "No"), dialog_btn_, alpha);
     } else if (overlay_ == OVERLAY_DELETE_VMU_FILE_CONFIRM) {
         DrawConfirmDialog(m, TextOr("dcui_vmu_del_title", "Delete VMU File"),
                           TextOr("dcui_vmu_del_msg", "Remove this saved file from the VMU card?"),
-                          TextOr("dcui_yes", "Yes"), TextOr("dcui_no", "No"), dialog_btn_);
+                          TextOr("dcui_yes", "Yes"), TextOr("dcui_no", "No"), dialog_btn_, alpha);
     } else if (overlay_ == OVERLAY_FORMAT_VMU_CONFIRM) {
         DrawConfirmDialog(m, TextOr("dcui_vmu_fmt_title", "Format VMU Card"),
                           TextOr("dcui_vmu_fmt_msg", "Erase all save files on this VMU and initialize 200 free blocks?"),
-                          TextOr("dcui_yes", "Yes"), TextOr("dcui_no", "No"), dialog_btn_);
+                          TextOr("dcui_yes", "Yes"), TextOr("dcui_no", "No"), dialog_btn_, alpha);
     } else if (overlay_ == OVERLAY_RESTORE_CONFIRM) {
         DrawConfirmDialog(m, TextOr("dcui_restore_title", "Restore Defaults"),
                           TextOr("dcui_restore_msg", "Reset all BIOS mode settings to defaults?"),
-                          TextOr("dcui_yes", "Yes"), TextOr("dcui_no", "No"), dialog_btn_);
+                          TextOr("dcui_yes", "Yes"), TextOr("dcui_no", "No"), dialog_btn_, alpha);
     } else if (overlay_ == OVERLAY_GAME_OPTIONS) {
         const float dlgW = std::min(m.bodyW - 16.0f, 400.0f);
         const float rowH = 44.0f;
         const float dlgH = 74.0f + 5.0f * 50.0f;
         const float dx = (screen_width_ - dlgW) * 0.5f;
         const float dy = (screen_height_ - dlgH) * 0.5f;
-        DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f, PanelTopColor(0.97f), PanelBotColor(0.99f), SelectedBorderColor(0.9f));
+        DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f, PanelTopColor(0.97f * alpha), PanelBotColor(0.99f * alpha), SelectedBorderColor(0.9f * alpha));
         DrawText(TextOr("dcui_btn_options", "Game Options"), dx + 18.0f, dy + 18.0f, 19.0f, STYLE_ORB_TITLE,
-                 PrimaryTextColor(1.0f), dlgW - 36.0f, 1, 1, dlgW - 36.0f);
+                 PrimaryTextColor(alpha), dlgW - 36.0f, 1, 1, dlgW - 36.0f);
 
         const std::string opts[5] = {
             TextOr("dcui_opt_start", "Start Game"),
@@ -1777,14 +1805,14 @@ void DcRenderer::DrawOverlay(const LayoutMetrics& m) {
             const float ry = dy + 56.0f + static_cast<float>(i) * 50.0f;
             const bool foc = (options_index_ == i);
             DrawPanel(dx + 16.0f, ry, dlgW - 32.0f, rowH, 11.0f, foc ? 1.8f : 1.0f,
-                      foc ? RgbaColor{ac.r, ac.g, ac.b, 0.94f} : PanelTopColor(0.86f),
-                      foc ? RgbaColor{ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f} : PanelBotColor(0.92f),
-                      foc ? RgbaColor{1, 1, 1, 0.6f} : PanelBorderColor(0.7f));
+                      foc ? RgbaColor{ac.r, ac.g, ac.b, 0.94f * alpha} : PanelTopColor(0.86f * alpha),
+                      foc ? RgbaColor{ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f * alpha} : PanelBotColor(0.92f * alpha),
+                      foc ? RgbaColor{1, 1, 1, 0.6f * alpha} : PanelBorderColor(0.7f * alpha));
             float ow = 0.0f, oh = 0.0f;
             const int sMode = foc ? 1 : DefaultShadowMode();
             MeasureText(opts[i], 14.5f, STYLE_BODY_BOLD, dlgW - 48.0f, 1, ow, oh, sMode);
             DrawText(opts[i], dx + 16.0f, ry + (rowH - oh) * 0.5f, 14.5f, STYLE_BODY_BOLD,
-                     foc ? RgbaColor{1, 1, 1, 1} : PrimaryTextColor(1.0f), dlgW - 48.0f, 1, 1, dlgW - 32.0f, sMode);
+                     foc ? RgbaColor{1, 1, 1, alpha} : PrimaryTextColor(alpha), dlgW - 48.0f, 1, 1, dlgW - 32.0f, sMode);
             RegisterHit(dx + 16.0f, ry, dlgW - 32.0f, rowH, HIT_OVERLAY_ITEM, i);
         }
     } else if (overlay_ == OVERLAY_DISC_PICKER) {
@@ -1799,23 +1827,23 @@ void DcRenderer::DrawOverlay(const LayoutMetrics& m) {
         const float dlgH = std::min(m.bodyH, 74.0f + static_cast<float>(std::min(nDiscs, 5)) * 50.0f);
         const float dx = (screen_width_ - dlgW) * 0.5f;
         const float dy = (screen_height_ - dlgH) * 0.5f;
-        DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f, PanelTopColor(0.97f), PanelBotColor(0.99f), SelectedBorderColor(0.9f));
+        DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f, PanelTopColor(0.97f * alpha), PanelBotColor(0.99f * alpha), SelectedBorderColor(0.9f * alpha));
         DrawText(TextOr("dcui_select_disc", "Select Disc"), dx + 18.0f, dy + 18.0f, 19.0f, STYLE_ORB_TITLE,
-                 PrimaryTextColor(1.0f), dlgW - 36.0f, 1, 1, dlgW - 36.0f);
+                 PrimaryTextColor(alpha), dlgW - 36.0f, 1, 1, dlgW - 36.0f);
         const RgbaColor ac = SwirlAccentColor(1.0f);
         for (int i = 0; i < std::min(nDiscs, 5); ++i) {
             const float ry = dy + 56.0f + static_cast<float>(i) * 50.0f;
             const bool foc = (disc_picker_index_ == i);
             DrawPanel(dx + 16.0f, ry, dlgW - 32.0f, 44.0f, 11.0f, foc ? 1.8f : 1.0f,
-                      foc ? RgbaColor{ac.r, ac.g, ac.b, 0.94f} : PanelTopColor(0.86f),
-                      foc ? RgbaColor{ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f} : PanelBotColor(0.92f),
-                      foc ? RgbaColor{1, 1, 1, 0.6f} : PanelBorderColor(0.7f));
+                      foc ? RgbaColor{ac.r, ac.g, ac.b, 0.94f * alpha} : PanelTopColor(0.86f * alpha),
+                      foc ? RgbaColor{ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f * alpha} : PanelBotColor(0.92f * alpha),
+                      foc ? RgbaColor{1, 1, 1, 0.6f * alpha} : PanelBorderColor(0.7f * alpha));
             const std::string& dLbl = g.discLabels[i];
             float lw = 0.0f, lh = 0.0f;
             const int sMode = foc ? 1 : DefaultShadowMode();
             MeasureText(dLbl, 14.5f, STYLE_BODY_BOLD, dlgW - 48.0f, 1, lw, lh, sMode);
             DrawText(dLbl, dx + 16.0f, ry + (44.0f - lh) * 0.5f, 14.5f, STYLE_BODY_BOLD,
-                     foc ? RgbaColor{1, 1, 1, 1} : PrimaryTextColor(1.0f), dlgW - 48.0f, 1, 1, dlgW - 32.0f, sMode);
+                     foc ? RgbaColor{1, 1, 1, alpha} : PrimaryTextColor(alpha), dlgW - 48.0f, 1, 1, dlgW - 32.0f, sMode);
             RegisterHit(dx + 16.0f, ry, dlgW - 32.0f, 44.0f, HIT_OVERLAY_ITEM, i);
         }
     } else if (overlay_ == OVERLAY_GAME_INFO) {
@@ -1825,10 +1853,10 @@ void DcRenderer::DrawOverlay(const LayoutMetrics& m) {
         const float dlgH = 270.0f;
         const float dx = (screen_width_ - dlgW) * 0.5f;
         const float dy = (screen_height_ - dlgH) * 0.5f;
-        DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f, PanelTopColor(0.97f), PanelBotColor(0.99f), SelectedBorderColor(0.9f));
+        DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f, PanelTopColor(0.97f * alpha), PanelBotColor(0.99f * alpha), SelectedBorderColor(0.9f * alpha));
         DrawText(TextOr("dcui_info_title", "Game Information"), dx + 20.0f, dy + 18.0f, 19.0f, STYLE_ORB_TITLE,
-                 PrimaryTextColor(1.0f), dlgW - 40.0f, 1, 1, dlgW - 40.0f);
-        DrawText(g.title, dx + 20.0f, dy + 54.0f, 16.0f, STYLE_BODY_BOLD, PrimaryTextColor(1.0f), dlgW - 40.0f, 2, 0);
+                 PrimaryTextColor(alpha), dlgW - 40.0f, 1, 1, dlgW - 40.0f);
+        DrawText(g.title, dx + 20.0f, dy + 54.0f, 16.0f, STYLE_BODY_BOLD, PrimaryTextColor(alpha), dlgW - 40.0f, 2, 0);
 
         char l1[128], l2[128], l3[128];
         std::snprintf(l1, sizeof(l1), "%s: %s", TextOr("dcui_info_console", "System").c_str(), g.platformLabel.c_str());
@@ -1836,58 +1864,58 @@ void DcRenderer::DrawOverlay(const LayoutMetrics& m) {
         std::snprintf(l3, sizeof(l3), "%s: %s   ·   %s: %d",
                       TextOr("dcui_info_size", "Size").c_str(), g.sizeStr.empty() ? "-" : g.sizeStr.c_str(),
                       TextOr("dcui_info_discs", "Discs").c_str(), g.discCount);
-        DrawText(l1, dx + 20.0f, dy + 106.0f, 14.0f, STYLE_BODY, SecondaryTextColor(1.0f), dlgW - 40.0f, 1, 0);
-        DrawText(l2, dx + 20.0f, dy + 132.0f, 14.0f, STYLE_MONO, SecondaryTextColor(1.0f), dlgW - 40.0f, 1, 0);
-        DrawText(l3, dx + 20.0f, dy + 158.0f, 14.0f, STYLE_BODY, SecondaryTextColor(1.0f), dlgW - 40.0f, 1, 0);
+        DrawText(l1, dx + 20.0f, dy + 106.0f, 14.0f, STYLE_BODY, SecondaryTextColor(alpha), dlgW - 40.0f, 1, 0);
+        DrawText(l2, dx + 20.0f, dy + 132.0f, 14.0f, STYLE_MONO, SecondaryTextColor(alpha), dlgW - 40.0f, 1, 0);
+        DrawText(l3, dx + 20.0f, dy + 158.0f, 14.0f, STYLE_BODY, SecondaryTextColor(alpha), dlgW - 40.0f, 1, 0);
 
         const float btnW = 140.0f;
         const float by = dy + dlgH - 54.0f;
         const RgbaColor ac = SwirlAccentColor(1.0f);
         DrawPanel(dx + (dlgW - btnW) * 0.5f, by, btnW, 38.0f, 10.0f, 1.4f,
-                  {ac.r, ac.g, ac.b, 0.96f}, {ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f}, {1, 1, 1, 0.55f});
+                  {ac.r, ac.g, ac.b, 0.96f * alpha}, {ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f * alpha}, {1, 1, 1, 0.55f * alpha});
         float cw = 0.0f, ch = 0.0f;
         const std::string closeTxt = TextOr("dcui_close", "Close");
         MeasureText(closeTxt, 14.5f, STYLE_BODY_BOLD, btnW, 1, cw, ch, 1);
         DrawText(closeTxt, dx + (dlgW - btnW) * 0.5f, by + (38.0f - ch) * 0.5f, 14.5f, STYLE_BODY_BOLD,
-                 {1, 1, 1, 1}, btnW, 1, 1, btnW, 1);
+                 {1, 1, 1, alpha}, btnW, 1, 1, btnW, 1);
         RegisterHit(dx + (dlgW - btnW) * 0.5f, by, btnW, 38.0f, HIT_OVERLAY_ITEM, 0);
     } else if (overlay_ == OVERLAY_SYSTEM_INFO) {
         const float dlgW = std::min(m.bodyW - 16.0f, 480.0f);
         const float dlgH = 290.0f;
         const float dx = (screen_width_ - dlgW) * 0.5f;
         const float dy = (screen_height_ - dlgH) * 0.5f;
-        DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f, PanelTopColor(0.97f), PanelBotColor(0.99f), SelectedBorderColor(0.9f));
+        DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f, PanelTopColor(0.97f * alpha), PanelBotColor(0.99f * alpha), SelectedBorderColor(0.9f * alpha));
         DrawText(TextOr("dcui_set_sysinfo", "System & BIOS Info"), dx + 20.0f, dy + 18.0f, 19.0f, STYLE_ORB_TITLE,
-                 PrimaryTextColor(1.0f), dlgW - 40.0f, 1, 1, dlgW - 40.0f);
+                 PrimaryTextColor(alpha), dlgW - 40.0f, 1, 1, dlgW - 40.0f);
 
         const std::string l1 = TextOr("dcui_sys_app", "Version") + ": EmuCoreH " + status_.appVersion;
         const std::string l2 = TextOr("dcui_sys_device", "Device") + ": " + status_.deviceName;
         const std::string l3 = TextOr("dcui_sys_storage", "Free Storage") + ": " + status_.freeStorage;
         const std::string l4 = TextOr("dcui_sys_bios", "BIOS Status") + ": " + status_.biosSummary;
-        DrawText(l1, dx + 20.0f, dy + 64.0f, 14.5f, STYLE_BODY_BOLD, PrimaryTextColor(1.0f), dlgW - 40.0f, 1, 0);
-        DrawText(l2, dx + 20.0f, dy + 94.0f, 14.0f, STYLE_BODY, SecondaryTextColor(1.0f), dlgW - 40.0f, 1, 0);
-        DrawText(l3, dx + 20.0f, dy + 122.0f, 14.0f, STYLE_BODY, SecondaryTextColor(1.0f), dlgW - 40.0f, 1, 0);
-        DrawText(l4, dx + 20.0f, dy + 150.0f, 13.5f, STYLE_MONO, SwirlAccentColor(1.0f), dlgW - 40.0f, 3, 0);
+        DrawText(l1, dx + 20.0f, dy + 64.0f, 14.5f, STYLE_BODY_BOLD, PrimaryTextColor(alpha), dlgW - 40.0f, 1, 0);
+        DrawText(l2, dx + 20.0f, dy + 94.0f, 14.0f, STYLE_BODY, SecondaryTextColor(alpha), dlgW - 40.0f, 1, 0);
+        DrawText(l3, dx + 20.0f, dy + 122.0f, 14.0f, STYLE_BODY, SecondaryTextColor(alpha), dlgW - 40.0f, 1, 0);
+        DrawText(l4, dx + 20.0f, dy + 150.0f, 13.5f, STYLE_MONO, SwirlAccentColor(alpha), dlgW - 40.0f, 3, 0);
 
         const float btnW = 140.0f;
         const float by = dy + dlgH - 54.0f;
         const RgbaColor ac = SwirlAccentColor(1.0f);
         DrawPanel(dx + (dlgW - btnW) * 0.5f, by, btnW, 38.0f, 10.0f, 1.4f,
-                  {ac.r, ac.g, ac.b, 0.96f}, {ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f}, {1, 1, 1, 0.55f});
+                  {ac.r, ac.g, ac.b, 0.96f * alpha}, {ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f * alpha}, {1, 1, 1, 0.55f * alpha});
         float cw = 0.0f, ch = 0.0f;
         const std::string closeTxt = TextOr("dcui_close", "Close");
         MeasureText(closeTxt, 14.5f, STYLE_BODY_BOLD, btnW, 1, cw, ch, 1);
         DrawText(closeTxt, dx + (dlgW - btnW) * 0.5f, by + (38.0f - ch) * 0.5f, 14.5f, STYLE_BODY_BOLD,
-                 {1, 1, 1, 1}, btnW, 1, 1, btnW, 1);
+                 {1, 1, 1, alpha}, btnW, 1, 1, btnW, 1);
         RegisterHit(dx + (dlgW - btnW) * 0.5f, by, btnW, 38.0f, HIT_OVERLAY_ITEM, 0);
     } else if (overlay_ == OVERLAY_TOUCH_GUIDE) {
-        const float dlgW = std::min(m.bodyW - 16.0f, 480.0f);
-        const float dlgH = 296.0f;
+        const float dlgW = std::min(m.bodyW - 16.0f, 504.0f);
+        const float dlgH = 304.0f;
         const float dx = (screen_width_ - dlgW) * 0.5f;
         const float dy = (screen_height_ - dlgH) * 0.5f;
-        DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f, PanelTopColor(0.97f), PanelBotColor(0.99f), SelectedBorderColor(0.9f));
-        DrawText(TextOr("dcui_touch_guide_title", "Touch Gestures"), dx + 20.0f, dy + 18.0f, 19.0f, STYLE_ORB_TITLE,
-                 PrimaryTextColor(1.0f), dlgW - 40.0f, 1, 1, dlgW - 40.0f);
+        DrawPanel(dx, dy, dlgW, dlgH, 20.0f, 1.8f, PanelTopColor(0.97f * alpha), PanelBotColor(0.99f * alpha), SelectedBorderColor(0.9f * alpha));
+        DrawText(TextOr("dcui_touch_guide_title", "Touch Gestures"), dx + 26.0f, dy + 18.0f, 19.0f, STYLE_ORB_TITLE,
+                 PrimaryTextColor(alpha), dlgW - 52.0f, 1, 1, dlgW - 52.0f);
 
         const std::string tips[4] = {
             TextOr("dcui_touch_tip_1", "Tap an orb or row to select; tap again to launch or open."),
@@ -1896,20 +1924,20 @@ void DcRenderer::DrawOverlay(const LayoutMetrics& m) {
             TextOr("dcui_touch_tip_4", "Two-finger tap anywhere returns to the previous screen."),
         };
         for (int i = 0; i < 4; ++i) {
-            DrawText("• " + tips[i], dx + 22.0f, dy + 60.0f + static_cast<float>(i) * 42.0f, 13.5f, STYLE_BODY,
-                     SecondaryTextColor(1.0f), dlgW - 44.0f, 2, 0);
+            DrawText("• " + tips[i], dx + 28.0f, dy + 60.0f + static_cast<float>(i) * 44.0f, 13.5f, STYLE_BODY,
+                     SecondaryTextColor(alpha), dlgW - 56.0f, 2, 0);
         }
 
         const float btnW = 160.0f;
         const float by = dy + dlgH - 54.0f;
         const RgbaColor ac = SwirlAccentColor(1.0f);
         DrawPanel(dx + (dlgW - btnW) * 0.5f, by, btnW, 38.0f, 10.0f, 1.4f,
-                  {ac.r, ac.g, ac.b, 0.96f}, {ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f}, {1, 1, 1, 0.55f});
+                  {ac.r, ac.g, ac.b, 0.96f * alpha}, {ac.r * 0.8f, ac.g * 0.8f, ac.b * 0.8f, 0.98f * alpha}, {1, 1, 1, 0.55f * alpha});
         float gw = 0.0f, gh = 0.0f;
         const std::string gotTxt = TextOr("dcui_got_it", "Got it");
         MeasureText(gotTxt, 14.5f, STYLE_BODY_BOLD, btnW, 1, gw, gh, 1);
         DrawText(gotTxt, dx + (dlgW - btnW) * 0.5f, by + (38.0f - gh) * 0.5f, 14.5f, STYLE_BODY_BOLD,
-                 {1, 1, 1, 1}, btnW, 1, 1, btnW, 1);
+                 {1, 1, 1, alpha}, btnW, 1, 1, btnW, 1);
         RegisterHit(dx + (dlgW - btnW) * 0.5f, by, btnW, 38.0f, HIT_OVERLAY_ITEM, 0);
     }
 }

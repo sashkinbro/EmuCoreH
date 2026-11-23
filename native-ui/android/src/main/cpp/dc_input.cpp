@@ -189,11 +189,12 @@ void DcRenderer::CycleSetting(int row, int delta) {
 
 void DcRenderer::OnKey(int key) {
     static_idle_frames_ = 0;
-    if (launching_) return;
+    if (launching_ || exiting_shell_) return;
 
     if (boot_active_) {
         if (boot_t_ > 0.14f) {
             boot_active_ = false;
+            prev_screen_ = -1;
             screen_fade_t_ = 0.0f;
         }
         return;
@@ -217,7 +218,12 @@ void DcRenderer::OnKey(int key) {
                     if (overlay_ == OVERLAY_EXIT_CONFIRM) {
                         overlay_ = OVERLAY_NONE;
                         HostPlaySfx(SFX_CONFIRM);
-                        HostNotifyExitRequested();
+                        if (settings_.motionMode == 3) {
+                            HostNotifyExitRequested();
+                        } else {
+                            exiting_shell_ = true;
+                            exit_t_ = 0.0f;
+                        }
                     } else if (overlay_ == OVERLAY_DELETE_SAVE_CONFIRM) {
                         const int delIdx = pending_delete_save_idx_;
                         overlay_ = OVERLAY_NONE;
@@ -624,7 +630,7 @@ void DcRenderer::OnTouchDown(float normX, float normY) {
     touch_dragging_ = false;
     touch_drag_target_ = 0;
 
-    if (overlay_ == OVERLAY_NONE && !boot_active_ && !launching_) {
+    if (overlay_ == OVERLAY_NONE && !boot_active_ && !launching_ && !exiting_shell_) {
         const LayoutMetrics m = ComputeMetrics();
         if (screen_ == SCREEN_MAIN_MENU) {
             touch_drag_target_ = 4;
@@ -688,7 +694,7 @@ void DcRenderer::OnTouchUp(float normX, float normY) {
     touch_dragging_ = false;
     touch_moved_ = false;
     touch_drag_target_ = 0;
-    if (wasDragging || launching_) return;
+    if (wasDragging || launching_ || exiting_shell_) return;
 
     if (boot_active_) {
         if (boot_t_ > 0.14f) {

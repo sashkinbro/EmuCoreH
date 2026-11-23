@@ -91,6 +91,12 @@ bool DcRenderer::Init() {
 
     has_frame_tp_ = false;
     static_idle_frames_ = 0;
+    prev_screen_ = -1;
+    screen_fade_t_ = 1.0f;
+    last_overlay_ = OVERLAY_NONE;
+    overlay_fade_t_ = 1.0f;
+    exiting_shell_ = false;
+    exit_t_ = 0.0f;
     gl_ready_ = true;
     LOGI("Dreamcast BIOS GLES3 renderer initialized");
     return true;
@@ -835,7 +841,28 @@ bool DcRenderer::Draw() {
     }
 
     if (screen_fade_t_ < 1.0f) {
-        screen_fade_t_ = std::min(1.0f, screen_fade_t_ + dt * 4.2f);
+        screen_fade_t_ = std::min(1.0f, screen_fade_t_ + dt * 3.4f);
+        if (screen_fade_t_ >= 1.0f) {
+            prev_screen_ = -1;
+        }
+    } else {
+        prev_screen_ = -1;
+    }
+
+    if (overlay_ != last_overlay_) {
+        last_overlay_ = overlay_;
+        overlay_fade_t_ = (overlay_ != OVERLAY_NONE && settings_.motionMode != 3) ? 0.0f : 1.0f;
+    }
+    if (overlay_fade_t_ < 1.0f) {
+        overlay_fade_t_ = std::min(1.0f, overlay_fade_t_ + dt * 6.0f);
+    }
+
+    if (exiting_shell_) {
+        exit_t_ += dt * 4.5f;
+        if (exit_t_ >= 1.0f) {
+            exiting_shell_ = false;
+            HostNotifyExitRequested();
+        }
     }
 
     // Spring-follow hub orbital angle (shortest arc modulo 4)
@@ -951,33 +978,48 @@ bool DcRenderer::Draw() {
     BeginQuadBatch();
 
     const LayoutMetrics m = ComputeMetrics();
-    const float uiAlpha = EaseOutCubic(screen_fade_t_);
+    const float exitFade = exiting_shell_ ? (1.0f - EaseOutCubic(Clamp01(exit_t_))) : 1.0f;
+    const bool hasCross = (prev_screen_ >= 0 && prev_screen_ != screen_ && screen_fade_t_ < 1.0f);
+    const float outAlpha = (hasCross && screen_fade_t_ < 0.72f)
+        ? EaseOutCubic(1.0f - Clamp01(screen_fade_t_ / 0.72f)) * exitFade
+        : 0.0f;
+    const float inAlpha = (hasCross
+        ? EaseOutCubic(Clamp01((screen_fade_t_ - 0.14f) / 0.86f))
+        : EaseOutCubic(screen_fade_t_)) * exitFade;
 
     if (boot_active_) {
         DrawBootIntro(1.0f);
     } else if (launching_) {
         DrawLaunchStage();
     } else {
-        switch (screen_) {
-            case SCREEN_MAIN_MENU:
-                DrawMainMenu(m, uiAlpha);
-                break;
-            case SCREEN_GAMES:
-                DrawGamesScreen(m, uiAlpha);
-                break;
-            case SCREEN_FILE:
-                DrawFileScreen(m, uiAlpha);
-                break;
-            case SCREEN_SETTINGS:
-                DrawSettingsScreen(m, uiAlpha);
-                break;
-            default:
-                DrawMainMenu(m, uiAlpha);
-                break;
+        auto drawScreenById = [&](int screenId, float a) {
+            if (a <= 0.005f) return;
+            switch (screenId) {
+                case SCREEN_MAIN_MENU:
+                    DrawMainMenu(m, a);
+                    break;
+                case SCREEN_GAMES:
+                    DrawGamesScreen(m, a);
+                    break;
+                case SCREEN_FILE:
+                    DrawFileScreen(m, a);
+                    break;
+                case SCREEN_SETTINGS:
+                    DrawSettingsScreen(m, a);
+                    break;
+                default:
+                    DrawMainMenu(m, a);
+                    break;
+            }
+        };
+        if (outAlpha > 0.005f) {
+            drawScreenById(prev_screen_, outAlpha);
+            hit_targets_.clear();
         }
-        DrawBottomBar(m, uiAlpha);
+        drawScreenById(screen_, inAlpha);
+        DrawBottomBar(m, std::max(inAlpha, outAlpha * 0.45f));
         if (overlay_ != OVERLAY_NONE) {
-            DrawOverlay(m);
+            DrawOverlay(m, EaseOutCubic(overlay_fade_t_) * exitFade);
         }
     }
 
@@ -998,7 +1040,10 @@ bool DcRenderer::Draw() {
     const bool animatingNow =
         boot_active_ ||
         launching_ ||
+        exiting_shell_ ||
+        prev_screen_ >= 0 ||
         screen_fade_t_ < 0.995f ||
+        overlay_fade_t_ < 0.995f ||
         pendingImages ||
         hasActiveFades ||
         std::fabs(game_scroll_y_ - game_scroll_target_y_) > 0.25f ||
@@ -1184,8 +1229,16 @@ void DcRenderer::RebuildDisplayTabs(bool forceSelectRecentIfPresent) {
 }
 
 void DcRenderer::SwitchScreen(int nextScreen) {
-    screen_ = nextScreen;
-    screen_fade_t_ = 0.0f;
+    if (nextScreen == screen_) return;
+    if (settings_.motionMode == 3) {
+        prev_screen_ = -1;
+        screen_ = nextScreen;
+        screen_fade_t_ = 1.0f;
+    } else {
+        prev_screen_ = screen_;
+        screen_ = nextScreen;
+        screen_fade_t_ = 0.0f;
+    }
     static_idle_frames_ = 0;
 
     if (nextScreen == SCREEN_GAMES) {
@@ -1407,6 +1460,11 @@ void DcRenderer::TriggerTransition(int kind) {
     launch_dispatched_ = false;
     launch_t_ = 0.0f;
     boot_sfx_played_ = false;
+    prev_screen_ = -1;
+    last_overlay_ = OVERLAY_NONE;
+    overlay_fade_t_ = 1.0f;
+    exiting_shell_ = false;
+    exit_t_ = 0.0f;
     static_idle_frames_ = 0;
 
     if (kind == 1 || settings_.bootAnimMode == 2) {

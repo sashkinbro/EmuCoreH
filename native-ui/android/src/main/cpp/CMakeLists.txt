@@ -17,12 +17,13 @@ target_compile_features(emucoreh_dcui PRIVATE cxx_std_17)
 target_compile_options(emucoreh_dcui PRIVATE
     -Wall -Wextra -Wno-unused-parameter
     -O3
+    -ffunction-sections -fdata-sections -fomit-frame-pointer
     -fno-exceptions -fno-rtti
 )
 
 if(DCUI_ENABLE_LTO AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(emucoreh_dcui PRIVATE "-flto=thin")
-    target_link_options(emucoreh_dcui PRIVATE "-flto=thin")
+    target_link_options(emucoreh_dcui PRIVATE "-flto=thin" "-Wl,--gc-sections" "-Wl,--icf=safe")
 endif()
 
 set_target_properties(emucoreh_dcui PROPERTIES

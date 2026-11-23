@@ -107,6 +107,27 @@ class VmuFilesystemTest {
         assertTrue(after.files.isEmpty())
     }
 
+    @Test
+    fun rejectsDreamcastBiosBlobsAsVmuCards() {
+        val bootRom = tempFolder.newFile("dc_boot.bin")
+        val bootHeader = byteArrayOf(0x53, 0x45, 0x47, 0x41, 0x20, 0x42, 0x4F, 0x4F, 0x54)
+        bootRom.writeBytes(bootHeader + ByteArray(VmuFilesystem.VMU_SIZE_BYTES * 2 - bootHeader.size))
+        val flashRom = tempFolder.newFile("dc_flash.bin")
+        val flashPayload = ByteArray(VmuFilesystem.VMU_SIZE_BYTES) { 0x2A }
+        flashRom.writeBytes(flashPayload)
+        val validVmu = tempFolder.newFile("vmu_save_A1.bin")
+        validVmu.writeBytes(ByteArray(VmuFilesystem.VMU_SIZE_BYTES))
+
+        assertFalse(VmuFilesystem.isVmuImageFile(bootRom))
+        assertFalse(VmuFilesystem.isVmuImageFile(flashRom))
+        assertTrue(VmuFilesystem.isVmuImageFile(validVmu))
+
+        assertFalse(VmuFilesystem.formatCard(bootRom, 1_700_000_000_000L))
+        assertFalse(VmuFilesystem.formatCard(flashRom, 1_700_000_000_000L))
+        assertTrue(bootRom.readBytes().copyOf(bootHeader.size).contentEquals(bootHeader))
+        assertTrue(flashRom.readBytes().contentEquals(flashPayload))
+    }
+
     private fun writeU16(buf: ByteArray, offset: Int, value: Int) {
         buf[offset] = (value and 0xFF).toByte()
         buf[offset + 1] = ((value ushr 8) and 0xFF).toByte()

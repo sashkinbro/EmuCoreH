@@ -487,6 +487,7 @@ fun AppNavigation(
                     onLaunchBios = launchBiosAction
                 ) { openDrawer ->
                     HomeScreen(
+                        isShelfFullscreenReady = !homeDrawerEnabled,
                         onGameClick = { game ->
                             requestDiscAction(game, LibraryDiscAction.START)
                         },

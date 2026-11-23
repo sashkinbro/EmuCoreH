@@ -77,6 +77,20 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
+private class DcGlSurfaceView(context: Context) : GLSurfaceView(context) {
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (w > 0 && h > 0 && (w != oldw || h != oldh)) {
+            holder.setSizeFromLayout()
+            post {
+                requestLayout()
+                queueEvent { DcShellNative.nativeResize(w, h) }
+                requestRender()
+            }
+        }
+    }
+}
+
 private data class DcResolvedGame(
     val title: String,
     val path: String,
@@ -401,11 +415,11 @@ private fun readSystemSnapshot(context: Context): DcSystemSnapshot {
     val s32xOk = Sega32XBios.Part.entries.all { Sega32XBios.isInstalled(context, it) }
     val readyCount = listOf(dcOk, arcOk, satOk, scdOk, s32xOk).count { it }
     val summary = buildString {
-        append("DC ").append(if (dcOk) "✓" else "–")
-        append(" · ARC ").append(if (arcOk) "✓" else "–")
-        append(" · SAT ").append(if (satOk) "✓" else "–")
-        append(" · CD ").append(if (scdOk) "✓" else "–")
-        append(" · 32X ").append(if (s32xOk) "✓" else "–")
+        append("DC").append(if (dcOk) "✓" else "–")
+        append(" · ARC").append(if (arcOk) "✓" else "–")
+        append(" · SAT").append(if (satOk) "✓" else "–")
+        append(" · CD").append(if (scdOk) "✓" else "–")
+        append(" · 32X").append(if (s32xOk) "✓" else "–")
     }
 
     return DcSystemSnapshot(
@@ -732,9 +746,10 @@ fun DreamcastShellScreen(
     ) {
         val loaded = withContext(Dispatchers.IO) {
             val dir = vmuRepo.saveDirectory
-            vmuRepo.vmus().map { vmu ->
-                VmuFilesystem.inspectCard(File(dir, vmu.name), vmuIconCacheDir)
-            }
+            vmuRepo.vmus()
+                .map { File(dir, it.name) }
+                .filter { VmuFilesystem.isVmuImageFile(it) }
+                .map { file -> VmuFilesystem.inspectCard(file, vmuIconCacheDir) }
         }
         DcShellSessionCache.lastVmuCards = loaded
         DcShellSessionCache.hasLoadedVmus = true
@@ -814,7 +829,7 @@ fun DreamcastShellScreen(
         }
     }
 
-    lateinit var surfaceRef: GLSurfaceView
+    lateinit var surfaceRef: DcGlSurfaceView
     lateinit var rendererRef: DcShellSurfaceRenderer
 
     val surface = remember(context) {
@@ -824,7 +839,7 @@ fun DreamcastShellScreen(
         var longPressTriggered = false
         var longPressRunnable: Runnable? = null
 
-        val view = GLSurfaceView(context)
+        val view = DcGlSurfaceView(context)
         surfaceRef = view
         rendererRef = DcShellSurfaceRenderer(
             context = context,
@@ -1242,6 +1257,11 @@ fun DreamcastShellScreen(
 
     AndroidView(
         factory = { surface },
+        update = { view ->
+            if (view.width > 0 && view.height > 0) {
+                view.holder.setSizeFromLayout()
+            }
+        },
         modifier = modifier,
     )
 }

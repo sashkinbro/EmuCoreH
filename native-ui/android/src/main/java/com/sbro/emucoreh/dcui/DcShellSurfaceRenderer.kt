@@ -20,6 +20,8 @@ class DcShellSurfaceRenderer(
     private var initialized = false
     private var lastContinuous = true
     private var lastFrameStartMs = 0L
+    private var lastWidth = 0
+    private var lastHeight = 0
 
     @Volatile
     var motionMode: Int = 0 // 0=Smooth 60Hz, 1=Calm, 2=Eco 30Hz, 3=Static
@@ -34,6 +36,9 @@ class DcShellSurfaceRenderer(
                 Log.e(TAG, "Dreamcast native UI failed to initialize")
             } else {
                 onReady?.invoke()
+                if (lastWidth > 0 && lastHeight > 0) {
+                    DcShellNative.nativeResize(lastWidth, lastHeight)
+                }
             }
         } catch (error: Throwable) {
             Log.e(TAG, "Dreamcast surface initialization failed", error)
@@ -41,8 +46,12 @@ class DcShellSurfaceRenderer(
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-        if (initialized) {
-            DcShellNative.nativeResize(width, height)
+        if (width > 0 && height > 0) {
+            lastWidth = width
+            lastHeight = height
+            if (initialized) {
+                DcShellNative.nativeResize(width, height)
+            }
         }
     }
 

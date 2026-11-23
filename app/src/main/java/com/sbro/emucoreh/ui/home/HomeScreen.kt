@@ -191,6 +191,7 @@ fun HomeScreen(
     onManageGameClick: (GameItem) -> Unit,
     onCreateShortcutClick: (GameItem) -> Unit,
     onMenuClick: (() -> Unit)? = null,
+    isShelfFullscreenReady: Boolean = true,
     onShelfModeChanged: (Boolean) -> Unit = {},
     onOpenProSettings: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
@@ -443,17 +444,28 @@ fun HomeScreen(
                 topInset = topInset
             )
         } else if (isShelfView) {
-            DreamcastShellScreen(
-                games = uiState.games,
-                recentGames = uiState.recentGames,
-                isLoadingGames = uiState.isLoading || uiState.isBootstrapping,
-                isCoverArtDisabled = uiState.isCoverArtDisabled,
-                onGamePathSelected = onGamePathClick,
-                onSaveSelected = onSaveSelected,
-                onManageGame = onManageGameClick,
-                onExitShell = viewModel::toggleShelfMode,
-                modifier = Modifier.fillMaxSize(),
-            )
+            if (isShelfFullscreenReady) {
+                DreamcastShellScreen(
+                    games = uiState.games,
+                    recentGames = uiState.recentGames,
+                    isLoadingGames = uiState.isLoading || uiState.isBootstrapping,
+                    isCoverArtDisabled = uiState.isCoverArtDisabled,
+                    onGamePathSelected = onGamePathClick,
+                    onSaveSelected = onSaveSelected,
+                    onManageGame = onManageGameClick,
+                    onExitShell = {
+                        onShelfModeChanged(false)
+                        viewModel.toggleShelfMode()
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black)
+                )
+            }
         } else {
             val columns = if (isListView) GridCells.Fixed(1) else GridCells.Adaptive(minSize = minCellSize)
 
@@ -487,7 +499,10 @@ fun HomeScreen(
                             sortOption = uiState.sortOption,
                             onSortSelected = viewModel::updateSortOption,
                             onRefresh = viewModel::refreshGames,
-                            onToggleShelfMode = viewModel::toggleShelfMode,
+                            onToggleShelfMode = {
+                                onShelfModeChanged(true)
+                                viewModel.toggleShelfMode()
+                            },
                             onToggleLibraryViewMode = viewModel::toggleLibraryViewMode,
                             onMenuClick = onMenuClick
                         )

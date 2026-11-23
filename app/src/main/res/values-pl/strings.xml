@@ -2550,7 +2550,7 @@ Sega 32X: 32X_G_BIOS.bin, 32X_M_BIOS.bin, 32X_S_BIOS.bin</string>
     <string name="dcui_vmu_unformatted">Niesformatowana</string>
     <string name="dcui_vmu_blocks_free">WOLNE BLOKI</string>
     <string name="dcui_vmu_none">NIE WYKRYTO VMU</string>
-    <string name="dcui_vmu_create_btn">Utwórz karty VMU</string>
+    <string name="dcui_vmu_create_btn">Utwórz VMU</string>
     <string name="dcui_vmu_format_btn">Formatuj</string>
     <string name="dcui_vmu_files_word">Pliki</string>
     <string name="dcui_vmu_empty_hint">Dotknij Utwórz karty VMU, aby zainicjować wspólne karty pamięci Dreamcast.</string>
