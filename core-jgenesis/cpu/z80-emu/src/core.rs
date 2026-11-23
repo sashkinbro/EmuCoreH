@@ -1,5 +1,6 @@
 use crate::traits::{BusInterface, InterruptLine};
 use jgenesis_common::num::{GetBit, U16Ext};
+use std::cmp;
 
 mod instructions;
 #[cfg(feature = "native-z80")]
@@ -389,6 +390,15 @@ impl Z80 {
     /// When run using this method, the Z80 will immediately execute an instruction in full and
     /// internally record how many cycles the instruction took; the next instruction will be
     /// executed after calling `tick()` that many times, and so on.
+    /// Perform up to `max_ticks` consecutive `tick()` calls that would only consume the remaining
+    /// cycles of the previous instruction. Returns how many were performed.
+    #[inline]
+    pub fn skip_wait_ticks(&mut self, max_ticks: u64) -> u64 {
+        let skip = cmp::min(u64::from(self.t_cycles_wait), max_ticks);
+        self.t_cycles_wait -= skip as u32;
+        skip
+    }
+
     #[inline]
     pub fn tick<B: BusInterface>(&mut self, bus: &mut B) {
         if self.t_cycles_wait > 0 {

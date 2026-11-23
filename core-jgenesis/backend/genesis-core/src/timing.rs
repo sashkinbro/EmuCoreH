@@ -209,6 +209,30 @@ impl CycleCounters {
         self.psg_mclk_cycles += PSG_DIVIDER;
     }
 
+    /// Number of whole PSG cycles that `should_tick_psg()`/`psg_cycle()` would run right now.
+    #[inline]
+    #[must_use]
+    pub fn pending_psg_cycles(&self) -> u64 {
+        self.m68k_mclk_cycles.saturating_sub(self.psg_mclk_cycles) / PSG_DIVIDER
+    }
+
+    #[inline]
+    pub fn psg_cycles(&mut self, cycles: u64) {
+        self.psg_mclk_cycles += cycles * PSG_DIVIDER;
+    }
+
+    /// Number of whole Z80 cycles that `should_tick_z80()`/`z80_cycle()` would run right now.
+    #[inline]
+    #[must_use]
+    pub fn pending_z80_cycles(&self) -> u64 {
+        self.m68k_mclk_cycles.saturating_sub(self.z80_mclk_cycles) / Z80_DIVIDER
+    }
+
+    #[inline]
+    pub fn z80_cycles(&mut self, cycles: u64) {
+        self.z80_mclk_cycles += cycles * Z80_DIVIDER;
+    }
+
     #[inline]
     pub fn ym2612_sync_needed(&self) -> bool {
         self.last_ym2612_drain_mclk + MAX_YM2612_LAG_MCLK <= self.z80_mclk_cycles

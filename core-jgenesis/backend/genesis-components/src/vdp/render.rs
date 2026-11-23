@@ -555,17 +555,27 @@ impl Vdp {
             && fb_end_col - fb_start_col >= 64)
             .then(|| resolve_normal_palette(&self.cram, &self.color_tables));
 
-        for frame_buffer_col in fb_start_col..fb_end_col {
+        // Loop invariants: keep them in registers instead of reloading them through `self`
+        // after every frame buffer store.
+        let sprite_pixels: &[TilePixel; 320] = &sprite_buffers.pixels;
+        let sprites_enabled = self.config.sprites_enabled;
+        let plane_a_pixels = &self.bg_buffers.plane_a_pixels;
+        let plane_b_pixels = &self.bg_buffers.plane_b_pixels;
+        let in_v_border = raster_line.in_v_border && !self.state.v_border_forgotten;
+        let shadow_highlight = self.latched_registers.shadow_highlight_flag;
+        let debug_register = self.debug_register;
+
+        let pixel_color_at = |frame_buffer_col: u32| {
             let pixel = frame_buffer_col as i16 - fb_pixel_offset;
 
-            let sprite_pixel = if self.config.sprites_enabled {
-                sprite_buffers.pixels.get(pixel as usize).copied().unwrap_or(TilePixel::default())
+            let sprite_pixel = if sprites_enabled {
+                sprite_pixels.get(pixel as usize).copied().unwrap_or(TilePixel::default())
             } else {
                 TilePixel::default()
             };
 
-            let scroll_a_pixel = self.bg_buffers.plane_a_pixels[frame_buffer_col as usize];
-            let scroll_b_pixel = self.bg_buffers.plane_b_pixels[frame_buffer_col as usize];
+            let scroll_a_pixel = plane_a_pixels[frame_buffer_col as usize];
+            let scroll_b_pixel = plane_b_pixels[frame_buffer_col as usize];
 
             let pixel_color_args = PixelColorArgs {
                 sprite_pixel,
@@ -573,13 +583,28 @@ impl Vdp {
                 scroll_b_pixel,
                 bg_cram_idx,
                 in_h_border: !(0..active_display_pixels as i16).contains(&pixel),
-                in_v_border: raster_line.in_v_border && !self.state.v_border_forgotten,
+                in_v_border,
             };
-            let (pixel_cram_idx, color_modifier) = if self.latched_registers.shadow_highlight_flag {
-                determine_pixel_color::<true>(self.debug_register, pixel_color_args)
+            if shadow_highlight {
+                determine_pixel_color::<true>(debug_register, pixel_color_args)
             } else {
-                determine_pixel_color::<false>(self.debug_register, pixel_color_args)
-            };
+                determine_pixel_color::<false>(debug_register, pixel_color_args)
+            }
+        };
+
+        if let Some(palette) = &normal_palette {
+            let row_start = (frame_buffer_row * screen_width) as usize;
+            let row = &mut self.frame_buffer
+                [row_start + fb_start_col as usize..row_start + fb_end_col as usize];
+            for (frame_buffer_col, out) in (fb_start_col..fb_end_col).zip(row) {
+                let (pixel_cram_idx, _) = pixel_color_at(frame_buffer_col);
+                *out = palette[(pixel_cram_idx & 63) as usize];
+            }
+            return;
+        }
+
+        for frame_buffer_col in fb_start_col..fb_end_col {
+            let (pixel_cram_idx, color_modifier) = pixel_color_at(frame_buffer_col);
 
             if let Some(palette) = &normal_palette {
                 self.frame_buffer[(frame_buffer_row * screen_width + frame_buffer_col) as usize] =
@@ -1056,9 +1081,10 @@ pub fn read_pattern_generator_row(
 
     let cell_addr = (4 * cell_height).wrapping_mul(pattern_generator);
     let row_addr = (cell_addr + 4 * cell_row) as usize;
+    // One bounds check for the whole 4-byte row instead of one per pixel
+    let row_bytes: &[u8; 4] = vram[row_addr..row_addr + 4].try_into().unwrap();
     let mut colors: [u8; 8] = array::from_fn(|i| {
-        let addr = row_addr + i / 2;
-        let byte = vram[addr];
+        let byte = row_bytes[i / 2];
         (byte >> (((i & 1) ^ 1) << 2)) & 0x0F
     });
 

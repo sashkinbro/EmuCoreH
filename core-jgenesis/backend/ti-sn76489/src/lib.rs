@@ -374,6 +374,15 @@ impl Sn76489 {
         self.stereo_control.write(value);
     }
 
+    /// Perform up to `max_ticks` consecutive `tick()` calls that would not clock the channels
+    /// (i.e. that would return `Sn76489TickEffect::None`). Returns how many were performed.
+    #[inline]
+    pub fn skip_unclocked_ticks(&mut self, max_ticks: u64) -> u64 {
+        let skip = cmp::min(u64::from(self.divider - 1), max_ticks);
+        self.divider -= skip as u8;
+        skip
+    }
+
     #[inline]
     pub fn tick(&mut self) -> Sn76489TickEffect {
         self.divider -= 1;

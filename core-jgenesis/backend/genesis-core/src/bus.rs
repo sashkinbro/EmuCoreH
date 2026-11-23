@@ -231,6 +231,13 @@ impl GenesisBus {
         self.input.tick(m68k_cycles);
 
         while self.cycles.should_tick_psg() {
+            // Ticks that only decrement the PSG divider have no other effect; batch them
+            let skipped = self.psg.skip_unclocked_ticks(self.cycles.pending_psg_cycles());
+            if skipped != 0 {
+                self.cycles.psg_cycles(skipped);
+                continue;
+            }
+
             if self.psg.tick() == Sn76489TickEffect::Clocked {
                 // PSG only has mono output in the Genesis; stereo output is only for Game Gear
                 let (psg_sample, _) = self.psg.sample();

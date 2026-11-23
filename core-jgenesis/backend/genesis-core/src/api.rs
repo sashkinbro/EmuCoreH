@@ -292,6 +292,19 @@ impl GenesisEmulator {
         );
 
         while self.bus.cycles.should_tick_z80() {
+            // Cycles where the Z80 is halted or still waiting out its previous instruction only
+            // advance counters; batch them. Instruction execution stays one tick at a time.
+            let pending = self.bus.cycles.pending_z80_cycles();
+            let skipped = if self.bus.cycles.z80_halt {
+                pending
+            } else {
+                self.z80.skip_wait_ticks(pending)
+            };
+            if skipped != 0 {
+                self.bus.cycles.z80_cycles(skipped);
+                continue;
+            }
+
             if !self.bus.cycles.z80_halt {
                 if DEBUG && let Some(debugger) = &mut debugger {
                     let mut debug_bus = DebugZ80Bus::new(&mut self.bus, &mut self.m68k, debugger);
