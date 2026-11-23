@@ -98,7 +98,7 @@ object NativeApp {
         }.orEmpty().takeIf(String::isNotBlank)
         contextRef?.get()?.let { context ->
             GameMetadataReader.read(context, path)?.let { metadata ->
-                val title = metadata.title ?: fallback
+                val title = metadata.title
                 val serial = metadata.serial
                 if (!serial.isNullOrBlank()) return "${title.orEmpty()}|$serial|$serial"
                 if (!title.isNullOrBlank()) return title

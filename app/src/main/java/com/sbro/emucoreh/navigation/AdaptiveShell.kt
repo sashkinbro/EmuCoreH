@@ -784,14 +784,14 @@ private fun SideNavigation(
                     ShellAction(
                         icon = Icons.Rounded.PlayArrow,
                         label = stringResource(R.string.shell_launch_game),
-                        onClick = launchGame!!
+                        onClick = launchGame
                     )
                 }
                 if (showBiosLaunch) {
                     ShellAction(
                         icon = Icons.Rounded.Memory,
                         label = stringResource(R.string.shell_launch_bios),
-                        onClick = launchBios!!
+                        onClick = launchBios
                     )
                 }
             }

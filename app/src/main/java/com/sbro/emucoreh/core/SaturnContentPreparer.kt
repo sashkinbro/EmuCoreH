@@ -46,7 +46,7 @@ object SaturnContentPreparer {
             .digest("$sourcePath|${image.length()}".toByteArray())
             .take(8).joinToString("") { "%02x".format(it) }
         val displayName = if (sourcePath.startsWith("content://")) {
-            DocumentPathResolver.getDisplayName(context, sourcePath) ?: image.name
+            DocumentPathResolver.getDisplayName(context, sourcePath)
         } else image.name
         val name = displayName.substringBeforeLast('.').replace('/', '_').replace('\\', '_')
             .take(48).ifBlank { "disc" }

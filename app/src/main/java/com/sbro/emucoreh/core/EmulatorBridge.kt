@@ -639,8 +639,7 @@ object EmulatorBridge {
         getContext()?.let { context ->
             runCatching { GameMetadataReader.read(context, path) }.getOrNull()?.let { metadata ->
                 return GameMetadata(
-                    title = metadata.title?.let { normalizeNativeGameTitle(it, inferredMetadata.title) }
-                        ?: inferredMetadata.title,
+                    title = normalizeNativeGameTitle(metadata.title, inferredMetadata.title),
                     serial = metadata.serial ?: inferredMetadata.serial
                 )
             }
@@ -1114,7 +1113,7 @@ object EmulatorBridge {
         }
     }
 
-    private fun rebindSurface() = synchronized(surfaceEpoch) {
+    private fun rebindSurface(): Unit = synchronized(surfaceEpoch) {
         val surface = lastSurface ?: return
         val width = lastSurfaceWidth
         val height = lastSurfaceHeight

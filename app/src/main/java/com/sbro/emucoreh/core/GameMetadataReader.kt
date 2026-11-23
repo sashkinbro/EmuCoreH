@@ -146,7 +146,7 @@ object GameMetadataReader {
         context.contentResolver.openInputStream(uri)?.use { stream ->
             var skipped = 0L
             while (skipped < offset) {
-                val count = stream.skip((offset - skipped).toLong())
+                val count = stream.skip(offset - skipped)
                 if (count <= 0) break
                 skipped += count
             }
