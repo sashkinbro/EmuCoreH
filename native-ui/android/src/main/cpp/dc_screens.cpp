@@ -174,37 +174,15 @@ void DcRenderer::DrawTopBar(const LayoutMetrics& m, const std::string& title, bo
 
     DrawSwirl(swirlCx, swirlCy, swirlR, 1.0f, spin_angle_ * 0.35f, alpha, SwirlAccentColor(1.0f));
 
-    float titleX = swirlCx + swirlR + 12.0f;
-    // Show touch Back pill only on sub-screens; Main Menu already has [B] Exit in bottom bar.
-    const bool showBackPill = !showExitBtn && touch_mode_active_ && settings_.touchControls;
-    float leftUsedEnd = titleX;
+    // Back is handled by the bottom hint bar; no duplicate pill next to the title.
+    (void)showExitBtn;
+    const float titleX = swirlCx + swirlR + 12.0f;
 
     float tw = 0.0f, th = 0.0f;
     const float maxTitleW = m.portrait ? (m.bodyW * 0.42f) : (m.bodyW * 0.38f);
     MeasureText(title, m.portrait ? 20.0f : 22.0f, STYLE_WORDMARK, maxTitleW, 1, tw, th);
     DrawText(title, titleX, y + (h - th) * 0.5f, m.portrait ? 20.0f : 22.0f, STYLE_WORDMARK,
              PrimaryTextColor(alpha), maxTitleW, 1, 0);
-    leftUsedEnd = titleX + tw + 12.0f;
-
-    if (showBackPill && overlay_ == OVERLAY_NONE) {
-        const std::string pillText = TextOr("dcui_hint_back", "Back");
-        float pw = 0.0f, ph = 0.0f;
-        MeasureText(pillText, 13.5f, STYLE_BODY_BOLD, 100.0f, 1, pw, ph);
-        const float btnW = std::max(60.0f, pw + 24.0f);
-        const float btnH = 28.0f;
-        const float btnX = leftUsedEnd + 2.0f;
-        const float btnY = y + (h - btnH) * 0.5f;
-        if (btnX + btnW < m.padX + m.bodyW - 150.0f) {
-            DrawPanel(
-                btnX, btnY, btnW, btnH, 14.0f, 1.1f,
-                PanelTopColor(0.84f * alpha),
-                PanelBotColor(0.90f * alpha),
-                PanelBorderColor(0.75f * alpha));
-            DrawText(pillText, btnX, btnY + (btnH - ph) * 0.5f, 13.5f, STYLE_BODY_BOLD,
-                     PrimaryTextColor(alpha), btnW - 10.0f, 1, 1, btnW);
-            RegisterHit(btnX, btnY, btnW, btnH, HIT_BOTTOM_ACTION, KEY_BACK);
-        }
-    }
 
     // Right System Status Capsule (BIOS badge, WiFi/BT/Mute, Battery)
     char batBuf[24];
