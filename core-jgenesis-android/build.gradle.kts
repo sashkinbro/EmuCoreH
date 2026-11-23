@@ -19,6 +19,7 @@ abstract class BuildJGenesis @Inject constructor(
     @get:Internal abstract val ndkDirectory: DirectoryProperty
     @get:Input abstract val enableDiagnostics: Property<Boolean>
     @get:Input abstract val rustToolchain: Property<String>
+    @get:Input abstract val cargoFeatures: Property<String>
     @get:Input abstract val ndkVersion: Property<String>
     @get:Input abstract val hostTag: Property<String>
     @get:Input abstract val hostToolsDirectory: Property<String>
@@ -36,7 +37,8 @@ abstract class BuildJGenesis @Inject constructor(
             .filter { it.isNotBlank() }.joinToString(File.pathSeparator)
         processes.exec {
             workingDir(sourceDirectory)
-            commandLine("cargo", "+${rustToolchain.get()}", "build", "--locked", "--release", "--no-default-features", "--target", "aarch64-linux-android", "-p", "jgenesis-libretro")
+            val features = cargoFeatures.get().takeIf { it.isNotBlank() }?.let { listOf("--features", it) } ?: emptyList()
+            commandLine(listOf("cargo", "+${rustToolchain.get()}", "build", "--locked", "--release", "--no-default-features", "--target", "aarch64-linux-android", "-p", "jgenesis-libretro") + features)
             environment("PATH", path)
             environment("CARGO_TARGET_DIR", cargoTargetDirectory.get().asFile.absolutePath)
             environment("CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER", compiler.absolutePath)
@@ -91,12 +93,15 @@ androidComponents.onVariants { variant ->
     val buildVariantRust = tasks.register<BuildJGenesis>("build${capitalizedName}Rust") {
         group = "build"
         description = "Build the optimized $variantName jgenesis core for arm64 Android"
-        enableDiagnostics.set(variant.buildType == "debug")
+        // -Pjgenesis.diagnostics=false measures release codegen from a debug (instrumented) APK.
+        enableDiagnostics.set(providers.gradleProperty("jgenesis.diagnostics").map { it.toBoolean() }.orElse(variant.buildType == "debug"))
         sourceDirectory.set(layout.projectDirectory.dir("../core-jgenesis"))
         rustSources.from(fileTree(sourceDirectory) { exclude("target/**", ".git/**"); include("**/*.rs", "**/*.toml", "Cargo.lock", "**/*.bin", "LICENSE", "UPSTREAM.txt", "README-ANDROID.md") })
         ndkDirectory.set(androidComponents.sdkComponents.ndkDirectory)
         ndkVersion.set(ndkRevision)
         hostTag.set(hostTagValue)
+        // QA only: e.g. -Pjgenesis.features=jit-preview builds the experimental native backend.
+        cargoFeatures.set(providers.gradleProperty("jgenesis.features").orElse(""))
         rustToolchain.set(providers.gradleProperty("jgenesis.rustToolchain").orElse(if (windowsHost) "1.98.1-x86_64-pc-windows-gnu" else "1.98.1"))
         hostToolsDirectory.set(providers.gradleProperty("jgenesis.hostToolsDir").orElse(if (windowsHost) "C:/msys64/ucrt64/bin" else ""))
         cargoTargetDirectory.set(layout.buildDirectory.dir("rust/$variantName"))
