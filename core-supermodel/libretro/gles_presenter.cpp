@@ -3,6 +3,7 @@
 #include "gles_presenter.h"
 
 #include <GLES3/gl3.h>
+#include <GLES2/gl2ext.h>
 #include "OSD/Logger.h"
 
 #include <algorithm>
@@ -72,6 +73,10 @@ bool GlesPresenter::Init()
     m_uCrossColor = -1;
   }
 
+  {
+    const auto* extensions = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
+    m_bgraUpload = extensions && std::strstr(extensions, "GL_EXT_texture_format_BGRA8888");
+  }
   glGenTextures(1, &m_tex);
   glBindTexture(GL_TEXTURE_2D, m_tex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -265,9 +270,22 @@ void GlesPresenter::UpdateFrameARGB(const uint32_t* pixelsARGB, int width, int h
     m_srcW = width;
     m_srcH = height;
     glBindTexture(GL_TEXTURE_2D, m_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_srcW, m_srcH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    if (m_bgraUpload)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_BGRA_EXT, m_srcW, m_srcH, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, nullptr);
+    else
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_srcW, m_srcH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glBindTexture(GL_TEXTURE_2D, 0);
     UpdateQuadVerts();
+  }
+
+  if (m_bgraUpload)
+  {
+    glBindTexture(GL_TEXTURE_2D, m_tex);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_srcW, m_srcH, GL_BGRA_EXT, GL_UNSIGNED_BYTE, pixelsARGB);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return;
   }
 
   const size_t count = static_cast<size_t>(width) * static_cast<size_t>(height);

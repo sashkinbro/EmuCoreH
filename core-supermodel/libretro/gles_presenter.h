@@ -49,6 +49,10 @@ private:
   // Interleaved: pos.xy, uv.xy (4 verts)
   float m_verts[16]{};
 
+  // EmuCoreH: ARGB words are BGRA bytes in memory; upload them directly when the
+  // driver exposes GL_EXT_texture_format_BGRA8888 instead of swizzling on the CPU.
+  bool m_bgraUpload = false;
+
   // Converted upload buffer in RGBA8.
   std::vector<uint8_t> m_uploadRGBA;
 };

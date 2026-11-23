@@ -182,8 +182,8 @@ std::pair<bool, bool> CRender2D::DrawTilemapLine(uint32_t *pixelsBottom, uint32_
   if (!m_regs || !m_vram || !m_palette[0] || !m_palette[1])
     return {false, false};
 
-  std::fill_n(pixelsBottom + y * 496, 496, 0);
-  std::fill_n(pixelsTop + y * 496, 496, 0);
+  // EmuCoreH: the first (non-alpha-tested) layer of a surface writes all 496 pixels
+  // of the line, so a surface only needs clearing when no layer is drawn into it.
 
   unsigned priority = (m_regs[0x20 / 4] >> 8) & 0xF;
 
@@ -242,6 +242,11 @@ std::pair<bool, bool> CRender2D::DrawTilemapLine(uint32_t *pixelsBottom, uint32_
       noTopSurface = false;
     }
   }
+
+  if (noBottomSurface)
+    std::fill_n(pixelsBottom + y * 496, 496, 0);
+  if (noTopSurface)
+    std::fill_n(pixelsTop + y * 496, 496, 0);
 
   return { !noTopSurface, !noBottomSurface };
 }
