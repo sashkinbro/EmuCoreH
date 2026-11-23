@@ -885,6 +885,18 @@ pub extern "C" fn retro_unload_game() {
     #[cfg(feature = "jit-runtime")]
     jgenesis_common::jit::reset();
     *lock(core_slot()) = None;
+    #[cfg(feature = "pgo-generate")]
+    write_pgo_profile();
+}
+
+#[cfg(feature = "pgo-generate")]
+fn write_pgo_profile() {
+    unsafe extern "C" {
+        fn __llvm_profile_write_file() -> i32;
+    }
+    // SAFETY: provided by the LLVM profiling runtime linked into -Cprofile-generate builds.
+    let _status = unsafe { __llvm_profile_write_file() };
+    core_log_info!("PGO profile written (status {_status})");
 }
 
 #[unsafe(no_mangle)]

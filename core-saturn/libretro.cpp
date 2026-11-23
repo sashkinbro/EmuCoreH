@@ -2142,8 +2142,15 @@ bool retro_load_game(const struct retro_game_info *info)
    return true;
 }
 
+#ifdef EMUCORE_PGO_GENERATE
+extern "C" void emucore_pgo_flush(void);
+#endif
+
 void retro_unload_game(void)
 {
+#ifdef EMUCORE_PGO_GENERATE
+   emucore_pgo_flush();
+#endif
    if(!MDFNGameInfo)
       return;
 

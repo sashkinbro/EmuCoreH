@@ -20,6 +20,9 @@ abstract class BuildJGenesis @Inject constructor(
     @get:Input abstract val enableDiagnostics: Property<Boolean>
     @get:Input abstract val rustToolchain: Property<String>
     @get:Input abstract val cargoFeatures: Property<String>
+    @get:Input abstract val pgoMode: Property<String>
+    @get:InputFiles @get:Optional @get:PathSensitive(PathSensitivity.NONE)
+    abstract val pgoProfile: ConfigurableFileCollection
     @get:Input abstract val ndkVersion: Property<String>
     @get:Input abstract val hostTag: Property<String>
     @get:Input abstract val hostToolsDirectory: Property<String>
@@ -37,7 +40,18 @@ abstract class BuildJGenesis @Inject constructor(
             .filter { it.isNotBlank() }.joinToString(File.pathSeparator)
         processes.exec {
             workingDir(sourceDirectory)
-            val features = cargoFeatures.get().takeIf { it.isNotBlank() }?.let { listOf("--features", it) } ?: emptyList()
+            // PGO: "generate" builds an instrumented training core; otherwise the checked-in
+            // profile (if present) optimizes the interpreters. A stale profile only costs speed.
+            val profile = pgoProfile.files.firstOrNull { it.isFile }
+            val pgoFlags = when {
+                pgoMode.get() == "generate" -> " -C profile-generate=/data/user/0/com.sbro.emucoreh/cache/jgenesis-pgo"
+                pgoMode.get() != "off" && profile != null ->
+                    " -C profile-use=${profile.absolutePath.replace('\\', '/')} -C llvm-args=-no-pgo-warn-mismatch"
+                else -> ""
+            }
+            val featureList = listOfNotNull(cargoFeatures.get().takeIf { it.isNotBlank() },
+                "pgo-generate".takeIf { pgoMode.get() == "generate" })
+            val features = featureList.takeIf { it.isNotEmpty() }?.let { listOf("--features", it.joinToString(",")) } ?: emptyList()
             commandLine(listOf("cargo", "+${rustToolchain.get()}", "build", "--locked", "--release", "--no-default-features", "--target", "aarch64-linux-android", "-p", "jgenesis-libretro") + features)
             environment("PATH", path)
             environment("CARGO_TARGET_DIR", cargoTargetDirectory.get().asFile.absolutePath)
@@ -50,7 +64,7 @@ abstract class BuildJGenesis @Inject constructor(
             // Keep optimized emulation for debug APKs, but isolate all diagnostic
             // cfgs and artifacts from the shipping release DSO.
             val debugAssertions = if (enableDiagnostics.get()) "yes" else "no"
-            environment("RUSTFLAGS", "-C debug-assertions=$debugAssertions -C target-cpu=generic -C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384 -C link-arg=-Wl,-soname,libemucore_sega.so")
+            environment("RUSTFLAGS", "-C debug-assertions=$debugAssertions -C target-cpu=generic -C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384 -C link-arg=-Wl,-soname,libemucore_sega.so$pgoFlags")
         }
         files.copy {
             from(cargoTargetDirectory.file("aarch64-linux-android/release/libjgenesis_libretro.so"))
@@ -102,6 +116,8 @@ androidComponents.onVariants { variant ->
         hostTag.set(hostTagValue)
         // QA only: e.g. -Pjgenesis.features=jit-preview builds the experimental native backend.
         cargoFeatures.set(providers.gradleProperty("jgenesis.features").orElse(""))
+        pgoMode.set(providers.gradleProperty("jgenesis.pgo").orElse("use"))
+        pgoProfile.from(layout.projectDirectory.file("pgo/jgenesis.profdata"))
         rustToolchain.set(providers.gradleProperty("jgenesis.rustToolchain").orElse(if (windowsHost) "1.98.1-x86_64-pc-windows-gnu" else "1.98.1"))
         hostToolsDirectory.set(providers.gradleProperty("jgenesis.hostToolsDir").orElse(if (windowsHost) "C:/msys64/ucrt64/bin" else ""))
         cargoTargetDirectory.set(layout.buildDirectory.dir("rust/$variantName"))

@@ -7,7 +7,7 @@ android {
     defaultConfig {
         minSdk = 26
         ndk { abiFilters += "arm64-v8a" }
-        externalNativeBuild { cmake { arguments += "-DANDROID_STL=c++_static" } }
+        externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_static", "-DEMUCORE_PGO_MODE=${providers.gradleProperty("emucore.pgo").getOrElse("use")}") } }
     }
     externalNativeBuild { cmake { path = file("../core-saturn/CMakeLists.txt"); version = "3.30.5" } }
 }

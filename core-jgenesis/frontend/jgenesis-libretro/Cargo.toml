@@ -13,6 +13,9 @@ default = []
 # QA only: runtime backend selection and opcode accounting.
 jit-runtime = ["genesis-core/jit-runtime", "m68000-emu/jit-runtime", "sh2-emu/jit-runtime", "jgenesis-common/jit-runtime"]
 jit-preview = ["jit-runtime", "m68000-emu/jit-preview", "sh2-emu/jit-preview", "jgenesis-common/jit-preview"]
+# PGO training builds only (built with -Cprofile-generate): write the LLVM profile
+# when a game is unloaded, because Android never runs the core's exit handlers.
+pgo-generate = []
 
 [dependencies]
 m68000-emu = { workspace = true, optional = true }

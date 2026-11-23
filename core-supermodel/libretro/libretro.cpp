@@ -354,7 +354,12 @@ RETRO_API bool retro_load_game(const retro_game_info* game_info){
     describe_inputs();return true;
   }catch(const std::exception& e){unload();return fail(e.what());}
 }
+#ifdef EMUCORE_PGO_GENERATE
+extern "C" void emucore_pgo_flush(void);
+RETRO_API void retro_unload_game(){emucore_pgo_flush();unload();}
+#else
 RETRO_API void retro_unload_game(){unload();}
+#endif
 RETRO_API void retro_reset(){if(host&&host->model){host->model->Reset();host->gear=1;}}
 RETRO_API void retro_run(){
   if(host&&host->model&&context_alive&&!runtime_guard.Failed()){

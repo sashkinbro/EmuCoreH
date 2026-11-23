@@ -40,3 +40,5 @@ target_link_options(saturn_libretro PRIVATE -flto=thin -Wl,--icf=safe
   "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384"
   "-Wl,--no-undefined" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/link.T")
 target_link_libraries(saturn_libretro PRIVATE log android m)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../native-pgo/EmuCorePgo.cmake)
+emucore_enable_pgo(saturn_libretro saturn "${CMAKE_CURRENT_SOURCE_DIR}/../core-saturn-android/pgo/saturn.profdata")

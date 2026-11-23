@@ -28,6 +28,8 @@ target_compile_definitions(supermodel_libretro PRIVATE
 target_compile_options(supermodel_libretro PRIVATE -fvisibility=hidden -fvisibility-inlines-hidden -O3 -flto=thin)
 target_link_options(supermodel_libretro PRIVATE -flto=thin "-Wl,--icf=safe" "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384" "-Wl,--no-undefined" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libretro/$<IF:$<CONFIG:Debug>,exports.map,exports-release.map>")
 target_link_libraries(supermodel_libretro PRIVATE log android z EGL GLESv3)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../native-pgo/EmuCorePgo.cmake)
+emucore_enable_pgo(supermodel_libretro model3 "${CMAKE_CURRENT_SOURCE_DIR}/../core-supermodel-android/pgo/model3.profdata")
 option(MODEL3_ENABLE_EXPERIMENTAL_VULKAN "Build the experimental Real3D Vulkan consumer" OFF)
 option(MODEL3_TEST_ACCURATE_GLES "Use upstream accurate GLES passes for renderer comparison probes" OFF)
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
