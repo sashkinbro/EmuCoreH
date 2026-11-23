@@ -210,7 +210,7 @@ impl Drop for Core {
             Emulator::Genesis(emulator) => emulator.persist_save_files(&mut self.save_writer),
             Emulator::SmsGg(emulator) => emulator.persist_save_files(&mut self.save_writer),
         };
-        if let Err(error) = result {
+        if let Err(error) = result.and_then(|()| self.save_writer.flush()) {
             set_boot_error(format!("Unable to flush battery saves: {error}"));
         }
     }

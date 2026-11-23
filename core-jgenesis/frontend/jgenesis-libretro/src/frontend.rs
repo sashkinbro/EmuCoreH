@@ -4,7 +4,10 @@ use jgenesis_common::frontend::{
 };
 use std::fs::{self, File};
 use std::io::Write;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard};
+use std::thread::JoinHandle;
 
 fn bincode_config() -> impl bincode::config::Config {
     bincode::config::standard()
@@ -117,38 +120,109 @@ impl AudioOutput for AudioBuffer {
     }
 }
 
+#[derive(Default)]
+struct SaveQueue {
+    pending: HashMap<PathBuf, Arc<Vec<u8>>>,
+    in_flight: Option<(PathBuf, Arc<Vec<u8>>)>,
+    last_error: Option<String>,
+    shutdown: bool,
+}
+
+type SharedSaveQueue = Arc<(Mutex<SaveQueue>, Condvar)>;
+
+fn lock_queue(queue: &Mutex<SaveQueue>) -> MutexGuard<'_, SaveQueue> {
+    queue.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+// Battery saves are written by a background thread so the emulation thread never waits on fsync.
+fn save_writer_thread(shared: SharedSaveQueue) {
+    let (queue, condvar) = &*shared;
+    let mut state = lock_queue(queue);
+    loop {
+        let Some(path) = state.pending.keys().next().cloned() else {
+            if state.shutdown {
+                return;
+            }
+            state = condvar.wait(state).unwrap_or_else(|poisoned| poisoned.into_inner());
+            continue;
+        };
+        let bytes = state.pending.remove(&path).expect("pending path was just listed");
+        state.in_flight = Some((path.clone(), Arc::clone(&bytes)));
+        drop(state);
+        let result = write_atomic(&path, &bytes);
+        state = lock_queue(queue);
+        state.in_flight = None;
+        if let Err(error) = result {
+            crate::diagnostics::report_unrecoverable_error(&error);
+            state.last_error = Some(error);
+        }
+        condvar.notify_all();
+    }
+}
+
 pub struct FsSaveWriter {
     directory: PathBuf,
     base_name: String,
+    shared: SharedSaveQueue,
+    thread: Option<JoinHandle<()>>,
 }
 
 impl FsSaveWriter {
     pub fn new(directory: PathBuf, base_name: String) -> Self {
         let _ = fs::create_dir_all(&directory);
-        Self { directory, base_name }
+        let shared: SharedSaveQueue = Arc::default();
+        let thread = std::thread::Builder::new()
+            .name("jgenesis-save-writer".into())
+            .spawn({
+                let shared = Arc::clone(&shared);
+                move || save_writer_thread(shared)
+            })
+            .ok();
+        Self { directory, base_name, shared, thread }
     }
 
     fn path_for(&self, extension: &str) -> PathBuf {
         self.directory.join(format!("{}.{}", self.base_name, extension))
     }
 
-    fn write_atomic(&self, path: &Path, bytes: &[u8]) -> Result<(), String> {
-        let temporary = path.with_extension(format!(
-            "{}tmp",
-            path.extension()
-                .and_then(|value| value.to_str())
-                .map(|value| format!("{value}."))
-                .unwrap_or_default()
-        ));
-        let mut file = File::create(&temporary)
-            .map_err(|error| format!("Unable to create save {}: {error}", temporary.display()))?;
-        file.write_all(bytes)
-            .and_then(|_| file.sync_all())
-            .map_err(|error| format!("Unable to sync save {}: {error}", temporary.display()))?;
-        drop(file);
-        replace_file(&temporary, path)
-            .map_err(|error| format!("Unable to replace save {}: {error}", path.display()))
+    /// Blocks until every queued save is on disk; returns the last background write error, if any.
+    pub fn flush(&self) -> Result<(), String> {
+        let (queue, condvar) = &*self.shared;
+        let mut state = lock_queue(queue);
+        while !state.pending.is_empty() || state.in_flight.is_some() {
+            state = condvar.wait(state).unwrap_or_else(|poisoned| poisoned.into_inner());
+        }
+        state.last_error.take().map_or(Ok(()), Err)
     }
+}
+
+impl Drop for FsSaveWriter {
+    fn drop(&mut self) {
+        let _ = self.flush();
+        lock_queue(&self.shared.0).shutdown = true;
+        self.shared.1.notify_all();
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
+}
+
+fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), String> {
+    let temporary = path.with_extension(format!(
+        "{}tmp",
+        path.extension()
+            .and_then(|value| value.to_str())
+            .map(|value| format!("{value}."))
+            .unwrap_or_default()
+    ));
+    let mut file = File::create(&temporary)
+        .map_err(|error| format!("Unable to create save {}: {error}", temporary.display()))?;
+    file.write_all(bytes)
+        .and_then(|_| file.sync_all())
+        .map_err(|error| format!("Unable to sync save {}: {error}", temporary.display()))?;
+    drop(file);
+    replace_file(&temporary, path)
+        .map_err(|error| format!("Unable to replace save {}: {error}", path.display()))
 }
 
 #[cfg(not(windows))]
@@ -186,6 +260,8 @@ mod tests {
         writer.persist_bytes("sav", &[1, 2, 3]).unwrap();
         writer.persist_bytes("sav", &[4, 5]).unwrap();
         assert_eq!(writer.load_bytes("sav").unwrap(), [4, 5]);
+        writer.flush().unwrap();
+        assert_eq!(std::fs::read(directory.join("battery.sav")).unwrap(), [4, 5]);
         assert!(!directory.join("battery.sav.tmp").exists());
         std::fs::remove_dir_all(directory).unwrap();
     }
@@ -196,6 +272,17 @@ impl SaveWriter for FsSaveWriter {
 
     fn load_bytes(&mut self, extension: &str) -> Result<Vec<u8>, Self::Err> {
         let path = self.path_for(extension);
+        {
+            let state = lock_queue(&self.shared.0);
+            let newest = state.pending.get(&path).or(state
+                .in_flight
+                .as_ref()
+                .filter(|(in_flight, _)| *in_flight == path)
+                .map(|(_, bytes)| bytes));
+            if let Some(bytes) = newest {
+                return Ok(bytes.as_ref().clone());
+            }
+        }
         if !path.is_file() {
             return Ok(Vec::new());
         }
@@ -204,7 +291,15 @@ impl SaveWriter for FsSaveWriter {
 
     fn persist_bytes(&mut self, extension: &str, bytes: &[u8]) -> Result<(), Self::Err> {
         let path = self.path_for(extension);
-        self.write_atomic(&path, bytes)
+        if self.thread.is_none() {
+            // No writer thread could be started: keep the old synchronous behaviour
+            // instead of queueing bytes nobody would ever write (and hanging flush).
+            return write_atomic(&path, bytes);
+        }
+        let (queue, condvar) = &*self.shared;
+        lock_queue(queue).pending.insert(path, Arc::new(bytes.to_vec()));
+        condvar.notify_all();
+        Ok(())
     }
 
     fn load_serialized<D: Decode<()>>(&mut self, extension: &str) -> Result<D, Self::Err> {
