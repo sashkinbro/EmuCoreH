@@ -429,6 +429,10 @@ class AppPreferences(private val context: Context) {
         private val IN_APP_REVIEW_LAST_ATTEMPT_AT_MS =
             longPreferencesKey("in_app_review_last_attempt_at_ms")
         private val IN_APP_REVIEW_REQUESTED = booleanPreferencesKey("in_app_review_requested")
+        private val PRO_REMINDER_LAST_SHOWN_AT_MS = longPreferencesKey("pro_reminder_last_shown_at_ms")
+        private val PRO_REMINDER_DISMISS_STREAK = intPreferencesKey("pro_reminder_dismiss_streak")
+        private fun proPromoHiddenUntilKey(id: String) = longPreferencesKey("pro_promo_hidden_until_" + id)
+        private fun proPromoDismissStreakKey(id: String) = intPreferencesKey("pro_promo_dismiss_streak_" + id)
         private val RENDERER = intPreferencesKey("renderer")
         private val MODEL3_RENDERER = intPreferencesKey("model3_renderer")
         private val CUSTOM_DRIVER_PATH = stringPreferencesKey("custom_driver_path")
@@ -1108,6 +1112,48 @@ class AppPreferences(private val context: Context) {
                 prefs[THEME_MODE] = 0
             }
         }
+    }
+
+    val inAppReviewLastAttemptAtMs: Flow<Long> = context.dataStore.data
+        .map { prefs -> prefs[IN_APP_REVIEW_LAST_ATTEMPT_AT_MS] ?: 0L }
+        .distinctUntilChanged()
+
+    val proReminderLastShownAtMs: Flow<Long> = context.dataStore.data
+        .map { prefs -> prefs[PRO_REMINDER_LAST_SHOWN_AT_MS] ?: 0L }
+        .distinctUntilChanged()
+
+    val proReminderDismissStreak: Flow<Int> = context.dataStore.data
+        .map { prefs -> prefs[PRO_REMINDER_DISMISS_STREAK] ?: 0 }
+        .distinctUntilChanged()
+
+    suspend fun markProReminderShown(nowMs: Long) {
+        context.dataStore.edit { prefs -> prefs[PRO_REMINDER_LAST_SHOWN_AT_MS] = nowMs }
+    }
+
+    suspend fun setProReminderDismissStreak(streak: Int) {
+        context.dataStore.edit { prefs -> prefs[PRO_REMINDER_DISMISS_STREAK] = streak }
+    }
+
+    fun proPromoHiddenUntil(id: String): Flow<Long> = context.dataStore.data
+        .map { prefs -> prefs[proPromoHiddenUntilKey(id)] ?: 0L }
+        .distinctUntilChanged()
+
+    suspend fun hideProPromo(id: String, untilMs: Long) {
+        context.dataStore.edit { prefs -> prefs[proPromoHiddenUntilKey(id)] = untilMs }
+    }
+
+    /** Counts one more X on promo card [id] and returns the new consecutive-dismissal streak. */
+    suspend fun incrementProPromoDismissStreak(id: String): Int {
+        var streak = 0
+        context.dataStore.edit { prefs ->
+            streak = (prefs[proPromoDismissStreakKey(id)] ?: 0) + 1
+            prefs[proPromoDismissStreakKey(id)] = streak
+        }
+        return streak
+    }
+
+    suspend fun resetProPromoDismissStreak(id: String) {
+        context.dataStore.edit { prefs -> prefs.remove(proPromoDismissStreakKey(id)) }
     }
 
     suspend fun setWelcomeDialogShown(shown: Boolean) {

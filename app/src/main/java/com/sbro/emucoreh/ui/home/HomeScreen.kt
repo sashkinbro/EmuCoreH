@@ -158,6 +158,8 @@ import com.sbro.emucoreh.ui.common.isGenerated3dCover
 import com.sbro.emucoreh.ui.common.GameDiscCountBadge
 import com.sbro.emucoreh.ui.common.GameCoverAspectRatio
 import com.sbro.emucoreh.ui.common.ProSupportOptionsDialog
+import com.sbro.emucoreh.ui.common.ProPromoCard
+import com.sbro.emucoreh.ui.common.ProPromoVariant
 import com.sbro.emucoreh.ui.common.EmuCoreHLoadingAnimation
 import com.sbro.emucoreh.ui.common.TvStoragePickerHost
 import com.sbro.emucoreh.ui.common.TvStorageRequest
@@ -191,6 +193,7 @@ fun HomeScreen(
     onCreateShortcutClick: (GameItem) -> Unit,
     onMenuClick: (() -> Unit)? = null,
     onShelfModeChanged: (Boolean) -> Unit = {},
+    onOpenProSettings: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -570,6 +573,14 @@ fun HomeScreen(
                                     }
                                 }
                             }
+                            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                ProPromoCard(
+                                    variant = ProPromoVariant.LIBRARY,
+                                    modifier = Modifier.padding(horizontal = horizontalInset),
+                                    onLearnMore = onOpenProSettings
+                                )
+                            }
+
                             if (uiState.showHomeSearch) {
                                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                     HomeSearchField(
