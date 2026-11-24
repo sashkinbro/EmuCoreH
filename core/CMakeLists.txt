@@ -240,6 +240,10 @@ elseif(LIBRETRO)
 				target_compile_options(${PROJECT_NAME} PRIVATE -flto=thin)
 				target_link_options(${PROJECT_NAME} PRIVATE -flto=thin -Wl,--icf=safe)
 			endif()
+			# Profile-guided optimisation from the oracle workloads (tools/oracle):
+			# Elan T&L, TA/renderer, AICA and memory handlers are C++ hot paths.
+			include(${CMAKE_CURRENT_SOURCE_DIR}/../native-pgo/EmuCorePgo.cmake)
+			emucore_enable_pgo(${PROJECT_NAME} flycast "${CMAKE_CURRENT_SOURCE_DIR}/../core-android/pgo/flycast.profdata")
 		endif()
     elseif(IOS)
 		target_compile_definitions(${PROJECT_NAME} PRIVATE GLES GLES3 HAVE_OPENGLES HAVE_OPENGLES3)

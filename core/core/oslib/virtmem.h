@@ -4,7 +4,10 @@
 #if defined(_WIN32) || defined(__APPLE__)
 #define DECLARE_CODE_CACHE(Name, Size) static u8 *Name;
 #elif defined(__ANDROID__)
-#define DECLARE_CODE_CACHE(Name, Size) alignas(4096) static u8 Name[Size];
+// External (hidden) linkage: with ThinLTO + PGO a promoted internal code cache could be
+// imported by another module after its defining module dropped it (undefined hidden
+// symbol at link time). Every cache name is unique within its namespace.
+#define DECLARE_CODE_CACHE(Name, Size) alignas(4096) __attribute__((visibility("hidden"), used)) u8 Name[Size];
 #elif defined(__OpenBSD__)
 #define DECLARE_CODE_CACHE(Name, Size) alignas(4096) static u8 Name[Size] __attribute__((section(".openbsd.mutable")));
 #elif defined(__unix__) || defined(__SWITCH__) || defined(__HAIKU__)

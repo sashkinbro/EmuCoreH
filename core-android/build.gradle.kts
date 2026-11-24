@@ -31,7 +31,8 @@ android {
                     "-DANDROID_STL=c++_shared",
                     "-DUSE_HOST_SDL=OFF",
                     "-DUSE_HOST_LIBZIP=OFF",
-                    "-DUSE_HOST_GLSLANG=OFF"
+                    "-DUSE_HOST_GLSLANG=OFF",
+                    "-DEMUCORE_PGO_MODE=${providers.gradleProperty("emucore.pgo").getOrElse("use")}"
                 )
                 targets += "flycast_libretro"
             }

@@ -2497,8 +2497,14 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 	return false;
 }
 
+#ifdef EMUCORE_PGO_GENERATE
+extern "C" void emucore_pgo_flush(void);
+#endif
 void retro_unload_game()
 {
+#ifdef EMUCORE_PGO_GENERATE
+	emucore_pgo_flush();
+#endif
 	frontend_input_mode = -1;
 	INFO_LOG(COMMON, "Flycast unloading game");
 	emu.unloadGame();
