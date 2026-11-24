@@ -39,7 +39,7 @@ pub use disassemble::{
 };
 pub use instructions::OpcodeTable;
 pub use predecode::set_predecode_enabled;
-pub use jit::{JitStats, jit_stats, reset_jit_stats, set_jit_enabled};
+pub use jit::{JitStats, jit_stats, reset_jit_stats, set_jit_enabled, set_jit_native};
 #[cfg(feature = "jit-verify")]
 pub use jit::{set_jit_verify, set_jit_verify_deep_every};
 use jgenesis_common::debug::DebugMemoryView;

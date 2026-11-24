@@ -47,6 +47,16 @@ pub(crate) struct Block {
     pub(crate) links: [Link; 2],
     /// Exactly `n` micro-ops (boxed so the table of block headers stays small)
     pub(crate) ops: Box<[Uop]>,
+    /// Compiled code entry (0 = none), runs before compiling, compilation refused
+    #[cfg_attr(not(any(test, feature = "jit-arm64")), allow(dead_code))]
+    pub(crate) entry: usize,
+    #[cfg_attr(not(any(test, feature = "jit-arm64")), allow(dead_code))]
+    pub(crate) runs: u16,
+    #[cfg_attr(not(any(test, feature = "jit-arm64")), allow(dead_code))]
+    pub(crate) no_native: bool,
+    /// Native chaining records of links 0 and 1 (read by compiled code)
+    #[cfg(any(test, feature = "jit-arm64"))]
+    pub(crate) chain: [super::native::Chain; 2],
 }
 
 impl Block {
@@ -61,6 +71,11 @@ impl Block {
             lines: [EMPTY_LINE; MAX_LINES],
             links: [Link::default(); 2],
             ops: Box::new([]),
+            entry: 0,
+            runs: 0,
+            no_native: false,
+            #[cfg(any(test, feature = "jit-arm64"))]
+            chain: [super::native::Chain::default(); 2],
         }
     }
 

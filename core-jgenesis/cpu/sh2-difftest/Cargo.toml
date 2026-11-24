@@ -11,6 +11,8 @@ publish = false
 default = ["verify"]
 # Lockstep verifier and block-engine statistics; disable for representative speed numbers
 verify = ["sh2-emu/jit-verify"]
+# AArch64 block compiler (effective on aarch64 Linux/Android)
+native = ["sh2-emu/jit-arm64"]
 
 [dependencies]
 genesis-config = { workspace = true }

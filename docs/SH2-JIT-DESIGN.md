@@ -484,3 +484,43 @@ overhead on top. Consequences for phase (b):
    ROM/BIOS to `/data/local/tmp`, run `--mode verify` and `--mode compare` on all seven suites, then the
    oracle suites with `jgenesis_sh2_jit=enabled`.
 6. Phase (c): inline cached-read hits, then measure against the interpreter on the Lenovo and Anbernic.
+
+## 16. AArch64 backend (phase 2, implemented: `jit/native.rs`, `jit/arena.rs`)
+
+Feature `jit-arm64` (effective on aarch64 Android/Linux; `set_jit_native`, on by default when the feature
+is built). A block is compiled after 8 threaded runs; the threaded executor stays the fallback for blocks
+the compiler refuses (multiply/divide/MAC-family register ops, about 10 % of MK2's blocks) and for runs that
+do not cover the whole block (tick budget, idle watch).
+
+* **Code store** (`arena.rs`): 1 MB anonymous mappings, at most 16; pages are made RW only while a block is
+  copied in and are RX otherwise (never RWX), followed by the `dc cvau`/`ic ivau` sequence. Full store:
+  every block drops its entry and the store is unmapped. Cloned or loaded CPUs start with an empty store.
+* **Entry ABI**: `extern "C" fn(*mut Ctx) -> u64`; `x19` = guest register file, `x20` = `Ctx`, `x21`/`x22`
+  = cycle counter/limit, `x23` = fetch memo, `x24` = `Sh2`. Guest registers and `T` are memory operands in
+  `Sh2Registers` (no spilling at call-outs or exits; the per-segment host-register allocation of section 13
+  is a later optimization). The return value packs micro-ops executed, exit status and link index.
+* **Segments**: a fast copy under the static guard (`counter + guard < limit`) with one cycle add and stop
+  check at its end, and a checked copy (per-instruction add and stop check) taken when the guard fails, so
+  near the cycle limit the code stays native (deoptimizations went from 20 % of entries to zero).
+* **Branches**: `BT/BF` side exits and delayed branches with static targets in code; `RTS/JMP/JSR/BRAF/BSRF`
+  write the dynamic target; idle-loop arming (`note_backward_branch`) through the trampoline.
+* **Call-outs**: `extern "C"` trampoline monomorphized per bus type that runs exactly the threaded
+  executor's call-out step (`Sh2::jit_callout_step`) with the counter synchronized to the bus before and
+  reloaded after; it reports stop, cache invalidation and control-flow changes as exits.
+* **Inline cache-hit reads**: `MOV.L @Rm`, `MOV.W @Rm`, `MOV.L @(d,Rm)`, `MOV.W/L @(d,GBR)`,
+  `MOV.L/W @(d,PC)` outside delay slots: region/enable/idle-recording checks, the 4-way tag search from way 3
+  down, fetch-memo invalidation of the entry, the pseudo-LRU update, the big-endian load from cache RAM, all in
+  machine code using `offset_of!`-derived layout (`CpuCache::native_layout`); any miss or special case takes
+  the call-out. Checked by `native::tests::inline_cached_reads_match_the_cache` (3000 random caches,
+  value, hit/miss and full cache state incl. LRU) besides the fuzz test.
+* **Native chaining**: static successors (fall-through, `BRA/BSR`, taken `BT/BF`, both `BT/S`/`BF/S`
+  outcomes) jump directly to the successor's post-prologue entry when its RW chain record (written by the
+  Rust dispatcher when it links blocks) still names a block with the same version, the expected start pc,
+  an unchanged code stamp, compiled code, room in the tick budget and no watched idle-loop head inside.
+  MK2: 65 % of block-engine instructions run in chained blocks; Rust-level entries fall to about one per
+  scheduler slice.
+
+**Verification.** Host: the fuzz test runs the compiled code in the AArch64 simulator (37 897 compiled
+blocks, 760 k compiled runs, 370 k chained instructions over 18 837 programs, bit-exact). Device (Lenovo
+TB710FU, `sh2-difftest` cross-compiled for `aarch64-linux-android`, run over `adb shell` from
+`/data/local/tmp`, ROM copies deleted afterwards): see section 17.

@@ -123,6 +123,7 @@ fn parse_args() -> Args {
             "--input" => args.input = parse_input(&value()),
             "--deep" => args.deep = value().parse().unwrap(),
             "--hash-every" => args.hash_every = value().parse().unwrap(),
+            "--native" => sh2_emu::set_jit_native(value() != "0"),
             "--mode" => {
                 args.mode = match value().as_str() {
                     "interp" => Mode::Interp,

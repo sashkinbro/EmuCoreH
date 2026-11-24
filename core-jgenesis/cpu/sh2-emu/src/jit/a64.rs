@@ -533,6 +533,21 @@ impl Asm {
         self.emit(0xB860_6800 | (u32::from(rm.0) << 16) | (u32::from(shifted) << 12) | (u32::from(rn.0) << 5) | u32::from(rt.0));
     }
 
+    /// `lsr rd, rn, rm` (LSRV)
+    pub(crate) fn lsrv(&mut self, size: Size, rd: R, rn: R, rm: R) {
+        self.emit(size.sf() | 0x1AC0_2400 | (u32::from(rm.0) << 16) | (u32::from(rn.0) << 5) | u32::from(rd.0));
+    }
+
+    /// `ldrb wt, [xn, xm]`
+    pub(crate) fn ldrb_reg(&mut self, rt: R, rn: R, rm: R) {
+        self.emit(0x3860_6800 | (u32::from(rm.0) << 16) | (u32::from(rn.0) << 5) | u32::from(rt.0));
+    }
+
+    /// `strb wt, [xn, xm]`
+    pub(crate) fn strb_reg(&mut self, rt: R, rn: R, rm: R) {
+        self.emit(0x3820_6800 | (u32::from(rm.0) << 16) | (u32::from(rn.0) << 5) | u32::from(rt.0));
+    }
+
     pub(crate) fn ldrh_reg(&mut self, rt: R, rn: R, rm: R, shifted: bool) {
         self.emit(0x7860_6800 | (u32::from(rm.0) << 16) | (u32::from(shifted) << 12) | (u32::from(rn.0) << 5) | u32::from(rt.0));
     }
@@ -693,6 +708,12 @@ mod tests {
             ("strh w1, [x2, #6]", 0x79000c41, Box::new(|a| a.strh(R(1), R(2), 6))),
             ("ldr w1, [x2, x3, lsl #2]", 0xb8637841, Box::new(|a| a.ldr_w_reg(R(1), R(2), R(3), true))),
             ("ldrh w1, [x2, x3, lsl #1]", 0x78637841, Box::new(|a| a.ldrh_reg(R(1), R(2), R(3), true))),
+            ("ldrh w1, [x2, x3]", 0x78636841, Box::new(|a| a.ldrh_reg(R(1), R(2), R(3), false))),
+            ("ldr w1, [x2, x3]", 0xb8636841, Box::new(|a| a.ldr_w_reg(R(1), R(2), R(3), false))),
+            ("lsr x14, x14, x11", 0x9acb25ce, Box::new(|a| a.lsrv(X, R(14), R(14), R(11)))),
+            ("ldrb w17, [x16, x11]", 0x386b6a11, Box::new(|a| a.ldrb_reg(R(17), R(16), R(11)))),
+            ("strb w17, [x16, x11]", 0x382b6a11, Box::new(|a| a.strb_reg(R(17), R(16), R(11)))),
+            ("tbz x14, #0, .+4", 0x3600002e, Box::new(|a| { let l = a.new_label(); a.tbz(R(14), 0, l); a.bind(l); })),
             ("stp x29, x30, [sp, #-16]!", 0xa9bf7bfd, Box::new(|a| a.stp_pre(R(29), LR, SP, -16))),
             ("ldp x29, x30, [sp], #16", 0xa8c17bfd, Box::new(|a| a.ldp_post(R(29), LR, SP, 16))),
             ("stp x19, x20, [sp, #16]", 0xa90153f3, Box::new(|a| a.stp(R(19), R(20), SP, 16))),

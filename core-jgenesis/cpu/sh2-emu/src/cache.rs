@@ -138,6 +138,19 @@ impl Default for FetchMemo {
     }
 }
 
+/// See `CpuCache::native_layout`; `ways`, `lru` and `ram` locate `Box` pointers
+#[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+pub(crate) struct NativeLayout {
+    pub(crate) ways: usize,
+    pub(crate) lru: usize,
+    pub(crate) ram: usize,
+    pub(crate) enabled: usize,
+    pub(crate) memo_line: usize,
+    pub(crate) way_size: usize,
+    pub(crate) way_tags: usize,
+    pub(crate) way_valid: usize,
+}
+
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CpuCache {
     // Store cache as u16s because the most common fetches are opcodes which are 16-bit
@@ -216,6 +229,35 @@ impl CpuCache {
     pub(crate) fn line_word(&self, way: u8, entry: u8, address: u32) -> u16 {
         let base = cache_ram_addr(usize::from(way) & (WAYS - 1), usize::from(entry) & 0x3F) >> 1;
         self.ram[base | (((address as usize) & 0xE) >> 1)]
+    }
+
+    /// Field offsets the block compiler's inline cache-hit reads use (relative to `CpuCache`
+    /// unless noted)
+    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    pub(crate) fn native_layout() -> NativeLayout {
+        use std::mem::offset_of;
+        NativeLayout {
+            ways: offset_of!(CpuCache, ways),
+            lru: offset_of!(CpuCache, lru_bits),
+            ram: offset_of!(CpuCache, ram),
+            enabled: offset_of!(CpuCache, control) + offset_of!(CacheControlRegister, cache_enabled),
+            memo_line: offset_of!(CpuCache, fetch_memo) + offset_of!(HostCache<FetchMemo>, 0) + offset_of!(FetchMemo, line),
+            way_size: size_of::<Way>(),
+            way_tags: offset_of!(Way, tags),
+            way_valid: offset_of!(Way, valid_bits),
+        }
+    }
+
+    /// Address of the code counter (block compiler: validation of chained blocks)
+    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    pub(crate) fn code_gen_ptr(&self) -> *const u32 {
+        &raw const self.gens.0.code
+    }
+
+    /// Address of the fetch memo's line field (block compiler: inline memo check)
+    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    pub(crate) fn fetch_memo_line_ptr(&self) -> *const u32 {
+        &raw const self.fetch_memo.0.line
     }
 
     /// Marks a line as holding block code: any later change to it bumps `code_gen`

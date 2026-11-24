@@ -40,6 +40,10 @@ pub(crate) mod a64;
 mod a64_sim;
 #[cfg(any(test, feature = "jit-arm64"))]
 pub(crate) mod a64_translate;
+#[cfg(any(test, feature = "jit-arm64"))]
+mod arena;
+#[cfg(any(test, feature = "jit-arm64"))]
+pub(crate) mod native;
 mod form;
 #[cfg(feature = "jit-verify")]
 mod verify;
@@ -64,6 +68,19 @@ pub fn set_jit_enabled(enabled: bool) {
 pub(crate) fn jit_enabled() -> bool {
     ENABLED.load(Ordering::Relaxed)
 }
+
+static NATIVE: AtomicBool = AtomicBool::new(true);
+
+/// Whether the block engine compiles hot blocks to AArch64 code (builds with `jit-arm64` on
+/// aarch64 Linux/Android only; elsewhere this has no effect). On by default; the threaded
+/// executor remains the fallback for everything not compiled.
+pub fn set_jit_native(enabled: bool) {
+    NATIVE.store(enabled, Ordering::Relaxed);
+}
+
+/// Threaded runs of a block before it is compiled
+#[cfg(any(test, feature = "jit-arm64"))]
+const COMPILE_AFTER: u16 = if cfg!(test) { 1 } else { 8 };
 
 #[cfg(feature = "jit-verify")]
 pub use verify::{set_jit_verify, set_jit_verify_deep_every};
@@ -93,7 +110,7 @@ pub(crate) const F_MEM: u8 = 4;
 pub(crate) const F_NOTE: u8 = 8;
 
 /// Link index used when the successor must be looked up in the table
-const LINK_NONE: u8 = 2;
+pub(crate) const LINK_NONE: u8 = 2;
 
 /// Native micro-op: returns whether the branch was taken / the alternative link applies
 pub(crate) type NativeFn = fn(&mut Sh2, &Uop) -> bool;
@@ -171,11 +188,18 @@ pub(crate) struct JitCache {
     table: Vec<Block>,
     // Address of the opcode table the call-out handlers were taken from
     table_id: usize,
+    #[cfg(any(test, feature = "jit-arm64"))]
+    store: arena::Store,
 }
 
 impl Default for JitCache {
     fn default() -> Self {
-        Self { table: Vec::new(), table_id: 0 }
+        Self {
+            table: Vec::new(),
+            table_id: 0,
+            #[cfg(any(test, feature = "jit-arm64"))]
+            store: arena::Store::default(),
+        }
     }
 }
 
@@ -196,6 +220,9 @@ impl JitCache {
     #[inline(always)]
     fn ensure_table(&mut self, table_id: usize) {
         if self.table_id != table_id || self.table.is_empty() {
+            // Compiled code references the old bus type's handlers through its trampoline
+            #[cfg(any(test, feature = "jit-arm64"))]
+            self.store.reset();
             self.table.clear();
             self.table.resize_with(SLOTS, Block::empty);
             self.table_id = table_id;
@@ -225,6 +252,14 @@ pub struct JitStats {
     pub verified_slices: u64,
     pub verified_blocks: u64,
     pub deep_compares: u64,
+    /// Blocks compiled to AArch64 code / refused by the compiler
+    pub compiled: u64,
+    pub compile_rejects: u64,
+    /// Block runs in compiled code / deoptimizations to the threaded executor
+    pub native_runs: u64,
+    pub native_deopts: u64,
+    /// Instructions executed in blocks entered by native chaining (without returning to Rust)
+    pub native_chained_instructions: u64,
     /// Block-engine entries refused because the pc is outside cached space (uncached code)
     pub uncached_entries: u64,
     /// Uncached entries by region (`pc >> 25 & 3`: boot ROM/registers, cartridge, frame buffer,
@@ -302,10 +337,10 @@ impl<Bus: BusInterface> ExecutionBody<Bus> for Jit {
 
 /// How a block run ended
 #[derive(Clone, Copy)]
-struct Exit {
-    executed: usize,
-    stopped: bool,
-    link: u8,
+pub(crate) struct Exit {
+    pub(crate) executed: usize,
+    pub(crate) stopped: bool,
+    pub(crate) link: u8,
 }
 
 impl Sh2 {
@@ -359,12 +394,18 @@ impl Sh2 {
                 break;
             };
 
+            #[cfg(any(test, feature = "jit-arm64"))]
+            self.jit_prepare_native(slot);
+
             // SAFETY: the table is only modified by `jit_lookup`/`jit_link` in this function,
             // never by instruction handlers, bus callbacks or nested executions (those run other
             // `Sh2` values), and it is never resized after allocation. The block therefore stays
             // untouched while it executes.
             let block: &Block = unsafe { &*std::ptr::from_ref(&self.jit.table[slot]) };
-            let version = block.version;
+            #[allow(unused_mut)]
+            let mut slot = slot;
+            #[allow(unused_mut)]
+            let mut version = block.version;
 
             let mut n = usize::from(block.n).min((ticks - total) as usize);
             // Arrival at the watched loop head is handled by the caller. The watch only changes in
@@ -378,6 +419,34 @@ impl Sh2 {
             }
 
             stat!(s => s.block_runs += 1; if prev.is_some() { s.chained_runs += 1 });
+            #[cfg(any(test, feature = "jit-arm64"))]
+            let exit = if block.entry != 0 && n == usize::from(block.n) {
+                stat!(s => s.native_runs += 1);
+                let cpu: *mut Sh2 = self;
+                // SAFETY: the blocks and the code store are not modified while compiled code runs
+                // (compilation happens only in `jit_prepare_native`); `cpu`/`bus` are this call's
+                // exclusive borrows
+                let (exit, last) = unsafe {
+                    native::run(
+                        cpu,
+                        std::ptr::from_mut(bus),
+                        std::ptr::from_ref(block),
+                        block.entry,
+                        ticks - total,
+                        arena::Store::CALL,
+                    )
+                };
+                // Native chaining may have left the block in another slot
+                if !std::ptr::eq(last, block) {
+                    // SAFETY: `last` points into the table, which is never resized
+                    slot = unsafe { last.offset_from(self.jit.table.as_ptr()) } as usize;
+                    version = self.jit.table[slot].version;
+                }
+                exit
+            } else {
+                self.jit_exec(bus, block, n)
+            };
+            #[cfg(not(any(test, feature = "jit-arm64")))]
             let exit = self.jit_exec(bus, block, n);
             total += exit.executed as u64;
             stat!(s => s.instructions += exit.executed as u64);
@@ -395,6 +464,54 @@ impl Sh2 {
         }
 
         (total, false)
+    }
+
+    /// Counts a run of the block in `slot` and compiles it when it became hot
+    #[cfg(any(test, feature = "jit-arm64"))]
+    #[inline(always)]
+    fn jit_prepare_native(&mut self, slot: usize) {
+        if !arena::AVAILABLE || !NATIVE.load(Ordering::Relaxed) {
+            return;
+        }
+        let block = &mut self.jit.table[slot];
+        if block.entry != 0 || block.no_native {
+            return;
+        }
+        block.runs += 1;
+        if block.runs >= COMPILE_AFTER {
+            self.jit_compile(slot);
+        }
+    }
+
+    #[cfg(any(test, feature = "jit-arm64"))]
+    #[cold]
+    #[inline(never)]
+    fn jit_compile(&mut self, slot: usize) {
+        let Some(code) = native::compile(&self.jit.table[slot]) else {
+            stat!(s => s.compile_rejects += 1);
+            self.jit.table[slot].no_native = true;
+            return;
+        };
+        let entry = match self.jit.store.publish(&code) {
+            Some(entry) => entry,
+            None => {
+                // Store full: drop every compiled block and start over
+                for block in &mut self.jit.table {
+                    block.entry = 0;
+                    block.runs = 0;
+                }
+                self.jit.store.reset();
+                match self.jit.store.publish(&code) {
+                    Some(entry) => entry,
+                    None => {
+                        self.jit.table[slot].no_native = true;
+                        return;
+                    }
+                }
+            }
+        };
+        stat!(s => s.compiled += 1);
+        self.jit.table[slot].entry = entry;
     }
 
     /// Finds (or forms) a valid block for `pc`, following and updating the previous exit's link
@@ -448,49 +565,84 @@ impl Sh2 {
             if source.version == from_version {
                 source.links[usize::from(link)] =
                     Link { pc, slot: slot as u16, version: target_version };
+                #[cfg(any(test, feature = "jit-arm64"))]
+                {
+                    let target = std::ptr::from_ref(&self.jit.table[slot]) as usize;
+                    self.jit.table[from].chain[usize::from(link)] = native::Chain::new(target, target_version);
+                }
             }
         }
 
         Some(slot)
     }
 
+    /// One call-out micro-op `i` with the interpreter's exact state around it. Returns the exit
+    /// if the block must be left after it.
+    #[inline(always)]
+    pub(crate) fn jit_callout_step<Bus: BusInterface>(
+        &mut self,
+        bus: &mut Bus,
+        block: &Block,
+        i: usize,
+        n: usize,
+    ) -> Option<Exit> {
+        let op = &block.ops[i];
+        if op.flags & F_FETCH != 0 {
+            self.jit_fetch(block, op);
+        }
+        if op.flags & F_SLOT != 0 {
+            self.registers.pc = self.registers.next_pc;
+        } else {
+            self.registers.pc = op.addr.wrapping_add(2);
+        }
+        self.registers.next_pc = self.registers.pc.wrapping_add(2);
+        self.registers.next_op_in_delay_slot = false;
+        self.data_ctx = AccessContext::Data { pc: op.addr, opcode: op.opcode };
+
+        self.jit_callout(op, bus);
+        bus.increment_cycle_counter(1);
+        let i = i + 1;
+
+        if bus.should_stop_execution() {
+            return Some(Exit { executed: i, stopped: true, link: LINK_NONE });
+        }
+        if op.flags & F_MEM != 0 && !block.valid(&self.cache) {
+            return Some(Exit { executed: i, stopped: false, link: LINK_NONE });
+        }
+        // The registers are authoritative after a call-out: continue only if it went where the
+        // block was recorded to go
+        if i < n && self.registers.pc != block.ops[i].addr {
+            return Some(Exit { executed: i, stopped: false, link: LINK_NONE });
+        }
+        None
+    }
+
     /// Executes the first `n` micro-ops of `block` (fewer if it is left early)
     #[inline(always)]
     fn jit_exec<Bus: BusInterface>(&mut self, bus: &mut Bus, block: &Block, n: usize) -> Exit {
-        let mut i = 0;
+        self.jit_exec_from(bus, block, 0, n)
+    }
+
+    /// Executes micro-ops `start..n` of `block`; `start` must be a segment start or a call-out
+    #[inline(always)]
+    pub(crate) fn jit_exec_from<Bus: BusInterface>(
+        &mut self,
+        bus: &mut Bus,
+        block: &Block,
+        start: usize,
+        n: usize,
+    ) -> Exit {
+        let mut i = start;
         let mut link = 0u8;
 
         while i < n {
             let op = &block.ops[i];
 
             if op.kind == K_CALLOUT {
-                if op.flags & F_FETCH != 0 {
-                    self.jit_fetch(block, op);
+                if let Some(exit) = self.jit_callout_step(bus, block, i, n) {
+                    return exit;
                 }
-                if op.flags & F_SLOT != 0 {
-                    self.registers.pc = self.registers.next_pc;
-                } else {
-                    self.registers.pc = op.addr.wrapping_add(2);
-                }
-                self.registers.next_pc = self.registers.pc.wrapping_add(2);
-                self.registers.next_op_in_delay_slot = false;
-                self.data_ctx = AccessContext::Data { pc: op.addr, opcode: op.opcode };
-
-                self.jit_callout(op, bus);
-                bus.increment_cycle_counter(1);
                 i += 1;
-
-                if bus.should_stop_execution() {
-                    return Exit { executed: i, stopped: true, link: LINK_NONE };
-                }
-                if op.flags & F_MEM != 0 && !block.valid(&self.cache) {
-                    return Exit { executed: i, stopped: false, link: LINK_NONE };
-                }
-                // The registers are authoritative after a call-out: continue only if it went
-                // where the block was recorded to go
-                if i < n && self.registers.pc != block.ops[i].addr {
-                    return Exit { executed: i, stopped: false, link: LINK_NONE };
-                }
                 link = LINK_NONE;
                 continue;
             }
@@ -653,7 +805,7 @@ impl Sh2 {
 
     /// The fetch side effects of an instruction whose fetch may miss the host memo
     #[inline(always)]
-    fn jit_fetch(&mut self, block: &Block, op: &Uop) {
+    pub(crate) fn jit_fetch(&mut self, block: &Block, op: &Uop) {
         let line = &block.lines[usize::from(op.line)];
         if self.cache.fetch_memo_line() != line.addr {
             self.cache.fetch_hit(line.way, line.entry, line.addr);
@@ -662,7 +814,7 @@ impl Sh2 {
 
     /// Interpreter state after the native micro-op `op` was the last one executed
     #[inline(always)]
-    fn jit_materialize(&mut self, op: &Uop) {
+    pub(crate) fn jit_materialize(&mut self, op: &Uop) {
         if op.kind == K_DELAYED {
             // `next_pc` and the delay flag were set by the branch
             self.registers.pc = op.addr.wrapping_add(2);

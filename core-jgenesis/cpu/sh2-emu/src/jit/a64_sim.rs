@@ -10,6 +10,8 @@ use std::ptr;
 
 pub(crate) struct Sim {
     x: [u64; 32],
+    sp: u64,
+    _stack: Vec<u64>,
     n: bool,
     z: bool,
     c: bool,
@@ -38,8 +40,14 @@ fn decode_bitmask(n: u32, immr: u32, imms: u32, width: u32) -> u64 {
 }
 
 impl Sim {
+    pub(crate) fn set_x(&mut self, r: usize, value: u64) {
+        self.x[r] = value;
+    }
+
     pub(crate) fn new() -> Self {
-        Self { x: [0; 32], n: false, z: false, c: false, v: false }
+        let stack = vec![0u64; 256];
+        let sp = stack.as_ptr() as u64 + 256 * 8;
+        Self { x: [0; 32], sp, _stack: stack, n: false, z: false, c: false, v: false }
     }
 
     fn reg(&self, r: u32, sf: bool) -> u64 {
@@ -93,10 +101,33 @@ impl Sim {
     /// stores (the caller passes plain-data structs whose fields it then compares).
     pub(crate) unsafe fn run(&mut self, code: &[u32], window: *mut u8, len: usize) {
         self.x[19] = window as u64;
-        let mut pc = 0usize;
+        unsafe {
+            self.exec(code.as_ptr(), Some((window as usize, len)), &mut |_, _, _| panic!("no calls"));
+        }
+    }
+
+    /// Calls generated code with `x0 = arg` (AAPCS64, raw memory access) and returns `x0`.
+    /// `BLR` calls `host(target, x0, x1)` instead of jumping.
+    ///
+    /// # Safety
+    /// The code may access any memory; the caller vouches for every address it computes.
+    pub(crate) unsafe fn call(&mut self, code: *const u32, arg: u64, host: &mut dyn FnMut(u64, u64, u64) -> u64) -> u64 {
+        self.x[0] = arg;
+        unsafe { self.exec(code, None, host) }
+    }
+
+    unsafe fn exec(&mut self, code: *const u32, window: Option<(usize, usize)>, host: &mut dyn FnMut(u64, u64, u64) -> u64) -> u64 {
+        let (window, len) = window.unwrap_or((0, usize::MAX));
+        let window = window as *mut u8;
+        let raw = len == usize::MAX;
+        let mut pc = 0isize;
+        let mut base = code;
         loop {
-            let word = code[pc];
+            // SAFETY: generated code is contiguous and ends in RET on every path
+            let word = unsafe { *base.offset(pc) };
             pc += 1;
+            let at = pc - 1;
+            let imm19 = (((word >> 5) & 0x7FFFF) as i32) << 13 >> 13;
             let sf = word >> 31 == 1;
             let rd = word & 0x1F;
             let rn = (word >> 5) & 0x1F;
@@ -104,7 +135,94 @@ impl Sim {
             let bits = if sf { 64 } else { 32 };
 
             if word == 0xD65F_03C0 {
-                return;
+                return self.x[0];
+            } else if word & 0xFC00_0000 == 0x1400_0000 {
+                // B
+                pc = at + ((((word & 0x03FF_FFFF) as i32) << 6 >> 6) as isize);
+            } else if word & 0xFF00_0010 == 0x5400_0000 {
+                // B.cond
+                if self.cond(word & 0xF) {
+                    pc = at + imm19 as isize;
+                }
+            } else if word & 0x7E00_0000 == 0x3400_0000 {
+                // CBZ / CBNZ
+                let zero = self.reg(rd, sf) == 0;
+                if zero != ((word >> 24) & 1 == 1) {
+                    pc = at + imm19 as isize;
+                }
+            } else if word & 0x7E00_0000 == 0x3600_0000 {
+                // TBZ / TBNZ
+                let bit = ((word >> 31) << 5) | ((word >> 19) & 0x1F);
+                let set = (self.reg(rd, true) >> bit) & 1 == 1;
+                if set == ((word >> 24) & 1 == 1) {
+                    pc = at + (((((word >> 5) & 0x3FFF) as i32) << 18 >> 18) as isize);
+                }
+            } else if word & 0x7FE0_FC00 == 0x1AC0_2400 {
+                // LSRV
+                let amount = self.reg(rm, sf) % u64::from(bits);
+                self.set(rd, self.reg(rn, sf) >> amount, sf);
+            } else if word & 0x3B20_0C00 == 0x3820_0800 {
+                // LDR/STR (register offset, LSL #0 or #size)
+                let size = word >> 30;
+                let shift = if (word >> 12) & 1 == 1 { size } else { 0 };
+                let address = (self.x[rn as usize].wrapping_add(self.reg(rm, true) << shift)) as usize;
+                // SAFETY: as for unsigned-offset accesses (raw mode: the caller vouches)
+                unsafe {
+                    let p = address as *mut u8;
+                    if (word >> 22) & 1 == 1 {
+                        let value = match size {
+                            0 => u64::from(ptr::read_unaligned(p)),
+                            1 => u64::from(ptr::read_unaligned(p.cast::<u16>())),
+                            2 => u64::from(ptr::read_unaligned(p.cast::<u32>())),
+                            _ => ptr::read_unaligned(p.cast::<u64>()),
+                        };
+                        self.set(rd, value, true);
+                    } else {
+                        let value = self.reg(rd, true);
+                        match size {
+                            0 => ptr::write_unaligned(p, value as u8),
+                            1 => ptr::write_unaligned(p.cast::<u16>(), value as u16),
+                            2 => ptr::write_unaligned(p.cast::<u32>(), value as u32),
+                            _ => ptr::write_unaligned(p.cast::<u64>(), value),
+                        }
+                    }
+                }
+            } else if word & 0xFFFF_FC1F == 0xD61F_0000 {
+                // BR: continue in other generated code
+                base = self.reg(rn, true) as *const u32;
+                pc = 0;
+            } else if word & 0xFFFF_FC1F == 0xD63F_0000 {
+                // BLR: host call
+                let target = self.reg(rn, true);
+                let result = host(target, self.x[0], self.x[1]);
+                // Caller-saved registers are clobbered
+                for r in 0..19 {
+                    self.x[r] = 0xDEAD_0000_0000_0000 | r as u64;
+                }
+                self.x[0] = result;
+            } else if (0x2A2..=0x2A7).contains(&(word >> 22)) {
+                // STP/LDP 64-bit: post (A8), signed offset (A9 bit 23 = 0), pre (A9 bit 23 = 1)
+                let load = (word >> 22) & 1 == 1;
+                let imm = ((((word >> 15) & 0x7F) as i32) << 25 >> 25) as i64 * 8;
+                let rt2 = (word >> 10) & 0x1F;
+                let mode = (word >> 23) & 3; // 1 post, 2 offset, 3 pre
+                let base = if rn == 31 { self.sp } else { self.x[rn as usize] };
+                let address = if mode == 1 { base } else { base.wrapping_add(imm as u64) };
+                unsafe {
+                    let p = address as *mut u64;
+                    if load {
+                        let (a, b) = (p.read_unaligned(), p.add(1).read_unaligned());
+                        self.set(rd, a, true);
+                        self.set(rt2, b, true);
+                    } else {
+                        p.write_unaligned(self.reg(rd, true));
+                        p.add(1).write_unaligned(self.reg(rt2, true));
+                    }
+                }
+                if mode != 2 {
+                    let updated = base.wrapping_add(imm as u64);
+                    if rn == 31 { self.sp = updated } else { self.x[rn as usize] = updated }
+                }
             } else if word & 0x1F80_0000 == 0x1280_0000 {
                 // MOVN / MOVZ / MOVK
                 let shift = ((word >> 21) & 3) * 16;
@@ -267,7 +385,7 @@ impl Sim {
                 let start = window as usize;
                 let bytes = 1usize << size;
                 assert!(
-                    base + offset >= start && base + offset + bytes <= start + len,
+                    raw || (base + offset >= start && base + offset + bytes <= start + len),
                     "access outside the window: {:x}+{offset:x}",
                     base
                 );
@@ -293,7 +411,7 @@ impl Sim {
                     }
                 }
             } else {
-                panic!("simulator: unsupported instruction {word:08x} at {}", pc - 1);
+                panic!("simulator: unsupported instruction {word:08x} at {at}");
             }
         }
     }

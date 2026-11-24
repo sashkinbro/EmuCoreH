@@ -884,6 +884,9 @@ actual   {:?}",
             assert_eq!(expected.counter, actual.counter, "cycle counter diverged, seed {seed}");
         }
         println!("compared {} programs, skipped {skipped}", seeds - skipped);
+        if backend == Backend::Jit {
+            println!("{:?}", crate::jit_stats());
+        }
         assert!(skipped < seeds / 2, "too many programs hit unimplemented registers");
     }
 }
