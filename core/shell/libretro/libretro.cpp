@@ -1339,7 +1339,14 @@ void retro_run()
 
 	is_dupe = true;
 	try {
-		if (config::ThreadedRendering)
+		if (rend_is_lockstep())
+		{
+			// One emulation run per frame, the frame presented is the one rendered
+			// during the previous run. retro_rend_present() clears is_dupe.
+			startTime = sh4_sched_now64();
+			emu.render();
+		}
+		else if (config::ThreadedRendering)
 		{
 			// Render
 			for (int i = 0; i < 5 && is_dupe; i++)
@@ -1382,7 +1389,7 @@ void retro_run()
 
 	video_cb(is_dupe ? 0 : RETRO_HW_FRAME_BUFFER_VALID, framebufferWidth, framebufferHeight, 0);
 
-	if (!config::ThreadedRendering || config::LimitFPS)
+	if (!config::ThreadedRendering || config::LimitFPS || rend_is_lockstep())
 		retro_audio_upload();
 	else
 		retro_audio_flush_buffer();
@@ -2818,7 +2825,7 @@ unsigned retro_api_version()
 
 void retro_rend_present()
 {
-	if (!config::ThreadedRendering)
+	if (!config::ThreadedRendering || rend_is_lockstep())
 		is_dupe = false;
 }
 

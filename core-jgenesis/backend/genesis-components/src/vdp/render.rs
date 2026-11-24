@@ -600,6 +600,48 @@ impl Vdp {
             let row_start = (frame_buffer_row * screen_width) as usize;
             let row = &mut self.frame_buffer
                 [row_start + fb_start_col as usize..row_start + fb_end_col as usize];
+
+            // Common case: no shadow/highlight and no debug register plane forcing. Layer priority
+            // then reduces to "first opaque high-priority layer in S/A/B order, else first opaque
+            // low-priority layer, else backdrop", which a 64-entry table resolves branch-free.
+            if debug_register.forced_plane == Plane::Background && !debug_register.display_disabled
+            {
+                if in_v_border {
+                    row.fill(palette[(bg_cram_idx & 63) as usize]);
+                    return;
+                }
+                let active_display_pixels = active_display_pixels as i16;
+                for (frame_buffer_col, out) in (fb_start_col..fb_end_col).zip(row) {
+                    let pixel = frame_buffer_col as i16 - fb_pixel_offset;
+                    let cram_idx = if (0..active_display_pixels).contains(&pixel) {
+                        let sprite = if sprites_enabled {
+                            sprite_pixels.get(pixel as usize).copied().unwrap_or_default()
+                        } else {
+                            TilePixel::default()
+                        };
+                        let scroll_a = plane_a_pixels[frame_buffer_col as usize];
+                        let scroll_b = plane_b_pixels[frame_buffer_col as usize];
+                        let key = usize::from(sprite.color != 0)
+                            | usize::from(scroll_a.color != 0) << 1
+                            | usize::from(scroll_b.color != 0) << 2
+                            | usize::from(sprite.priority) << 3
+                            | usize::from(scroll_a.priority) << 4
+                            | usize::from(scroll_b.priority) << 5;
+                        let candidates = [
+                            (sprite.palette << 4) | sprite.color,
+                            (scroll_a.palette << 4) | scroll_a.color,
+                            (scroll_b.palette << 4) | scroll_b.color,
+                            bg_cram_idx,
+                        ];
+                        candidates[LAYER_SELECT[key] as usize]
+                    } else {
+                        bg_cram_idx
+                    };
+                    *out = palette[(cram_idx & 63) as usize];
+                }
+                return;
+            }
+
             for (frame_buffer_col, out) in (fb_start_col..fb_end_col).zip(row) {
                 let (pixel_cram_idx, _) = pixel_color_at!(frame_buffer_col);
                 *out = palette[(pixel_cram_idx & 63) as usize];
@@ -1098,6 +1140,32 @@ pub fn read_pattern_generator_row(
 
     colors
 }
+
+/// Index (0 = sprite, 1 = plane A, 2 = plane B, 3 = backdrop) of the visible layer, keyed by
+/// opaque bits (0-2) and priority bits (3-5) in sprite/A/B order. Matches
+/// `determine_pixel_color::<false>` when no debug plane is forced.
+const LAYER_SELECT: [u8; 64] = {
+    let mut table = [3; 64];
+    let mut key = 0;
+    while key < 64 {
+        let mut pass = 0;
+        'search: while pass < 2 {
+            let mut layer = 0;
+            while layer < 3 {
+                let opaque = key & (1 << layer) != 0;
+                let priority = key & (1 << (layer + 3)) != 0;
+                if opaque && priority == (pass == 0) {
+                    table[key] = layer as u8;
+                    break 'search;
+                }
+                layer += 1;
+            }
+            pass += 1;
+        }
+        key += 1;
+    }
+    table
+};
 
 #[derive(Debug, Clone, Copy)]
 struct UnresolvedColor {

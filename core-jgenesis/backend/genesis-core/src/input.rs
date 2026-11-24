@@ -102,6 +102,7 @@ impl Pins {
         state.update_pins(self);
     }
 
+    #[inline]
     fn tick(&mut self, m68k_cycles: u32, state: &mut ControllerState) {
         if self.cycles_until_th_high == 0 {
             return;
@@ -181,6 +182,7 @@ impl ControllerState {
         }
     }
 
+    #[inline]
     fn tick(&mut self, m68k_cycles: u32, pins: &mut Pins) {
         match self {
             Self::SixButton(state) => state.tick(m68k_cycles, pins),
@@ -423,6 +425,7 @@ impl InputState {
         self.ext_tx_data = value;
     }
 
+    #[inline]
     pub fn tick(&mut self, m68k_cycles: u32) {
         self.p1_state.tick(m68k_cycles, &mut self.p1_pins);
         self.p1_pins.tick(m68k_cycles, &mut self.p1_state);

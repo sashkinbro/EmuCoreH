@@ -67,6 +67,8 @@ enum Query {
     ReadDeadline,
     ReplayRead,
     WriteIsNoop,
+    OtherQuiescent,
+    AdvanceOther,
 }
 
 #[derive(Debug, Clone)]
@@ -98,6 +100,8 @@ struct VTable {
     deadline: fn(*const (), u32, u8) -> Option<u64>,
     replay_read: fn(*mut (), u32, u8, u64) -> Option<u32>,
     write_noop: fn(*mut (), u32, u8, u32) -> bool,
+    other_quiescent: fn(*mut ()) -> bool,
+    advance_other: fn(*mut (), u32, u8, u64),
 }
 
 // SAFETY (all entries): the pointer is the `&mut B` the `RecBus` was created from, which outlives
@@ -136,6 +140,8 @@ fn vtable<B: BusInterface>() -> VTable {
         deadline: |p, a, z| s::<B>(p).idle_read_deadline(a, z),
         replay_read: |p, a, z, c| b::<B>(p).idle_replay_read(a, z, c),
         write_noop: |p, a, z, v| b::<B>(p).idle_write_is_noop(a, z, v),
+        other_quiescent: |p| b::<B>(p).idle_other_quiescent(),
+        advance_other: |p, a, z, c| b::<B>(p).idle_advance_other(a, z, c),
     }
 }
 
@@ -303,6 +309,17 @@ impl BusInterface for RecBus {
         let r = (self.vt.write_noop)(self.inner, address, size, value);
         self.query(Query::WriteIsNoop, [address.into(), size.into(), value.into()], r.into());
         r
+    }
+
+    fn idle_other_quiescent(&mut self) -> bool {
+        let r = (self.vt.other_quiescent)(self.inner);
+        self.query(Query::OtherQuiescent, [0; 3], r.into());
+        r
+    }
+
+    fn idle_advance_other(&mut self, address: u32, size: u8, read_counter: u64) {
+        (self.vt.advance_other)(self.inner, address, size, read_counter);
+        self.query(Query::AdvanceOther, [address.into(), size.into(), read_counter], 0);
     }
 
     fn jit_checkpoint(&mut self, ticks_left: u64, cpu: &Sh2) {
@@ -546,6 +563,14 @@ impl BusInterface for ReplayBus {
 
     fn idle_write_is_noop(&mut self, address: u32, size: u8, value: u32) -> bool {
         self.query(Query::WriteIsNoop, [address.into(), size.into(), value.into()]) != 0
+    }
+
+    fn idle_other_quiescent(&mut self) -> bool {
+        self.query(Query::OtherQuiescent, [0; 3]) != 0
+    }
+
+    fn idle_advance_other(&mut self, address: u32, size: u8, read_counter: u64) {
+        self.query(Query::AdvanceOther, [address.into(), size.into(), read_counter]);
     }
 }
 

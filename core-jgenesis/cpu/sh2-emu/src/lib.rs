@@ -89,6 +89,7 @@ pub struct Sh2 {
     blocks: HostCache<predecode::BlockCache>,
     // Host-only block engine state (never serialized); see the `jit` module
     jit: HostCache<jit::JitCache>,
+    idle_stash: HostCache<idle::IdleStash>,
 }
 
 #[cfg(debug_assertions)]
@@ -149,6 +150,7 @@ impl Sh2 {
             idle: HostCache::default(),
             blocks: HostCache::default(),
             jit: HostCache::default(),
+            idle_stash: HostCache::default(),
         }
     }
 

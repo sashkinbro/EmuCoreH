@@ -102,6 +102,7 @@ impl SixButtonState {
         }
     }
 
+    #[inline]
     pub fn tick(&mut self, m68k_cycles: u32, pins: &mut Pins) {
         if self.flip_reset_counter == 0 {
             return;

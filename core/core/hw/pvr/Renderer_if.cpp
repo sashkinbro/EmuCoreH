@@ -13,6 +13,7 @@
 #include "network/ggpo.h"
 
 #include <mutex>
+#include <condition_variable>
 #include <deque>
 #include <memory>
 #ifdef LIBRETRO
@@ -45,6 +46,17 @@ static bool rendererEnabled = true;
 static bool presented;
 static u32 fbAddrHistory[2] { 1, 1 };
 
+// Lockstep state. A rendered frame is "pending" (emu thread view of the
+// renderer's frameRendered flag) until the Present that stops the SH4 like the
+// single-threaded renderer does.
+static bool lockstepFramePending;
+static std::mutex lockstepMutex;
+static std::condition_variable lockstepCond;
+static bool lockstepGranted;
+static bool lockstepDone = true;
+static bool lockstepAborted;
+static int lockstepBlocked;
+
 // Delay frame swapping is a threaded-rendering feature (see the libretro core
 // option help). With the single-threaded renderer the emulation thread is
 // stopped when a frame is presented, so delaying the present until the game
@@ -55,7 +67,9 @@ static u32 fbAddrHistory[2] { 1, 1 };
 // stutter. Only honour the option when the threaded renderer is active.
 static bool delayFrameSwapping()
 {
-	return config::ThreadedRendering && config::DelayFrameSwapping;
+	// The lockstep renderer stops the SH4 when the Present is queued, so the
+	// swap can't be delayed to the render thread.
+	return config::ThreadedRendering && config::DelayFrameSwapping && !rend_is_lockstep();
 }
 
 class PvrMessageQueue
@@ -124,10 +138,23 @@ public:
 				{
 					if (type == Stop)
 						return;
-					dequeueEvent.Wait();
+					rend_lockstep_wait(dequeueEvent);
 				}
 			} while (dupe);
 			enqueueEvent.Set();
+			if (rend_is_lockstep() && type != Stop)
+			{
+				// Same stop condition as the single-threaded renderer, where
+				// Present() stops the SH4 if a frame was rendered
+				if (type == RenderFramebuffer)
+					lockstepFramePending = true;
+				else if (type == Present && lockstepFramePending)
+				{
+					lockstepFramePending = false;
+					if (!ggpo::active())
+						emu.getSh4Executor()->Stop();
+				}
+			}
 		}
 		else
 		{
@@ -154,6 +181,21 @@ public:
 	bool waitAndExecute(int timeoutMs = -1)
 	{
 		return execute(dequeue(timeoutMs));
+	}
+
+	// Executes one queued message. Returns false if there was none.
+	bool executeOne(int timeoutMs)
+	{
+		Message msg = dequeue(timeoutMs);
+		if (msg.type == NoMessage)
+			return false;
+		execute(msg);
+		return true;
+	}
+
+	size_t size() {
+		const lock_guard lock(mutex);
+		return queue.size();
 	}
 
 	void reset() {
@@ -327,6 +369,115 @@ bool rend_single_frame(const bool& enabled)
 		if (!pvrQueue.waitAndExecute(timeout))
 			return false;
 	return true;
+}
+
+bool rend_is_lockstep()
+{
+#ifdef LIBRETRO
+	return config::ThreadedRendering && !config::GGPOEnable;
+#else
+	return false;
+#endif
+}
+
+void rend_lockstep_reset()
+{
+	const std::lock_guard<std::mutex> lock(lockstepMutex);
+	lockstepGranted = false;
+	lockstepDone = true;
+	lockstepAborted = false;
+	lockstepBlocked = 0;
+}
+
+void rend_lockstep_abort()
+{
+	{
+		const std::lock_guard<std::mutex> lock(lockstepMutex);
+		lockstepAborted = true;
+	}
+	lockstepCond.notify_all();
+}
+
+bool rend_lockstep_aborted()
+{
+	const std::lock_guard<std::mutex> lock(lockstepMutex);
+	return lockstepAborted;
+}
+
+bool rend_lockstep_wait_grant()
+{
+	std::unique_lock<std::mutex> lock(lockstepMutex);
+	lockstepCond.wait(lock, [] { return lockstepGranted || lockstepAborted; });
+	if (lockstepAborted)
+		return false;
+	lockstepGranted = false;
+	return true;
+}
+
+void rend_lockstep_done()
+{
+	{
+		const std::lock_guard<std::mutex> lock(lockstepMutex);
+		lockstepDone = true;
+	}
+	lockstepCond.notify_all();
+}
+
+// Blocking wait of the emu thread on something the render side provides. The
+// frontend thread, which owns the GL context, serves the render queue while the
+// emu thread is blocked.
+void rend_lockstep_wait(cResetEvent& event)
+{
+	if (!rend_is_lockstep()) {
+		event.Wait();
+		return;
+	}
+	if (event.Wait(0))
+		return;
+	{
+		const std::lock_guard<std::mutex> lock(lockstepMutex);
+		lockstepBlocked++;
+	}
+	lockstepCond.notify_all();
+	event.Wait();
+	{
+		const std::lock_guard<std::mutex> lock(lockstepMutex);
+		lockstepBlocked--;
+	}
+}
+
+void rend_lockstep_run()
+{
+	FC_PROFILE_SCOPE;
+
+	// Work queued by the previous run. It is executed while the SH4 runs ahead.
+	size_t backlog = pvrQueue.size();
+	{
+		const std::lock_guard<std::mutex> lock(lockstepMutex);
+		if (lockstepAborted)
+			return;
+		lockstepDone = false;
+		lockstepGranted = true;
+	}
+	lockstepCond.notify_all();
+
+	while (backlog > 0 && pvrQueue.executeOne(0))
+		backlog--;
+
+	// Wait for the end of the run. New render messages are left in the queue for
+	// the next run, unless the emu thread is blocked waiting for them.
+	std::unique_lock<std::mutex> lock(lockstepMutex);
+	while (!lockstepDone && !lockstepAborted)
+	{
+		if (lockstepBlocked > 0)
+		{
+			lock.unlock();
+			pvrQueue.executeOne(1);
+			lock.lock();
+		}
+		else
+			lockstepCond.wait(lock);
+	}
 }
 
 class SwapIntervalDetector
@@ -534,6 +685,7 @@ void rend_reset()
 	FinishRender(DequeueRender());
 	render_called = false;
 	pend_rend = false;
+	lockstepFramePending = false;
 	FrameCount = 1;
 	fb_w_cur = 1;
 	pvrQueue.reset();
@@ -618,8 +770,11 @@ void rend_start_render()
 	{
 		palette_update();
 		pend_rend = true;
+		const bool presentFrame = !delayFrameSwapping() && !ctx->rend.isRTT && !config::EmulateFramebuffer;
+		if (!ctx->rend.isRTT && !config::EmulateFramebuffer)
+			lockstepFramePending = true;
 		pvrQueue.enqueue(PvrMessageQueue::Render);
-		if (!delayFrameSwapping() && !ctx->rend.isRTT && !config::EmulateFramebuffer)
+		if (presentFrame)
 			pvrQueue.enqueue(PvrMessageQueue::Present);
 	}
 }
@@ -639,7 +794,7 @@ int rend_end_render(int tag, int cycles, int jitter, void *arg)
 		asic_RaiseInterrupt(holly_RENDER_DONE_vd);
 	}
 	if (pend_rend && config::ThreadedRendering)
-		renderEnd.Wait();
+		rend_lockstep_wait(renderEnd);
 
 	return 0;
 }

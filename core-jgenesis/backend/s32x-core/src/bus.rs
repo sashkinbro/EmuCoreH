@@ -817,6 +817,34 @@ impl BusInterface for Sh2Bus {
         Some(value)
     }
 
+    fn idle_other_quiescent(&mut self) -> bool {
+        let Some(OtherCpu { cpu: mut other_cpu, cycle_counter: other_cycle_counter }) =
+            self.other_sh2
+        else {
+            return false;
+        };
+
+        // SAFETY: Same pointers and bus copy as `sync_other_cpu`
+        unsafe {
+            let counter = other_cycle_counter.read();
+            let mut bus = Sh2Bus {
+                s32x_bus: self.s32x_bus,
+                which: self.which.other(),
+                cycle_counter: counter,
+                cycle_limit: counter,
+                other_sh2: None,
+            };
+            other_cpu.as_mut().idle_quiescent(&mut bus, counter)
+        }
+    }
+
+    fn idle_advance_other(&mut self, address: u32, size: u8, read_counter: u64) {
+        let saved = self.cycle_counter;
+        self.cycle_counter = read_counter + if size == OpSize::LONGWORD { 2 } else { 1 };
+        self.maybe_sync_other_cpu(address);
+        self.cycle_counter = saved;
+    }
+
     fn idle_write_is_noop(&mut self, address: u32, size: u8, value: u32) -> bool {
         // SDRAM writes charge a fixed cycle and only store the value
         idle_sdram(address, size)
