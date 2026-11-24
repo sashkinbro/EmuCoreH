@@ -327,6 +327,20 @@ fn main() {
     retro_set_input_state(Some(input_state));
     retro_init();
 
+    // JG_PIN_CPU=<n>: pin the emulation thread to one logical CPU at high priority (less noise).
+    #[cfg(windows)]
+    if let Some(cpu) = std::env::var("JG_PIN_CPU").ok().and_then(|v| v.parse::<u32>().ok()) {
+        unsafe extern "system" {
+            fn GetCurrentThread() -> *mut c_void;
+            fn SetThreadAffinityMask(thread: *mut c_void, mask: usize) -> usize;
+            fn SetThreadPriority(thread: *mut c_void, priority: i32) -> i32;
+        }
+        unsafe {
+            SetThreadAffinityMask(GetCurrentThread(), 1usize << cpu);
+            SetThreadPriority(GetCurrentThread(), 2); // THREAD_PRIORITY_HIGHEST
+        }
+    }
+
     let path = CString::new(rom.to_string_lossy().as_bytes()).unwrap();
     let info = RetroGameInfo {
         path: path.as_ptr(),
