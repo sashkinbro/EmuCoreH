@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Runs CoreOracleInstrumentedTest for one suite entry on one device and pulls the JSON.
 # Usage: tools/oracle/run_oracle.sh <serial> <out-dir> <suite-name> [label-suffix]
+# KEEP=1 pulls the checkpoint states, RELOAD=1 loads each checkpoint state right after saving it.
 # Suites are defined in tools/oracle/suites.sh. Content must be pushed to
 #   /sdcard/Android/data/com.sbro.emucoreh/files/oracle-content/
 set -euo pipefail
@@ -22,6 +23,7 @@ args=(-e class com.sbro.emucoreh.core.CoreOracleInstrumentedTest
 [ -n "$options" ] && args+=(-e oracleOptions "$options")
 [ -n "$input" ] && args+=(-e oracleInput "$input")
 [ "${KEEP:-0}" = 1 ] && args+=(-e oracleKeepStates true)
+[ "${RELOAD:-0}" = 1 ] && args+=(-e oracleReloadStates true)
 [ -n "$sysfiles" ] && args+=(-e oracleSystemFiles "${sysfiles//@C@/$C}")
 # am instrument -e values may not contain spaces unquoted: quote every argument for the device shell.
 quoted=""

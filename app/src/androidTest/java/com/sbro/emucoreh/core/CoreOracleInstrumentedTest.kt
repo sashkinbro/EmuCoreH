@@ -51,6 +51,8 @@ class CoreOracleInstrumentedTest {
         val options = parseOptions(args.getString("oracleOptions").orEmpty())
         val input = parseInput(args.getString("oracleInput").orEmpty())
         val keepStates = args.getString("oracleKeepStates") == "true"
+        // Load every checkpoint state right after saving it: later checkpoints must match a run without reloads.
+        val reloadStates = args.getString("oracleReloadStates") == "true"
         val game = File(gamePath)
         assertTrue("Game must be readable: $gamePath", game.canRead())
 
@@ -142,6 +144,8 @@ class CoreOracleInstrumentedTest {
                                 val state = File(work, "state.bin")
                                 assertEquals("saveState at $frame", 0, bridge.saveState(handle, state.absolutePath))
                                 val stateHash = sha256(state.readBytes())
+                                if (reloadStates)
+                                    assertEquals("loadState at $frame", 0, bridge.loadState(handle, state.absolutePath))
                                 if (keepStates) state.copyTo(File(outDir, "$label-r$run-f$frame.state"), overwrite = true)
                                 val frameHash = bridge.captureSoftwareFrame(handle)?.let { pixels ->
                                     val bytes = java.nio.ByteBuffer.allocate(pixels.size * 4)
