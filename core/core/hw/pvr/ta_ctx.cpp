@@ -61,7 +61,12 @@ bool QueueRender(TA_context* ctx)
 			// The previous render hasn't completed yet so we wait.
 			// If autoskipframe is enabled (normal level), we only do so if the CPU is running
 			// fast enough over the last frames
-			frame_finished.Wait();
+			do {
+				rend_lockstep_wait(frame_finished);
+				// frame_finished may be signaled spuriously when the emulator was
+				// stopped with a frame still queued. Dropping this frame would make
+				// the lockstep emulation depend on the host timing.
+			} while (rend_is_lockstep() && rqueue != nullptr && !rend_lockstep_aborted());
 	}
 
 	if (skipFrame || rqueue)

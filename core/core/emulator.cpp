@@ -822,6 +822,8 @@ void Emulator::stop()
 	}
 	if (config::ThreadedRendering)
 	{
+		if (rend_is_lockstep())
+			rend_lockstep_abort();
 		rend_cancel_emu_wait();
 		try {
 			checkStatus(true);
@@ -1006,20 +1008,35 @@ void Emulator::start()
 	{
 		const std::lock_guard<std::mutex> lock(mutex);
 		getSh4Executor()->Start();
-		threadResult = std::async(std::launch::async, [this] {
+		const bool lockstep = rend_is_lockstep();
+		if (lockstep)
+			rend_lockstep_reset();
+		threadResult = std::async(std::launch::async, [this, lockstep] {
 				ThreadName _("Flycast-emu");
 				InitAudio();
 
 				try {
 					while (state == Running || singleStep || stepRangeTo != 0)
 					{
+						if (lockstep)
+						{
+							// One run per frontend frame, as in single-threaded mode
+							if (!rend_lockstep_wait_grant() || !restartCpu())
+								break;
+						}
 						startTime = sh4_sched_now64();
 						runInternal();
+						if (lockstep)
+							rend_lockstep_done();
 						if (!ggpo::nextFrame())
 							break;
 					}
+					if (lockstep)
+						rend_lockstep_abort();
 					TermAudio();
 				} catch (...) {
+					if (lockstep)
+						rend_lockstep_abort();
 					setNetworkState(false);
 					getSh4Executor()->Stop();
 					TermAudio();
@@ -1085,6 +1102,11 @@ bool Emulator::render()
 		return false;
 	if (state != Running)
 		return false;
+	if (rend_is_lockstep())
+	{
+		rend_lockstep_run();
+		return true;
+	}
 	return rend_single_frame(true); // FIXME stop flag?
 }
 
@@ -1097,7 +1119,7 @@ void Emulator::vblank()
 		return;
 	if (ggpo::active())
 		ggpo::endOfFrame();
-	else if (!config::ThreadedRendering)
+	else if (!config::ThreadedRendering || rend_is_lockstep())
 		getSh4Executor()->Stop();
 }
 

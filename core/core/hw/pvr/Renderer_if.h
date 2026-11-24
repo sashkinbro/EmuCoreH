@@ -13,6 +13,18 @@ void rend_start_render();
 int rend_end_render(int tag, int cycles, int jitter, void *arg);
 void rend_cancel_emu_wait();
 bool rend_single_frame(const bool& enabled);
+// Lockstep threaded rendering (libretro): the emulation thread runs exactly one
+// single-threaded-equivalent "run" per frontend retro_run() while the frontend
+// thread overlaps the GPU work of the previous run.
+bool rend_is_lockstep();
+void rend_lockstep_reset();
+void rend_lockstep_abort();
+bool rend_lockstep_aborted();
+bool rend_lockstep_wait_grant();	// emu thread
+void rend_lockstep_done();			// emu thread
+void rend_lockstep_run();			// frontend thread
+class cResetEvent;
+void rend_lockstep_wait(cResetEvent& event);	// emu thread blocking wait
 void rend_swap_frame(u32 fb_r_sof1);
 void rend_set_fb_write_addr(u32 fb_w_sof1);
 void rend_reset();

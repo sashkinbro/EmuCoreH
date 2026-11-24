@@ -408,12 +408,12 @@ object FlycastCoreOptions {
             defaultValue = "0",
         ),
         // video
-        // Only meaningful with the threaded renderer, which this build never
-        // enables: with the single-threaded renderer the core stops the
-        // emulation thread when a frame is presented, so delaying the present
-        // until the game swaps its framebuffer makes arcade titles advance an
+        // Not honoured by this build: the lockstep threaded renderer stops the
+        // emulation thread when a frame is queued for presentation (like the
+        // single-threaded renderer), so the present can't be delayed until the
+        // game swaps its framebuffer. Delaying it made arcade titles advance an
         // unpredictable number of vblanks per frontend frame (~40 FPS, stuttery
-        // audio). The core ignores the option while threaded rendering is off.
+        // audio). The core ignores the option.
         Option(
             key = "reicast_delay_frame_swapping",
             labelRes = R.string.flycast_opt_delay_frame_swapping_label,
@@ -500,10 +500,11 @@ object FlycastCoreOptions {
             ),
             defaultValue = "enabled",
         ),
-        // Threaded rendering stays out of the settings: this core build bypasses
-        // the vblank pacing with it, which doubles the speed of 30 fps scenes
-        // (boot logos, cutscenes). The single-threaded renderer paced by the
-        // audio push-back keeps every game at real time.
+        // Threaded rendering stays out of the settings and is always on (core
+        // default "enabled"). This core build runs it in lockstep: exactly one
+        // single-threaded-equivalent emulation run per retro_run while the GPU
+        // work of the previous run overlaps, so the vblank pacing and the audio
+        // push-back keep every game (30 fps scenes included) at real time.
         // performance
         Option(
             key = "reicast_auto_skip_frame",
