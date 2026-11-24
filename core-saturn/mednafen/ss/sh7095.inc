@@ -653,9 +653,25 @@ void SH7095::FRT_WDT_Update(void)
   const uint32 frt_clockshift = 3 + ((FRT.TCR & 0x3) << 1);	// /8, /32, /128, count at falling edge
   uint32 divided_clocks = (FRT_WDT_ClockDivider >> frt_clockshift) - (PreAddCD >> frt_clockshift);
 
-  while(divided_clocks-- > 0)
+  //
+  // Clock FRC in bulk: only the ticks that make FRC wrap to 0 or reach OCRA/OCRB have side
+  // effects (FRT_ClockFRC() does nothing else), so skip straight to the next such tick.
+  //
+  while(divided_clocks > 0)
   {
+   const uint32 frc = FRT.FRC;
+   uint32 d = ((0x0000 - frc - 1) & 0xFFFF) + 1;
+   d = std::min<uint32>(d, ((FRT.OCR[0] - frc - 1) & 0xFFFF) + 1);
+   d = std::min<uint32>(d, ((FRT.OCR[1] - frc - 1) & 0xFFFF) + 1);
+
+   if(d > divided_clocks)
+   {
+    FRT.FRC = frc + divided_clocks;
+    break;
+   }
+   FRT.FRC = frc + d - 1;
    FRT_ClockFRC();
+   divided_clocks -= d;
   }
  }
 
