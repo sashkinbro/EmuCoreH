@@ -47,6 +47,8 @@ class SH7095 final
 
  INLINE void SetExtHalt(bool state)
  {
+  IdleExtGuard ig(this);
+
   ExtHalt = state;
 
   if(ExtHalt)
@@ -437,6 +439,104 @@ class SH7095 final
 
  template<unsigned which, bool EmulateICache, int DebugMode>
  INLINE void UCRelDelayBranch(uint32 disp);
+
+ //
+ // Idle-loop virtualization (not saved in states; see IdleHit() in sh7095.inc).
+ //
+ // A CPU that keeps repeating an instruction sequence that touches nothing outside of its
+ // registers, its cache and the FTCSR register (e.g. the slave polling FTCSR.ICF while it
+ // waits for the master) has a state that is periodic in time: after P steps everything
+ // except the time fields equals the state P steps earlier, and the live time fields moved
+ // by exactly Delta cycles.  Such a loop is recorded once; afterwards the CPU is only told
+ // how far it has to catch up (IdleSyncTS), and the real register state is rebuilt from
+ // the recording when something outside the CPU looks at it, when the loop code is
+ // written, or before the next FRT/WDT event.
+ //
+ struct IdleRec
+ {
+  uint32 R[16];
+  uint32 PC, SR, GBR, VBR, MACH, MACL, PR;
+  uint32 EPending, Pipe_ID, Pipe_IF, IBuffer;
+  sscpu_timestamp_t TS[5];	// timestamp, MA_until, MM_until, write_finish_timestamp, divide_finish_timestamp
+  uint8 FTCSR, FTCSRM;
+  uint8 LRU[64];
+ };
+ enum { IDLE_MAX_STEPS = 48 };
+
+ bool IdleTaint;		// Set by anything a replayed loop must not do (bus access, writes, exceptions, external calls, ...).
+ bool IdleRecording;
+ bool IdleVirtual;
+ bool IdleHaveRec;
+ bool IdleSnapValid;
+ uint8 IdleMisses;
+ uint8 IdleMoving;		// bit i set: TS[i] advances by IdleDelta every period
+ uint32 IdlePC;
+ uint32 IdleCountdown;
+ uint32 IdleBackoff;
+ sscpu_timestamp_t IdleLastHit;
+ unsigned IdleSteps;		// steps recorded so far / period length in steps
+ int32 IdleDelta;		// period length in cycles
+ int32 IdleQ;			// materialized position: IdleQ periods + IdleR steps after IdleRecs[0]
+ unsigned IdleR;
+ sscpu_timestamp_t IdleSyncTS;	// virtual mode: caught up to the first step boundary at or after this
+ sscpu_timestamp_t IdleLimit;	// first timestamp at which a replayed step could observe an FRT/WDT event
+ IdleRec IdleSnap;
+ IdleRec IdleRecs[IDLE_MAX_STEPS + 1];
+
+ void IdleCapture(IdleRec* r) const;
+ bool IdleSamePeriodic(const IdleRec& a, const IdleRec& b, int32* delta, uint8* moving) const;
+ bool IdleMatches(const IdleRec& rec, int32 shift) const;
+ void IdleReset(void);
+ void IdleHit(void);
+ void IdleRecord(void);
+ void IdleMaterialize(void);
+ void IdleTryResume(void);
+ void IdleCodeWritten(void);
+ sscpu_timestamp_t IdleEventLimit(void) const;
+
+ INLINE void IdleTick(void)
+ {
+  if(MDFN_UNLIKELY(!--IdleCountdown))
+  {
+   IdleCountdown = IdleBackoff;
+
+   if(IdleRecording || (IdlePC != ~0U && (timestamp - IdleLastHit) < 2048))
+    return;
+
+   IdlePC = PC;
+   IdleSnapValid = false;
+   IdleMisses = 0;
+   IdleLastHit = timestamp;
+  }
+ }
+
+ INLINE void IdleVirtualSync(sscpu_timestamp_t until)
+ {
+  IdleSyncTS = until;
+
+  if(MDFN_UNLIKELY(until > IdleLimit))
+   IdleMaterialize();
+ }
+
+ struct IdleExtGuard	// Wraps external accesses to the CPU state.
+ {
+  SH7095* const cpu;
+  const bool was_virtual;
+
+  INLINE IdleExtGuard(SH7095* c) : cpu(c), was_virtual(c->IdleVirtual)
+  {
+   if(MDFN_UNLIKELY(was_virtual))
+    cpu->IdleMaterialize();
+  }
+
+  INLINE ~IdleExtGuard()
+  {
+   cpu->IdleTaint = true;
+
+   if(MDFN_UNLIKELY(was_virtual))
+    cpu->IdleTryResume();
+  }
+ };
 
 
  //

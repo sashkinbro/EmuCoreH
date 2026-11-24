@@ -100,6 +100,7 @@ static NO_INLINE MDFN_FASTCALL void C_MemWriteRT(uint32 A, T V);
 
 void SH7095::Init(const bool cbh)
 {
+ IdleReset();
  CBH_Setting = cbh;
  //
  #define MAHL_P(w, region) {									\
@@ -159,6 +160,10 @@ SH7095::~SH7095()
 
 void SH7095::AdjustTS(int32 delta, bool force_set)
 {
+ if(IdleVirtual)
+  IdleMaterialize();
+ IdleReset();
+
  if(force_set)
  {
   timestamp = delta;
@@ -202,6 +207,10 @@ void SH7095::AdjustTS(int32 delta, bool force_set)
 //
 void SH7095::TruePowerOn(void)
 {
+ if(IdleVirtual)
+  IdleMaterialize();
+ IdleReset();
+
  for(unsigned i = 0; i < 16; i++)
   R[i] = 0;
 
@@ -440,6 +449,8 @@ INLINE void SH7095::DMA_DoTransfer(unsigned ch)
 
 sscpu_timestamp_t SH7095::DMA_Update(sscpu_timestamp_t et)
 {
+ IdleExtGuard ig(this);
+
  if(MDFN_UNLIKELY(ExtHalt))
  {
   dma_lastts = et;
@@ -719,6 +730,8 @@ void SH7095::FRT_WDT_Update(void)
 
 void SH7095::SetFTI(bool state)
 {
+ IdleExtGuard ig(this);
+
  FRT_WDT_Update();
  //
  //
@@ -740,6 +753,8 @@ void SH7095::SetFTI(bool state)
 
 void SH7095::SetFTCI(bool state)
 {
+ IdleExtGuard ig(this);
+
  bool prev = FRT.FTCI;
  FRT.FTCI = state;
 
@@ -919,6 +934,8 @@ void SH7095::SCI_Reset(void)
 template<typename T>
 NO_INLINE void SH7095::OnChipRegWrite(uint32 A, uint32 V)
 {
+ IdleTaint = true;
+
  //SS_DBG(SS_DBG_SH2_REGW, "[%s] %zu-byte write to on-chip register area; address=0x%08x value=0x%08x\n", cpu_name, sizeof(T), A, V);
 
  if(A & 0x100)
@@ -1328,6 +1345,10 @@ NO_INLINE void SH7095::OnChipRegWrite(uint32 A, uint32 V)
 template<typename T>
 INLINE T SH7095::OnChipRegRead(uint32 A)
 {
+ // FTCSR is the only register an idle loop may poll (its flags change only at FRT events and in SetFTI()).
+ if(!(sizeof(T) == 1 && (A & 0x1FF) == 0x011))
+  IdleTaint = true;
+
  if(A & 0x100)
  {
   uint32 ret = 0;
@@ -1700,6 +1721,8 @@ INLINE T SH7095::ExtBusRead(uint32 A)
 {
  T ret;
 
+ IdleTaint = true;
+
  A &= (1U << 27) - 1;
 
  if(timestamp > SH7095_mem_timestamp)
@@ -1720,6 +1743,8 @@ INLINE T SH7095::ExtBusRead(uint32 A)
 template<typename T>
 INLINE void SH7095::ExtBusWrite(uint32 A, T V)
 {
+ IdleTaint = true;
+
  A &= (1U << 27) - 1;
 
  if(timestamp > SH7095_mem_timestamp)
@@ -1780,6 +1805,8 @@ static INLINE uint32 cmov_eq_thing(const uint32 reg_compval, const uint32 mem_co
 
 INLINE void SH7095::AssocPurge(const uint32 A)
 {
+ IdleTaint = true;
+
  const uint32 ATM = A & (0x7FFFF << 10);
  auto* cent = &Cache[(A >> 4) & 0x3F];
 
@@ -1875,7 +1902,10 @@ INLINE T SH7095::MemReadRT(uint32 A)
 
 	 // Ugggghhhh....
 	 if(CacheBypassHack && FMIsWriteable[A >> SH7095_EXT_MAP_GRAN_BITS])
+	 {
+	  IdleTaint = true;
 	  return ne16_rbo_be<T>(SH7095_FastMap[A >> SH7095_EXT_MAP_GRAN_BITS], A);
+	 }
 
   	 return MDFN_densb<T, true>(&cent->Data[way_match][NE32ASU8_IDX_ADJ(T, A & 0x0F)]);
 	}
@@ -1967,6 +1997,7 @@ INLINE void SH7095::Write_UpdateCache(uint32 A, T V)
 template<typename T, unsigned region, bool CacheEnabled>
 INLINE void SH7095::MemWriteRT(uint32 A, T V)
 {
+ IdleTaint = true;
  static_assert(region < 0x8, "Wrong region argument.");
  const uint32 unmasked_A = A;
 
@@ -2145,6 +2176,10 @@ INLINE void SH7095::SetCCR(uint8 V)
 */
 void NO_INLINE SH7095::Reset(bool power_on_reset, bool from_internal_wdt)
 {
+ if(IdleVirtual)
+  IdleMaterialize();
+ IdleReset();
+
  VBR = 0;
  SR |= 0xF << 4;
  SetCCR(0);
@@ -2208,6 +2243,8 @@ void NO_INLINE SH7095::INTC_Reset(void)
 
 void SH7095::SetNMI(bool level)
 {
+ IdleExtGuard ig(this);
+
  if(NMILevel != level && level == (bool)(ICR & 0x100))
  {
   SetPEX(PEX_NMI);
@@ -2228,11 +2265,15 @@ void SH7095::SetNMI(bool level)
 
 void SH7095::SetMD5(bool level)
 {
+ IdleExtGuard ig(this);
+
  BSC.BCR1 = (BSC.BCR1 & 0x7FFF) | (level << 15);
 }
 
 void SH7095::SetIRL(unsigned level)
 {
+ IdleExtGuard ig(this);
+
  assert(level < 16);
 
  IRL = level;
@@ -2241,6 +2282,10 @@ void SH7095::SetIRL(unsigned level)
 
 void SH7095::ForceInternalEventUpdates(void)
 {
+ if(IdleVirtual)
+  IdleMaterialize();
+ IdleReset();
+
  FRT_WDT_Update();
  FRT_WDT_Recalc_NET();
 }
@@ -2531,6 +2576,8 @@ INLINE void SH7095::CondRelBranch(bool cond, uint32 disp)
 template<bool DebugMode>
 uint32 NO_INLINE SH7095::Exception(const unsigned exnum, const unsigned vecnum)
 {
+ IdleTaint = true;
+
  uint32 new_PC;
 
  timestamp += 2;
@@ -4282,6 +4329,7 @@ __attribute__((always_inline)) inline void SH7095::Step(void)
 	//
 	if(MDFN_UNLIKELY(SBYCR & 0x80))
 	{
+	 IdleTaint = true;
 
 	 for(unsigned ch = 0; ch < 2; ch++)
 	 {
@@ -4323,6 +4371,7 @@ __attribute__((always_inline)) inline void SH7095::Step(void)
  END_OP
 
  BEGIN_OP_DLYIDIF(PSEUDO_STANDBY)
+	IdleTaint = true;
 	if(MDFN_LIKELY(Standby))
 	{
 	 timestamp += 7;
@@ -4437,6 +4486,7 @@ __attribute__((always_inline)) inline void SH7095::Step(void)
  // Pending exception(address error/interrupt)
  //
  BEGIN_OP_DLYIDIF(PSEUDO_EPENDING)
+	IdleTaint = true;
 	uint32 new_PC = 0;
 
 	//
@@ -4554,6 +4604,7 @@ __attribute__((always_inline)) inline void SH7095::Step(void)
  END_OP
 
  BEGIN_OP_DLYIDIF(PSEUDO_DMABURST)
+	IdleTaint = true;
 	if(MDFN_LIKELY(DMA_InBurst() || ExtHalt))
 	{
 	 timestamp += 7;
@@ -4590,8 +4641,360 @@ __attribute__((always_inline)) inline void SH7095::Step(void)
 }
 
 
+//
+//
+// Idle-loop virtualization; see the comment in sh7095.h.
+//
+// Exactness argument: while no taint source fires, a step's effect is a function of the
+// state captured in IdleRec (plus the cache tags/data, which only change through tainting
+// accesses, and the instruction words, which are watched) and is invariant under shifting
+// every live time field by the same even amount.  (The only absolute-time dependencies are
+// the "(MA_until + 11) & ~1" on-chip read timing, hence the even period requirement, and
+// FRT/WDT counting, which FRT_WDT_Update() evaluates lazily from FRT.lastts and which
+// telescopes exactly; IdleLimit keeps replayed steps strictly before the next tick that
+// changes FRT/WDT flags and before FRT_WDT_NextTS, where Step() itself acts.)  Hence a
+// recorded period repeats exactly until something external modifies the CPU or the code,
+// and every external entry point materializes the state first (IdleExtGuard).
+//
+static const unsigned idle_ts_count = 5;
+
+void SH7095::IdleCapture(IdleRec* r) const
+{
+ memcpy(r->R, R, sizeof(R));
+ r->PC = PC;
+ r->SR = SR;
+ r->GBR = GBR;
+ r->VBR = VBR;
+ r->MACH = MACH;
+ r->MACL = MACL;
+ r->PR = PR;
+ r->EPending = EPending;
+ r->Pipe_ID = Pipe_ID;
+ r->Pipe_IF = Pipe_IF;
+ r->IBuffer = IBuffer;
+ r->TS[0] = timestamp;
+ r->TS[1] = MA_until;
+ r->TS[2] = MM_until;
+ r->TS[3] = write_finish_timestamp;
+ r->TS[4] = divide_finish_timestamp;
+ r->FTCSR = FRT.FTCSR;
+ r->FTCSRM = FRT.FTCSRM;
+ for(unsigned i = 0; i < 64; i++)
+  r->LRU[i] = Cache[i].LRU;
+}
+
+static INLINE bool IdleSameNonTime(const SH7095::IdleRec& a, const SH7095::IdleRec& b)
+{
+ return !memcmp(a.R, b.R, sizeof(a.R)) && a.PC == b.PC && a.SR == b.SR && a.GBR == b.GBR && a.VBR == b.VBR &&
+	a.MACH == b.MACH && a.MACL == b.MACL && a.PR == b.PR && a.EPending == b.EPending && a.Pipe_ID == b.Pipe_ID &&
+	a.Pipe_IF == b.Pipe_IF && a.IBuffer == b.IBuffer && a.FTCSR == b.FTCSR && a.FTCSRM == b.FTCSRM &&
+	!memcmp(a.LRU, b.LRU, sizeof(a.LRU));
+}
+
+//
+// Is b the same as a, one period later?  Live time fields must advance by the period, stale
+// ones must stay put in the past (so they never win a max() against a live one).
+//
+bool SH7095::IdleSamePeriodic(const IdleRec& a, const IdleRec& b, int32* delta, uint8* moving) const
+{
+ const int32 d = b.TS[0] - a.TS[0];
+
+ if(d <= 0 || (d & 1) || !IdleSameNonTime(a, b))
+  return false;
+
+ uint8 m = 1;
+
+ for(unsigned i = 1; i < idle_ts_count; i++)
+ {
+  if(b.TS[i] - a.TS[i] == d)
+   m |= 1U << i;
+  else if(b.TS[i] != a.TS[i] || a.TS[i] > a.TS[0])
+   return false;
+ }
+
+ *delta = d;
+ *moving = m;
+ return true;
+}
+
+bool SH7095::IdleMatches(const IdleRec& rec, int32 shift) const
+{
+ IdleRec cur;
+
+ IdleCapture(&cur);
+
+ if(!IdleSameNonTime(rec, cur))
+  return false;
+
+ for(unsigned i = 0; i < idle_ts_count; i++)
+ {
+  if(cur.TS[i] != rec.TS[i] + (((IdleMoving >> i) & 1) ? shift : 0))
+   return false;
+ }
+
+ return true;
+}
+
+void SH7095::IdleReset(void)
+{
+ if(IdleWatchOwner == this)
+ {
+  IdleWatchOwner = NULL;
+  IdleWatchLo = ~0U;
+  IdleWatchLen = 0;
+ }
+
+ IdleTaint = true;
+ IdleRecording = false;
+ IdleVirtual = false;
+ IdleHaveRec = false;
+ IdleSnapValid = false;
+ IdleMisses = 0;
+ IdlePC = ~0U;
+ IdleBackoff = 64;
+ IdleCountdown = IdleBackoff;
+ IdleLastHit = 0;
+ IdleSteps = 0;
+}
+
+//
+// First timestamp at which a step could see FRT/WDT state other than what lazy evaluation
+// from FRT.lastts gives: the next tick that sets a flag (FRC wrap, OCRA/OCRB match, WDT
+// overflow), or FRT_WDT_NextTS (where Step() itself updates and recalculates).
+//
+sscpu_timestamp_t SH7095::IdleEventLimit(void) const
+{
+ sscpu_timestamp_t ret = FRT_WDT_NextTS;
+
+ if((FRT.TCR & 0x3) != 0x3)
+ {
+  const uint32 s = 3 + ((FRT.TCR & 0x3) << 1);
+  const uint32 frc = FRT.FRC;
+  uint32 d = ((0x0000 - frc - 1) & 0xFFFF) + 1;
+
+  d = std::min<uint32>(d, ((FRT.OCR[0] - frc - 1) & 0xFFFF) + 1);
+  d = std::min<uint32>(d, ((FRT.OCR[1] - frc - 1) & 0xFFFF) + 1);
+
+  ret = std::min<sscpu_timestamp_t>(ret, FRT.lastts + (int32)((d << s) - (FRT_WDT_ClockDivider & ((1U << s) - 1))));
+ }
+
+ if(WDT.WTCSR & 0x28)
+ {
+  const unsigned s = wdt_cstab[WDT.WTCSR & 0x7];
+
+  ret = std::min<sscpu_timestamp_t>(ret, FRT.lastts + (int32)(((0x100 - WDT.WTCNT) << s) - (FRT_WDT_ClockDivider & ((1U << s) - 1))));
+ }
+
+ return ret;
+}
+
+//
+// Called after a step that left PC == IdlePC (search mode).
+//
+void NO_INLINE SH7095::IdleHit(void)
+{
+ IdleLastHit = timestamp;
+
+ if(IdleSnapValid && !IdleTaint)
+ {
+  IdleRec cur;
+  int32 delta;
+  uint8 moving;
+
+  IdleCapture(&cur);
+
+  if(IdleSamePeriodic(IdleSnap, cur, &delta, &moving))
+  {
+   // One clean period seen; record the next one step by step.
+   IdleRecs[0] = cur;
+   IdleSteps = 0;
+   IdleRecording = true;
+   IdleTaint = false;
+   return;
+  }
+ }
+
+ if(IdleSnapValid && ++IdleMisses >= 8)
+ {
+  // Not an idle loop; back off.
+  IdlePC = ~0U;
+  IdleSnapValid = false;
+  IdleBackoff = std::min<uint32>(IdleBackoff * 2, 1U << 16);
+  IdleCountdown = IdleBackoff;
+  return;
+ }
+
+ IdleCapture(&IdleSnap);
+ IdleSnapValid = true;
+ IdleTaint = false;
+}
+
+//
+// Called after every step while recording.
+//
+void NO_INLINE SH7095::IdleRecord(void)
+{
+ IdleLastHit = timestamp;
+
+ if(IdleTaint || IdleSteps >= IDLE_MAX_STEPS)
+ {
+  IdleRecording = false;
+  IdleSnapValid = false;
+  return;
+ }
+
+ IdleSteps++;
+ IdleCapture(&IdleRecs[IdleSteps]);
+
+ if(PC != IdlePC)
+  return;
+
+ IdleRecording = false;
+ IdleSnapValid = false;
+
+ int32 delta;
+ uint8 moving;
+
+ if(!IdleSamePeriodic(IdleRecs[0], IdleRecs[IdleSteps], &delta, &moving))
+  return;
+
+ //
+ // Instruction words are fetched from memory directly; the loop must live in the BIOS ROM
+ // or in high work RAM, where writes to it are watched.
+ //
+ uint32 lo = ~0U, hi = 0;
+
+ for(unsigned i = 0; i <= IdleSteps; i++)
+ {
+  lo = std::min<uint32>(lo, IdleRecs[i].PC);
+  hi = std::max<uint32>(hi, IdleRecs[i].PC);
+ }
+
+ lo = (lo - 4) & 0x07FFFFFE;
+ hi = (hi + 6) & 0x07FFFFFE;
+
+ if(hi <= lo || (hi - lo) > 256)
+  return;
+
+ if(lo >= 0x06000000)
+ {
+  if((IdleWatchOwner != NULL && IdleWatchOwner != this) || ((lo & 0xFFFFF) + (hi - lo)) > 0x100000)
+   return;
+
+  IdleWatchOwner = this;
+  IdleWatchLo = lo & 0xFFFFF;
+  IdleWatchLen = hi - lo;
+ }
+ else if(hi > 0x00100000)
+  return;
+
+ IdleDelta = delta;
+ IdleMoving = moving;
+ IdleQ = 0;
+ IdleR = IdleSteps;	// == current state
+ IdleSyncTS = timestamp;
+ IdleLimit = IdleEventLimit();
+ IdleHaveRec = true;
+
+ if(timestamp >= IdleLimit)
+  return;
+
+ IdleMisses = 0;
+ IdleBackoff = 64;
+ IdleVirtual = true;
+}
+
+//
+// Rebuild the real state at the first step boundary at or after min(IdleSyncTS, IdleLimit),
+// which is where Step()ping while timestamp < IdleSyncTS would have got.
+//
+void NO_INLINE SH7095::IdleMaterialize(void)
+{
+ const sscpu_timestamp_t base = IdleRecs[0].TS[0];
+ const sscpu_timestamp_t target = std::min<sscpu_timestamp_t>(IdleSyncTS, IdleLimit);
+ const int32 cur = IdleRecs[IdleR].TS[0] + IdleQ * IdleDelta;
+
+ if(target > cur)
+ {
+  int32 q = (target - base) / IdleDelta;
+  const int32 rem = (target - base) - q * IdleDelta;
+  unsigned r = 0;
+
+  while((IdleRecs[r].TS[0] - base) < rem)
+   r++;
+
+  IdleQ = q;
+  IdleR = r;
+ }
+
+ const IdleRec& r = IdleRecs[IdleR];
+ const int32 shift = IdleQ * IdleDelta;
+
+ memcpy(R, r.R, sizeof(R));
+ PC = r.PC;
+ SR = r.SR;
+ GBR = r.GBR;
+ VBR = r.VBR;
+ MACH = r.MACH;
+ MACL = r.MACL;
+ PR = r.PR;
+ EPending = r.EPending;
+ Pipe_ID = r.Pipe_ID;
+ Pipe_IF = r.Pipe_IF;
+ IBuffer = r.IBuffer;
+ timestamp = r.TS[0] + shift;
+ MA_until = r.TS[1] + (((IdleMoving >> 1) & 1) ? shift : 0);
+ MM_until = r.TS[2] + (((IdleMoving >> 2) & 1) ? shift : 0);
+ write_finish_timestamp = r.TS[3] + (((IdleMoving >> 3) & 1) ? shift : 0);
+ divide_finish_timestamp = r.TS[4] + (((IdleMoving >> 4) & 1) ? shift : 0);
+ FRT.FTCSR = r.FTCSR;
+ FRT.FTCSRM = r.FTCSRM;
+ for(unsigned i = 0; i < 64; i++)
+  Cache[i].LRU = r.LRU[i];
+
+ IdleVirtual = false;
+}
+
+//
+// After an external access that materialized the state: keep replaying if it changed
+// nothing the loop depends on.
+//
+void NO_INLINE SH7095::IdleTryResume(void)
+{
+ if(!IdleHaveRec || !IdleMatches(IdleRecs[IdleR], IdleQ * IdleDelta))
+  return;
+
+ IdleLimit = IdleEventLimit();
+
+ if(timestamp >= IdleLimit)
+  return;
+
+ IdleSyncTS = timestamp;
+ IdleVirtual = true;
+}
+
+//
+// Something wrote to the instruction words of the recorded loop.
+//
+void NO_INLINE SH7095::IdleCodeWritten(void)
+{
+ if(IdleVirtual)
+  IdleMaterialize();
+
+ IdleReset();
+}
+
+static NO_INLINE void IdleWatchHit(void)
+{
+ IdleWatchOwner->IdleCodeWritten();
+}
+
 void SH7095::StateAction(StateMem* sm, const unsigned load, const bool data_only, const char* sname)
 {
+ if(IdleVirtual)
+  IdleMaterialize();
+ IdleReset();
+
  SFORMAT StateRegs[] =
  {
   SFVAR(R),
@@ -4734,6 +5137,8 @@ void SH7095::StateAction(StateMem* sm, const unsigned load, const bool data_only
 
 INLINE uint32 SH7095::GetRegister(const unsigned id)
 {
+ IdleExtGuard ig(this);
+
  uint32 ret = 0xDEADBEEF;
 
  switch(id)
@@ -4983,6 +5388,8 @@ INLINE uint32 SH7095::GetRegister(const unsigned id)
 
 void SH7095::SetRegister(const unsigned id, const uint32 value)
 {
+ IdleExtGuard ig(this);
+
  switch(id)
  {
   //case GSREG_PC: break;

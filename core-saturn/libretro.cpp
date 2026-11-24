@@ -167,6 +167,13 @@ static uint8 WorkRAM[2*WORKRAM_BANK_SIZE_BYTES]; // unified 2MB work ram for lin
 // Effectively 32-bit in reality, but 16-bit here because of CPU interpreter design(regarding fastmap).
 static uint16* WorkRAML = (uint16*)(WorkRAM + (WORKRAM_BANK_SIZE_BYTES*0));
 static uint16* WorkRAMH = (uint16*)(WorkRAM + (WORKRAM_BANK_SIZE_BYTES*1));
+
+// High work RAM byte range holding the instructions of a virtualized SH-2 idle loop (see SH7095::IdleRecord()).
+class SH7095;
+static SH7095* IdleWatchOwner = NULL;
+static uint32 IdleWatchLo = ~0U, IdleWatchLen = 0;
+static void IdleWatchHit(void);
+#define IDLE_WATCH_WRAMH(offs) { if(MDFN_UNLIKELY((uint32)((offs) - IdleWatchLo + 4) < IdleWatchLen + 4)) IdleWatchHit(); }
 static uint8 BackupRAM[32768];
 static bool BackupRAM_Dirty;
 static int64 BackupRAM_SaveDelay;
@@ -359,6 +366,9 @@ static INLINE void BusRW_DB_CS123(const uint32 A, uint32& DB, const bool BurstHa
  //
  if(A >= 0x06000000)
  {
+  if(IsWrite)
+   IDLE_WATCH_WRAMH(A & 0xFFFFF);
+
   if(!IsWrite || sizeof(T) == 4)
    ne16_rwbo_be<uint32, IsWrite>(WorkRAMH, A & 0xFFFFC, &DB);
   else
@@ -495,6 +505,9 @@ static MDFN_COLD void CheatMemWrite(uint32 A, uint8 V)
  if(FMIsWriteable[A >> SH7095_EXT_MAP_GRAN_BITS])
  {
   ne16_wbo_be<uint8>(SH7095_FastMap[A >> SH7095_EXT_MAP_GRAN_BITS], A, V);
+
+  if(IdleWatchOwner)
+   IdleWatchHit();
 
   for(unsigned c = 0; c < 2; c++)
   {
@@ -758,10 +771,37 @@ static int32 NO_INLINE RunLoop(EmulateSpecStruct* espec)
    CPU[0].Step<0, EmulateICache, DebugMode>();
    CPU[0].DMA_BusTimingKludge();
 
-   while(MDFN_LIKELY(CPU[0].timestamp > CPU[1].timestamp))
-   {
+   // Slave idle-loop virtualization (see SH7095::IdleHit()); not used with instruction cache emulation.
+   if(!EmulateICache && !DebugMode && MDFN_UNLIKELY(CPU[1].IdleVirtual))
+    CPU[1].IdleVirtualSync(CPU[0].timestamp);
 
-    CPU[1].Step<1, EmulateICache, DebugMode>();
+   if(EmulateICache || DebugMode || MDFN_LIKELY(!CPU[1].IdleVirtual))
+   {
+    while(MDFN_LIKELY(CPU[0].timestamp > CPU[1].timestamp))
+    {
+     CPU[1].Step<1, EmulateICache, DebugMode>();
+
+     if(!EmulateICache && !DebugMode && MDFN_UNLIKELY((CPU[1].PC == CPU[1].IdlePC) | CPU[1].IdleRecording))
+     {
+      if(!CPU[1].IdleRecording)
+       CPU[1].IdleHit();
+      else
+      {
+       CPU[1].IdleRecord();
+
+       if(CPU[1].IdleVirtual)
+       {
+        CPU[1].IdleVirtualSync(CPU[0].timestamp);
+
+        if(CPU[1].IdleVirtual)
+         break;
+       }
+      }
+     }
+    }
+
+    if(!EmulateICache && !DebugMode)
+     CPU[1].IdleTick();
    }
 
    eff_ts = CPU[0].timestamp;

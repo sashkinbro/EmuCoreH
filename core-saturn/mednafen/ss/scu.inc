@@ -1382,6 +1382,7 @@ static INLINE void DMA_Write(DMALevelS* d, uint32 DB)
  }
  else
  {
+  IDLE_WATCH_WRAMH(A & 0xFFFFF);
   ne16_wbo_be<T>(WorkRAMH, A & 0xFFFFF, DB >> (((A & 3) ^ (4 - sizeof(T))) << 3));
  }
 
@@ -1695,6 +1696,7 @@ static NO_INLINE NO_CLONE void DMAInstr(void)
 
    if(WriteBus == 2)
    {
+    IDLE_WATCH_WRAMH(addr & 0xFFFFC);
     ne16_wbo_be<uint32>(WorkRAMH, addr & 0xFFFFC, DB);
     addr += addr_add_amount;
     DSP.T0_Until -= 2;
