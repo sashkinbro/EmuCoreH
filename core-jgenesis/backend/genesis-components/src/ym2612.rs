@@ -675,10 +675,18 @@ impl Ym2612 {
 
     #[inline]
     pub fn tick(&mut self, ticks: u32) {
-        for _ in 0..ticks {
-            self.busy_cycles_remaining = self.busy_cycles_remaining.saturating_sub(1);
+        // Ticks between output samples only count down the busy flag and the sample divider;
+        // advance straight to the next sample boundary instead of looping per tick.
+        let mut remaining = ticks;
+        while remaining != 0 {
+            // A divider of 0 (only reachable from a corrupt state) wraps like the per-tick loop did
+            let ticks_until_sample = u32::from(self.sample_divider.wrapping_sub(1)) + 1;
+            let step = remaining.min(ticks_until_sample);
+            remaining -= step;
+            self.busy_cycles_remaining =
+                self.busy_cycles_remaining.saturating_sub(step.min(255) as u8);
 
-            self.sample_divider -= 1;
+            self.sample_divider = self.sample_divider.wrapping_sub(step as u8);
             if self.sample_divider == 0 {
                 self.sample_divider = FM_SAMPLE_DIVIDER;
 

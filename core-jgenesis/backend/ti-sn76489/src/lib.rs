@@ -410,6 +410,7 @@ impl Sn76489 {
     }
 
     #[must_use]
+    #[inline]
     pub fn sample(&self) -> (f64, f64) {
         // TODO rewrite to use integer arithmetic as much as possible
         let volume_table = match self.version {
