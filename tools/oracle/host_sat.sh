@@ -45,17 +45,28 @@ run() {
   local game frames input options
   eval "game=\${SUITE_${suite}_GAME} frames=\${SUITE_${suite}_FRAMES:-1200} input=\${SUITE_${suite}_INPUT:-} options=\${SUITE_${suite}_OPTIONS:-}"
   local save; save="$(mktemp -d -p "$WORK" save.XXXXXX)"
+  # Seed the SMPC NV file (RTC valid, 1993-12-31 23:59:59, SaveMem 0). Without it the core reads
+  # RTC.Valid from an uninitialized byte (SMPC_LoadNV on a missing file), which differs between
+  # builds: valid boots the game, invalid stops at the BIOS language screen.
+  local stem="${game##*/}"; stem="${stem%.*}"
+  printf '\001\031\223\134\061\043\131\131\000\000\000\000' > "$save/$stem.smpc"
   "$exe" "$CONTENT/$game" "$(system_dir)" "$save" "$frames" 300 "$options" "$input" "$prof" 2>/dev/null
 }
 
 compare() {
   local ref="$1"; shift
   local suites=("$@"); [ ${#suites[@]} -eq 0 ] && read -r -a suites <<< "$SAT_ALL"
-  local base_src="$WORK/base-src"
-  rm -rf "$base_src"; mkdir -p "$base_src"
-  git -C "$repo" archive "$ref" core-saturn | tar -x -C "$base_src"
+  local base_src="$WORK/base-src" tree
+  tree="$(git -C "$repo" rev-parse "$ref:core-saturn")"
+  # Re-export (and fully rebuild) the baseline only when its core-saturn tree changed.
+  if [ "$(cat "$WORK/build-base/.tree" 2>/dev/null)" != "$tree" ]; then
+    rm -rf "$base_src"; mkdir -p "$base_src"
+    git -C "$repo" archive "$ref" core-saturn | tar -x -C "$base_src"
+    rm -f "$WORK/build-base/.tree"
+  fi
   # The baseline is always built with the candidate's harness so only the core differs.
   build "$WORK/build-base" "$base_src/core-saturn"
+  echo "$tree" > "$WORK/build-base/.tree"
   build "$WORK/build-cand" "$repo/core-saturn"
   local fail=0
   for s in "${suites[@]}"; do

@@ -9,6 +9,8 @@
 //                 [options k=v;k=v] [input from-to:mask,...] [profile-out]
 // Pad masks use the app layout (pressed=1): Start 8, Up 16, Right 32, Down 64,
 // Left 128, Cross 16384, Circle 8192, Square 32768 (see native_bridge.cpp).
+// HOST_SAT_DUMP=<dir> writes the frame at each checkpoint as PPM (plus the state when
+// HOST_SAT_DUMP_STATES=1).
 #include <libretro.h>
 #include <algorithm>
 #include <atomic>
@@ -219,6 +221,10 @@ int main(int argc, char** argv) {
             std::printf("f%d state=%016llx frames=%016llx audio=%016llx%s\n", frame,
                 (unsigned long long)HashBytes(0x1234, state.data(), state.size()),
                 (unsigned long long)g_frame_hash, (unsigned long long)g_audio_hash, ok ? "" : " SERIALIZE-FAILED");
+            if (dump_dir && dump_dir[0] && getenv("HOST_SAT_DUMP_STATES")) {
+                std::string path = std::string(dump_dir) + "/f" + std::to_string(frame) + ".state";
+                if (FILE* f = std::fopen(path.c_str(), "wb")) { std::fwrite(state.data(), 1, state.size(), f); std::fclose(f); }
+            }
             if (g_keep_last && !g_last.empty()) {
                 std::string path = std::string(dump_dir) + "/f" + std::to_string(frame) + ".ppm";
                 if (FILE* f = std::fopen(path.c_str(), "wb")) {
