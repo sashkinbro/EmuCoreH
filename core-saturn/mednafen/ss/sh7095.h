@@ -467,6 +467,7 @@ class SH7095 final
  bool IdleRecording;
  bool IdleVirtual;
  bool IdleHaveRec;
+ bool IdleUniformInt;	// SR interrupt mask and EPending are the same at every recorded step
  bool IdleSnapValid;
  uint8 IdleMisses;
  uint8 IdleMoving;		// bit i set: TS[i] advances by IdleDelta every period
@@ -493,6 +494,7 @@ class SH7095 final
  void IdleTryResume(void);
  void IdleCodeWritten(void);
  sscpu_timestamp_t IdleEventLimit(void) const;
+ bool IdleIntUnchanged(void);
 
  INLINE void IdleTick(void)
  {

@@ -449,6 +449,28 @@ INLINE void SH7095::DMA_DoTransfer(unsigned ch)
 
 sscpu_timestamp_t SH7095::DMA_Update(sscpu_timestamp_t et)
 {
+ //
+ // Virtualized idle loop and no transfer to do: the update below only advances the DMA
+ // counters and would leave the pending-interrupt state as it is, so do just that.
+ //
+ if(MDFN_UNLIKELY(IdleVirtual) && (ExtHalt || (!DMA_RunCond(0) && !DMA_RunCond(1) && IdleIntUnchanged())))
+ {
+  if(ExtHalt)
+  {
+   dma_lastts = et;
+   return dma_lastts + 128;
+  }
+
+  const uint32 clocks = et - dma_lastts;
+  dma_lastts = et;
+  DMA_ClockCounter += clocks;
+  DMA_SGCounter += clocks;
+  DMA_ClockCounter = std::min<int32>(DMA_ClockCounter, 128);
+  DMA_SGCounter = std::min<int32>(DMA_SGCounter, 0);
+
+  return dma_lastts + ((DMA_SGCounter < 0) ? 32 : 128);
+ }
+
  IdleExtGuard ig(this);
 
  if(MDFN_UNLIKELY(ExtHalt))
@@ -2272,6 +2294,18 @@ void SH7095::SetMD5(bool level)
 
 void SH7095::SetIRL(unsigned level)
 {
+ if(MDFN_UNLIKELY(IdleVirtual))
+ {
+  const uint8 old_IRL = IRL;
+
+  IRL = level;
+
+  if(IdleIntUnchanged())
+   return;
+
+  IRL = old_IRL;
+ }
+
  IdleExtGuard ig(this);
 
  assert(level < 16);
@@ -4895,6 +4929,12 @@ void NO_INLINE SH7095::IdleRecord(void)
  IdleSyncTS = timestamp;
  IdleLimit = IdleEventLimit();
  IdleHaveRec = true;
+ IdleUniformInt = true;
+ for(unsigned i = 1; i <= IdleSteps; i++)
+ {
+  if(((IdleRecs[i].SR ^ IdleRecs[0].SR) & 0xF0) || IdleRecs[i].EPending != IdleRecs[0].EPending)
+   IdleUniformInt = false;
+ }
 
  if(timestamp >= IdleLimit)
   return;
@@ -4971,6 +5011,21 @@ void NO_INLINE SH7095::IdleTryResume(void)
 
  IdleSyncTS = timestamp;
  IdleVirtual = true;
+}
+
+//
+// Virtual mode: would RecalcPendingIntPEX() leave EPending as it is at every recorded step?
+// (GetPendingInt() reads no state the loop changes; FTCSR is constant over a period.)
+//
+bool SH7095::IdleIntUnchanged(void)
+{
+ if(!IdleUniformInt)
+  return false;
+
+ const bool pending = GetPendingInt(NULL) > ((IdleRecs[0].SR >> 4) & 0xF);
+ const bool was_pending = (bool)(IdleRecs[0].EPending & (1U << (PEX_INT + EPENDING_PEXBITS_SHIFT)));
+
+ return pending == was_pending;
 }
 
 //
