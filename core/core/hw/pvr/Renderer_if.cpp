@@ -50,6 +50,9 @@ static u32 fbAddrHistory[2] { 1, 1 };
 // renderer's frameRendered flag) until the Present that stops the SH4 like the
 // single-threaded renderer does.
 static bool lockstepFramePending;
+// Emu thread view of the renderer's clearLastFrame flag: set on Terminate,
+// cleared by the next rendered frame. Present() fails while it is set.
+static bool lockstepClearLastFrame;
 static std::mutex lockstepMutex;
 static std::condition_variable lockstepCond;
 static bool lockstepGranted;
@@ -118,8 +121,11 @@ public:
 						// drift in long sessions: the SH4 keeps running ahead
 						// while pending Presents pile up. Drop the oldest
 						// pending Present to keep latency bounded.
+						// Not in lockstep mode, where the queue only holds one
+						// run's work and the emu thread already decided whether
+						// each Present stops the SH4.
 						constexpr size_t MAX_QUEUE_DEPTH = 4;
-						if (queue.size() >= MAX_QUEUE_DEPTH)
+						if (queue.size() >= MAX_QUEUE_DEPTH && !rend_is_lockstep())
 						{
 							for (auto it = queue.begin(); it != queue.end(); ++it)
 							{
@@ -145,10 +151,14 @@ public:
 			if (rend_is_lockstep() && type != Stop)
 			{
 				// Same stop condition as the single-threaded renderer, where
-				// Present() stops the SH4 if a frame was rendered
+				// the SH4 is stopped if Present() succeeds: a frame was rendered
+				// and clearLastFrame isn't set (see OpenGLRenderer::Present).
 				if (type == RenderFramebuffer)
+				{
 					lockstepFramePending = true;
-				else if (type == Present && lockstepFramePending)
+					lockstepClearLastFrame = false;
+				}
+				else if (type == Present && lockstepFramePending && !lockstepClearLastFrame)
 				{
 					lockstepFramePending = false;
 					if (!ggpo::active())
@@ -594,6 +604,21 @@ private:
 };
 static SwapIntervalDetector swapIntervalDetector;
 
+// Renderer::onEvent sets clearLastFrame on Terminate, which makes Present()
+// fail until a frame is rendered. Mirror it for the lockstep stop condition.
+static struct LockstepTerminateListener
+{
+	LockstepTerminateListener() {
+		EventManager::listen(Event::Terminate, onTerminate, this);
+	}
+	~LockstepTerminateListener() {
+		EventManager::unlisten(Event::Terminate, onTerminate, this);
+	}
+	static void onTerminate(Event, void *) {
+		lockstepClearLastFrame = true;
+	}
+} lockstepTerminateListener;
+
 
 Renderer* rend_GLES2();
 Renderer* rend_GL4();
@@ -651,7 +676,12 @@ bool rend_init_renderer()
 {
 	rendererEnabled = true;
 	if (renderer == nullptr)
+	{
 		rend_create_renderer();
+		// A new renderer has neither a rendered frame nor clearLastFrame set
+		lockstepFramePending = false;
+		lockstepClearLastFrame = false;
+	}
 	bool success = renderer != nullptr && renderer->Init();
 	if (!success) {
 		delete renderer;
@@ -776,7 +806,10 @@ void rend_start_render()
 		pend_rend = true;
 		const bool presentFrame = !delayFrameSwapping() && !ctx->rend.isRTT && !config::EmulateFramebuffer;
 		if (!ctx->rend.isRTT && !config::EmulateFramebuffer)
+		{
 			lockstepFramePending = true;
+			lockstepClearLastFrame = false;
+		}
 		pvrQueue.enqueue(PvrMessageQueue::Render);
 		if (presentFrame)
 			pvrQueue.enqueue(PvrMessageQueue::Present);
