@@ -304,6 +304,7 @@ class SS_SCSP
   uint32 ReadValue;
 
   bool MPROG_Dirty;
+  uint8 ExecSteps;	// Not saved; derived from MPROG when MPROG_Dirty (see RunDSP())
  } DSP;
  //
  //

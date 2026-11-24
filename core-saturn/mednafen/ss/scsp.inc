@@ -154,6 +154,7 @@ void SS_SCSP::Reset(bool powering_up)
 
  memset(&DSP, 0, sizeof(DSP));
  DSP.MDEC_CT = 0;
+ DSP.MPROG_Dirty = true;
  //
  //
  SCIEB = 0;
@@ -996,7 +997,24 @@ INLINE void SS_SCSP::RunDSP(void)
  // Bit 48-54: TWA(temp write address) Seems to be an offset added to a counter changed each sample.
  // Bit    55: TWT(temp write trigger)  WARNING: Setting this to 1 for all 128 steps apparently can cause a CPU to freeze up if it tries to read/write TEMP afterward.
  // Bit 56-62: TRA(temp read address) 
- for(unsigned step = 0; step < 128; step++)
+ //
+ // A run of all-zero (NOP) instructions at the end of the program behaves like two of them:
+ // a zero instruction resolves at most one memory access pending from earlier steps (a read
+ // first, then a write; an instruction may have triggered both) and recomputes SFT_REG,
+ // RWAddr and INPUTS from state that zero instructions never modify (TEMP[MDEC_CT], FRC_REG,
+ // MADRS[0], MEMS[0]), so further repetitions change nothing.  Execute up to and including
+ // the second trailing NOP only.
+ //
+ if(MDFN_UNLIKELY(DSP.MPROG_Dirty))
+ {
+  int last = 127;
+  while(last >= 0 && !DSP.MPROG[last])
+   last--;
+  DSP.ExecSteps = std::min<int>(128, last + 3);
+  DSP.MPROG_Dirty = false;
+ }
+ const unsigned exec_steps = DSP.ExecSteps;
+ for(unsigned step = 0; step < exec_steps; step++)
  {
   const uint64 instr = DSP.MPROG[step];
 
