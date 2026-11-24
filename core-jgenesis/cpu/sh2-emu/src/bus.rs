@@ -239,6 +239,17 @@ pub trait BusInterface: Sized {
     fn idle_write_is_noop(&mut self, _address: u32, _size: u8, _value: u32) -> bool {
         false
     }
+
+    /// Whether every read that synchronizes another processor (see `idle_read_deadline`) would run
+    /// a processor that is in a verified idle loop and so cannot change any state, no matter how
+    /// the run is split into calls.
+    fn idle_other_quiescent(&mut self) -> bool {
+        false
+    }
+
+    /// Performs the synchronization that a read of `address` with the cycle counter at
+    /// `read_counter` (before the read's charge) performs, exactly as `read` would.
+    fn idle_advance_other(&mut self, _address: u32, _size: u8, _read_counter: u64) {}
 }
 
 #[macro_export]

@@ -79,6 +79,7 @@ pub struct Sh2 {
     idle_rejected: HostCache<idle::RejectedFilter>,
     idle_recording: HostCache<bool>,
     idle: HostCache<Box<idle::IdleState>>,
+    idle_stash: HostCache<idle::IdleStash>,
 }
 
 #[cfg(debug_assertions)]
@@ -137,6 +138,7 @@ impl Sh2 {
             idle_rejected: HostCache::default(),
             idle_recording: HostCache::default(),
             idle: HostCache::default(),
+            idle_stash: HostCache::default(),
         }
     }
 

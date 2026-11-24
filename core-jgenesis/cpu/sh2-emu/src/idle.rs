@@ -40,7 +40,9 @@ const MAX_OBSERVATION_ATTEMPTS: u8 = 3;
 const MAX_CACHE_CHANGED_ATTEMPTS: u8 = 12;
 // Rejected loop heads are forgotten after this many observations so changing behavior is revisited
 const FORGET_REJECTED_EVERY: u32 = 4096;
-const MAX_INCOMPLETE_OBSERVATIONS: u8 = 16;
+// An observation cut short by the end of the slice or the cycle limit raises the budget the next
+// one needs; loops that cannot be observed within these caps are rejected
+const MAX_OBSERVATION_BUDGET: u64 = 256;
 // Rejected loop heads are remembered in a direct-mapped table (an eviction only costs one more
 // observation)
 const REJECTED_SLOTS: usize = 256;
@@ -106,9 +108,13 @@ enum Phase {
 
 #[derive(Debug, Clone)]
 pub(crate) struct IdleState {
+    // Loop head this state belongs to (`NO_WATCH` while the state is free)
+    head: u32,
     phase: Phase,
     attempts: u8,
-    incomplete: u8,
+    // Instructions and cycles an observation must have left to have a chance of completing
+    min_ticks: u64,
+    min_budget: u64,
     observations: u32,
     // Recording state for the iteration under observation
     invalid: bool,
@@ -116,6 +122,8 @@ pub(crate) struct IdleState {
     events: Vec<Event>,
     touches: Vec<(u8, u8)>,
     opcodes: Vec<u16>,
+    // Register file before each instruction of the observed iteration
+    phases: Vec<Sh2Registers>,
     // Verified iteration
     registers: Sh2Registers,
     epoch: u32,
@@ -128,21 +136,43 @@ pub(crate) struct IdleState {
 impl Default for IdleState {
     fn default() -> Self {
         Self {
+            head: NO_WATCH,
             phase: Phase::Armed,
             attempts: 0,
-            incomplete: 0,
+            min_ticks: 0,
+            min_budget: 0,
             observations: 0,
             invalid: false,
             start_counter: 0,
             events: Vec::new(),
             touches: Vec::new(),
             opcodes: Vec::new(),
+            phases: Vec::new(),
             registers: Sh2Registers::default(),
             epoch: 0,
             cycles: 0,
             instructions: 0,
             last_ctx: (0, 0),
             counter: Counter::None,
+        }
+    }
+}
+
+/// States of loop heads that are not the watched one, so that nested or alternating loops keep
+/// what was verified about them
+#[derive(Debug, Clone)]
+pub(crate) struct IdleStash {
+    slots: Vec<Box<IdleState>>,
+    next_victim: usize,
+}
+
+const STASH_SLOTS: usize = 3;
+
+impl Default for IdleStash {
+    fn default() -> Self {
+        Self {
+            slots: (0..STASH_SLOTS).map(|_| Box::new(IdleState::default())).collect(),
+            next_victim: 0,
         }
     }
 }
@@ -155,21 +185,23 @@ fn op_size_len(size: u8) -> u32 {
     }
 }
 
+#[inline(always)]
 fn registers_match(a: &Sh2Registers, b: &Sh2Registers, skip_gpr: Option<usize>) -> bool {
-    let gpr_match = match skip_gpr {
-        None => a.gpr == b.gpr,
-        Some(n) => (0..16).all(|i| i == n || a.gpr[i] == b.gpr[i]),
-    };
-    gpr_match
-        && a.sr == b.sr
-        && a.gbr == b.gbr
-        && a.vbr == b.vbr
-        && a.macl == b.macl
-        && a.mach == b.mach
-        && a.pr == b.pr
-        && a.pc == b.pc
-        && a.next_pc == b.next_pc
-        && a.next_op_in_delay_slot == b.next_op_in_delay_slot
+    match skip_gpr {
+        None => a == b,
+        Some(n) => {
+            (0..16).all(|i| i == n || a.gpr[i] == b.gpr[i])
+                && a.sr == b.sr
+                && a.gbr == b.gbr
+                && a.vbr == b.vbr
+                && a.macl == b.macl
+                && a.mach == b.mach
+                && a.pr == b.pr
+                && a.pc == b.pc
+                && a.next_pc == b.next_pc
+                && a.next_op_in_delay_slot == b.next_op_in_delay_slot
+        }
+    }
 }
 
 impl Sh2 {
@@ -200,15 +232,36 @@ impl Sh2 {
             return;
         }
 
+        // Park the state of the previously watched head and bring in the one for `target`
+        let stash = &mut *self.idle_stash;
+        if let Some(i) = stash.slots.iter().position(|state| state.head == target) {
+            std::mem::swap(&mut *self.idle, &mut stash.slots[i]);
+        } else {
+            let victim = match stash.slots.iter().position(|state| state.head == NO_WATCH) {
+                Some(free) => free,
+                None => {
+                    let victim = stash.next_victim;
+                    stash.next_victim = (victim + 1) % STASH_SLOTS;
+                    victim
+                }
+            };
+            std::mem::swap(&mut *self.idle, &mut stash.slots[victim]);
+
+            let idle = &mut *self.idle;
+            idle.head = target;
+            idle.phase = Phase::Armed;
+            idle.attempts = 0;
+            idle.min_ticks = 0;
+            idle.min_budget = 0;
+        }
+
         self.idle_watch.0.0 = target;
-        self.idle.phase = Phase::Armed;
-        self.idle.attempts = 0;
-        self.idle.incomplete = 0;
     }
 
     fn idle_reject(&mut self, head: u32) {
         self.idle_rejected.insert(head);
         self.idle_watch.0.0 = NO_WATCH;
+        self.idle.head = NO_WATCH;
     }
 
     /// Arrival at the watched head with `ticks` instructions left in the slice. Returns the
@@ -222,7 +275,14 @@ impl Sh2 {
         ticks: u64,
     ) -> Option<u64> {
         let ticks = match self.idle.phase {
-            Phase::Armed => self.idle_observe(bus, opcode_table, ticks)?,
+            Phase::Armed => {
+                // Not enough slice or cycle budget left to observe a whole iteration
+                let budget = bus.idle_cycle_limit().saturating_sub(bus.idle_cycle_counter());
+                if ticks < self.idle.min_ticks || budget < self.idle.min_budget {
+                    return Some(ticks);
+                }
+                self.idle_observe(bus, opcode_table, ticks)?
+            }
             Phase::Verified => ticks,
         };
 
@@ -246,6 +306,7 @@ impl Sh2 {
         }
         let start_registers = self.registers.clone();
         let start_counter = bus.idle_cycle_counter();
+        let start_ticks = ticks;
         let start_epoch = self.cache.epoch();
 
         {
@@ -255,6 +316,7 @@ impl Sh2 {
             idle.events.clear();
             idle.touches.clear();
             idle.opcodes.clear();
+            idle.phases.clear();
         }
         *self.idle_recording = true;
 
@@ -269,6 +331,7 @@ impl Sh2 {
                 self.idle.invalid = true;
             }
 
+            self.idle.phases.push(self.registers.clone());
             self.execute_single_instruction(bus, &mut crate::Interpreter, opcode_table);
             executed += 1;
             ticks -= 1;
@@ -287,7 +350,11 @@ impl Sh2 {
             if bus.should_stop_execution() || ticks == 0 {
                 // Same exit as the interpreter loop; the observation resumes on a later arrival
                 *self.idle_recording = false;
-                self.idle_observation_incomplete(head);
+                self.idle_observation_incomplete(
+                    head,
+                    start_ticks - ticks,
+                    bus.idle_cycle_counter() - start_counter,
+                );
                 return None;
             }
 
@@ -343,6 +410,17 @@ impl Sh2 {
                 idle.instructions = executed;
                 idle.last_ctx = (pc, opcode);
                 idle.counter = counter;
+
+                // A touch only writes fixed LRU bits of its entry, so a touch followed by an
+                // identical one is overwritten completely and can be dropped
+                let touches = &idle.touches;
+                let kept: Vec<(u8, u8)> = touches
+                    .iter()
+                    .enumerate()
+                    .filter(|&(i, touch)| !touches[i + 1..].contains(touch))
+                    .map(|(_, &touch)| touch)
+                    .collect();
+                idle.touches = kept;
             }
             None => {
                 self.idle.attempts += 1;
@@ -355,9 +433,13 @@ impl Sh2 {
         Some(ticks)
     }
 
-    fn idle_observation_incomplete(&mut self, head: u32) {
-        self.idle.incomplete += 1;
-        if self.idle.incomplete >= MAX_INCOMPLETE_OBSERVATIONS {
+    fn idle_observation_incomplete(&mut self, head: u32, executed: u64, cycles: u64) {
+        // The iteration needs more than what the cut-short observation had: ask for more next time
+        let idle = &mut *self.idle;
+        idle.min_ticks = idle.min_ticks.max(executed + 1);
+        idle.min_budget = idle.min_budget.max(cycles + 1);
+        if idle.min_ticks > MAX_ITERATION_INSTRUCTIONS || idle.min_budget > MAX_OBSERVATION_BUDGET
+        {
             self.idle_reject(head);
         }
     }
@@ -409,6 +491,17 @@ impl Sh2 {
             Counter::Dt(n) | Counter::TstAdd(n) => Some(usize::from(n)),
         };
 
+        // Nothing to skip when not even one whole iteration fits in the slice and cycle budget
+        let start = bus.idle_cycle_counter();
+        let limit = bus.idle_cycle_limit();
+        if idle.cycles == 0
+            || limit <= start
+            || ticks < idle.instructions
+            || (limit - 1 - start) < idle.cycles
+        {
+            return ticks;
+        }
+
         if self.cache.epoch() != idle.epoch
             || !registers_match(&self.registers, &idle.registers, skip_gpr)
         {
@@ -427,19 +520,23 @@ impl Sh2 {
         // the first one reads. Bound the count by what keeps each skipped iteration identical to
         // an interpreted one: it must fit in the slice, finish before the cycle limit, and not
         // trigger other-CPU synchronization (which would change state)
-        let start = bus.idle_cycle_counter();
-        let limit = bus.idle_cycle_limit();
-        if idle.cycles == 0 || limit <= start {
-            return ticks;
-        }
         max_iterations = max_iterations
             .min(ticks / idle.instructions)
             .min((limit - 1 - start) / idle.cycles);
 
+        // Reads that synchronize the other processor bound the iterations, unless that processor
+        // is idle: then running it up to the last read in one go is the same as running it up to
+        // each read in turn
+        let unrestricted = max_iterations;
+        let mut last_sync_read = None;
         for event in &idle.events {
             if let Event::Read { offset, address, size, .. } = *event {
                 match bus.idle_read_deadline(address, size) {
-                    None => max_iterations = 0,
+                    Some(u64::MAX) => {}
+                    None => {
+                        max_iterations = 0;
+                        last_sync_read = Some((address, size, offset));
+                    }
                     Some(deadline) => {
                         let first = start + offset;
                         let allowed = if deadline < first {
@@ -448,9 +545,16 @@ impl Sh2 {
                             ((deadline - first) / idle.cycles).saturating_add(1)
                         };
                         max_iterations = max_iterations.min(allowed);
+                        last_sync_read = Some((address, size, offset));
                     }
                 }
             }
+        }
+
+        let mut advance_other = false;
+        if max_iterations < unrestricted && bus.idle_other_quiescent() {
+            max_iterations = unrestricted;
+            advance_other = true;
         }
 
         let mut iterations = max_iterations;
@@ -474,6 +578,12 @@ impl Sh2 {
         let counter = start + iterations * idle.cycles;
         ticks -= iterations * idle.instructions;
 
+        if iterations != 0 && advance_other {
+            if let Some((address, size, offset)) = last_sync_read {
+                bus.idle_advance_other(address, size, start + (iterations - 1) * idle.cycles + offset);
+            }
+        }
+
         if iterations != 0 {
             // LRU updates compose into an idempotent function, so one application equals the
             // effect of any number of identical iterations
@@ -494,6 +604,46 @@ impl Sh2 {
         }
 
         ticks
+    }
+
+    /// Whether this processor, which is not executing, is inside its verified idle loop with
+    /// nothing that could make it do anything but repeat the loop: whatever number of `execute`
+    /// calls it is run for, it ends at the same instruction boundary in the same state.
+    pub fn idle_quiescent<Bus: BusInterface>(&self, bus: &mut Bus, counter: u64) -> bool {
+        if self.reset_pending || bus.reset() || self.dmac.any_channel_pending() {
+            return false;
+        }
+
+        // No exception that `execute` samples at the start of a slice could be taken
+        let external_level = bus.interrupt_level();
+        let internal_level = self.sh7604.internal_interrupt.priority;
+        let mask = self.registers.sr.interrupt_mask;
+        if (external_level > mask && external_level >= internal_level) || internal_level > mask {
+            return false;
+        }
+
+        let epoch = self.cache.epoch();
+        std::iter::once(&**self.idle).chain(self.idle_stash.slots.iter().map(|state| &**state)).any(
+            |idle| {
+                idle.head != NO_WATCH
+                    && idle.phase == Phase::Verified
+                    && idle.counter == Counter::None
+                    && idle.epoch == epoch
+                    && idle.phases.iter().any(|phase| {
+                        phase.pc == self.registers.pc
+                            && registers_match(&self.registers, phase, None)
+                    })
+                    // The loop must still read what it read and write what memory holds
+                    && idle.events.iter().all(|event| match *event {
+                        Event::Read { offset, address, size, value } => {
+                            bus.idle_replay_read(address, size, counter + offset) == Some(value)
+                        }
+                        Event::Write { address, size, value } => {
+                            bus.idle_write_is_noop(address, size, value)
+                        }
+                    })
+            },
+        )
     }
 
     /// Records a data read made while an iteration is under observation.

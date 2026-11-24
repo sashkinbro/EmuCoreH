@@ -293,6 +293,11 @@ impl DmaController {
         }
     }
 
+    /// Whether any channel is enabled and not complete (so `channel_ready` could do work)
+    pub(crate) fn any_channel_pending(&self) -> bool {
+        self.channels.iter().any(|channel| channel.control.dma_enabled && !channel.control.dma_complete)
+    }
+
     pub fn channel_ready<B: BusInterface>(&mut self, bus: &mut B) -> Option<usize> {
         if !self.operation.dma_master_enabled || self.operation.address_error {
             return None;
