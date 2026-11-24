@@ -25,6 +25,8 @@
 //! instruction slice, so `execute` returns at exactly the same instruction boundary with exactly
 //! the same state.
 
+use std::sync::atomic::{AtomicU8, Ordering::Relaxed};
+
 use crate::bus::{AccessContext, BusInterface, OpSize};
 use crate::registers::Sh2Registers;
 use crate::{EXTERNAL_ADDRESS_MASK, OpcodeTable, Sh2};
@@ -36,6 +38,11 @@ const MAX_ITERATION_INSTRUCTIONS: u64 = 32;
 const MAX_EVENTS: usize = 16;
 const MAX_TOUCHES: usize = 48;
 const MAX_OBSERVATION_ATTEMPTS: u8 = 3;
+// A verified loop is only re-observed after this many consecutive arrivals with another register
+// file (the first arrival after entering a loop usually differs from the steady state)
+const MAX_ARRIVAL_MISMATCHES: u8 = 3;
+// Failed attempts to prove the other SH-2 idle back off exponentially (in arrivals), up to this
+const MAX_QUIESCENT_BACKOFF: u8 = 4;
 // Iterations that change cache contents (line fills) are retried, they usually settle
 const MAX_CACHE_CHANGED_ATTEMPTS: u8 = 12;
 // Rejected loop heads are forgotten after this many observations so changing behavior is revisited
@@ -46,6 +53,33 @@ const MAX_OBSERVATION_BUDGET: u64 = 256;
 // Rejected loop heads are remembered in a direct-mapped table (an eviction only costs one more
 // observation)
 const REJECTED_SLOTS: usize = 256;
+
+/// Host-only counter that can be updated through a shared reference (the verified state is read
+/// by `idle_skip` while its policy counters change)
+#[derive(Debug, Default)]
+struct Tally(AtomicU8);
+
+impl Tally {
+    fn new(value: u8) -> Self {
+        Self(AtomicU8::new(value))
+    }
+
+    #[inline(always)]
+    fn get(&self) -> u8 {
+        self.0.load(Relaxed)
+    }
+
+    #[inline(always)]
+    fn set(&self, value: u8) {
+        self.0.store(value, Relaxed);
+    }
+}
+
+impl Clone for Tally {
+    fn clone(&self) -> Self {
+        Self::new(self.get())
+    }
+}
 
 /// Loop heads that were observed and found unskippable
 #[derive(Debug, Clone, Copy)]
@@ -116,6 +150,9 @@ pub(crate) struct IdleState {
     min_ticks: u64,
     min_budget: u64,
     observations: u32,
+    mismatches: Tally,
+    quiescent_failures: Tally,
+    quiescent_backoff: Tally,
     // Recording state for the iteration under observation
     invalid: bool,
     start_counter: u64,
@@ -125,6 +162,7 @@ pub(crate) struct IdleState {
     // Register file before each instruction of the observed iteration
     phases: Vec<Sh2Registers>,
     // Verified iteration
+    pc_range: (u32, u32),
     registers: Sh2Registers,
     epoch: u32,
     cycles: u64,
@@ -142,12 +180,16 @@ impl Default for IdleState {
             min_ticks: 0,
             min_budget: 0,
             observations: 0,
+            mismatches: Tally::new(0),
+            quiescent_failures: Tally::new(0),
+            quiescent_backoff: Tally::new(0),
             invalid: false,
             start_counter: 0,
             events: Vec::new(),
             touches: Vec::new(),
             opcodes: Vec::new(),
             phases: Vec::new(),
+            pc_range: (0, 0),
             registers: Sh2Registers::default(),
             epoch: 0,
             cycles: 0,
@@ -253,6 +295,9 @@ impl Sh2 {
             idle.attempts = 0;
             idle.min_ticks = 0;
             idle.min_budget = 0;
+            idle.mismatches.set(0);
+            idle.quiescent_failures.set(0);
+            idle.quiescent_backoff.set(0);
         }
 
         self.idle_watch.0.0 = target;
@@ -266,9 +311,34 @@ impl Sh2 {
 
     /// Arrival at the watched head with `ticks` instructions left in the slice. Returns the
     /// remaining ticks, or `None` if `execute` must return now (slice or cycle budget exhausted).
-    #[cold]
     #[inline(never)]
     pub(crate) fn idle_arrival<Bus: BusInterface>(
+        &mut self,
+        bus: &mut Bus,
+        opcode_table: &OpcodeTable<Bus>,
+        ticks: u64,
+    ) -> Option<u64> {
+        // Most arrivals find that not even one iteration of a verified loop fits in what is left
+        // of the slice and cycle budget: leave without entering the large slow path
+        if self.idle.phase == Phase::Verified {
+            let idle = &*self.idle;
+            let start = bus.idle_cycle_counter();
+            let limit = bus.idle_cycle_limit();
+            if idle.cycles == 0
+                || limit <= start
+                || ticks < idle.instructions
+                || (limit - 1 - start) < idle.cycles
+            {
+                return Some(ticks);
+            }
+        }
+
+        self.idle_arrival_slow(bus, opcode_table, ticks)
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn idle_arrival_slow<Bus: BusInterface>(
         &mut self,
         bus: &mut Bus,
         opcode_table: &OpcodeTable<Bus>,
@@ -410,6 +480,10 @@ impl Sh2 {
                 idle.instructions = executed;
                 idle.last_ctx = (pc, opcode);
                 idle.counter = counter;
+                idle.mismatches.set(0);
+                idle.pc_range = idle.phases.iter().fold((u32::MAX, 0), |(low, high), phase| {
+                    (low.min(phase.pc), high.max(phase.pc))
+                });
 
                 // A touch only writes fixed LRU bits of its entry, so a touch followed by an
                 // identical one is overwritten completely and can be dropped
@@ -502,13 +576,22 @@ impl Sh2 {
             return ticks;
         }
 
-        if self.cache.epoch() != idle.epoch
-            || !registers_match(&self.registers, &idle.registers, skip_gpr)
-        {
+        if self.cache.epoch() != idle.epoch {
             self.idle.phase = Phase::Armed;
             self.idle.attempts = 0;
             return ticks;
         }
+
+        if !registers_match(&self.registers, &idle.registers, skip_gpr) {
+            idle.mismatches.set(idle.mismatches.get() + 1);
+            if idle.mismatches.get() >= MAX_ARRIVAL_MISMATCHES {
+                idle.mismatches.set(0);
+                self.idle.phase = Phase::Armed;
+                self.idle.attempts = 0;
+            }
+            return ticks;
+        }
+        idle.mismatches.set(0);
 
         let mut max_iterations = match idle.counter {
             Counter::None => u64::MAX,
@@ -552,9 +635,18 @@ impl Sh2 {
         }
 
         let mut advance_other = false;
-        if max_iterations < unrestricted && bus.idle_other_quiescent() {
-            max_iterations = unrestricted;
-            advance_other = true;
+        if max_iterations < unrestricted {
+            if idle.quiescent_backoff.get() != 0 {
+                idle.quiescent_backoff.set(idle.quiescent_backoff.get() - 1);
+            } else if bus.idle_other_quiescent() {
+                idle.quiescent_failures.set(0);
+                max_iterations = unrestricted;
+                advance_other = true;
+            } else {
+                let failures = (idle.quiescent_failures.get() + 1).min(MAX_QUIESCENT_BACKOFF);
+                idle.quiescent_failures.set(failures);
+                idle.quiescent_backoff.set((1 << failures) - 1);
+            }
         }
 
         let mut iterations = max_iterations;
@@ -627,6 +719,7 @@ impl Sh2 {
             |idle| {
                 idle.head != NO_WATCH
                     && idle.phase == Phase::Verified
+                    && (idle.pc_range.0..=idle.pc_range.1).contains(&self.registers.pc)
                     && idle.counter == Counter::None
                     && idle.epoch == epoch
                     && idle.phases.iter().any(|phase| {
