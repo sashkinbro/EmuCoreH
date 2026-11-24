@@ -50,7 +50,14 @@ run() {
   # builds: valid boots the game, invalid stops at the BIOS language screen.
   local stem="${game##*/}"; stem="${stem%.*}"
   printf '\001\031\223\134\061\043\131\131\000\000\000\000' > "$save/$stem.smpc"
-  "$exe" "$CONTENT/$game" "$(system_dir)" "$save" "$frames" 300 "$options" "$input" "$prof" 2>/dev/null
+  "$exe" "$CONTENT/$game" "$(system_dir)" "$save" "$frames" 300 "$options" "$input" "$prof" 2>"${HOST_SAT_STDERR:-/dev/null}"
+}
+
+# Speed metric: emulation-thread Mcycles/frame (robust against preemption by other
+# processes); METRIC=ms uses wall-clock ms/frame instead.
+metric() {
+  if [ "${METRIC:-cycles}" = ms ]; then sed -n 's/^TIME_ALL.*avg_ms=\([0-9.]*\).*/\1/p'
+  else sed -n 's/^CYCLES_ALL.*mcycles_per_frame=\([0-9.]*\).*/\1/p'; fi
 }
 
 compare() {
@@ -76,15 +83,15 @@ compare() {
       ob="$(run "$WORK/build-base/host_sat.exe" "$s")"
       oc="$(run "$WORK/build-cand/host_sat.exe" "$s")"
       hb="$(grep '^f' <<< "$ob")"; hc="$(grep '^f' <<< "$oc")"
-      bt+=("$(grep TIME_ALL <<< "$ob" | sed 's/.*avg_ms=\([0-9.]*\).*/\1/')")
-      ct+=("$(grep TIME_ALL <<< "$oc" | sed 's/.*avg_ms=\([0-9.]*\).*/\1/')")
+      bt+=("$(metric <<< "$ob")")
+      ct+=("$(metric <<< "$oc")")
       if [ "$hb" != "$hc" ]; then echo "$s: DIFF (rep $i)"; diff <(echo "$hb") <(echo "$hc") || true; fail=1; break; fi
     done
     local best_b best_c
     best_b="$(printf '%s\n' "${bt[@]}" | sort -g | head -1)"; best_c="$(printf '%s\n' "${ct[@]}" | sort -g | head -1)"
     local verdict=MATCH; [ "$hb" != "$hc" ] && verdict=DIFF
-    awk -v s="$s" -v v="$verdict" -v b="$best_b" -v c="$best_c" -v h="$(tail -1 <<< "$hc")" \
-      'BEGIN { printf "%-12s %s base=%.4f ms cand=%.4f ms speedup=%+.1f%%  [%s]\n", s, v, b, c, (b / c - 1) * 100, h }'
+    awk -v s="$s" -v v="$verdict" -v b="$best_b" -v c="$best_c" -v h="$(tail -1 <<< "$hc")" -v u="${METRIC:-cycles}" \
+      'BEGIN { printf "%-12s %s base=%.4f cand=%.4f %s/frame speedup=%+.1f%%  [%s]\n", s, v, b, c, (u == "ms" ? "ms" : "Mcycles"), (b / c - 1) * 100, h }'
   done
   return $fail
 }

@@ -207,13 +207,23 @@ int main(int argc, char** argv) {
     g_keep_last = dump_dir && dump_dir[0];
     std::vector<double> times;
     times.reserve(frames);
+    // Emulation-thread CPU cycles: unlike wall time, not inflated when other processes preempt us.
+    unsigned long long cycles_total = 0;
     std::vector<uint8_t> state;
     for (int frame = 1; frame <= frames; frame++) {
         unsigned mask = 0;
         for (const auto& r : input) if (frame >= r.from && frame <= r.to) { mask = r.mask; break; }
         g_pad = mask;
         const auto t0 = std::chrono::steady_clock::now();
+#ifdef _WIN32
+        ULONG64 c0 = 0, c1 = 0;
+        QueryThreadCycleTime(GetCurrentThread(), &c0);
+#endif
         retro_run();
+#ifdef _WIN32
+        QueryThreadCycleTime(GetCurrentThread(), &c1);
+        cycles_total += c1 - c0;
+#endif
         times.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
         if (frame % every == 0 || frame == frames) {
             state.resize(retro_serialize_size());
@@ -255,6 +265,7 @@ int main(int argc, char** argv) {
         std::printf("%s frames=%d avg_ms=%.4f p99_ms=%.4f peak_ms=%.4f\n", from ? "TIME_GAMEPLAY" : "TIME_ALL", n, n ? sum / n : 0, p99, peak);
     };
     summarize(0);
+    std::printf("CYCLES_ALL frames=%d mcycles_per_frame=%.4f\n", frames, cycles_total / 1e6 / std::max(1, frames));
     if (gameplay_from < frames) summarize(gameplay_from);
     retro_unload_game();
     retro_deinit();
