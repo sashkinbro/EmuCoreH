@@ -480,23 +480,50 @@ fn populate_frame_buffer(
         (0, viewport.width as usize)
     };
 
-    for (i, row) in vdp_buffer.iter().skip(row_skip).take(row_take).enumerate() {
-        for (j, color) in row.iter().copied().skip(col_skip).enumerate() {
-            let color = match vdp_version.hardware() {
-                SmsGgHardware::MasterSystem => Color::rgb(
+    let rows = vdp_buffer.iter().skip(row_skip).take(row_take);
+    match vdp_version.hardware() {
+        SmsGgHardware::MasterSystem => {
+            // Only the low 6 bits of an SMS color are used
+            let colors: [Color; 64] = std::array::from_fn(|color| {
+                let color = color as u16;
+                Color::rgb(
                     vdp::convert_sms_color(color & 0x03),
                     vdp::convert_sms_color((color >> 2) & 0x03),
                     vdp::convert_sms_color((color >> 4) & 0x03),
-                ),
-                SmsGgHardware::GameGear => Color::rgb(
+                )
+            });
+            convert_rows(rows, col_skip, screen_width, frame_buffer, |color| {
+                colors[(color & 0x3F) as usize]
+            });
+        }
+        SmsGgHardware::GameGear => {
+            convert_rows(rows, col_skip, screen_width, frame_buffer, |color| {
+                Color::rgb(
                     vdp::convert_gg_color(color & 0x0F),
                     vdp::convert_gg_color((color >> 4) & 0x0F),
                     vdp::convert_gg_color((color >> 8) & 0x0F),
-                ),
-                SmsGgHardware::Sg1000 => vdp::convert_sg_color(color),
-            };
+                )
+            });
+        }
+        SmsGgHardware::Sg1000 => {
+            convert_rows(rows, col_skip, screen_width, frame_buffer, vdp::convert_sg_color);
+        }
+    }
+}
 
-            frame_buffer[i * screen_width + j] = color;
+#[inline(always)]
+fn convert_rows<'a>(
+    rows: impl Iterator<Item = &'a [u16]>,
+    col_skip: usize,
+    screen_width: usize,
+    frame_buffer: &mut [Color],
+    convert: impl Fn(u16) -> Color,
+) {
+    for (i, row) in rows.enumerate() {
+        let row = &row[col_skip..];
+        let out = &mut frame_buffer[i * screen_width..i * screen_width + row.len()];
+        for (out, &color) in out.iter_mut().zip(row) {
+            *out = convert(color);
         }
     }
 }
