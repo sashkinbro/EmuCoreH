@@ -239,6 +239,12 @@ pub trait BusInterface: Sized {
     fn idle_write_is_noop(&mut self, _address: u32, _size: u8, _value: u32) -> bool {
         false
     }
+
+    /// Block-engine differential testing only: called after every executed block with the
+    /// instructions left in the slice. Only the recording bus of the verifier implements it.
+    #[cfg(feature = "jit-verify")]
+    #[doc(hidden)]
+    fn jit_checkpoint(&mut self, _ticks_left: u64, _cpu: &crate::Sh2) {}
 }
 
 #[macro_export]

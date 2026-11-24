@@ -205,14 +205,14 @@ impl<Bus: BusInterface> ExecutionBody<Bus> for Predecoded {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Flow {
+pub(crate) enum Flow {
     Continue,
     // Delayed branch: the next instruction (its delay slot) is the last of the block
     Delayed,
     End,
 }
 
-fn flow(opcode: u16) -> Flow {
+pub(crate) fn flow(opcode: u16) -> Flow {
     match opcode >> 12 {
         0xA | 0xB => Flow::Delayed,
         0x8 => match (opcode >> 8) & 0xF {
@@ -235,7 +235,7 @@ fn flow(opcode: u16) -> Flow {
 
 /// Instructions that never go through `read_*`/`write_*` and so never touch the CPU cache.
 /// Anything not positively identified here is treated as touching it.
-fn is_register_only(opcode: u16) -> bool {
+pub(crate) fn is_register_only(opcode: u16) -> bool {
     let low = opcode & 0xF;
     match opcode >> 12 {
         0x7 | 0xA | 0xB | 0xE => true,
@@ -327,7 +327,7 @@ fn leaves_straight_line(opcode: u16) -> bool {
 
 /// The handler the interpreter would call, with the opcode groups that share a decode closure
 /// resolved to their instruction directly
-fn handler_for<Bus: BusInterface>(opcode: u16, table: &OpcodeTable<Bus>) -> OpcodeFn<Bus> {
+pub(crate) fn handler_for<Bus: BusInterface>(opcode: u16, table: &OpcodeTable<Bus>) -> OpcodeFn<Bus> {
     match opcode >> 8 {
         0x80 => |cpu, op, bus| cpu.mov_b_r0_rn_displacement(op, bus),
         0x81 => |cpu, op, bus| cpu.mov_w_r0_rn_displacement(op, bus),
@@ -730,6 +730,11 @@ mod tests {
     }
 
     fn pointer(rng: &mut Rng) -> u32 {
+        // Occasionally point into the cache data array (on-chip RAM), where programs started
+        // from the array then modify their own code
+        if rng.below(16) == 0 {
+            return 0xC000_0000 + (rng.below(0x800) as u32) * 2;
+        }
         let base = if rng.below(4) == 0 { 0x2600_0000 } else { RAM_BASE };
         let span = if rng.below(4) == 0 { RAM_LEN as u64 / 2 } else { 0x100 };
         base + (rng.below(span) as u32) * 2
@@ -748,7 +753,15 @@ mod tests {
         cpu.reset_pending = false;
         cpu.trace_log_enabled = false;
         let alias = if rng.below(3) == 0 { 0x2000_0000 } else { 0 };
-        let start = RAM_BASE + (rng.below(0x100) as u32) * 2 + alias;
+        let mut start = RAM_BASE + (rng.below(0x100) as u32) * 2 + alias;
+        // Code in the cache data array used as RAM
+        if rng.below(4) == 0 {
+            for i in 0..0x800u32 {
+                let op = random_opcode(&mut rng);
+                cpu.cache.write_data_array_u16(0xC000_0000 + 2 * i, op);
+            }
+            start = 0xC000_0000 + (rng.below(0x700) as u32) * 2;
+        }
         cpu.registers.pc = start;
         cpu.registers.next_pc = start + 2;
         cpu.registers.sr.interrupt_mask = if rng.below(2) == 0 { 15 } else { 3 };
@@ -776,6 +789,17 @@ mod tests {
     }
 
     fn run(seed: u64, predecode: bool) -> Outcome {
+        run_with(seed, if predecode { Backend::Predecode } else { Backend::Interpreter })
+    }
+
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum Backend {
+        Interpreter,
+        Predecode,
+        Jit,
+    }
+
+    fn run_with(seed: u64, backend: Backend) -> Outcome {
         let (mut cpu, mut bus) = build(seed);
         let mut rng = Rng(seed ^ 0xDEAD_BEEF_1234_5678 | 1);
         let mut states = Vec::new();
@@ -791,11 +815,15 @@ mod tests {
             bus.irq = if rng.below(10) == 0 { rng.below(16) as u8 } else { 0 };
             bus.limit = bus.counter + 1 + rng.below(300);
             let ticks = 1 + rng.below(60);
-            if predecode {
-                cpu.blocks.ensure_table(std::ptr::from_ref(TestBus::opcode_table()) as usize);
-                cpu.execute_with_body(ticks, &mut bus, &mut Predecoded);
-            } else {
-                cpu.execute_with_body(ticks, &mut bus, &mut crate::Interpreter);
+            match backend {
+                Backend::Predecode => {
+                    cpu.blocks.ensure_table(std::ptr::from_ref(TestBus::opcode_table()) as usize);
+                    cpu.execute_with_body(ticks, &mut bus, &mut Predecoded);
+                }
+                Backend::Jit => cpu.execute_jit_for_test(ticks, &mut bus),
+                Backend::Interpreter => {
+                    cpu.execute_with_body(ticks, &mut bus, &mut crate::Interpreter);
+                }
             }
             states.extend(state(&cpu));
             regs.push((ticks, bus.counter, cpu.registers.clone()));
@@ -804,9 +832,18 @@ mod tests {
     }
 
     #[test]
+    fn jit_blocks_match_interpreter_exactly() {
+        compare_backends(Backend::Jit, "JIT_SEEDS");
+    }
+
+    #[test]
     fn predecoded_blocks_match_interpreter_exactly() {
+        compare_backends(Backend::Predecode, "PREDECODE_SEEDS");
+    }
+
+    fn compare_backends(backend: Backend, seeds_var: &str) {
         let seeds: u64 =
-            std::env::var("PREDECODE_SEEDS").ok().and_then(|v| v.parse().ok()).unwrap_or(400);
+            std::env::var(seeds_var).ok().and_then(|v| v.parse().ok()).unwrap_or(400);
         let mut skipped = 0;
         let first: u64 = std::env::var("PREDECODE_FIRST").ok().and_then(|v| v.parse().ok()).unwrap_or(1);
         for seed in first..=seeds {
@@ -819,7 +856,7 @@ mod tests {
                 skipped += 1;
                 continue;
             };
-            let actual = run(seed, true);
+            let actual = run_with(seed, backend);
             if expected.states != actual.states {
                 let i = expected.regs.iter().zip(&actual.regs).position(|(a, b)| a.2 != b.2 || a.1 != b.1);
                 if let Some(i) = i {

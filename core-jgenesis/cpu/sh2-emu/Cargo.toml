@@ -8,6 +8,10 @@ jit-runtime = ["native-arm64", "jgenesis-common/jit-runtime"]
 jit-preview = ["jit-runtime", "jgenesis-common/jit-preview"]
 # Experimental, explicitly selected with Sh2::execute_with_native. Never default.
 native-arm64 = ["jgenesis-common/native-code", "dep:rustc-hash"]
+# Host differential testing of the block engine (recording/replaying buses, lockstep checks)
+jit-verify = []
+# Work-in-progress AArch64 block compiler (encoder only so far; not wired into execution)
+jit-arm64 = []
 
 [dependencies]
 jgenesis-common = { workspace = true }

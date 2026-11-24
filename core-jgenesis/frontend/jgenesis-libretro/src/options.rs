@@ -5,6 +5,7 @@ const OPTIONS: &[(&CStr, &CStr)] = &[
     #[cfg(feature = "jit-runtime")]
     (c"jgenesis_jit_backend", c"QA experimental CPU backend; interpreter|native"),
     (c"jgenesis_sh2_predecode", c"32X SH-2 predecoded blocks; disabled|enabled"),
+    (c"jgenesis_sh2_jit", c"32X SH-2 block engine (threaded micro-ops); disabled|enabled"),
     (c"jgenesis_region", c"Region (restart); auto|americas|europe|japan"),
     (c"jgenesis_timing", c"Timing (restart); auto|ntsc|pal"),
     (c"jgenesis_remove_sprite_limit", c"Remove sprite limit; disabled|enabled"),
@@ -77,6 +78,10 @@ pub fn changed() -> bool {
 
 pub fn sh2_predecode() -> bool {
     enabled(c"jgenesis_sh2_predecode", false)
+}
+
+pub fn sh2_jit() -> bool {
+    enabled(c"jgenesis_sh2_jit", false)
 }
 
 pub fn genesis() -> GenesisEmulatorConfig {

@@ -119,11 +119,16 @@ pub(crate) struct LineGens {
     any: u32,
     conf: u32,
     lines: [u32; WAYS * CACHE_ENTRIES],
+    // Block-engine code bitmap (see `jit`): one bit per (way, entry) line that holds the code of a
+    // compiled block. `code` is bumped only when such a line changes (or on `conf` changes), so
+    // blocks validate with one compare while unrelated data lines are refilled.
+    code: u32,
+    code_lines: [u64; WAYS],
 }
 
 impl Default for LineGens {
     fn default() -> Self {
-        Self { any: 0, conf: 0, lines: [0; WAYS * CACHE_ENTRIES] }
+        Self { any: 0, conf: 0, lines: [0; WAYS * CACHE_ENTRIES], code: 0, code_lines: [0; WAYS] }
     }
 }
 
@@ -176,6 +181,11 @@ impl CpuCache {
         let line_gen = &mut self.gens.lines[(way_idx << 6) | entry_idx];
         *line_gen = line_gen.wrapping_add(1);
         self.gens.any = self.gens.any.wrapping_add(1);
+        let code_bit = 1u64 << entry_idx;
+        if self.gens.code_lines[way_idx] & code_bit != 0 {
+            self.gens.code_lines[way_idx] &= !code_bit;
+            self.gens.code = self.gens.code.wrapping_add(1);
+        }
     }
 
     #[inline(always)]
@@ -189,6 +199,30 @@ impl CpuCache {
     fn bump_conf(&mut self) {
         self.gens.conf = self.gens.conf.wrapping_add(1);
         self.gens.any = self.gens.any.wrapping_add(1);
+        self.gens.code = self.gens.code.wrapping_add(1);
+        self.gens.code_lines = [0; WAYS];
+    }
+
+    /// Change counter of lines marked with `mark_code_line` (and of the configuration)
+    #[cfg_attr(feature = "jit-runtime", allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn code_gen(&self) -> u32 {
+        self.gens.code
+    }
+
+    /// Instruction word at `address` within the cache RAM line of `(way, entry)`
+    #[cfg_attr(feature = "jit-runtime", allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn line_word(&self, way: u8, entry: u8, address: u32) -> u16 {
+        let base = cache_ram_addr(usize::from(way) & (WAYS - 1), usize::from(entry) & 0x3F) >> 1;
+        self.ram[base | (((address as usize) & 0xE) >> 1)]
+    }
+
+    /// Marks a line as holding block code: any later change to it bumps `code_gen`
+    #[cfg_attr(feature = "jit-runtime", allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn mark_code_line(&mut self, way: u8, entry: u8) {
+        self.gens.code_lines[usize::from(way) & (WAYS - 1)] |= 1u64 << (entry & 63);
     }
 
     #[inline(always)]
