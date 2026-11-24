@@ -1466,6 +1466,10 @@ void CNew3D::CacheModel(Model *m, const UINT32 *data)
 				
 				p.v[j].fixedShade = shade;
 			}
+			else {
+				// Unused by the shaders here, but never hand stack garbage to the scene.
+				p.v[j].fixedShade = 0;
+			}
 
 			float texU = 0;
 			float texV = 0;

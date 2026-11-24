@@ -2014,7 +2014,10 @@ void SCSP_SaveState(CBlockFile *StateFile)
 			// Match the loader's 20-bit sample offset. An unused slot can
 			// have a null base: pointer subtraction there is undefined and
 			// serializes host addresses instead of a stable guest offset.
-			baseOffset = (reinterpret_cast<std::uintptr_t>(SCSPs[i].Slots[j].base)
+			// Even as uintptr_t arithmetic, (0 - SCSPRAM) & 0xFFFFF still
+			// leaks the heap address, so a slot never keyed on saves 0.
+			baseOffset = SCSPs[i].Slots[j].base == nullptr ? 0 :
+				(reinterpret_cast<std::uintptr_t>(SCSPs[i].Slots[j].base)
 				- reinterpret_cast<std::uintptr_t>(SCSPs[i].SCSPRAM)) & 0xFFFFF;
 			StateFile->Write(&baseOffset, sizeof(baseOffset));
 			StateFile->Write(&(SCSPs[i].Slots[j].cur_addr), sizeof(SCSPs[i].Slots[j].cur_addr));

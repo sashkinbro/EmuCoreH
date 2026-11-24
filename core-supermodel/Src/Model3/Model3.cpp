@@ -2849,6 +2849,7 @@ void CModel3::Reset(void)
   inputBank = 0;
   serialFIFO1 = 0;
   serialFIFO2 = 0;
+  gunReg = 0;     // was never initialized: savestates carried heap garbage
   adcChannel = 0;
 
   // MIDI
