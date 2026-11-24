@@ -12,6 +12,8 @@
 #include "profiler/fc_profiler.h"
 #include "network/ggpo.h"
 
+#include <chrono>
+#include <exception>
 #include <mutex>
 #include <condition_variable>
 #include <deque>
@@ -59,6 +61,15 @@ static bool lockstepGranted;
 static bool lockstepDone = true;
 static bool lockstepAborted;
 static int lockstepBlocked;
+// Render messages queued by the emu thread / that reached the point where the
+// renderer releases the emu thread (renderEnd). Counting instead of waiting on
+// the auto-reset renderEnd event can't lose or coalesce a signal.
+static s64 lockstepRendersQueued;
+static s64 lockstepRendersDone;
+
+static void rend_lockstep_render_queued();
+static void rend_lockstep_render_done();
+static void rend_lockstep_wait_renders();
 
 // Delay frame swapping is a threaded-rendering feature (see the libretro core
 // option help). With the single-threaded renderer the emulation thread is
@@ -136,6 +147,9 @@ public:
 								}
 							}
 						}
+						if (type == Render && rend_is_lockstep())
+							// Lock order: queue mutex, then lockstep mutex
+							rend_lockstep_render_queued();
 						queue.push_back(msg);
 						dupe = false;
 					}
@@ -145,6 +159,9 @@ public:
 					if (type == Stop)
 						return;
 					rend_lockstep_wait(dequeueEvent);
+					if (rend_is_lockstep() && rend_lockstep_aborted())
+						// The emulator is being stopped and nobody serves the queue
+						return;
 				}
 			} while (dupe);
 			enqueueEvent.Set();
@@ -281,6 +298,22 @@ private:
 	{
 		FC_PROFILE_SCOPE;
 
+		// Releases the emu thread waiting in rend_end_render(). In lockstep mode
+		// every dequeued Render is accounted for, even if it fails or is empty.
+		struct RenderEnd
+		{
+			bool signaled = false;
+			void signal() {
+				signaled = true;
+				renderEnd.Set();
+				if (rend_is_lockstep())
+					rend_lockstep_render_done();
+			}
+			~RenderEnd() {
+				if (!signaled && rend_is_lockstep())
+					rend_lockstep_render_done();
+			}
+		} end;
 		TA_context *taContext = DequeueRender();
 		if (taContext == nullptr)
 			return;
@@ -303,7 +336,7 @@ private:
 			try {
 				renderer->Process(taContext);
 			} catch (...) {
-				renderEnd.Set();
+				end.signal();
 				rend_allow_rollback();
 				throw;
 			}
@@ -311,7 +344,7 @@ private:
 
 		if (renderToScreen)
 			// If rendering to texture or in full framebuffer emulation, continue locking until the frame is rendered
-			renderEnd.Set();
+			end.signal();
 		rend_allow_rollback();
 		{
 			FC_PROFILE_SCOPE_NAMED("Renderer::Render");
@@ -319,13 +352,13 @@ private:
 				renderer->Render();
 			} catch (...) {
 				if (!renderToScreen)
-					renderEnd.Set();
+					end.signal();
 				throw;
 			}
 		}
 
 		if (!renderToScreen)
-			renderEnd.Set();
+			end.signal();
 		else if (delayFrameSwapping() && fb_w_cur == FB_R_SOF1)
 			present();
 
@@ -453,11 +486,58 @@ void rend_lockstep_wait(cResetEvent& event)
 		lockstepBlocked++;
 	}
 	lockstepCond.notify_all();
-	event.Wait();
+	// Nobody serves the queue once the emulator is being stopped
+	while (!event.Wait(10) && !rend_lockstep_aborted())
+		;
 	{
 		const std::lock_guard<std::mutex> lock(lockstepMutex);
 		lockstepBlocked--;
 	}
+}
+
+static void rend_lockstep_render_queued()
+{
+	const std::lock_guard<std::mutex> lock(lockstepMutex);
+	lockstepRendersQueued++;
+}
+
+static void rend_lockstep_render_done()
+{
+	{
+		const std::lock_guard<std::mutex> lock(lockstepMutex);
+		lockstepRendersDone++;
+	}
+	lockstepCond.notify_all();
+}
+
+// Emu thread: wait until every queued Render has released the emu thread
+// (rend_end_render), as the single-threaded renderer has done it already.
+static void rend_lockstep_wait_renders()
+{
+	std::unique_lock<std::mutex> lock(lockstepMutex);
+	if (lockstepRendersDone >= lockstepRendersQueued || lockstepAborted)
+		return;
+	lockstepBlocked++;
+	lockstepCond.notify_all();
+	lockstepCond.wait(lock, [] { return lockstepRendersDone >= lockstepRendersQueued || lockstepAborted; });
+	lockstepBlocked--;
+}
+
+// Frontend thread: the emu thread has been blocked for a long time with nothing
+// left in the queue to serve, which should never happen. Release every wait
+// rather than hang forever.
+static void rend_lockstep_unblock()
+{
+	WARN_LOG(RENDERER, "Lockstep renderer: emulation thread stuck, releasing it");
+	FinishRender(DequeueRender());
+	renderEnd.Set();
+	rend_allow_rollback();
+	pvrQueue.cancelEnqueue();
+	{
+		const std::lock_guard<std::mutex> lock(lockstepMutex);
+		lockstepRendersDone = lockstepRendersQueued;
+	}
+	lockstepCond.notify_all();
 }
 
 void rend_lockstep_run()
@@ -475,23 +555,53 @@ void rend_lockstep_run()
 	}
 	lockstepCond.notify_all();
 
-	while (backlog > 0 && pvrQueue.executeOne(0))
+	// A render failure is rethrown once the run is over, so that the emu thread
+	// isn't left running (or blocked) while the frontend handles it.
+	std::exception_ptr failure;
+	const auto executeOne = [&failure](int timeoutMs) {
+		try {
+			return pvrQueue.executeOne(timeoutMs);
+		} catch (...) {
+			if (!failure)
+				failure = std::current_exception();
+			return true;
+		}
+	};
+
+	while (backlog > 0 && executeOne(0))
 		backlog--;
 
 	// Wait for the end of the run. New render messages are left in the queue for
 	// the next run, unless the emu thread is blocked waiting for them.
+	using clock = std::chrono::steady_clock;
+	constexpr auto watchdogTimeout = std::chrono::seconds(2);
+	clock::time_point idleSince {};
 	std::unique_lock<std::mutex> lock(lockstepMutex);
 	while (!lockstepDone && !lockstepAborted)
 	{
 		if (lockstepBlocked > 0)
 		{
 			lock.unlock();
-			pvrQueue.executeOne(1);
+			if (executeOne(1))
+				idleSince = {};
+			else if (idleSince == clock::time_point{})
+				idleSince = clock::now();
+			else if (clock::now() - idleSince > watchdogTimeout)
+			{
+				rend_lockstep_unblock();
+				idleSince = {};
+			}
 			lock.lock();
 		}
 		else
+		{
+			idleSince = {};
 			lockstepCond.wait(lock);
+		}
 	}
+	lock.unlock();
+	if (failure)
+		std::rethrow_exception(failure);
 }
 
 class SwapIntervalDetector
@@ -723,6 +833,10 @@ void rend_reset()
 	FrameCount = 1;
 	fb_w_cur = 1;
 	pvrQueue.reset();
+	{
+		const std::lock_guard<std::mutex> lock(lockstepMutex);
+		lockstepRendersDone = lockstepRendersQueued;
+	}
 	rendererEnabled = true;
 	fbAddrHistory[0] = 1;
 	fbAddrHistory[1] = 1;
@@ -831,7 +945,12 @@ int rend_end_render(int tag, int cycles, int jitter, void *arg)
 		asic_RaiseInterrupt(holly_RENDER_DONE_vd);
 	}
 	if (pend_rend && config::ThreadedRendering)
-		rend_lockstep_wait(renderEnd);
+	{
+		if (rend_is_lockstep())
+			rend_lockstep_wait_renders();
+		else
+			renderEnd.Wait();
+	}
 
 	return 0;
 }
