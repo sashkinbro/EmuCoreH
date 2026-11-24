@@ -206,13 +206,17 @@ public:
 	void cancelEnqueue()
 	{
 		const lock_guard lock(mutex);
-		for (auto it = queue.begin(); it != queue.end(); )
-		{
-			if (it->type != Render)
-				it = queue.erase(it);
-			else
-				++it;
-		}
+		// In lockstep mode the queue holds the work of the last run, which the
+		// next retro_run executes. Dropping its RenderFramebuffer/Present would
+		// lose a frame on every stop/start (save states, option changes).
+		if (!rend_is_lockstep())
+			for (auto it = queue.begin(); it != queue.end(); )
+			{
+				if (it->type != Render)
+					it = queue.erase(it);
+				else
+					++it;
+			}
 		dequeueEvent.Set();
 	}
 private:
@@ -830,7 +834,16 @@ void check_framebuffer_write()
 
 void rend_cancel_emu_wait()
 {
-	if (config::ThreadedRendering)
+	if (rend_is_lockstep())
+	{
+		// The emu thread is woken by rend_lockstep_abort(). The queued messages
+		// are kept for the next run, and renderEnd isn't signaled: a stale
+		// signal would let a later rend_end_render() skip its wait.
+		FinishRender(NULL);
+		rend_allow_rollback();
+		pvrQueue.cancelEnqueue();
+	}
+	else if (config::ThreadedRendering)
 	{
 		FinishRender(NULL);
 		renderEnd.Set();
