@@ -357,9 +357,10 @@ impl EmulatorTrait for SmsGgEmulator {
 
         let mut frame_rendered = false;
         while self.vdp_mclk_counter >= VDP_DIVIDER {
-            self.vdp_mclk_counter -= VDP_DIVIDER;
+            let (ticks, effect) = self.vdp.tick_many(self.vdp_mclk_counter / VDP_DIVIDER);
+            self.vdp_mclk_counter -= ticks * VDP_DIVIDER;
 
-            if self.vdp.tick() == VdpTickEffect::FrameComplete {
+            if effect == VdpTickEffect::FrameComplete {
                 self.render_frame(renderer).map_err(SmsGgError::Render)?;
                 frame_rendered = true;
 

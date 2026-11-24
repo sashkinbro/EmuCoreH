@@ -13,8 +13,8 @@ use jgenesis_common::boxedarray::BoxedWordArray;
 use jgenesis_common::frontend::{Color, TimingMode};
 use jgenesis_common::num::{GetBit, U16Ext};
 use jgenesis_proc_macros::EnumDisplay;
-use std::array;
 use std::fmt::{Display, Formatter};
+use std::{array, cmp};
 use z80_emu::traits::InterruptLine;
 
 const VRAM_LEN: usize = 16 * 1024;
@@ -29,6 +29,21 @@ const DATA_ADDRESS_MASK: u16 = 0x3FFF;
 
 pub const DOTS_PER_SCANLINE: u16 = 342;
 pub const MCLK_CYCLES_PER_SCANLINE: u16 = 10 * DOTS_PER_SCANLINE;
+
+// Dots at which per-line VDP events fire (see Vdp::process_events).
+// These timings are slightly early to account for how Z80 and VDP execution are interleaved.
+// Z80 execution is instruction-level, so when the Z80 accesses a VDP port, the VDP's current
+// cycle count will be pre-instruction rather than post-instruction. Any Z80-visible state
+// needs to be updated "early" to account for this
+const EVENT_DOTS: [u16; 7] = [
+    DOTS_PER_SCANLINE - 45,
+    DOTS_PER_SCANLINE - 35,
+    DOTS_PER_SCANLINE - 34,
+    DOTS_PER_SCANLINE - 33,
+    DOTS_PER_SCANLINE - 17,
+    DOTS_PER_SCANLINE - 16,
+    u16::MAX,
+];
 
 pub const NTSC_SCANLINES_PER_FRAME: u16 = 262;
 pub const PAL_SCANLINES_PER_FRAME: u16 = 313;
@@ -1120,6 +1135,45 @@ impl Vdp {
     }
 
     #[must_use]
+    /// Equivalent to calling `tick()` up to `max_ticks` times, stopping right after a tick that
+    /// completes a frame. Returns the number of ticks performed and the effect of the last one.
+    #[inline]
+    pub fn tick_many(&mut self, max_ticks: u32) -> (u32, VdpTickEffect) {
+        let mut done = 0;
+        while done < max_ticks {
+            // Dots that stay on the current line and before the next pending event only advance
+            // the dot counter and check for sprite collisions; skip over them in one step
+            let next_event_dot = EVENT_DOTS[self.event_idx as usize];
+            let limit = cmp::min(next_event_dot.saturating_sub(1), DOTS_PER_SCANLINE - 1);
+            if self.dot < limit {
+                let k = cmp::min(max_ticks - done, u32::from(limit - self.dot)) as u16;
+                let first = self.dot + 1;
+                let last = self.dot + k;
+                if self.registers.display_enabled
+                    && self.scanline < self.registers.mode.active_scanlines()
+                    && last >= 2
+                {
+                    // tick() checks collisions[dot - 2] for each new dot
+                    let lo = (cmp::max(first, 2) - 2) as usize;
+                    let hi = cmp::min((last - 2) as usize, SCREEN_WIDTH as usize - 1);
+                    if lo <= hi && self.sprite_line_buffer.collisions[lo..=hi].contains(&true) {
+                        self.registers.sprite_collision = true;
+                    }
+                }
+                self.dot = last;
+                done += u32::from(k);
+                continue;
+            }
+
+            done += 1;
+            if self.tick() == VdpTickEffect::FrameComplete {
+                return (done, VdpTickEffect::FrameComplete);
+            }
+        }
+
+        (done, VdpTickEffect::None)
+    }
+
     pub fn tick(&mut self) -> VdpTickEffect {
         if log::log_enabled!(log::Level::Trace) && self.scanline == 0 && self.dot == 0 {
             self.trace_log_current_state();
@@ -1171,20 +1225,7 @@ impl Vdp {
             DecrementLineCounter,
         }
 
-        // These timings are slightly early to account for how Z80 and VDP execution are interleaved.
-        // Z80 execution is instruction-level, so when the Z80 accesses a VDP port, the VDP's current
-        // cycle count will be pre-instruction rather than post-instruction. Any Z80-visible state
-        // needs to be updated "early" to account for this
-        const EVENT_DOTS: [u16; 7] = [
-            DOTS_PER_SCANLINE - 45,
-            DOTS_PER_SCANLINE - 35,
-            DOTS_PER_SCANLINE - 34,
-            DOTS_PER_SCANLINE - 33,
-            DOTS_PER_SCANLINE - 17,
-            DOTS_PER_SCANLINE - 16,
-            u16::MAX,
-        ];
-
+        // Event dots: see EVENT_DOTS
         const EVENTS: [VdpEvent; 7] = [
             VdpEvent::SpriteProcessing,
             VdpEvent::RenderLine,
