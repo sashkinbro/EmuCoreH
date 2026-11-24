@@ -870,6 +870,7 @@ pub extern "C" fn retro_load_game(info: *const retro_game_info) -> bool {
 
     match load_core(Path::new(&path)) {
         Ok(core) => {
+            s32x_core::set_sh2_predecode(options::sh2_predecode());
             *lock(core_slot()) = Some(core);
             true
         }
@@ -915,6 +916,9 @@ pub extern "C" fn retro_run() {
     #[cfg(feature = "jit-runtime")]
     jgenesis_common::jit::set_enabled(options::jit_backend_native());
     let options_changed = options::changed();
+    if options_changed {
+        s32x_core::set_sh2_predecode(options::sh2_predecode());
+    }
     let environment = environment();
     let (frontend, video, audio_batch, audio_sample, input_poll, input_state) = {
         let guard = lock(environment);
