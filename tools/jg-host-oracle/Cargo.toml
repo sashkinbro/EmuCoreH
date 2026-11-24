@@ -1,0 +1,30 @@
+[package]
+name = "jg-host-oracle"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Host-side deterministic regression oracle / benchmark for the jgenesis libretro core"
+
+# Standalone workspace: links the vendored jgenesis libretro crate (rlib) directly.
+[workspace]
+
+[dependencies]
+jgenesis-libretro = { path = "../../core-jgenesis/frontend/jgenesis-libretro" }
+sha2 = "0.10"
+
+# Mirror the Android shipping profile of core-jgenesis (fat LTO, one CGU, no debug assertions).
+[profile.release]
+opt-level = 3
+incremental = false
+lto = "fat"
+codegen-units = 1
+debug-assertions = false
+overflow-checks = false
+
+[profile.release.build-override]
+opt-level = 1
+
+# Same as release plus symbols, for host profilers.
+[profile.profiling]
+inherits = "release"
+debug = true
