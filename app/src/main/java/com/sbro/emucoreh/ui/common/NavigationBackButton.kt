@@ -1,5 +1,13 @@
 package com.sbro.emucoreh.ui.common
 
+import com.sbro.emucoreh.ui.theme.style.HeaderSurface
+import com.sbro.emucoreh.data.theme.UiStyle
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import com.sbro.emucoreh.ui.theme.LocalThemeExtras
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -19,7 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,16 +44,13 @@ import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.R
 import com.sbro.emucoreh.core.LocalTvUiEnvironment
 import com.sbro.emucoreh.ui.theme.neon.LocalNeonTheme
-import com.sbro.emucoreh.ui.theme.neon.NeonDark
-import com.sbro.emucoreh.ui.theme.neon.NeonRed
 import com.sbro.emucoreh.ui.theme.neon.NeonTricolorDivider
-import com.sbro.emucoreh.ui.theme.neon.NeonYellow
 import com.sbro.emucoreh.ui.theme.neon.neonShape
 
 @Composable
 private fun defaultBackContainer(): Color =
     if (LocalNeonTheme.current) {
-        NeonDark
+        MaterialTheme.colorScheme.surface
     } else {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.54f)
     }
@@ -53,7 +58,7 @@ private fun defaultBackContainer(): Color =
 @Composable
 private fun defaultBackContent(): Color =
     if (LocalNeonTheme.current) {
-        NeonRed
+        LocalThemeExtras.current.accent3
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -61,7 +66,7 @@ private fun defaultBackContent(): Color =
 @Composable
 private fun defaultTopBarTitle(): Color =
     if (LocalNeonTheme.current) {
-        NeonYellow
+        LocalThemeExtras.current.accent1
     } else {
         MaterialTheme.colorScheme.onSurface
     }
@@ -140,8 +145,9 @@ fun ScreenTopBar(
         return
     }
 
+    val titleBarHeader = com.sbro.emucoreh.ui.theme.style.styledHeaderBrush() != null
     val barSurface: @Composable (Modifier) -> Unit = { surfaceModifier ->
-        Surface(
+        HeaderSurface(
             modifier = surfaceModifier,
             shape = neonShape(24.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
@@ -150,20 +156,23 @@ fun ScreenTopBar(
             border = BorderStroke(
                 1.dp,
                 if (LocalNeonTheme.current) {
-                    NeonYellow.copy(alpha = 0.35f)
+                    LocalThemeExtras.current.accent1.copy(alpha = 0.35f)
                 } else {
                     MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.62f)
                 }
             )
         ) {
+            // Title-bar styles paint the header in the theme's primary: the caller's colors were
+            // resolved for a regular surface header, so use the header's own content color here.
+            val onHeader = androidx.compose.material3.LocalContentColor.current
             ScreenTopBarContent(
-                title = title,
+                title = styledTitle(title),
                 subtitle = subtitle,
                 onBackClick = onBackClick,
                 backButtonModifier = backButtonModifier,
-                titleColor = titleColor,
-                subtitleColor = subtitleColor,
-                backContentColor = backContentColor,
+                titleColor = if (titleBarHeader) onHeader else titleColor,
+                subtitleColor = if (titleBarHeader) onHeader.copy(alpha = 0.82f) else subtitleColor,
+                backContentColor = if (titleBarHeader) onHeader else backContentColor,
                 titleMaxLines = titleMaxLines,
                 subtitleMaxLines = subtitleMaxLines,
                 actions = actions,
@@ -211,14 +220,14 @@ private fun ScreenTopBarContent(
                 .weight(1f)
                 .padding(end = 8.dp)
         ) {
-            val neonGlowTitle = LocalNeonTheme.current && titleColor == NeonYellow
+            val neonGlowTitle = LocalNeonTheme.current && titleColor == LocalThemeExtras.current.accent1
             Text(
                 text = title,
                 style = if (neonGlowTitle) {
                     MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         shadow = Shadow(
-                            color = NeonYellow.copy(alpha = 0.85f),
+                            color = LocalThemeExtras.current.accent1.copy(alpha = 0.85f),
                             blurRadius = 18f
                         )
                     )
@@ -247,3 +256,10 @@ private fun ScreenTopBarContent(
         )
     }
 }
+
+/** Terminal style shows headers as a prompt line. */
+@Composable
+private fun styledTitle(title: String): String =
+    com.sbro.emucoreh.ui.theme.style.themedTitleCase(title).let {
+        if (LocalThemeExtras.current.uiStyle == UiStyle.TERMINAL) "> ${it}_" else it
+    }

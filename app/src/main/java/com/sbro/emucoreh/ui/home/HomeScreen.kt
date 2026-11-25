@@ -1,5 +1,7 @@
 package com.sbro.emucoreh.ui.home
 
+import com.sbro.emucoreh.ui.theme.style.HeaderSurface
+import com.sbro.emucoreh.ui.theme.LocalThemeExtras
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.net.Uri
@@ -76,21 +78,21 @@ import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.material.icons.rounded.ViewCarousel
 import androidx.compose.material.icons.rounded.ViewModule
 import com.sbro.emucoreh.ui.common.AppAlertDialog as AlertDialog
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Button
+import com.sbro.emucoreh.ui.theme.style.FilterChip
+import com.sbro.emucoreh.ui.theme.style.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
+import com.sbro.emucoreh.ui.theme.style.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalButton
+import com.sbro.emucoreh.ui.theme.style.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.sbro.emucoreh.ui.theme.style.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -408,15 +410,21 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontalSystemBarPadding)
     ) {
+        // A theme package may ship a background; it shows only when the user picked none.
+        val themeExtras = LocalThemeExtras.current
+        val themeBackground = themeExtras.backgroundFile?.takeIf {
+            uiState.homeBackgroundType == HomeBackgroundType.NONE
+        }
         AnimatedVisibility(
-            visible = !isShelfView && uiState.homeBackgroundType != HomeBackgroundType.NONE,
+            visible = !isShelfView &&
+                (uiState.homeBackgroundType != HomeBackgroundType.NONE || themeBackground != null),
             enter = fadeIn(animationSpec = tween(380, easing = EaseOut)),
             exit = fadeOut(animationSpec = tween(280, easing = EaseIn))
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 HomeBackgroundMedia(
-                    type = uiState.homeBackgroundType,
-                    file = homeBackgroundRepository.existingFile(uiState.homeBackgroundType),
+                    type = if (themeBackground != null) HomeBackgroundType.IMAGE else uiState.homeBackgroundType,
+                    file = themeBackground ?: homeBackgroundRepository.existingFile(uiState.homeBackgroundType),
                     preset = uiState.homeBackgroundPreset,
                     revision = uiState.homeBackgroundRevision,
                     modifier = Modifier.fillMaxSize()
@@ -426,7 +434,11 @@ fun HomeScreen(
                         .fillMaxSize()
                         .background(
                             MaterialTheme.colorScheme.background.copy(
-                                alpha = uiState.homeBackgroundDim / 100f
+                                alpha = if (themeBackground != null) {
+                                    themeExtras.backgroundDim
+                                } else {
+                                    uiState.homeBackgroundDim / 100f
+                                }
                             )
                         )
                 )
@@ -907,7 +919,7 @@ private fun HomeHeader(
         else -> stringResource(R.string.home_view_list)
     }
 
-    Surface(
+    HeaderSurface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(

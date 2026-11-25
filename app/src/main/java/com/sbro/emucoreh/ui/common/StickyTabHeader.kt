@@ -12,7 +12,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -49,7 +49,8 @@ internal fun StickyTabHeader(
         animationSpec = tween(durationMillis = 180),
         label = "stickyTabDivider"
     )
-    Surface(
+    // Plain Material surface: a full-width strip must not pick up style frames (Classic bevels rectangles).
+    androidx.compose.material3.Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.background
     ) {

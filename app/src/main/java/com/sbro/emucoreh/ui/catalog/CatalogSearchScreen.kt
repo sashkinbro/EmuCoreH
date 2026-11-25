@@ -38,16 +38,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.DropdownMenu
+import com.sbro.emucoreh.ui.theme.style.FilterChip
+import com.sbro.emucoreh.ui.theme.style.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.sbro.emucoreh.ui.theme.style.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -215,7 +215,7 @@ fun CatalogSearchScreen(
                             trailingIcon = {
                                 if (uiState.query.isNotBlank()) {
                                     val interactionSource = remember { MutableInteractionSource() }
-                                    val shape = RoundedCornerShape(999.dp)
+                                    val shape = neonShape(999.dp)
                                     Surface(
                                         modifier = Modifier.tvGamepadFocusableCard(
                                             shape = shape,
@@ -456,7 +456,7 @@ private fun FilterMenuChip(
     content: @Composable () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val shape = RoundedCornerShape(999.dp)
+    val shape = neonShape(999.dp)
     Box {
         Surface(
             modifier = modifier.tvGamepadFocusableCard(

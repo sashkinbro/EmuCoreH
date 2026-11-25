@@ -41,19 +41,19 @@ import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Gradient
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.Button
+import com.sbro.emucoreh.ui.theme.style.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.sbro.emucoreh.ui.theme.style.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.sbro.emucoreh.ui.theme.style.Surface
+import com.sbro.emucoreh.ui.theme.style.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.sbro.emucoreh.ui.theme.style.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -895,7 +895,7 @@ private fun ShaderCategoryCard(
                 overflow = TextOverflow.Ellipsis
             )
             Surface(
-                shape = RoundedCornerShape(50),
+                shape = neonShape(999.dp),
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
                 border = BorderStroke(
                     1.dp,

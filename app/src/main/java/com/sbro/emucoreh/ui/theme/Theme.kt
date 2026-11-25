@@ -3,6 +3,7 @@ package com.sbro.emucoreh.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
@@ -13,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import com.sbro.emucoreh.data.AppFontChoice
 import com.sbro.emucoreh.data.AppPreferences
@@ -23,6 +25,21 @@ import com.sbro.emucoreh.ui.theme.neon.NeonCrtOverlay
 import com.sbro.emucoreh.ui.theme.neon.NeonShapes
 import com.sbro.emucoreh.ui.theme.neon.neonMonospace
 import java.io.File
+import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.material3.Typography
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontFamily
+import com.sbro.emucoreh.data.theme.InstalledThemePackage
+import com.sbro.emucoreh.data.theme.ThemeDecor
+import com.sbro.emucoreh.data.theme.ThemeFont
+import com.sbro.emucoreh.data.theme.ThemeShapeStyle
+import com.sbro.emucoreh.data.theme.UiStyle
+import com.sbro.emucoreh.data.theme.toCustomThemeConfig
+import com.sbro.emucoreh.data.theme.toStyleSpec
+import com.sbro.emucoreh.ui.theme.neon.NeonBlue
+import com.sbro.emucoreh.ui.theme.neon.NeonRed
+import com.sbro.emucoreh.ui.theme.neon.NeonYellow
 
 private val DarkColorScheme = darkColorScheme(
     primary = AccentPrimary,
@@ -105,13 +122,42 @@ private val LightColorScheme = lightColorScheme(
 )
 
 enum class ThemeMode {
-    SYSTEM, LIGHT, DARK, PRO, CUSTOM, NEON
+    SYSTEM, LIGHT, DARK, PRO, CUSTOM, NEON, PACKAGE
 }
+
+/** Whether [this] mode renders dark; shared with MainActivity's system-bar handling. */
+fun ThemeMode.isDark(
+    systemDark: Boolean,
+    customTheme: CustomThemeConfig,
+    themePackage: InstalledThemePackage?
+): Boolean = when (this) {
+    ThemeMode.SYSTEM -> systemDark
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+    ThemeMode.PRO -> true
+    ThemeMode.CUSTOM -> customTheme.dark
+    ThemeMode.NEON -> true
+    ThemeMode.PACKAGE -> themePackage
+        ?.takeIf { it.isSupported }
+        ?.let { pkg -> pkg.spec.toCustomThemeConfig("en").dark }
+        ?: systemDark
+}
+
+private val NeonExtras = ThemeExtras(
+    shapeStyle = ThemeShapeStyle.CUT_DIAGONAL,
+    decor = ThemeDecor.NEON,
+    uiStyle = UiStyle.NEON,
+    accent1 = NeonYellow,
+    accent2 = NeonBlue,
+    accent3 = NeonRed,
+    scanlines = true
+)
 
 @Composable
 fun EmuCoreHTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     customTheme: CustomThemeConfig = CustomThemeConfig.Default,
+    themePackage: InstalledThemePackage? = null,
     fontChoice: AppFontChoice = AppFontChoice.SYSTEM,
     fontScale: Float = 1f,
     customFontFile: File? = null,
@@ -119,63 +165,146 @@ fun EmuCoreHTheme(
     enableCrtOverlay: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val darkTheme = when (themeMode) {
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-        ThemeMode.PRO -> true
-        ThemeMode.CUSTOM -> customTheme.dark
-        ThemeMode.NEON -> true
+    // A package theme that is missing or unsupported by this app version renders as SYSTEM.
+    val activePackage = themePackage?.takeIf { themeMode == ThemeMode.PACKAGE && it.isSupported }
+    val effectiveMode = if (themeMode == ThemeMode.PACKAGE && activePackage == null) ThemeMode.SYSTEM else themeMode
+    val systemDark = isSystemInDarkTheme()
+    val localeTag = LocalConfiguration.current.locales[0]?.language ?: "en"
+
+    val packageConfig = remember(activePackage, localeTag) {
+        activePackage?.spec?.toCustomThemeConfig(localeTag)
     }
+    val packageStyle = remember(activePackage) { activePackage?.spec?.toStyleSpec() }
+
+    val darkTheme = effectiveMode.isDark(systemDark, customTheme, activePackage)
 
     val safeCustomTheme = remember(customTheme) { customTheme.sanitized() }
-    val colorScheme = when (themeMode) {
+    val colorScheme = when (effectiveMode) {
         ThemeMode.PRO -> ProColorScheme
         ThemeMode.CUSTOM -> safeCustomTheme.toColorScheme()
         ThemeMode.NEON -> NeonColorScheme
+        ThemeMode.PACKAGE -> packageConfig!!.toColorScheme()
         else -> if (darkTheme) DarkColorScheme else LightColorScheme
     }
-    val shapes = if (themeMode == ThemeMode.CUSTOM) {
-        safeCustomTheme.toShapes()
-    } else if (themeMode == ThemeMode.NEON) {
-        NeonShapes
-    } else {
-        MaterialTheme.shapes
+    val extras = remember(effectiveMode, colorScheme, packageStyle, activePackage) {
+        when (effectiveMode) {
+            ThemeMode.NEON -> NeonExtras
+            ThemeMode.PACKAGE -> packageStyle!!.toThemeExtras(
+                primary = colorScheme.primary,
+                secondary = colorScheme.secondary,
+                tertiary = colorScheme.tertiary,
+                backgroundFile = activePackage?.backgroundFile
+            )
+            else -> ThemeExtras(
+                accent1 = colorScheme.primary,
+                accent2 = colorScheme.tertiary,
+                accent3 = colorScheme.secondary
+            )
+        }
+    }
+    val shapes = when (effectiveMode) {
+        ThemeMode.CUSTOM -> safeCustomTheme.toShapes()
+        ThemeMode.NEON -> NeonShapes
+        ThemeMode.PACKAGE -> packageConfig!!.toShapes(extras.shapeStyle, extras.shapeScale)
+        else -> MaterialTheme.shapes
     }
 
+    val packageFont = packageStyle?.font
     val safeFontScale = fontScale.coerceIn(AppPreferences.MIN_APP_FONT_SCALE, AppPreferences.MAX_APP_FONT_SCALE)
+    val packageFontFile = activePackage?.fontFile
+    val usePackageFontFile = packageFont == ThemeFont.PACKAGE && packageFontFile != null
+    val effectiveFontChoice = when {
+        usePackageFontFile -> AppFontChoice.CUSTOM
+        packageFont == ThemeFont.SYSTEM -> AppFontChoice.SYSTEM
+        packageFont == ThemeFont.RUBIK -> AppFontChoice.RUBIK
+        packageFont == ThemeFont.EXO2 -> AppFontChoice.EXO_2
+        else -> fontChoice
+    }
+    val effectiveFontFile = if (usePackageFontFile) packageFontFile else customFontFile
     val baseTypography = remember(
-        fontChoice,
+        effectiveFontChoice,
         safeFontScale,
-        customFontFile?.absolutePath,
-        customFontRevision
+        effectiveFontFile?.absolutePath,
+        customFontRevision,
+        activePackage
     ) {
         typographyFor(
-            choice = fontChoice,
-            customFontFile = customFontFile,
+            choice = effectiveFontChoice,
+            customFontFile = effectiveFontFile,
             fontScale = safeFontScale
         )
     }
-    val typography = if (themeMode == ThemeMode.NEON) {
-        baseTypography.neonMonospace()
-    } else {
-        baseTypography
-    }
+    val bundledFamily = bundledThemeFamily(packageFont)
+    val typography = when {
+        effectiveMode == ThemeMode.NEON -> baseTypography.neonMonospace()
+        packageFont == ThemeFont.MONOSPACE -> baseTypography.withFamily(FontFamily.Monospace)
+        packageFont == ThemeFont.SERIF -> baseTypography.withFamily(FontFamily.Serif)
+        bundledFamily != null -> baseTypography.withFamily(bundledFamily).scaledText(themeFontSizeFactor(packageFont))
+        else -> baseTypography
+    }.withTitleLetterSpacing(if (effectiveMode == ThemeMode.PACKAGE) extras.titleLetterSpacingSp else 0f)
     MaterialTheme(
         colorScheme = colorScheme,
         typography = typography,
         shapes = shapes
     ) {
-        CompositionLocalProvider(LocalNeonTheme provides (themeMode == ThemeMode.NEON)) {
+        CompositionLocalProvider(
+            LocalThemeExtras provides extras,
+            LocalNeonTheme provides extras.neonDecor
+        ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 content()
-                if (themeMode == ThemeMode.NEON && enableCrtOverlay) NeonCrtOverlay()
+                com.sbro.emucoreh.ui.theme.style.ThemePatternOverlay(extras.pattern)
+                if (extras.scanlines && enableCrtOverlay) {
+                    NeonCrtOverlay()
+                }
             }
         }
     }
 }
 
-fun CustomThemeConfig.toColorScheme() = if (dark) {
+private fun Typography.withFamily(family: FontFamily): Typography = copy(
+    displayLarge = displayLarge.copy(fontFamily = family),
+    displayMedium = displayMedium.copy(fontFamily = family),
+    displaySmall = displaySmall.copy(fontFamily = family),
+    headlineLarge = headlineLarge.copy(fontFamily = family),
+    headlineMedium = headlineMedium.copy(fontFamily = family),
+    headlineSmall = headlineSmall.copy(fontFamily = family),
+    titleLarge = titleLarge.copy(fontFamily = family),
+    titleMedium = titleMedium.copy(fontFamily = family),
+    titleSmall = titleSmall.copy(fontFamily = family),
+    bodyLarge = bodyLarge.copy(fontFamily = family),
+    bodyMedium = bodyMedium.copy(fontFamily = family),
+    bodySmall = bodySmall.copy(fontFamily = family),
+    labelLarge = labelLarge.copy(fontFamily = family),
+    labelMedium = labelMedium.copy(fontFamily = family),
+    labelSmall = labelSmall.copy(fontFamily = family)
+)
+
+/**
+ * Full Material scheme for a custom/package theme. Container, dim/bright and inverse roles are
+ * derived from the theme's own surface/background/text colors; leaving them at Material's
+ * baseline would tint cards, menus and dialogs with the default lilac.
+ */
+fun CustomThemeConfig.toColorScheme(): ColorScheme = baseColorScheme().withDerivedRoles(dark)
+
+private fun ColorScheme.withDerivedRoles(dark: Boolean): ColorScheme {
+    val toward = onSurface
+    fun step(amount: Float) = lerp(surface, toward, amount)
+    return copy(
+        surfaceDim = if (dark) lerp(background, Color.Black, 0.25f) else lerp(surface, toward, 0.10f),
+        surfaceBright = if (dark) step(0.12f) else lerp(surface, Color.White, 0.6f),
+        surfaceContainerLowest = if (dark) lerp(background, Color.Black, 0.35f) else lerp(surface, Color.White, 0.7f),
+        surfaceContainerLow = if (dark) lerp(background, surface, 0.6f) else lerp(surface, Color.White, 0.35f),
+        surfaceContainer = surface,
+        surfaceContainerHigh = step(if (dark) 0.05f else 0.04f),
+        surfaceContainerHighest = surfaceVariant,
+        inverseSurface = onSurface,
+        inverseOnSurface = surface,
+        inversePrimary = lerp(primary, if (dark) Color.Black else Color.White, 0.35f)
+    )
+}
+
+private fun CustomThemeConfig.baseColorScheme() = if (dark) {
     darkColorScheme(
         primary = Color(primary),
         onPrimary = Color(onPrimary),
@@ -243,5 +372,26 @@ fun CustomThemeConfig.toShapes(): Shapes {
         medium = RoundedCornerShape(safe.mediumCornerDp.dp),
         large = RoundedCornerShape(safe.largeCornerDp.dp),
         extraLarge = RoundedCornerShape((safe.largeCornerDp * 1.25f).coerceAtMost(60f).dp)
+    )
+}
+
+/** Material shapes for a package theme: the custom radii, scaled, in the package's corner style. */
+fun CustomThemeConfig.toShapes(style: ThemeShapeStyle, scale: Float): Shapes {
+    val safe = sanitized()
+    fun corner(dp: Float): CornerBasedShape {
+        val size = (dp * scale).coerceAtLeast(0f).dp
+        return when (style) {
+            ThemeShapeStyle.ROUNDED -> RoundedCornerShape(size)
+            ThemeShapeStyle.CUT -> CutCornerShape(size)
+            ThemeShapeStyle.CUT_DIAGONAL -> CutCornerShape(topEnd = size, bottomStart = size)
+            ThemeShapeStyle.SQUARE -> RoundedCornerShape(0.dp)
+        }
+    }
+    return Shapes(
+        extraSmall = corner(safe.smallCornerDp * 0.65f),
+        small = corner(safe.smallCornerDp),
+        medium = corner(safe.mediumCornerDp),
+        large = corner(safe.largeCornerDp),
+        extraLarge = corner((safe.largeCornerDp * 1.25f).coerceAtMost(60f))
     )
 }

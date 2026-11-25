@@ -22,13 +22,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Restore
-import androidx.compose.material3.Button
+import com.sbro.emucoreh.ui.theme.style.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.Surface
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -68,7 +68,7 @@ fun SettingHelpButton(
     val showDialog = remember(title, description) { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
     val tvUiEnabled = LocalTvUiEnvironment.current.enabled
-    val focusShape = RoundedCornerShape(999.dp)
+    val focusShape = neonShape(999.dp)
 
     Box(
         modifier = modifier

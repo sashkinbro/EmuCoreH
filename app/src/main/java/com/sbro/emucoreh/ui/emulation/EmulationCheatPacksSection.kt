@@ -36,17 +36,17 @@ import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material3.Button
+import com.sbro.emucoreh.ui.theme.style.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
+import com.sbro.emucoreh.ui.theme.style.OutlinedButton
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.sbro.emucoreh.ui.theme.style.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -344,7 +344,7 @@ private fun CheatPackHeader(
 @Composable
 private fun CheatPackCountBadge(count: Int) {
     Surface(
-        shape = RoundedCornerShape(999.dp),
+        shape = neonShape(999.dp),
         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
         contentColor = MaterialTheme.colorScheme.primary
     ) {

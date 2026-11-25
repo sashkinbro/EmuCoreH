@@ -36,18 +36,18 @@ import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
+import com.sbro.emucoreh.ui.theme.style.Button
+import com.sbro.emucoreh.ui.theme.style.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.sbro.emucoreh.ui.theme.style.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.sbro.emucoreh.ui.theme.style.Surface
+import com.sbro.emucoreh.ui.theme.style.Switch
+import com.sbro.emucoreh.ui.common.SyncedSlider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.sbro.emucoreh.ui.theme.style.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -1211,7 +1211,7 @@ private fun CreatorColorEditor(
 private fun ColorChannelSlider(label: String, value: Int, onValueChange: (Int) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("$label  $value", modifier = Modifier.width(58.dp))
-        Slider(
+        SyncedSlider(
             value = value.toFloat(),
             onValueChange = { onValueChange(it.roundToInt().coerceIn(0, 255)) },
             valueRange = 0f..255f,
@@ -1230,7 +1230,7 @@ private fun IntCreatorSlider(
 ) {
     Column {
         CreatorSliderHeader(title, "$value$suffix")
-        Slider(
+        SyncedSlider(
             value = value.toFloat(),
             onValueChange = { onValueChange(it.roundToInt().coerceIn(range)) },
             valueRange = range.first.toFloat()..range.last.toFloat()
@@ -1248,7 +1248,7 @@ private fun FloatCreatorSlider(
 ) {
     Column {
         CreatorSliderHeader(title, "${"%.1f".format(value)}$suffix")
-        Slider(value = value, onValueChange = onValueChange, valueRange = range)
+        SyncedSlider(value = value, onValueChange = onValueChange, valueRange = range)
     }
 }
 
