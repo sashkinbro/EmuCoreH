@@ -153,3 +153,11 @@ fun StoreItem.fitsThisApp(): Boolean {
 
 fun StoreSnapshot.forThisApp(): StoreSnapshot =
     copy(catalog = catalog.copy(items = catalog.items.filter(StoreItem::fitsThisApp)))
+
+/**
+ * Store/theme catalog compatibility level shared by all EmuCore apps (catalog minAppVersionCode values are this
+ * level, not an app's own versionCode). Raise it when the Store/theme engine gains features old clients lack.
+ */
+object StoreClient {
+    const val ENGINE_VERSION_CODE = 257
+}

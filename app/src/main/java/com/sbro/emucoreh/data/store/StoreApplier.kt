@@ -85,7 +85,7 @@ class StoreApplier(context: Context) {
         try {
             val installed = installs.find(item.id)?.takeIf { it.kind == item.kind }
                 ?: return@withContext StoreApplyResult.NOT_INSTALLED
-            if (item.minAppVersionCode > BuildConfig.VERSION_CODE) return@withContext StoreApplyResult.UNSUPPORTED
+            if (item.minAppVersionCode > StoreClient.ENGINE_VERSION_CODE) return@withContext StoreApplyResult.UNSUPPORTED
             if (item.requiresPro && !preferences.proUnlocked.first()) return@withContext StoreApplyResult.NEEDS_PRO
             when (item.kind) {
                 StoreKind.THEME -> applyTheme(item, installed)

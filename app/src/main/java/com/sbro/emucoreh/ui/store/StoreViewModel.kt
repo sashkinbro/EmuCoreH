@@ -84,7 +84,7 @@ private val PREVIEW_KEYS = mapOf(
 )
 
 internal fun StoreItem.statusFor(installed: InstalledStoreItem?, applied: Boolean): StoreItemStatus = when {
-    minAppVersionCode > BuildConfig.VERSION_CODE -> StoreItemStatus.NEEDS_NEWER_APP
+    minAppVersionCode > com.sbro.emucoreh.data.store.StoreClient.ENGINE_VERSION_CODE -> StoreItemStatus.NEEDS_NEWER_APP
     installed == null -> StoreItemStatus.NONE
     installed.version < version -> StoreItemStatus.UPDATE
     applied -> StoreItemStatus.APPLIED
