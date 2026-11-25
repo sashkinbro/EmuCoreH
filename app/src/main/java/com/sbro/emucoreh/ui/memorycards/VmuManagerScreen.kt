@@ -14,6 +14,9 @@ import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material3.*
+import com.sbro.emucoreh.ui.theme.style.FilledTonalButton
+import com.sbro.emucoreh.ui.theme.style.OutlinedButton
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,6 +105,9 @@ fun VmuManagerScreen(onBackClick: () -> Unit) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
         .padding(navigationBarsHorizontalPaddingValues())) {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onBackground
+        ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = ScreenHorizontalPadding,
@@ -212,7 +218,7 @@ fun VmuManagerScreen(onBackClick: () -> Unit) {
                 item {
                     Text(stringResource(R.string.shell_memory_cards),
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(top = 10.dp))
                 }
                 items(cards, key = { it.name }) { vmu ->
@@ -223,13 +229,14 @@ fun VmuManagerScreen(onBackClick: () -> Unit) {
                 item {
                     Text(stringResource(R.string.vmu_system_memory),
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(top = 10.dp))
                 }
                 items(systemFiles, key = { it.name }) { vmu ->
                     VmuRow(vmu = vmu, title = vmu.name)
                 }
             }
+        }
         }
     }
 }
