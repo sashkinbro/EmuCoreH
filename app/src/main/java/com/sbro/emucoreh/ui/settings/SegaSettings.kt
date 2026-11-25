@@ -59,7 +59,8 @@ internal fun platformLabel(platform: EmulationPlatform): String = stringResource
 
 @Composable
 internal fun PlatformSelector(platform: EmulationPlatform, onSelect: (EmulationPlatform) -> Unit) {
-    Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
+    // Sits right above the Settings tab row: the vertical gap keeps the two chip rows apart in compact styles.
+    Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         EmulationPlatform.entries.forEach { candidate ->
             FilterChip(selected = candidate == platform, onClick = { onSelect(candidate) }, colors = premiumFilterChipColors(),

@@ -77,7 +77,9 @@ internal data class ControlsSkinSpec(
     /** 0..1. */
     val opacity: Float = 1f,
     /** grow, shrink, spring or glow. */
-    val pressEffect: String? = null
+    val pressEffect: String? = null,
+    /** Blank part ("cross", "l1", ...) -> "#RRGGBB" ink for the label an app draws on its blank_<part> art. */
+    val labelColors: Map<String, String> = emptyMap()
 )
 
 @Serializable

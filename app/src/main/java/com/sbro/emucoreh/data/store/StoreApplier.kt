@@ -32,7 +32,9 @@ data class ControlSkin(
     /** 0..1. */
     val opacity: Float,
     /** Null = keep the user's press-effect preference. */
-    val pressEffect: TouchControlPressEffect?
+    val pressEffect: TouchControlPressEffect?,
+    /** Blank part -> ARGB label colour (see blank_<part> images). */
+    val labelColors: Map<String, Int> = emptyMap()
 )
 
 object StoreControlSkins {
@@ -64,7 +66,10 @@ object StoreControlSkins {
                 opacity = skin.opacity.coerceIn(0f, 1f),
                 pressEffect = skin.pressEffect?.let { name ->
                     TouchControlPressEffect.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }
-                }
+                },
+                labelColors = skin.labelColors.mapNotNull { (part, value) ->
+                    runCatching { Color.parseColor(value) }.getOrNull()?.let { part to it }
+                }.toMap()
             )
         }.getOrNull()
     }

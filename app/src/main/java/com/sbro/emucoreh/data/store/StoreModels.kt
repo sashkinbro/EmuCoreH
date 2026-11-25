@@ -97,7 +97,13 @@ data class StoreItem(
     val cover: StoreFile,
     val gallery: List<StoreFile> = emptyList(),
     val packageFile: StoreFile,
-    val sizeBytes: Long = 0
+    val sizeBytes: Long = 0,
+    /**
+     * Controller skins only: the same skin with label-free button art (blank_<part>) plus d-pad and stick, for apps
+     * whose buttons are not PlayStation symbols. This app draws its own labels on it.
+     */
+    val neutralPackageFile: StoreFile? = null,
+    val neutralSizeBytes: Long = 0
 ) {
     fun displayName(locale: String): String = name.localizedValue(locale) ?: id
     fun displayDescription(locale: String): String = description.localizedValue(locale).orEmpty()
@@ -151,8 +157,16 @@ fun StoreItem.fitsThisApp(): Boolean {
     return platforms.isEmpty() || "platform:${StorePlatform.CURRENT}" in platforms
 }
 
+/**
+ * The catalog as this app uses it. Controller skins are drawn for PlayStation buttons; this app installs their
+ * label-free variant instead (and skips skins that have none), so the rest of the Store needs no special case.
+ */
 fun StoreSnapshot.forThisApp(): StoreSnapshot =
-    copy(catalog = catalog.copy(items = catalog.items.filter(StoreItem::fitsThisApp)))
+    copy(catalog = catalog.copy(items = catalog.items.filter(StoreItem::fitsThisApp).mapNotNull { item ->
+        if (item.kind != StoreKind.CONTROLS) return@mapNotNull item
+        val neutral = item.neutralPackageFile ?: return@mapNotNull null
+        item.copy(packageFile = neutral, sizeBytes = item.neutralSizeBytes.takeIf { it > 0 } ?: neutral.bytes)
+    }))
 
 /**
  * Store/theme catalog compatibility level shared by all EmuCore apps (catalog minAppVersionCode values are this
