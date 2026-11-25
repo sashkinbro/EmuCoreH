@@ -1,6 +1,7 @@
 
 package com.sbro.emucoreh.ui.emulation
 
+import com.sbro.emucoreh.ui.common.SyncedSlider
 import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
 import android.graphics.PixelFormat
@@ -84,18 +85,18 @@ import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import com.sbro.emucoreh.ui.common.AppAlertDialog as AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
+import com.sbro.emucoreh.ui.theme.style.Button
+import com.sbro.emucoreh.ui.theme.style.FilterChip
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.sbro.emucoreh.ui.theme.style.Surface
+import com.sbro.emucoreh.ui.theme.style.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.sbro.emucoreh.ui.theme.style.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -1633,7 +1634,10 @@ fun EmulationScreen(
             // the app's RTL locale. The touch hit boxes use absolute screen coordinates;
             // keeping the visual overlay LTR guarantees that visible and logical buttons
             // stay aligned in Arabic, Persian, and every other RTL language.
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            CompositionLocalProvider(
+                LocalLayoutDirection provides LayoutDirection.Ltr,
+                com.sbro.emucoreh.ui.common.LocalControlSkin provides com.sbro.emucoreh.ui.common.rememberAppliedControlSkin()
+            ) {
                 if (uiState.localMultiplayerMode == AppPreferences.LOCAL_MULTIPLAYER_OFF) {
                     OnScreenControls(
                     platform = platform,
@@ -2432,7 +2436,7 @@ private fun LocalMultiplayerTouchZone(
                 .align(Alignment.TopStart)
                 .padding(8.dp)
                 .zIndex(30f),
-            shape = RoundedCornerShape(999.dp),
+            shape = neonShape(999.dp),
             color = Color.Black.copy(alpha = 0.56f),
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.20f))
         ) {
@@ -3500,7 +3504,7 @@ private fun EmulationSidebarMenu(
                                 horizontalArrangement = Arrangement.End
                             ) {
                                 Surface(
-                                    shape = RoundedCornerShape(999.dp),
+                                    shape = neonShape(999.dp),
                                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.42f),
                                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
                                 ) {
@@ -5845,12 +5849,12 @@ private fun SimpleFpsCounter(
     val safeScale = fontScale.coerceIn(0.75f, 2f)
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
+            .clip(neonShape(999.dp))
             .background(Color.Black.copy(alpha = 0.42f))
             .border(
                 width = 1.dp,
                 color = Color.White.copy(alpha = 0.08f),
-                shape = RoundedCornerShape(999.dp)
+                shape = neonShape(999.dp)
             )
             .padding(horizontal = 10.dp * safeScale, vertical = 5.dp * safeScale)
     ) {
@@ -6174,7 +6178,7 @@ private fun LiveSliderRow(
             )
         }
         Box(modifier = Modifier.then(resetModifier)) {
-            Slider(
+            SyncedSlider(
                 value = sliderValue,
                 onValueChange = { sliderValue = it },
                 onValueChangeFinished = {
@@ -6331,7 +6335,7 @@ private fun SaveSlotPreview(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(10.dp),
-            shape = RoundedCornerShape(999.dp),
+            shape = neonShape(999.dp),
             color = Color.Black.copy(alpha = 0.58f)
         ) {
             Text(

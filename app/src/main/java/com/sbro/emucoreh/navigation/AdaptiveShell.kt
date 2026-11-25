@@ -32,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.FolderZip
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.RateReview
@@ -55,9 +56,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.Surface
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.sbro.emucoreh.ui.theme.style.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect

@@ -376,12 +376,15 @@ class AppPreferences(private val context: Context) {
         )
 
         private val THEME_MODE = intPreferencesKey("theme_mode")
+        private val THEME_PACKAGE_ID = stringPreferencesKey("theme_package_id")
+        private val THEME_PACKAGE_REQUIRES_PRO = booleanPreferencesKey("theme_package_requires_pro")
         private val CUSTOM_THEME_JSON = stringPreferencesKey("custom_theme_json")
         private val CUSTOM_THEME_LIBRARY_JSON = stringPreferencesKey("custom_theme_library_json")
         private val TV_INTERFACE_MODE = intPreferencesKey("tv_interface_mode")
         private val APP_FONT_CHOICE = intPreferencesKey("app_font_choice")
         private val APP_FONT_SCALE = floatPreferencesKey("app_font_scale")
         private val CUSTOM_FONT_NAME = stringPreferencesKey("custom_font_name")
+        private val STORE_FONT_ID = stringPreferencesKey("store_font_id")
         private val CUSTOM_FONT_REVISION = intPreferencesKey("custom_font_revision")
         private fun uiSoundEnabledKey(kind: UiSoundKind) = booleanPreferencesKey("ui_sound_${kind.id}_enabled")
         private fun uiSoundVolumeKey(kind: UiSoundKind) = intPreferencesKey("ui_sound_${kind.id}_volume")
@@ -402,6 +405,7 @@ class AppPreferences(private val context: Context) {
         private val CUSTOM_COVERS_REVISION = intPreferencesKey("custom_covers_revision")
         private val TOUCH_CONTROL_VISUAL_STYLE = intPreferencesKey("touch_control_visual_style")
         private val TOUCH_CONTROL_PRESS_EFFECT = intPreferencesKey("touch_control_press_effect")
+        private val TOUCH_CONTROL_SKIN_PACK = stringPreferencesKey("touch_control_skin_pack")
         private val CUSTOM_TOUCH_CONTROLS_JSON = stringPreferencesKey("custom_touch_controls_json")
         private val GAME_MENU_LAYOUT_STYLE = intPreferencesKey("game_menu_layout_style")
         private val DRAWER_VISUAL_STYLE = intPreferencesKey("drawer_visual_style")
@@ -622,6 +626,11 @@ class AppPreferences(private val context: Context) {
             3 -> if (prefs[PRO_UNLOCKED] == true) ThemeMode.PRO else ThemeMode.SYSTEM
             4 -> if (prefs[PRO_UNLOCKED] == true) ThemeMode.CUSTOM else ThemeMode.SYSTEM
             5 -> ThemeMode.NEON
+            6 -> when {
+                prefs[THEME_PACKAGE_ID].isNullOrBlank() -> ThemeMode.SYSTEM
+                prefs[THEME_PACKAGE_REQUIRES_PRO] == true && prefs[PRO_UNLOCKED] != true -> ThemeMode.SYSTEM
+                else -> ThemeMode.PACKAGE
+            }
             else -> ThemeMode.SYSTEM
         }
     }
@@ -641,6 +650,38 @@ class AppPreferences(private val context: Context) {
     val customThemeLibrary: Flow<CustomThemeLibrary> = context.dataStore.data
         .map(::readCustomThemeLibrary)
         .distinctUntilChanged()
+
+    /** Id of the applied theme package; meaningful only while [themeMode] is PACKAGE. */
+    val themePackageId: Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[THEME_PACKAGE_ID] }
+        .distinctUntilChanged()
+
+    /**
+     * Applies an installed theme package. Pro-only packages are refused without Pro, like the
+     * built-in Pro and custom themes.
+     */
+    suspend fun applyThemePackage(id: String, requiresPro: Boolean): Boolean {
+        var applied = false
+        context.dataStore.edit { prefs ->
+            if (requiresPro && prefs[PRO_UNLOCKED] != true) return@edit
+            prefs[THEME_PACKAGE_ID] = id
+            prefs[THEME_PACKAGE_REQUIRES_PRO] = requiresPro
+            prefs[THEME_MODE] = 6
+            applied = true
+        }
+        return applied
+    }
+
+    /** Called when an installed package is deleted: falls back to SYSTEM if it was applied. */
+    suspend fun clearThemePackage(id: String) {
+        context.dataStore.edit { prefs ->
+            if (prefs[THEME_PACKAGE_ID] == id) {
+                prefs.remove(THEME_PACKAGE_ID)
+                prefs.remove(THEME_PACKAGE_REQUIRES_PRO)
+                if (prefs[THEME_MODE] == 6) prefs[THEME_MODE] = 0
+            }
+        }
+    }
 
     val customTheme: Flow<CustomThemeConfig> = customThemeLibrary
         .map { library -> library.activeTheme()?.config ?: CustomThemeConfig.Default }
@@ -664,6 +705,11 @@ class AppPreferences(private val context: Context) {
 
     val customFontName: Flow<String?> = context.dataStore.data
         .map { prefs -> prefs[CUSTOM_FONT_NAME]?.takeIf(String::isNotBlank) }
+        .distinctUntilChanged()
+
+    /** Id of the Store font that was applied into the custom-font slot; null for a manually imported font. */
+    val storeFontId: Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[STORE_FONT_ID]?.takeIf(String::isNotBlank) }
         .distinctUntilChanged()
 
     val customFontRevision: Flow<Int> = context.dataStore.data
@@ -728,6 +774,36 @@ class AppPreferences(private val context: Context) {
         .map { prefs -> TouchControlPressEffect.fromPreference(prefs[TOUCH_CONTROL_PRESS_EFFECT]) }
         .distinctUntilChanged()
 
+    /** Id of the applied Store controls skin pack (see data/store/StoreControlSkins), or null. */
+    val touchControlSkinPack: Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[TOUCH_CONTROL_SKIN_PACK]?.takeIf { it.isNotBlank() } }
+        .distinctUntilChanged()
+
+    suspend fun setTouchControlSkinPack(id: String?) {
+        context.dataStore.edit { prefs ->
+            if (id.isNullOrBlank()) prefs.remove(TOUCH_CONTROL_SKIN_PACK) else prefs[TOUCH_CONTROL_SKIN_PACK] = id
+        }
+    }
+
+    /**
+     * Applies a Store controls package: the skin pack id (null = leave the current skin untouched, "" =
+     * clear it), and optionally a standard-overlay layout and/or a custom button library. Layout JSON goes
+     * through the same decode/encode sanitizing as saved layouts. Pro gating is the caller's job.
+     */
+    suspend fun applyStoreControls(skinPackId: String?, overlayLayoutJson: String?, custom: CustomTouchControlLibrary?) {
+        context.dataStore.edit { prefs ->
+            if (skinPackId != null) {
+                if (skinPackId.isBlank()) prefs.remove(TOUCH_CONTROL_SKIN_PACK) else prefs[TOUCH_CONTROL_SKIN_PACK] = skinPackId
+            }
+            if (overlayLayoutJson != null) {
+                val layouts = decodeControlLayouts(overlayLayoutJson)
+                encodeControlLayouts(layouts)?.let { prefs[CONTROL_LAYOUTS] = it } ?: prefs.remove(CONTROL_LAYOUTS)
+                prefs[OVERLAY_LAYOUT_VERSION] = CURRENT_OVERLAY_LAYOUT_VERSION
+            }
+            if (custom != null) prefs[CUSTOM_TOUCH_CONTROLS_JSON] = custom.sanitized().encode()
+        }
+    }
+
     val gameMenuLayoutStyle: Flow<GameMenuLayoutStyle> = context.dataStore.data
         .map { prefs -> GameMenuLayoutStyle.fromPreference(prefs[GAME_MENU_LAYOUT_STYLE]) }
         .distinctUntilChanged()
@@ -766,6 +842,8 @@ class AppPreferences(private val context: Context) {
                 ThemeMode.PRO -> 3
                 ThemeMode.CUSTOM -> 4
                 ThemeMode.NEON -> 5
+                // Packages are applied through applyThemePackage(); keep the stored id.
+                ThemeMode.PACKAGE -> if (prefs[THEME_PACKAGE_ID].isNullOrBlank()) 0 else 6
             }
         }
     }
@@ -849,6 +927,22 @@ class AppPreferences(private val context: Context) {
         }
     }
 
+    /**
+     * Selects Store sound pack [packId] ("pack:<id>" preset) for exactly the [kinds] the pack contains; the
+     * other kinds keep their current selection. Enabled/volume are left as the user set them.
+     */
+    suspend fun applyUiSoundPack(packId: String, kinds: Set<UiSoundKind>) {
+        val presetId = UiSoundPresets.packPresetId(packId)
+        context.dataStore.edit { prefs ->
+            kinds.forEach { kind ->
+                prefs[uiSoundPresetKey(kind)] = UiSoundPresets.sanitizeId(kind, presetId)
+                prefs.remove(uiSoundCustomNameKey(kind))
+                prefs.remove(uiSoundCustomKey(kind))
+                prefs[uiSoundRevisionKey(kind)] = (prefs[uiSoundRevisionKey(kind)] ?: 0) + 1
+            }
+        }
+    }
+
     suspend fun setUiSoundCustomInstalled(kind: UiSoundKind, displayName: String?) {
         context.dataStore.edit { prefs ->
             prefs[uiSoundCustomKey(kind)] = true
@@ -926,10 +1020,11 @@ class AppPreferences(private val context: Context) {
         }
     }
 
-    suspend fun setCustomFontInstalled(displayName: String?) {
+    suspend fun setCustomFontInstalled(displayName: String?, storeFontId: String? = null) {
         context.dataStore.edit { prefs ->
             val cleanName = displayName?.trim()?.takeIf(String::isNotEmpty)
             if (cleanName == null) prefs.remove(CUSTOM_FONT_NAME) else prefs[CUSTOM_FONT_NAME] = cleanName
+            if (storeFontId == null) prefs.remove(STORE_FONT_ID) else prefs[STORE_FONT_ID] = storeFontId
             prefs[CUSTOM_FONT_REVISION] = (prefs[CUSTOM_FONT_REVISION] ?: 0) + 1
             prefs[APP_FONT_CHOICE] = AppFontChoice.CUSTOM.preferenceValue
         }
@@ -938,6 +1033,7 @@ class AppPreferences(private val context: Context) {
     suspend fun clearCustomFont() {
         context.dataStore.edit { prefs ->
             prefs.remove(CUSTOM_FONT_NAME)
+            prefs.remove(STORE_FONT_ID)
             prefs[CUSTOM_FONT_REVISION] = (prefs[CUSTOM_FONT_REVISION] ?: 0) + 1
             if (AppFontChoice.fromPreference(prefs[APP_FONT_CHOICE]) == AppFontChoice.CUSTOM) {
                 prefs[APP_FONT_CHOICE] = AppFontChoice.SYSTEM.preferenceValue
@@ -971,6 +1067,15 @@ class AppPreferences(private val context: Context) {
 
     suspend fun setHomeBackgroundDim(dim: Int) {
         context.dataStore.edit { it[HOME_BACKGROUND_DIM] = dim.coerceIn(0, 85) }
+    }
+
+    /** Selects the installed custom image as Home background and sets its dim in one write. */
+    suspend fun applyStoreWallpaper(dim: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[HOME_BACKGROUND_TYPE] = HomeBackgroundType.IMAGE.preferenceValue
+            prefs[HOME_BACKGROUND_REVISION] = (prefs[HOME_BACKGROUND_REVISION] ?: 0) + 1
+            prefs[HOME_BACKGROUND_DIM] = dim.coerceIn(0, 85)
+        }
     }
 
     suspend fun setEmulationSideArtwork(artwork: EmulationSideArtwork) {
@@ -1109,6 +1214,9 @@ class AppPreferences(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[PRO_UNLOCKED] = unlocked
             if (!unlocked && prefs[THEME_MODE] in setOf(3, 4)) {
+                prefs[THEME_MODE] = 0
+            }
+            if (!unlocked && prefs[THEME_MODE] == 6 && prefs[THEME_PACKAGE_REQUIRES_PRO] == true) {
                 prefs[THEME_MODE] = 0
             }
         }
@@ -1591,7 +1699,8 @@ class AppPreferences(private val context: Context) {
     private fun readThemeIsLight(prefs: Preferences): Boolean {
         return when (readThemeMode(prefs)) {
             ThemeMode.LIGHT -> true
-            ThemeMode.DARK, ThemeMode.PRO, ThemeMode.NEON -> false
+            // A theme package's light/dark flag lives in its installed file, not in preferences; treat as dark.
+            ThemeMode.DARK, ThemeMode.PRO, ThemeMode.NEON, ThemeMode.PACKAGE -> false
             ThemeMode.CUSTOM -> !(readCustomThemeLibrary(prefs).activeTheme()?.config ?: CustomThemeConfig.Default).dark
             ThemeMode.SYSTEM -> {
                 val systemUiMode = android.content.res.Resources.getSystem().configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK

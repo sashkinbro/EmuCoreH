@@ -3,8 +3,11 @@ package com.sbro.emucoreh.data.hub
 import android.content.Context
 import com.sbro.emucoreh.BuildConfig
 import com.sbro.emucoreh.R
+import com.sbro.emucoreh.data.store.StoreCatalog
+import com.sbro.emucoreh.data.store.StoreFile
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -21,7 +24,9 @@ data class HubRemoteSnapshot(
     val requestedLocale: String,
     val baseUrl: String,
     val items: List<HubIndexItem>,
-    val assets: List<HubAsset>
+    val assets: List<HubAsset>,
+    val themes: HubThemeCatalog?,
+    val store: StoreCatalog? = null
 )
 
 class HubRemoteDataSource(context: Context) {
@@ -80,6 +85,39 @@ class HubRemoteDataSource(context: Context) {
         val assets = json.decodeFromString<HubAssetCatalog>(assetBytes.toString(Charsets.UTF_8))
         require(assets.releaseId == manifest.releaseId)
 
+        // Optional section: a broken theme catalog must not take the rest of the Hub down.
+        val themes = manifest.themes?.let { reference ->
+            runCatching {
+                val themesUrl = resolvePinnedUrl(baseUrl, reference.path)
+                val bytes = fetchVerified(themesUrl, reference, MAX_THEME_CATALOG_BYTES)
+                json.decodeFromString<HubThemeCatalog>(bytes.toString(Charsets.UTF_8)).also { catalog ->
+                    require(catalog.formatVersion == SUPPORTED_THEME_CATALOG_FORMAT)
+                    require(catalog.releaseId == manifest.releaseId)
+                    catalog.themes.forEach { entry ->
+                        resolvePinnedUrl(baseUrl, entry.preview.path)
+                        resolvePinnedUrl(baseUrl, entry.packageFile.path)
+                    }
+                }
+            }.getOrNull()
+        }
+
+        // Optional section as well: the Store catalog never breaks the Hub.
+        val store = manifest.store?.let { reference ->
+            runCatching {
+                val storeUrl = resolvePinnedUrl(baseUrl, reference.path)
+                val bytes = fetchVerified(storeUrl, reference, MAX_STORE_CATALOG_BYTES)
+                json.decodeFromString<StoreCatalog>(bytes.toString(Charsets.UTF_8)).also { catalog ->
+                    require(catalog.formatVersion == SUPPORTED_STORE_CATALOG_FORMAT)
+                    require(catalog.releaseId == manifest.releaseId)
+                    catalog.items.forEach { item ->
+                        resolvePinnedUrl(baseUrl, item.cover.path)
+                        item.gallery.forEach { resolvePinnedUrl(baseUrl, it.path) }
+                        resolvePinnedUrl(baseUrl, item.packageFile.path)
+                    }
+                }
+            }.onFailure { android.util.Log.w("EmuCoreStore", "Store catalog rejected", it) }.getOrNull()
+        }
+
         return HubRemoteSnapshot(
             channel = channel,
             manifest = manifest,
@@ -87,7 +125,9 @@ class HubRemoteDataSource(context: Context) {
             requestedLocale = HubLocaleResolver.resolve(requestedLocale),
             baseUrl = baseUrl,
             items = items,
-            assets = assets.assets
+            assets = assets.assets,
+            themes = themes,
+            store = store
         )
     }
 
@@ -101,6 +141,82 @@ class HubRemoteDataSource(context: Context) {
         reference = HubFileReference(url = url, sha256 = sha256, bytes = bytes, contentType = "application/octet-stream"),
         hardLimit = MAX_IMAGE_BYTES
     )
+
+    fun fetchThemePackage(url: String, file: HubThemeFile): ByteArray = fetchVerified(
+        url = url,
+        reference = HubFileReference(url = url, sha256 = file.sha256, bytes = file.bytes, contentType = "application/zip"),
+        hardLimit = MAX_THEME_PACKAGE_BYTES
+    )
+
+    /**
+     * Streams a pinned Store file into [target] while hashing it, reporting progress in 0..1.
+     * Size and SHA-256 must match [file]; [target] is deleted on any failure. Blocking; [isActive]
+     * is polled so the caller's coroutine cancellation stops the transfer.
+     */
+    fun downloadVerified(
+        url: String,
+        file: StoreFile,
+        hardLimit: Long,
+        target: File,
+        isActive: () -> Boolean,
+        onProgress: (Float) -> Unit
+    ) {
+        require(file.bytes in 1..hardLimit) { "Store file size is invalid" }
+        require(file.sha256.matches(Regex("[0-9a-f]{64}"))) { "Store checksum is invalid" }
+        try {
+            var next = URL(url)
+            var done = false
+            repeat(MAX_REDIRECTS + 1) {
+                if (done) return@repeat
+                require(next.protocol == "https" && next.host == "raw.githubusercontent.com") { "Unexpected Store host" }
+                val connection = (next.openConnection() as HttpURLConnection).apply {
+                    connectTimeout = CONNECT_TIMEOUT_MS
+                    readTimeout = READ_TIMEOUT_MS
+                    instanceFollowRedirects = false
+                    setRequestProperty("Accept", "application/octet-stream, image/*")
+                    setRequestProperty("User-Agent", "EmuCoreH-Hub/${BuildConfig.VERSION_NAME}")
+                }
+                try {
+                    val response = connection.responseCode
+                    if (response in 300..399) {
+                        val location = connection.getHeaderField("Location") ?: throw IOException("Store redirect is missing a location")
+                        next = URL(next, location)
+                        return@repeat
+                    }
+                    if (response !in 200..299) throw IOException("Store request failed with HTTP $response")
+                    val declared = connection.contentLengthLong
+                    if (declared > file.bytes) throw IOException("Store response is too large")
+                    val digest = MessageDigest.getInstance("SHA-256")
+                    var total = 0L
+                    connection.inputStream.buffered().use { input ->
+                        target.outputStream().buffered().use { output ->
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE * 2)
+                            while (true) {
+                                if (!isActive()) throw java.util.concurrent.CancellationException("Store download cancelled")
+                                val read = input.read(buffer)
+                                if (read < 0) break
+                                total += read
+                                if (total > file.bytes) throw IOException("Store response is too large")
+                                digest.update(buffer, 0, read)
+                                output.write(buffer, 0, read)
+                                onProgress((total.toFloat() / file.bytes).coerceIn(0f, 1f))
+                            }
+                        }
+                    }
+                    require(total == file.bytes) { "Store file size does not match" }
+                    require(digest.digest().toHex() == file.sha256) { "Store file checksum does not match" }
+                    onProgress(1f)
+                    done = true
+                } finally {
+                    connection.disconnect()
+                }
+            }
+            if (!done) throw IOException("Too many Store redirects")
+        } catch (error: Throwable) {
+            target.delete()
+            throw error
+        }
+    }
 
     private fun fetchVerified(url: String, reference: HubFileReference, hardLimit: Long): ByteArray {
         require(reference.bytes in 1..hardLimit) { "Hub file size is invalid" }
@@ -203,6 +319,11 @@ class HubRemoteDataSource(context: Context) {
         private const val MAX_ASSET_CATALOG_BYTES = 2L * 1024L * 1024L
         private const val MAX_DOCUMENT_BYTES = 512L * 1024L
         private const val MAX_IMAGE_BYTES = 8L * 1024L * 1024L
+        private const val MAX_THEME_CATALOG_BYTES = 2L * 1024L * 1024L
+        private const val MAX_THEME_PACKAGE_BYTES = 4L * 1024L * 1024L
+        private const val SUPPORTED_THEME_CATALOG_FORMAT = 1
+        private const val MAX_STORE_CATALOG_BYTES = 16L * 1024L * 1024L // ~1000 items in 18 locales is already >4 MB
+        private const val SUPPORTED_STORE_CATALOG_FORMAT = 1
     }
 }
 

@@ -39,13 +39,13 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.WarningAmber
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
+import com.sbro.emucoreh.ui.theme.style.Button
+import com.sbro.emucoreh.ui.theme.style.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -271,7 +271,7 @@ private fun HubArticleContent(
                                     modifier = Modifier
                                         .align(Alignment.BottomStart)
                                         .padding(14.dp),
-                                    shape = RoundedCornerShape(999.dp),
+                                    shape = neonShape(999.dp),
                                     color = Color.Black.copy(alpha = 0.62f),
                                     contentColor = Color.White
                                 ) {
@@ -623,7 +623,7 @@ private fun HubArticleBlock(
 @Composable
 private fun HubTag(text: String) {
     Surface(
-        shape = RoundedCornerShape(999.dp),
+        shape = neonShape(999.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Text(text, modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium)
@@ -662,7 +662,7 @@ private fun HubArticleMetaRow(item: HubItem, readingMinutes: Int) {
 @Composable
 private fun HubMetaPill(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
     Surface(
-        shape = RoundedCornerShape(999.dp),
+        shape = neonShape(999.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
     ) {

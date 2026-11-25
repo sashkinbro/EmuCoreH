@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-EmuCoreH-Proprietary
 package com.sbro.emucoreh.ui.settings
 
+import com.sbro.emucoreh.ui.common.SyncedSlider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,14 +15,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.Mouse
 import androidx.compose.material.icons.rounded.SettingsSuggest
-import androidx.compose.material3.FilterChip
+import com.sbro.emucoreh.ui.theme.style.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Surface
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.sbro.emucoreh.ui.theme.style.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -727,7 +727,7 @@ private fun KeyboardMouseSliderItem(
                 color = MaterialTheme.colorScheme.primary
             )
         }
-        Slider(
+        SyncedSlider(
             value = sliderValue,
             onValueChange = { sliderValue = it },
             onValueChangeFinished = { onValueChange(sliderValue.toInt()) },

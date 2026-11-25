@@ -2,8 +2,13 @@ package com.sbro.emucoreh.data.hub
 
 import android.content.Context
 import androidx.room.withTransaction
+import com.sbro.emucoreh.data.store.StoreFile
+import com.sbro.emucoreh.data.store.StoreSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -23,6 +28,16 @@ class HubRepository private constructor(context: Context) {
         explicitNulls = false
     }
     private val assetCacheDirectory = File(appContext.cacheDir, "emucore-hub-assets").apply { mkdirs() }
+    private val themeCatalogFile = File(appContext.filesDir, "hub-themes.json")
+    private val _themes = MutableStateFlow(readThemeSnapshot())
+
+    /** Last verified theme catalog, persisted so the Themes tab works offline. */
+    val themes: StateFlow<HubThemeSnapshot?> = _themes.asStateFlow()
+
+    private val _storeSync = MutableStateFlow<StoreSnapshot?>(null)
+
+    /** Store catalog of the latest successful sync; StoreRepository persists and republishes it. */
+    val storeSync: StateFlow<StoreSnapshot?> = _storeSync.asStateFlow()
 
     fun observeItems(languageTag: String?): Flow<List<HubItem>> {
         val locale = HubLocaleResolver.resolve(languageTag)
@@ -74,6 +89,14 @@ class HubRepository private constructor(context: Context) {
                     updatedAtMillis = now
                 )
             )
+        }
+        snapshot.store?.let { catalog ->
+            _storeSync.value = StoreSnapshot(snapshot.baseUrl, snapshot.manifest.catalogRevision, catalog)
+        }
+        snapshot.themes?.let { catalog ->
+            val themeSnapshot = HubThemeSnapshot(snapshot.baseUrl, snapshot.manifest.catalogRevision, catalog)
+            writeThemeSnapshot(themeSnapshot)
+            _themes.value = themeSnapshot
         }
         HubSyncResult(
             changed = previousState?.catalogRevision != snapshot.manifest.catalogRevision || previousState.locale != snapshot.locale,
@@ -174,6 +197,54 @@ class HubRepository private constructor(context: Context) {
         val currentlyFavorite = dao.favorite(contentId) != null
         if (currentlyFavorite == favorite) return@withContext favorite
         toggleFavorite(item)
+    }
+
+    /** Downloads a theme package pinned by the catalog's commit and SHA-256. */
+    suspend fun downloadThemePackage(entry: HubThemeEntry): ByteArray = withContext(Dispatchers.IO) {
+        val snapshot = _themes.value ?: error("Hub themes are unavailable")
+        remote.fetchThemePackage(snapshot.url(entry.packageFile), entry.packageFile)
+    }
+
+    /** Streams a pinned Store file into [target]; see [HubRemoteDataSource.downloadVerified]. */
+    suspend fun downloadStoreFile(
+        url: String,
+        file: StoreFile,
+        hardLimit: Long,
+        target: File,
+        onProgress: (Float) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        val job = coroutineContext[kotlinx.coroutines.Job]
+        remote.downloadVerified(url, file, hardLimit, target, { job?.isActive != false }, onProgress)
+    }
+
+    @kotlinx.serialization.Serializable
+    private data class StoredThemeSnapshot(
+        val baseUrl: String,
+        val catalogRevision: Long,
+        val catalog: HubThemeCatalog
+    )
+
+    private fun readThemeSnapshot(): HubThemeSnapshot? = runCatching {
+        if (!themeCatalogFile.isFile) return null
+        val stored = json.decodeFromString<StoredThemeSnapshot>(themeCatalogFile.readText())
+        require(stored.baseUrl.startsWith("https://raw.githubusercontent.com/"))
+        HubThemeSnapshot(stored.baseUrl, stored.catalogRevision, stored.catalog)
+    }.getOrNull()
+
+    private fun writeThemeSnapshot(snapshot: HubThemeSnapshot) {
+        runCatching {
+            val temporary = File(themeCatalogFile.parentFile, "${themeCatalogFile.name}.tmp")
+            temporary.writeText(
+                json.encodeToString(
+                    StoredThemeSnapshot.serializer(),
+                    StoredThemeSnapshot(snapshot.baseUrl, snapshot.catalogRevision, snapshot.catalog)
+                )
+            )
+            if (!temporary.renameTo(themeCatalogFile)) {
+                temporary.copyTo(themeCatalogFile, overwrite = true)
+                temporary.delete()
+            }
+        }
     }
 
     suspend fun cachedAsset(

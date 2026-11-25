@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Gamepad
 import androidx.compose.material.icons.rounded.RestartAlt
-import androidx.compose.material3.FilterChip
+import com.sbro.emucoreh.ui.theme.style.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*

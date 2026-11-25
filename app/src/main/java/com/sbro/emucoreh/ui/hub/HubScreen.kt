@@ -1,5 +1,6 @@
 package com.sbro.emucoreh.ui.hub
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -44,23 +45,27 @@ import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.HistoryEdu
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Newspaper
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.VideoLibrary
-import androidx.compose.material3.Button
+import com.sbro.emucoreh.ui.theme.style.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
+import com.sbro.emucoreh.ui.theme.style.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import com.sbro.emucoreh.ui.theme.style.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
+import com.sbro.emucoreh.ui.theme.style.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.sbro.emucoreh.ui.theme.style.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -80,7 +85,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
@@ -105,6 +109,11 @@ import com.sbro.emucoreh.ui.common.navigationBarsHorizontalPaddingValues
 import com.sbro.emucoreh.ui.common.rememberDebouncedClick
 import com.sbro.emucoreh.ui.common.shimmer
 import com.sbro.emucoreh.ui.common.appScreenTopPadding
+import com.sbro.emucoreh.ui.store.StoreViewModel
+import com.sbro.emucoreh.ui.store.rememberStoreContentModel
+import com.sbro.emucoreh.ui.store.rememberStoreFilters
+import com.sbro.emucoreh.ui.store.shelfTitle
+import com.sbro.emucoreh.ui.store.storeContent
 import com.sbro.emucoreh.ui.theme.ScreenHorizontalPadding
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -122,9 +131,44 @@ import com.sbro.emucoreh.ui.theme.neon.neonButtonShape
 fun HubScreen(
     onBackClick: () -> Unit,
     onOpenArticle: (String) -> Unit,
-    viewModel: HubViewModel = viewModel()
+    onOpenStoreItem: (String) -> Unit,
+    onOpenInstalled: () -> Unit,
+    initialTab: String? = null,
+    initialStoreTab: String? = null,
+    backEnabled: Boolean = true,
+    viewModel: HubViewModel = viewModel(),
+    storeViewModel: StoreViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val storeFilters = rememberStoreFilters(initialStoreTab)
+    val storeActive = uiState.mode == HubMode.STORE
+    val section = uiState.section
+    val listActive = !storeActive && (section != null || uiState.searchQuery.isNotBlank())
+    val storeModel = rememberStoreContentModel(storeViewModel, storeFilters, if (storeActive) uiState.searchQuery else "")
+    val storeRefreshing = storeModel.refreshing
+    val refreshAll: () -> Unit = {
+        viewModel.refresh(force = true)
+        storeViewModel.refresh(force = true)
+    }
+    LaunchedEffect(initialTab) {
+        if (initialTab == "store") viewModel.selectMode(HubMode.STORE)
+    }
+    // Back closes an open section / Saved list first; the detail overlay (backEnabled = false) keeps priority.
+    BackHandler(enabled = backEnabled && section != null) { viewModel.closeSection() }
+    // Inside a Store "See all" grid, back returns to the Store home.
+    BackHandler(enabled = backEnabled && storeActive && storeFilters.shelf != null) { storeFilters.closeShelf() }
+    val discoverFeed = remember(uiState.items) { buildDiscoverFeed(uiState.items) }
+    // Where the user is, as an ordered key: forward navigation slides content in from the end, back from the start.
+    val navKey = if (storeActive) 100 + storeFilters.tab.ordinal * 10 + (if (storeFilters.shelf != null) 5 else 0)
+    else if (section != null) 1 else 0
+    val previousNavKey = remember { intArrayOf(navKey) }
+    val navDirection = remember(navKey) { (if (navKey >= previousNavKey[0]) 1 else -1).also { previousNavKey[0] = navKey } }
+    val motionEnabled = rememberMotionEnabled()
+    val shownKeys = remember(navKey) { HashSet<String>() }
+    val motionState = remember(motionEnabled, navDirection, shownKeys) { HubMotionState(motionEnabled, navDirection, shownKeys) }
+    val storeShelfItems = remember(storeModel.snapshot) {
+        storeModel.snapshot?.catalog?.items.orEmpty().sortedByDescending { it.publishedAt }.take(12)
+    }
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     var playingVideo by remember { mutableStateOf<HubItem?>(null) }
     var minimumSkeletonVisible by remember(viewModel) { mutableStateOf(!viewModel.hasShownInitialSkeleton) }
@@ -148,10 +192,10 @@ fun HubScreen(
 
     ProvideGamepadShoulderActions(
         enabled = !searchVisible,
-        onPrevious = { viewModel.selectRelativeTab(-1) },
-        onNext = { viewModel.selectRelativeTab(1) }
+        onPrevious = viewModel::toggleMode,
+        onNext = viewModel::toggleMode
     )
-    LaunchedEffect(uiState.selectedTab, shouldRequestGamepadFocus) {
+    LaunchedEffect(uiState.mode, shouldRequestGamepadFocus) {
         if (shouldRequestGamepadFocus) {
             withFrameNanos { }
             runCatching { selectedTabFocusRequester.requestFocus() }
@@ -168,9 +212,11 @@ fun HubScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(navigationBarsHorizontalPaddingValues())
     ) {
+        // Text without an explicit color must read on the screen background, not default to black.
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
         val gridState = rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
         val hubTabsPinned = rememberStickyTabHeaderPinned(gridState, "hub-tabs")
-        val listMode = "${uiState.selectedTab.name}:${uiState.sortOrder.name}:${uiState.productFilter.name}:${uiState.featuredOnly}"
+        val listMode = "${uiState.mode.name}:${section?.name}:${uiState.sortOrder.name}:${uiState.productFilter.name}:${uiState.featuredOnly}:${storeFilters.modeKey}"
         var lastListMode by rememberSaveable { mutableStateOf(listMode) }
         val showScrollToTop by remember {
             derivedStateOf {
@@ -184,12 +230,17 @@ fun HubScreen(
             }
         }
         PullToRefreshBox(
-            isRefreshing = uiState.showRefreshIndicator,
-            onRefresh = { viewModel.refresh(force = true) },
+            isRefreshing = uiState.showRefreshIndicator || storeRefreshing,
+            onRefresh = refreshAll,
             modifier = Modifier.fillMaxSize()
         ) {
+            androidx.compose.runtime.CompositionLocalProvider(LocalHubMotion provides motionState) {
             LazyVerticalGrid(
-                columns = GridCells.Adaptive(300.dp),
+                columns = if (storeActive) {
+                    GridCells.Fixed(
+                        ((LocalConfiguration.current.screenWidthDp - horizontalPadding.value * 2) / 180).toInt().coerceIn(2, 6)
+                    )
+                } else GridCells.Adaptive(300.dp),
                 state = gridState,
                 modifier = Modifier
                     .fillMaxSize()
@@ -205,14 +256,19 @@ fun HubScreen(
                 item(key = "hub-header", span = { GridItemSpan(maxLineSpan) }) {
                     Column {
                         HubTopBar(
+                            title = section?.title() ?: storeModel.shelfTitle().takeIf { storeActive } ?: stringResource(R.string.hub_title_short),
                             topInset = (topInset - stickyTabInset).coerceAtLeast(0.dp),
-                            onBackClick = onBackClick,
+                            onBackClick = { if (!(storeActive && storeFilters.closeShelf()) && !viewModel.closeSection()) onBackClick() },
                             onSearchClick = {
                                 searchVisible = !searchVisible
                                 if (!searchVisible) viewModel.clearSearch()
                             },
-                            onRefresh = { viewModel.refresh(force = true) },
-                            refreshing = uiState.isRefreshing,
+                            onSavedClick = { viewModel.openSection(HubSection.SAVED) },
+                            onInstalledClick = onOpenInstalled.takeIf { storeActive },
+                            savedActive = section == HubSection.SAVED,
+                            onRefresh = refreshAll,
+                            refreshing = uiState.isRefreshing || storeRefreshing,
+                            showFilters = listActive,
                             sortOrder = uiState.sortOrder,
                             productFilter = uiState.productFilter,
                             featuredOnly = uiState.featuredOnly,
@@ -268,16 +324,15 @@ fun HubScreen(
                         showDivider = hubTabsPinned,
                         modifier = Modifier.expandIntoHorizontalPadding(horizontalPadding)
                     ) {
-                        HubTabRow(
-                            selected = uiState.selectedTab,
-                            onSelected = viewModel::selectTab,
+                        HubModeSwitch(
+                            mode = uiState.mode,
+                            onSelected = viewModel::selectMode,
                             selectedFocusRequester = selectedTabFocusRequester,
-                            compact = compact,
                             horizontalPadding = horizontalPadding
                         )
                     }
                 }
-                if (uiState.isOffline || uiState.fallbackLocale != null) {
+                if (!storeActive && (uiState.isOffline || uiState.fallbackLocale != null)) {
                     item(key = "hub-status", span = { GridItemSpan(maxLineSpan) }) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             if (uiState.isOffline) {
@@ -298,14 +353,14 @@ fun HubScreen(
                 }
 
                 when {
-                    minimumSkeletonVisible -> {
-                        items(6, key = { "hub-minimum-skeleton-$it" }) {
-                            HubSkeletonCard(compact = compact)
-                        }
-                    }
-                    uiState.isInitialLoading && uiState.items.isEmpty() -> {
-                        items(6, key = { "hub-skeleton-$it" }) {
-                            HubSkeletonCard(compact = compact)
+                    storeActive -> storeContent(storeModel, onOpenStoreItem, horizontalPadding)
+                    minimumSkeletonVisible || (uiState.isInitialLoading && uiState.items.isEmpty()) -> {
+                        if (listActive) {
+                            items(6, key = { "hub-skeleton-$it" }) {
+                                HubSkeletonCard(compact = compact)
+                            }
+                        } else {
+                            discoverSkeleton(compact, horizontalPadding)
                         }
                     }
                     uiState.error != null && uiState.items.isEmpty() -> {
@@ -313,10 +368,40 @@ fun HubScreen(
                             HubErrorState(onRetry = { viewModel.refresh(true) })
                         }
                     }
+                    !listActive -> {
+                        if (discoverFeed.isEmpty) {
+                            item(key = "hub-empty", span = { GridItemSpan(maxLineSpan) }) {
+                                HubEmptyState(
+                                    section = null,
+                                    searchActive = false,
+                                    filterActive = false,
+                                    onClearSearch = viewModel::clearSearch,
+                                    onClearFilters = viewModel::clearFilters
+                                )
+                            }
+                        } else {
+                            val openItem: (HubItem) -> Unit = { item ->
+                                if (item.kind == HubKind.VIDEOS && item.providerId != null) playingVideo = item
+                                else onOpenArticle(item.id)
+                            }
+                            discoverContent(
+                                feed = discoverFeed,
+                                storeItems = storeShelfItems,
+                                storeSnapshot = storeModel.snapshot,
+                                storeLocale = storeViewModel.locale,
+                                compact = compact,
+                                horizontalPadding = horizontalPadding,
+                                onOpenItem = openItem,
+                                onSeeAll = viewModel::openSection,
+                                onSeeAllStore = { viewModel.selectMode(HubMode.STORE) },
+                                onOpenStoreItem = onOpenStoreItem
+                            )
+                        }
+                    }
                     uiState.visibleItems.isEmpty() -> {
                         item(key = "hub-empty", span = { GridItemSpan(maxLineSpan) }) {
                             HubEmptyState(
-                                tab = uiState.selectedTab,
+                                section = section,
                                 searchActive = uiState.searchQuery.isNotBlank(),
                                 filterActive = uiState.hasActiveFilters,
                                 onClearSearch = viewModel::clearSearch,
@@ -326,18 +411,21 @@ fun HubScreen(
                     }
                     else -> {
                         items(items = uiState.visibleItems, key = HubItem::id) { item ->
-                            HubCard(
-                                item = item,
-                                compact = compact,
-                                onOpen = {
-                                    if (item.kind == HubKind.VIDEOS && item.providerId != null) playingVideo = item
-                                    else onOpenArticle(item.id)
-                                },
-                                onToggleFavorite = { viewModel.toggleFavorite(item) }
-                            )
+                            Box(Modifier.animateItem().enterRise("hub-card-${item.id}")) {
+                                HubCard(
+                                    item = item,
+                                    compact = compact,
+                                    onOpen = {
+                                        if (item.kind == HubKind.VIDEOS && item.providerId != null) playingVideo = item
+                                        else onOpenArticle(item.id)
+                                    },
+                                    onToggleFavorite = { viewModel.toggleFavorite(item) }
+                                )
+                            }
                         }
                     }
                 }
+            }
             }
 
             HubScrollToTopButton(
@@ -349,6 +437,7 @@ fun HubScreen(
                     scope.launch { gridState.animateScrollToItem(0) }
                 }
             )
+        }
         }
     }
 
@@ -363,11 +452,16 @@ private const val MINIMUM_SKELETON_DURATION_MS = 500L
 
 @Composable
 private fun HubTopBar(
+    title: String,
     topInset: androidx.compose.ui.unit.Dp,
     onBackClick: () -> Unit,
     onSearchClick: () -> Unit,
+    onSavedClick: () -> Unit,
+    onInstalledClick: (() -> Unit)?,
+    savedActive: Boolean,
     onRefresh: () -> Unit,
     refreshing: Boolean,
+    showFilters: Boolean,
     sortOrder: HubSortOrder,
     productFilter: HubProductFilter,
     featuredOnly: Boolean,
@@ -378,7 +472,7 @@ private fun HubTopBar(
     onClearFilters: () -> Unit
 ) {
     com.sbro.emucoreh.ui.common.ScreenTopBar(
-        title = stringResource(R.string.hub_title),
+        title = title,
         onBackClick = onBackClick,
         modifier = Modifier
             .fillMaxWidth()
@@ -394,7 +488,23 @@ private fun HubTopBar(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            HubFilterMenu(
+            if (onInstalledClick != null) {
+                IconButton(onClick = onInstalledClick) {
+                    Icon(
+                        Icons.Rounded.Inventory2,
+                        contentDescription = stringResource(R.string.store_installed_title),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            IconButton(onClick = onSavedClick) {
+                Icon(
+                    if (savedActive) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                    contentDescription = stringResource(R.string.hub_tab_favorites),
+                    tint = if (savedActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (showFilters) HubFilterMenu(
                 sortOrder = sortOrder,
                 productFilter = productFilter,
                 featuredOnly = featuredOnly,
@@ -566,29 +676,7 @@ internal fun HubScrollToTopButton(
     }
 }
 
-@Composable
-private fun HubTabRow(
-    selected: HubTab,
-    onSelected: (HubTab) -> Unit,
-    selectedFocusRequester: FocusRequester,
-    compact: Boolean,
-    horizontalPadding: androidx.compose.ui.unit.Dp
-) {
-    com.sbro.emucoreh.ui.common.ScrollableFilterTabRow(
-        tabs = HubTab.entries,
-        selectedTab = selected,
-        onSelected = onSelected,
-        key = HubTab::name,
-        label = HubTab::label,
-        icon = HubTab::icon,
-        selectedTabFocusRequester = selectedFocusRequester,
-        compact = compact,
-        horizontalContentPadding = horizontalPadding,
-        verticalPadding = 0.dp
-    )
-}
-
-private fun Modifier.expandIntoHorizontalPadding(horizontalPadding: androidx.compose.ui.unit.Dp): Modifier =
+internal fun Modifier.expandIntoHorizontalPadding(horizontalPadding: androidx.compose.ui.unit.Dp): Modifier =
     layout { measurable, constraints ->
         if (!constraints.hasBoundedWidth) {
             val placeable = measurable.measure(constraints)
@@ -615,6 +703,7 @@ private fun HubCard(item: HubItem, compact: Boolean, onOpen: () -> Unit, onToggl
         modifier = Modifier
             .fillMaxWidth()
             .widthIn(max = 560.dp)
+            .pressScale(interactionSource)
             .gamepadFocusableCard(shape = shape, interactionSource = interactionSource, addFocusTarget = false),
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -670,7 +759,7 @@ private fun HubCard(item: HubItem, compact: Boolean, onOpen: () -> Unit, onToggl
                 }
                 Surface(
                     modifier = Modifier.align(Alignment.BottomStart).padding(if (compact) 8.dp else 10.dp),
-                    shape = RoundedCornerShape(999.dp),
+                    shape = neonShape(999.dp),
                     color = Color.Black.copy(alpha = 0.55f)
                 ) {
                     Text(
@@ -764,8 +853,8 @@ private fun HubErrorState(onRetry: () -> Unit) {
 }
 
 @Composable
-private fun HubEmptyState(
-    tab: HubTab,
+internal fun HubEmptyState(
+    section: HubSection?,
     searchActive: Boolean,
     filterActive: Boolean,
     onClearSearch: () -> Unit,
@@ -774,22 +863,23 @@ private fun HubEmptyState(
     val text = when {
         searchActive -> stringResource(R.string.hub_no_search_results)
         filterActive -> stringResource(R.string.hub_no_filter_results)
-        else -> when (tab) {
-        HubTab.NEWS -> stringResource(R.string.hub_empty_news)
-        HubTab.VIDEOS -> stringResource(R.string.hub_empty_videos)
-        HubTab.HISTORY -> stringResource(R.string.hub_empty_history)
-        HubTab.MANUALS -> stringResource(R.string.hub_empty_manuals)
-        HubTab.FAVORITES -> stringResource(R.string.hub_empty_favorites)
+        else -> when (section) {
+        null -> stringResource(R.string.hub_empty_news)
+        HubSection.NEWS -> stringResource(R.string.hub_empty_news)
+        HubSection.VIDEOS -> stringResource(R.string.hub_empty_videos)
+        HubSection.HISTORY -> stringResource(R.string.hub_empty_history)
+        HubSection.MANUALS -> stringResource(R.string.hub_empty_manuals)
+        HubSection.SAVED -> stringResource(R.string.hub_empty_favorites)
         }
     }
     val icon = when {
         searchActive -> Icons.Rounded.Search
         filterActive -> Icons.Rounded.FilterList
-        tab == HubTab.NEWS -> Icons.Rounded.Newspaper
-        tab == HubTab.VIDEOS -> Icons.Rounded.VideoLibrary
-        tab == HubTab.HISTORY -> Icons.Rounded.HistoryEdu
-        tab == HubTab.MANUALS -> Icons.AutoMirrored.Rounded.MenuBook
-        else -> Icons.Rounded.BookmarkBorder
+        section == HubSection.VIDEOS -> Icons.Rounded.VideoLibrary
+        section == HubSection.HISTORY -> Icons.Rounded.HistoryEdu
+        section == HubSection.MANUALS -> Icons.AutoMirrored.Rounded.MenuBook
+        section == HubSection.SAVED -> Icons.Rounded.BookmarkBorder
+        else -> Icons.Rounded.Newspaper
     }
     Surface(
         modifier = Modifier
@@ -859,23 +949,6 @@ private fun HubStatusBanner(text: String, containerColor: Color, contentColor: C
     ) {
         Text(text, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), color = contentColor, style = MaterialTheme.typography.labelMedium)
     }
-}
-
-@Composable
-private fun HubTab.label(): String = when (this) {
-    HubTab.NEWS -> stringResource(R.string.hub_tab_news)
-    HubTab.VIDEOS -> stringResource(R.string.hub_tab_videos)
-    HubTab.HISTORY -> stringResource(R.string.hub_tab_history)
-    HubTab.MANUALS -> stringResource(R.string.hub_tab_manuals)
-    HubTab.FAVORITES -> stringResource(R.string.hub_tab_favorites)
-}
-
-private fun HubTab.icon(): ImageVector = when (this) {
-    HubTab.NEWS -> Icons.Rounded.Newspaper
-    HubTab.VIDEOS -> Icons.Rounded.VideoLibrary
-    HubTab.HISTORY -> Icons.Rounded.HistoryEdu
-    HubTab.MANUALS -> Icons.AutoMirrored.Rounded.MenuBook
-    HubTab.FAVORITES -> Icons.Rounded.Bookmark
 }
 
 @Composable

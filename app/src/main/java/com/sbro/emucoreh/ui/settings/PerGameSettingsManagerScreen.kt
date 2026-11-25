@@ -54,18 +54,20 @@ import com.sbro.emucoreh.core.EmulationPlatform
 import com.sbro.emucoreh.core.GamepadManager
 import androidx.compose.material.icons.rounded.Tune
 import com.sbro.emucoreh.ui.common.AppAlertDialog as AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
+import com.sbro.emucoreh.ui.theme.style.Button
+import com.sbro.emucoreh.ui.theme.style.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
+import com.sbro.emucoreh.ui.theme.style.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.sbro.emucoreh.ui.theme.style.Surface
+import com.sbro.emucoreh.ui.theme.style.Switch
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import com.sbro.emucoreh.ui.common.SyncedSlider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.sbro.emucoreh.ui.theme.style.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -1777,7 +1779,7 @@ private fun SliderRow(
                 color = MaterialTheme.colorScheme.primary
             )
         }
-        Slider(
+        SyncedSlider(
             value = sliderValue,
             onValueChange = {
                 sliderValue = it
