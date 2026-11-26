@@ -371,6 +371,10 @@ void makePrimRestartIndex(std::vector<PolyParam>& polys, int first, int end, boo
 		return;
 	PolyParam *last_poly = nullptr;
 	const PolyParam *end_poly = polys.data() + end;
+	size_t reserveCount = 0;
+	for (const PolyParam *p = &polys[first]; p != end_poly; p++)
+		reserveCount += p->count + 2;
+	ctx.idx.reserve(ctx.idx.size() + reserveCount);
 	for (PolyParam *poly = &polys[first]; poly != end_poly; poly++)
 	{
 		int first_index;
@@ -389,45 +393,63 @@ void makePrimRestartIndex(std::vector<PolyParam>& polys, int first, int end, boo
 			last_poly = poly;
 			first_index = ctx.idx.size();
 		}
-		int last_good_vtx = -1;
-		for (u32 i = 0; i < poly->count; i++)
+		if (poly->isNaomi2())
 		{
-			const Vertex& vtx = ctx.verts[poly->first + i];
-			if (!poly->isNaomi2() && is_vertex_inf(vtx))
+			const u32 count = poly->count;
+			if (count != 0)
 			{
-				bool odd = i & 1;
-				while (i < poly->count - 1)
-				{
-					odd = !odd;
-					const Vertex& next_vtx = ctx.verts[poly->first + i + 1];
-					if (!is_vertex_inf(next_vtx))
-					{
-						if (poly->count - (i + 1) < 3)
-							// skip remaining incomplete triangle
-							i = poly->count - 1;
-						else
-						{
-							if (last_good_vtx >= 0)
-								// reset the strip
-								ctx.idx.push_back(~0);
-							if (odd && poly->isp.CullMode >= 2)
-								// repeat next vertex to get culling right
-								dupe_next_vtx = true;
-						}
-						break;
-					}
-					i++;
-				}
-			}
-			else
-			{
-				last_good_vtx = poly->first + i;
+				const u32 base = poly->first;
 				if (dupe_next_vtx)
+					ctx.idx.push_back(base);
+				const size_t oldSize = ctx.idx.size();
+				ctx.idx.resize(oldSize + count);
+				u32 *dst = ctx.idx.data() + oldSize;
+				for (u32 i = 0; i < count; i++)
+					dst[i] = base + i;
+			}
+		}
+		else
+		{
+			int last_good_vtx = -1;
+			for (u32 i = 0; i < poly->count; i++)
+			{
+				const Vertex& vtx = ctx.verts[poly->first + i];
+				if (is_vertex_inf(vtx))
 				{
-					ctx.idx.push_back(last_good_vtx);
-					dupe_next_vtx = false;
+					bool odd = i & 1;
+					while (i < poly->count - 1)
+					{
+						odd = !odd;
+						const Vertex& next_vtx = ctx.verts[poly->first + i + 1];
+						if (!is_vertex_inf(next_vtx))
+						{
+							if (poly->count - (i + 1) < 3)
+								// skip remaining incomplete triangle
+								i = poly->count - 1;
+							else
+							{
+								if (last_good_vtx >= 0)
+									// reset the strip
+									ctx.idx.push_back(~0);
+								if (odd && poly->isp.CullMode >= 2)
+									// repeat next vertex to get culling right
+									dupe_next_vtx = true;
+							}
+							break;
+						}
+						i++;
+					}
 				}
-				ctx.idx.push_back(last_good_vtx);
+				else
+				{
+					last_good_vtx = poly->first + i;
+					if (dupe_next_vtx)
+					{
+						ctx.idx.push_back(last_good_vtx);
+						dupe_next_vtx = false;
+					}
+					ctx.idx.push_back(last_good_vtx);
+				}
 			}
 		}
 		if (last_poly == poly)
