@@ -13,6 +13,8 @@ mod dma;
 mod frt;
 mod idle;
 mod instructions;
+mod jit;
+mod predecode;
 #[cfg(feature = "native-arm64")]
 pub mod native;
 mod registers;
@@ -36,6 +38,10 @@ pub use disassemble::{
     disassemble_into,
 };
 pub use instructions::OpcodeTable;
+pub use predecode::set_predecode_enabled;
+pub use jit::{JitStats, jit_stats, reset_jit_stats, set_jit_enabled, set_jit_native};
+#[cfg(feature = "jit-verify")]
+pub use jit::{set_jit_verify, set_jit_verify_deep_every};
 use jgenesis_common::debug::DebugMemoryView;
 use jgenesis_common::hostcache::HostCache;
 #[cfg(debug_assertions)]
@@ -79,6 +85,10 @@ pub struct Sh2 {
     idle_rejected: HostCache<idle::RejectedFilter>,
     idle_recording: HostCache<bool>,
     idle: HostCache<Box<idle::IdleState>>,
+    // Host-only predecoded block cache (never serialized); see the `predecode` module
+    blocks: HostCache<predecode::BlockCache>,
+    // Host-only block engine state (never serialized); see the `jit` module
+    jit: HostCache<jit::JitCache>,
     idle_stash: HostCache<idle::IdleStash>,
 }
 
@@ -138,6 +148,8 @@ impl Sh2 {
             idle_rejected: HostCache::default(),
             idle_recording: HostCache::default(),
             idle: HostCache::default(),
+            blocks: HostCache::default(),
+            jit: HostCache::default(),
             idle_stash: HostCache::default(),
         }
     }
@@ -149,7 +161,15 @@ impl Sh2 {
     pub fn execute<Bus: BusInterface>(&mut self, ticks: u64, bus: &mut Bus) {
         #[cfg(not(feature = "jit-runtime"))]
         {
-            self.execute_with_body(ticks, bus, &mut Interpreter)
+            if Bus::IDLE_LOOPS && jit::jit_enabled() {
+                return self.execute_jit(ticks, bus);
+            }
+            if Bus::IDLE_LOOPS && predecode::predecode_enabled() {
+                self.blocks.ensure_table(std::ptr::from_ref(Bus::opcode_table()) as usize);
+                self.execute_with_body(ticks, bus, &mut predecode::Predecoded)
+            } else {
+                self.execute_with_body(ticks, bus, &mut Interpreter)
+            }
         }
         #[cfg(feature = "jit-runtime")]
         {

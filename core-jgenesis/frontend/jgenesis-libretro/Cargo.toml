@@ -16,6 +16,8 @@ jit-preview = ["jit-runtime", "m68000-emu/jit-preview", "sh2-emu/jit-preview", "
 # PGO training builds only (built with -Cprofile-generate): write the LLVM profile
 # when a game is unloaded, because Android never runs the core's exit handlers.
 pgo-generate = []
+# SH-2 block engine AArch64 backend (selected at run time by jgenesis_sh2_jit=enabled)
+sh2-jit-arm64 = ["sh2-emu/jit-arm64"]
 
 [dependencies]
 m68000-emu = { workspace = true, optional = true }

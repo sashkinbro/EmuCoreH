@@ -4444,6 +4444,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sh2-difftest"
+version = "0.14.1"
+dependencies = [
+ "bincode",
+ "genesis-config",
+ "genesis-core",
+ "jgenesis-common",
+ "s32x-core",
+ "sh2-emu",
+]
+
+[[package]]
 name = "sh2-emu"
 version = "0.14.1"
 dependencies = [

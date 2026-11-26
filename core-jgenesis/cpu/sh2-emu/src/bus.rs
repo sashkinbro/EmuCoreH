@@ -240,6 +240,12 @@ pub trait BusInterface: Sized {
         false
     }
 
+    /// Block-engine differential testing only: called after every executed block with the
+    /// instructions left in the slice. Only the recording bus of the verifier implements it.
+    #[cfg(feature = "jit-verify")]
+    #[doc(hidden)]
+    fn jit_checkpoint(&mut self, _ticks_left: u64, _cpu: &crate::Sh2) {}
+
     /// Whether every read that synchronizes another processor (see `idle_read_deadline`) would run
     /// a processor that is in a verified idle loop and so cannot change any state, no matter how
     /// the run is split into calls.

@@ -106,10 +106,49 @@ struct FetchMemo {
 
 const INVALID_LINE: u32 = u32::MAX;
 
+/// Host-only per-line change counters used to validate predecoded code blocks.
+///
+/// `lines[way * 64 + entry]` is bumped whenever the contents, tag or validity of that line may
+/// have changed; `conf` is bumped for whole-cache changes (CCR writes, purges). LRU-only updates
+/// never bump either. A block recorded while every one of its lines carried a given counter value
+/// fetches exactly the same instruction words from exactly the same ways while the values stay.
+#[derive(Debug, Clone)]
+pub(crate) struct LineGens {
+    // Bumped together with every other counter: lets a block skip per-line validation while
+    // nothing in the cache has changed since it was last validated
+    any: u32,
+    conf: u32,
+    lines: [u32; WAYS * CACHE_ENTRIES],
+    // Block-engine code bitmap (see `jit`): one bit per (way, entry) line that holds the code of a
+    // compiled block. `code` is bumped only when such a line changes (or on `conf` changes), so
+    // blocks validate with one compare while unrelated data lines are refilled.
+    code: u32,
+    code_lines: [u64; WAYS],
+}
+
+impl Default for LineGens {
+    fn default() -> Self {
+        Self { any: 0, conf: 0, lines: [0; WAYS * CACHE_ENTRIES], code: 0, code_lines: [0; WAYS] }
+    }
+}
+
 impl Default for FetchMemo {
     fn default() -> Self {
         Self { line: INVALID_LINE, ram_base: 0 }
     }
+}
+
+/// See `CpuCache::native_layout`; `ways`, `lru` and `ram` locate `Box` pointers
+#[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+pub(crate) struct NativeLayout {
+    pub(crate) ways: usize,
+    pub(crate) lru: usize,
+    pub(crate) ram: usize,
+    pub(crate) enabled: usize,
+    pub(crate) memo_line: usize,
+    pub(crate) way_size: usize,
+    pub(crate) way_tags: usize,
+    pub(crate) way_valid: usize,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -124,6 +163,7 @@ pub struct CpuCache {
     // LRU-only updates (hits) never bump it. Idle-loop skipping uses it to prove that the
     // cached code and data an observed iteration used are still exactly the same.
     epoch: HostCache<u32>,
+    gens: HostCache<LineGens>,
 }
 
 impl CpuCache {
@@ -135,6 +175,7 @@ impl CpuCache {
             control: CacheControlRegister::default(),
             fetch_memo: HostCache::default(),
             epoch: HostCache::default(),
+            gens: HostCache::default(),
         }
     }
 
@@ -146,6 +187,123 @@ impl CpuCache {
     #[inline(always)]
     fn bump_epoch(&mut self) {
         *self.epoch = self.epoch.wrapping_add(1);
+    }
+
+    #[inline(always)]
+    fn bump_line(&mut self, way_idx: usize, entry_idx: usize) {
+        let line_gen = &mut self.gens.lines[(way_idx << 6) | entry_idx];
+        *line_gen = line_gen.wrapping_add(1);
+        self.gens.any = self.gens.any.wrapping_add(1);
+        let code_bit = 1u64 << entry_idx;
+        if self.gens.code_lines[way_idx] & code_bit != 0 {
+            self.gens.code_lines[way_idx] &= !code_bit;
+            self.gens.code = self.gens.code.wrapping_add(1);
+        }
+    }
+
+    #[inline(always)]
+    fn bump_entry(&mut self, entry_idx: usize) {
+        for way_idx in 0..WAYS {
+            self.bump_line(way_idx, entry_idx);
+        }
+    }
+
+    #[inline(always)]
+    fn bump_conf(&mut self) {
+        self.gens.conf = self.gens.conf.wrapping_add(1);
+        self.gens.any = self.gens.any.wrapping_add(1);
+        self.gens.code = self.gens.code.wrapping_add(1);
+        self.gens.code_lines = [0; WAYS];
+    }
+
+    /// Change counter of lines marked with `mark_code_line` (and of the configuration)
+    #[cfg_attr(feature = "jit-runtime", allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn code_gen(&self) -> u32 {
+        self.gens.code
+    }
+
+    /// Instruction word at `address` within the cache RAM line of `(way, entry)`
+    #[cfg_attr(feature = "jit-runtime", allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn line_word(&self, way: u8, entry: u8, address: u32) -> u16 {
+        let base = cache_ram_addr(usize::from(way) & (WAYS - 1), usize::from(entry) & 0x3F) >> 1;
+        self.ram[base | (((address as usize) & 0xE) >> 1)]
+    }
+
+    /// Field offsets the block compiler's inline cache-hit reads use (relative to `CpuCache`
+    /// unless noted)
+    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    pub(crate) fn native_layout() -> NativeLayout {
+        use std::mem::offset_of;
+        NativeLayout {
+            ways: offset_of!(CpuCache, ways),
+            lru: offset_of!(CpuCache, lru_bits),
+            ram: offset_of!(CpuCache, ram),
+            enabled: offset_of!(CpuCache, control) + offset_of!(CacheControlRegister, cache_enabled),
+            memo_line: offset_of!(CpuCache, fetch_memo) + offset_of!(HostCache<FetchMemo>, 0) + offset_of!(FetchMemo, line),
+            way_size: size_of::<Way>(),
+            way_tags: offset_of!(Way, tags),
+            way_valid: offset_of!(Way, valid_bits),
+        }
+    }
+
+    /// Address of the code counter (block compiler: validation of chained blocks)
+    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    pub(crate) fn code_gen_ptr(&self) -> *const u32 {
+        &raw const self.gens.0.code
+    }
+
+    /// Address of the fetch memo's line field (block compiler: inline memo check)
+    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    pub(crate) fn fetch_memo_line_ptr(&self) -> *const u32 {
+        &raw const self.fetch_memo.0.line
+    }
+
+    /// Marks a line as holding block code: any later change to it bumps `code_gen`
+    #[cfg_attr(feature = "jit-runtime", allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn mark_code_line(&mut self, way: u8, entry: u8) {
+        self.gens.code_lines[usize::from(way) & (WAYS - 1)] |= 1u64 << (entry & 63);
+    }
+
+    #[inline(always)]
+    pub(crate) fn any_gen(&self) -> u32 {
+        self.gens.any
+    }
+
+    #[inline(always)]
+    pub(crate) fn conf_gen(&self) -> u32 {
+        self.gens.conf
+    }
+
+    #[inline(always)]
+    pub(crate) fn line_gen(&self, way: u8, entry: u8) -> u32 {
+        self.gens.lines[(usize::from(way) << 6) | usize::from(entry)]
+    }
+
+    /// Address bits 4-31 of the line the host fetch memo currently covers
+    #[inline(always)]
+    pub(crate) fn fetch_memo_line(&self) -> u32 {
+        self.fetch_memo.line
+    }
+
+    /// Side-effect-free instruction fetch hit: `(way, entry, opcode)`
+    pub(crate) fn peek_fetch(&self, address: u32) -> Option<(u8, u8, u16)> {
+        let (entry, way) = self.lookup(address)?;
+        let ram_base = cache_ram_addr(usize::from(way), usize::from(entry)) >> 1;
+        Some((way, entry, self.ram[ram_base | (((address as usize) & 0xE) >> 1)]))
+    }
+
+    /// The LRU update and fetch memo of an instruction fetch hit on `(way, entry)`, exactly as
+    /// `read_instruction_u16_slow` performs them. The caller must have established that the
+    /// fetch would hit that way.
+    #[inline(always)]
+    pub(crate) fn fetch_hit(&mut self, way: u8, entry: u8, line: u32) {
+        let (way_idx, entry_idx) = (usize::from(way), usize::from(entry));
+        self.update_lru_bits(way_idx, entry_idx);
+        let ram_base = cache_ram_addr(way_idx, entry_idx) >> 1;
+        *self.fetch_memo = FetchMemo { line, ram_base: ram_base as u16 };
     }
 
     /// Side-effect-free hit check: the `(entry, way)` a cached access to `address` would hit.
@@ -327,6 +485,7 @@ impl CpuCache {
             }
         };
 
+        self.bump_line(way_idx, entry_idx);
         self.ways[way_idx].tags[entry_idx] = tag_address(address);
         self.ways[way_idx].valid_bits |= 1 << entry_idx;
         self.update_lru_bits(way_idx, entry_idx);
@@ -375,6 +534,7 @@ impl CpuCache {
             }
             if cache.ram[address >> 1] != old {
                 cache.bump_epoch();
+                cache.bump_line(way_idx, entry_idx);
             }
         });
     }
@@ -385,6 +545,7 @@ impl CpuCache {
             if cache.ram[address >> 1] != value {
                 cache.ram[address >> 1] = value;
                 cache.bump_epoch();
+                cache.bump_line(way_idx, entry_idx);
             }
         });
     }
@@ -397,6 +558,7 @@ impl CpuCache {
                 cache.ram[address] = high;
                 cache.ram[address + 1] = low;
                 cache.bump_epoch();
+                cache.bump_line(way_idx, entry_idx);
             }
         });
     }
@@ -432,6 +594,7 @@ impl CpuCache {
     pub fn write_control(&mut self, value: u8) {
         self.invalidate_fetch_memo();
         self.bump_epoch();
+        self.bump_conf();
         self.control.write(value);
 
         if value.bit(4) {
@@ -442,6 +605,7 @@ impl CpuCache {
     pub fn purge_all(&mut self) {
         self.invalidate_fetch_memo();
         self.bump_epoch();
+        self.bump_conf();
         for way in self.ways.as_mut() {
             way.valid_bits = 0;
         }
@@ -455,6 +619,7 @@ impl CpuCache {
         let idx = cache_entry_index(address);
         self.invalidate_fetch_memo_entry(idx);
         self.bump_epoch();
+        self.bump_entry(idx);
         let mask = !(1 << idx);
         for way in self.ways.as_mut() {
             way.valid_bits &= mask;
@@ -479,6 +644,7 @@ impl CpuCache {
         self.invalidate_fetch_memo();
         self.bump_epoch();
         let entry_idx = cache_entry_index(address);
+        self.bump_entry(entry_idx);
         let way_idx = self.control.way as usize;
         let tag = tag_address(address);
         let valid = address.bit(1);
@@ -517,6 +683,7 @@ impl CpuCache {
     pub fn write_data_array_u8(&mut self, address: u32, value: u8) {
         self.bump_epoch();
         let word_addr = ((address >> 1) as usize) & (CACHE_RAM_LEN_WORDS - 1);
+        self.bump_line(word_addr >> 9, (word_addr >> 3) & 0x3F);
         if !address.bit(0) {
             self.ram[word_addr].set_msb(value);
         } else {
@@ -527,6 +694,8 @@ impl CpuCache {
     // A29-31 = 110
     pub fn write_data_array_u16(&mut self, address: u32, value: u16) {
         self.bump_epoch();
+        let word_addr = ((address >> 1) as usize) & (CACHE_RAM_LEN_WORDS - 1);
+        self.bump_line(word_addr >> 9, (word_addr >> 3) & 0x3F);
         self.ram[((address >> 1) as usize) & (CACHE_RAM_LEN_WORDS - 1)] = value;
     }
 
@@ -534,11 +703,14 @@ impl CpuCache {
     pub fn write_data_array_u32(&mut self, address: u32, value: u32) {
         self.bump_epoch();
         let address = ((address >> 1) as usize) & (CACHE_RAM_LEN_WORDS - 1) & !1;
+        self.bump_line(address >> 9, (address >> 3) & 0x3F);
         self.ram[address] = (value >> 16) as u16;
         self.ram[address + 1] = value as u16;
     }
 
     pub fn debug_view(&mut self) -> impl DebugMemoryView {
+        // The debugger can rewrite any cache RAM word
+        self.bump_conf();
         DebugWordsView(self.ram.as_mut_slice(), Endian::Big)
     }
 
@@ -597,6 +769,7 @@ impl CpuCache {
         self.invalidate_fetch_memo();
         // Generated code can also change residency and contents behind the cache's back
         self.bump_epoch();
+        self.bump_conf();
         NativeCacheView {
             enabled: &self.control.cache_enabled,
             ram: self.ram.as_ptr(),

@@ -1,0 +1,27 @@
+[package]
+name = "sh2-difftest"
+version = { workspace = true }
+edition = "2024"
+publish = false
+
+# Host-only differential tester for the SH-2 block engine: runs real 32X ROMs through the
+# interpreter and the block engine and compares them (see docs/SH2-JIT-DESIGN.md).
+
+[features]
+default = ["verify"]
+# Lockstep verifier and block-engine statistics; disable for representative speed numbers
+verify = ["sh2-emu/jit-verify"]
+# AArch64 block compiler (effective on aarch64 Linux/Android)
+native = ["sh2-emu/jit-arm64"]
+
+[dependencies]
+genesis-config = { workspace = true }
+genesis-core = { workspace = true }
+jgenesis-common = { workspace = true }
+s32x-core = { workspace = true }
+sh2-emu = { workspace = true }
+
+bincode = { workspace = true }
+
+[lints]
+workspace = true
