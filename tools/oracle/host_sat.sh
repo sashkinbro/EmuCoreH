@@ -15,7 +15,9 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/../.." && pwd)"
 export PATH="/c/msys64/ucrt64/bin:$PATH"
-CONTENT="${HOST_SAT_CONTENT:-E:/Sega}"
+_default_content="E:/Sega"
+[ -d "D:/Sega" ] && _default_content="D:/Sega"
+CONTENT="${HOST_SAT_CONTENT:-$_default_content}"
 WORK="${HOST_SAT_WORK:-${TMP:-/tmp}/host_sat}"
 REPS="${REPS:-3}"
 mkdir -p "$WORK"
@@ -67,9 +69,8 @@ compare() {
   tree="$(git -C "$repo" rev-parse "$ref:core-saturn")"
   # Re-export (and fully rebuild) the baseline only when its core-saturn tree changed.
   if [ "$(cat "$WORK/build-base/.tree" 2>/dev/null)" != "$tree" ]; then
-    rm -rf "$base_src"; mkdir -p "$base_src"
+    rm -rf "$base_src" "$WORK/build-base"; mkdir -p "$base_src"
     git -C "$repo" archive "$ref" core-saturn | tar -x -C "$base_src"
-    rm -f "$WORK/build-base/.tree"
   fi
   # The baseline is always built with the candidate's harness so only the core differs.
   build "$WORK/build-base" "$base_src/core-saturn"
