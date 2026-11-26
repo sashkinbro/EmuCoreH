@@ -148,21 +148,14 @@ unsigned char UnpackFunc[]={0x8B,0xD8,0x8B,0xC8,0x81,0xE3,0x00,0x80,0x00,0x00,0x
 //}
 //#else
 
-static UINT16 PACK(INT32 val)
+static inline UINT16 PACK(INT32 val)
 {
 	UINT32 temp;
-	int sign, exponent, k;
+	int sign, exponent;
 
 	sign = (val >> 23) & 0x1;
 	temp = (val ^ (val << 1)) & 0xFFFFFF;
-	exponent = 0;
-	for (k = 0; k < 12; k++)
-	{
-		if (temp & 0x800000)
-			break;
-		temp <<= 1;
-		exponent += 1;
-	}
+	exponent = __builtin_clz(temp | 0x800u) - 8;
 	if (exponent < 12)
 		val = (val << exponent) & 0x3FFFFF;
 	else
@@ -175,7 +168,7 @@ static UINT16 PACK(INT32 val)
 	return (UINT16)val;
 }
 
-static INT32 UNPACK(UINT16 val)
+static inline INT32 UNPACK(UINT16 val)
 {
 	int sign, exponent, mantissa;
 	INT32 uval;
@@ -277,19 +270,20 @@ void SCSPDSP_Step(_SCSPDSP *DSP)
 		//INPUTS RW
 // colmns97 hits this
 //		assert(IRA<0x32);
-		if (IRA <= 0x1f)
-			INPUTS = DSP->MEMS[IRA];
-		else if (IRA <= 0x2F)
-			INPUTS = DSP->MIXS[IRA - 0x20] << 4;  //MIXS is 20 bit
-		else if (IRA <= 0x31)
-			INPUTS = DSP->EXTS[IRA - 0x30] << 8;  //EXTS is 16 bit
-		else
+		if (IRA >= 0x32)
 			return;
+		if (XSEL || YRL || (ADRL && SHIFT != 3))
+		{
+			if (IRA <= 0x1f)
+				INPUTS = DSP->MEMS[IRA];
+			else if (IRA <= 0x2F)
+				INPUTS = DSP->MIXS[IRA - 0x20] << 4;  //MIXS is 20 bit
+			else
+				INPUTS = DSP->EXTS[IRA - 0x30] << 8;  //EXTS is 16 bit
 
-		INPUTS <<= 8;
-		INPUTS >>= 8;
-		//if(INPUTS&0x00800000)
-		//	INPUTS|=0xFF000000;
+			INPUTS <<= 8;
+			INPUTS >>= 8;
+		}
 
 		if (IWT)
 		{
@@ -399,8 +393,7 @@ void SCSPDSP_Step(_SCSPDSP *DSP)
 				FRC_REG = (SHIFTED >> 11) & 0x1FFF;
 		}
 
-		if (MRD || MWT)
-			//if(0)
+		if ((step & 1) && (MRD || MWT))
 		{
 			ADDR = DSP->MADRS[MASA];
 			if (!TABLE)
@@ -413,19 +406,16 @@ void SCSPDSP_Step(_SCSPDSP *DSP)
 				ADDR &= DSP->RBL - 1;
 			else
 				ADDR &= 0xFFFF;
-			//ADDR<<=1;
-			//ADDR+=DSP->RBP<<13;
-			//MEMVAL=DSP->SCSPRAM[ADDR>>1];
 			ADDR += DSP->RBP << 12;
 			if (ADDR > 0x7ffff) ADDR = 0;
-			if (MRD && (step & 1)) //memory only allowed on odd? DoA inserts NOPs on even
+			if (MRD) //memory only allowed on odd? DoA inserts NOPs on even
 			{
 				if (NOFL)
 					MEMVAL = DSP->SCSPRAM[ADDR] << 8;
 				else
 					MEMVAL = UNPACK(DSP->SCSPRAM[ADDR]);
 			}
-			if (MWT && (step & 1))
+			if (MWT)
 			{
 				if (NOFL)
 					DSP->SCSPRAM[ADDR] = SHIFTED >> 8;
@@ -470,28 +460,6 @@ void SCSPDSP_Start(_SCSPDSP *DSP)
 			break;
 	}
 	DSP->LastStep = i + 1;
-
-/*
-	int test=0;
-	if(test)
-	{
-		//test
-		FILE *f1;
-		f1=fopen("MPRO","wb");
-		fwrite(DSP->MPRO,128*4*2,1,f1);
-		fwrite(DSP->COEF,64*2,1,f1);
-		fwrite(DSP->MADRS,32*2,1,f1);
-		fclose(f1);
-	}
-*/
-
-	for(int t=0;t<0x10000;++t)
-	{
-		signed int unp=UNPACK(t);
-		unsigned short t2=PACK(unp);
-		if(t2!=t)
-			int a=1;
-	}
 
 #ifdef DYNDSP
 	SCSPDSP_Recompile(DSP);

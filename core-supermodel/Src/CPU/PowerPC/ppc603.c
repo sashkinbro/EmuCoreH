@@ -315,8 +315,89 @@ int ppc_execute(int cycles)
 
 		switch(opcode >> 26)
 		{
-			case 19:	optable19[(opcode >> 1) & 0x3ff](opcode); break;
-			case 31:	optable31[(opcode >> 1) & 0x3ff](opcode); break;
+			case 7:		ppc_mulli(opcode); break;
+			case 8:		ppc_subfic(opcode); break;
+			case 10:	ppc_cmpli(opcode); break;
+			case 11:	ppc_cmpi(opcode); break;
+			case 12:	ppc_addic(opcode); break;
+			case 13:	ppc_addic_rc(opcode); break;
+			case 14:	ppc_addi(opcode); break;
+			case 15:	ppc_addis(opcode); break;
+			case 16:	ppc_bcx(opcode); break;
+			case 18:	ppc_bx(opcode); break;
+			case 19:
+			{
+				const UINT32 subop = (opcode >> 1) & 0x3ff;
+				switch (subop)
+				{
+					case 16:	ppc_bclrx(opcode); break;
+					case 528:	ppc_bcctrx(opcode); break;
+					default:	optable19[subop](opcode); break;
+				}
+				break;
+			}
+			case 20:	ppc_rlwimix(opcode); break;
+			case 21:	ppc_rlwinmx(opcode); break;
+			case 23:	ppc_rlwnmx(opcode); break;
+			case 24:	ppc_ori(opcode); break;
+			case 25:	ppc_oris(opcode); break;
+			case 26:	ppc_xori(opcode); break;
+			case 27:	ppc_xoris(opcode); break;
+			case 28:	ppc_andi_rc(opcode); break;
+			case 29:	ppc_andis_rc(opcode); break;
+			case 31:
+			{
+				const UINT32 subop = (opcode >> 1) & 0x3ff;
+				switch (subop)
+				{
+					case 0:		ppc_cmp(opcode); break;
+					case 10:
+					case 522:	ppc_addcx(opcode); break;
+					case 23:	ppc_lwzx(opcode); break;
+					case 24:	ppc_slwx(opcode); break;
+					case 28:
+					case 540:	ppc_andx(opcode); break;
+					case 32:	ppc_cmpl(opcode); break;
+					case 40:
+					case 552:	ppc_subfx(opcode); break;
+					case 55:	ppc_lwzux(opcode); break;
+					case 87:	ppc_lbzx(opcode); break;
+					case 151:	ppc_stwx(opcode); break;
+					case 215:	ppc_stbx(opcode); break;
+					case 266:
+					case 778:	ppc_addx(opcode); break;
+					case 279:	ppc_lhzx(opcode); break;
+					case 339:	ppc_mfspr(opcode); break;
+					case 407:	ppc_sthx(opcode); break;
+					case 444:	ppc_orx(opcode); break;
+					case 467:	ppc_mtspr(opcode); break;
+					case 476:	ppc_nandx(opcode); break;
+					case 536:	ppc_srwx(opcode); break;
+					case 792:	ppc_srawx(opcode); break;
+					case 824:	ppc_srawix(opcode); break;
+					case 922:	ppc_extshx(opcode); break;
+					case 954:	ppc_extsbx(opcode); break;
+					default:	optable31[subop](opcode); break;
+				}
+				break;
+			}
+			case 32:	ppc_lwz(opcode); break;
+			case 33:	ppc_lwzu(opcode); break;
+			case 34:	ppc_lbz(opcode); break;
+			case 35:	ppc_lbzu(opcode); break;
+			case 36:	ppc_stw(opcode); break;
+			case 37:	ppc_stwu(opcode); break;
+			case 38:	ppc_stb(opcode); break;
+			case 39:	ppc_stbu(opcode); break;
+			case 40:	ppc_lhz(opcode); break;
+			case 41:	ppc_lhzu(opcode); break;
+			case 42:	ppc_lha(opcode); break;
+			case 44:	ppc_sth(opcode); break;
+			case 45:	ppc_sthu(opcode); break;
+			case 48:	ppc_lfs(opcode); break;
+			case 50:	ppc_lfd(opcode); break;
+			case 52:	ppc_stfs(opcode); break;
+			case 54:	ppc_stfd(opcode); break;
 			case 59:	optable59[(opcode >> 1) & 0x3ff](opcode); break;
 			case 63:	optable63[(opcode >> 1) & 0x3ff](opcode); break;
 			default:	optable[opcode >> 26](opcode); break;

@@ -58,6 +58,51 @@ static inline void DrawTileLine(uint32_t *line,
 
   uint32_t colorHi = tile & ((bits == 4) ? 0x7FF0 : 0x7F00);
 
+  const uint32_t *pal = palette + colorHi;
+
+  if (!clip && (pixelOffset & 31) <= 24)
+  {
+    const uint16_t maskTest = 1 << (15 - (pixelOffset >> 5));
+    if ((mask & maskTest) == 0)
+    {
+      if (!alphaTest)
+      {
+        uint32_t *dst = line + pixelOffset;
+        for (int i = 0; i < 8; i++)
+          dst[i] = 0;
+      }
+      return;
+    }
+
+    uint32_t *dst = line + pixelOffset;
+    if (bits == 4)
+    {
+      uint32_t pattern = vram[patternOffset + patternLine];
+      for (int p = 7; p >= 0; p--)
+      {
+        uint32_t pixel = ABGRToARGB(pal[(pattern >> (p * 4)) & 0xF]);
+        if (!alphaTest || (pixel >> 24) != 0)
+          *dst = pixel;
+        ++dst;
+      }
+    }
+    else
+    {
+      for (int i = 0; i < 2; i++)
+      {
+        uint32_t pattern = vram[patternOffset + patternLine + i];
+        for (int p = 3; p >= 0; p--)
+        {
+          uint32_t pixel = ABGRToARGB(pal[(pattern >> (p * 8)) & 0xFF]);
+          if (!alphaTest || (pixel >> 24) != 0)
+            *dst = pixel;
+          ++dst;
+        }
+      }
+    }
+    return;
+  }
+
   if (bits == 4)
   {
     uint32_t pattern = vram[patternOffset + patternLine];
@@ -67,7 +112,7 @@ static inline void DrawTileLine(uint32_t *line,
       {
         uint16_t maskTest = 1 << (15 - ((pixelOffset + 0) / 32));
         bool visible = (mask & maskTest) != 0;
-        uint32_t pixel = visible ? ABGRToARGB(palette[((pattern >> (p * 4)) & 0xF) | colorHi]) : 0;
+        uint32_t pixel = visible ? ABGRToARGB(pal[(pattern >> (p * 4)) & 0xF]) : 0;
         if (!alphaTest || (visible && (pixel >> 24) != 0))
           line[pixelOffset] = pixel;
       }
@@ -85,7 +130,7 @@ static inline void DrawTileLine(uint32_t *line,
         {
           uint16_t maskTest = 1 << (15 - ((pixelOffset + 0) / 32));
           bool visible = (mask & maskTest) != 0;
-          uint32_t pixel = visible ? ABGRToARGB(palette[((pattern >> (p * 8)) & 0xFF) | colorHi]) : 0;
+          uint32_t pixel = visible ? ABGRToARGB(pal[(pattern >> (p * 8)) & 0xFF]) : 0;
           if (!alphaTest || (visible && (pixel >> 24) != 0))
             line[pixelOffset] = pixel;
         }
@@ -118,6 +163,13 @@ static void DrawLayerLine(uint32_t *pixels, int layerNum, const uint32_t *vram, 
     int vFine = (y + vScroll) & 7;
     const uint16_t *nameTable = &nameTableBase[(64 * ((y + vScroll) / 8)) & 0xFFF];
     uint16_t mask = *maskTable ^ maskPolarity;
+
+    if (mask == 0)
+    {
+      if (!alphaTest)
+        std::memset(line, 0, 496 * sizeof(uint32_t));
+      return;
+    }
 
     int pixelOffset = -hFine;
     int extraTile = (hFine != 0) ? 1 : 0;

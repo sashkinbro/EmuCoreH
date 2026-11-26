@@ -96,7 +96,7 @@ static void ppc_addex(UINT32 op)
 	}
 }
 
-static void ppc_addi(UINT32 op)
+static inline void ppc_addi(UINT32 op)
 {
 	UINT32 i = SIMM16;
 	UINT32 a = RA;
@@ -135,7 +135,7 @@ static void ppc_addic_rc(UINT32 op)
 	SET_CR0(REG(RT));
 }
 
-static void ppc_addis(UINT32 op)
+static inline void ppc_addis(UINT32 op)
 {
 	UINT32 i = UIMM16 << 16;
 	UINT32 a = RA;
@@ -224,7 +224,7 @@ static void ppc_andis_rc(UINT32 op)
 	SET_CR0(REG(RA));
 }
 
-static void ppc_bx(UINT32 op)
+static inline void ppc_bx(UINT32 op)
 {
 	INT32 li = op & 0x3fffffc;
 	if( li & 0x2000000 )
@@ -243,7 +243,7 @@ static void ppc_bx(UINT32 op)
 	ppc_change_pc(ppc.npc);
 }
 
-static void ppc_bcx(UINT32 op)
+static inline void ppc_bcx(UINT32 op)
 {
 	int condition = check_condition_code(BO, BI);
 
@@ -260,7 +260,7 @@ static void ppc_bcx(UINT32 op)
 	}
 }
 
-static void ppc_bcctrx(UINT32 op)
+static inline void ppc_bcctrx(UINT32 op)
 {
 	int condition = check_condition_code(BO, BI);
 
@@ -274,7 +274,7 @@ static void ppc_bcctrx(UINT32 op)
 	}
 }
 
-static void ppc_bclrx(UINT32 op)
+static inline void ppc_bclrx(UINT32 op)
 {
 	int condition = check_condition_code(BO, BI);
 
@@ -288,7 +288,7 @@ static void ppc_bclrx(UINT32 op)
 	}
 }
 
-static void ppc_cmp(UINT32 op)
+static inline void ppc_cmp(UINT32 op)
 {
 	INT32 ra = REG(RA);
 	INT32 rb = REG(RB);
@@ -305,7 +305,7 @@ static void ppc_cmp(UINT32 op)
 		CR(d) |= 0x1;
 }
 
-static void ppc_cmpi(UINT32 op)
+static inline void ppc_cmpi(UINT32 op)
 {
 	INT32 ra = REG(RA);
 	INT32 i = SIMM16;
@@ -322,7 +322,7 @@ static void ppc_cmpi(UINT32 op)
 		CR(d) |= 0x1;
 }
 
-static void ppc_cmpl(UINT32 op)
+static inline void ppc_cmpl(UINT32 op)
 {
 	UINT32 ra = REG(RA);
 	UINT32 rb = REG(RB);
@@ -339,7 +339,7 @@ static void ppc_cmpl(UINT32 op)
 		CR(d) |= 0x1;
 }
 
-static void ppc_cmpli(UINT32 op)
+static inline void ppc_cmpli(UINT32 op)
 {
 	UINT32 ra = REG(RA);
 	UINT32 i = UIMM16;
@@ -552,7 +552,7 @@ static void ppc_eqvx(UINT32 op)
 	}
 }
 
-static void ppc_extsbx(UINT32 op)
+static inline void ppc_extsbx(UINT32 op)
 {
 	REG(RA) = (INT32)(INT8)REG(RS);
 
@@ -561,7 +561,7 @@ static void ppc_extsbx(UINT32 op)
 	}
 }
 
-static void ppc_extshx(UINT32 op)
+static inline void ppc_extshx(UINT32 op)
 {
 	REG(RA) = (INT32)(INT16)REG(RS);
 
@@ -795,7 +795,7 @@ static void ppc_lwbrx(UINT32 op)
 	REG(RT) = BYTE_REVERSE32(w);
 }
 
-static void ppc_lwz(UINT32 op)
+static inline void ppc_lwz(UINT32 op)
 {
 	UINT32 ea = SIMM16;
 
@@ -805,7 +805,7 @@ static void ppc_lwz(UINT32 op)
 	REG(RT) = READ32(ea);
 }
 
-static void ppc_lwzu(UINT32 op)
+static inline void ppc_lwzu(UINT32 op)
 {
 	UINT32 ea = REG(RA) + SIMM16;
 
@@ -987,12 +987,12 @@ static void ppc_orcx(UINT32 op)
 	}
 }
 
-static void ppc_ori(UINT32 op)
+static inline void ppc_ori(UINT32 op)
 {
 	REG(RA) = REG(RS) | UIMM16;
 }
 
-static void ppc_oris(UINT32 op)
+static inline void ppc_oris(UINT32 op)
 {
 	REG(RA) = REG(RS) | (UIMM16 << 16);
 }
@@ -1022,7 +1022,7 @@ static void ppc_rlwimix(UINT32 op)
 	}
 }
 
-static void ppc_rlwinmx(UINT32 op)
+static inline void ppc_rlwinmx(UINT32 op)
 {
 	UINT32 r;
 	UINT32 mask = GET_ROTATE_MASK(MB, ME);
@@ -1281,7 +1281,7 @@ static void ppc_stswx(UINT32 op)
 	}
 }
 
-static void ppc_stw(UINT32 op)
+static inline void ppc_stw(UINT32 op)
 {
 	UINT32 ea = SIMM16;
 
@@ -1325,7 +1325,7 @@ static void ppc_stwcx_rc(UINT32 op)
 		CR(0) |= 0x1;
 }
 
-static void ppc_stwu(UINT32 op)
+static inline void ppc_stwu(UINT32 op)
 {
 	UINT32 ea = REG(RA) + SIMM16;
 

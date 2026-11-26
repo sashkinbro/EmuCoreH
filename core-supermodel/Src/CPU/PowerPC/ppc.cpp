@@ -315,18 +315,29 @@ static void ppc_change_pc(UINT32 newpc)
 	ppc.fatalError = true;
 }
 
+static UINT8 *ppc_fast_ram = nullptr;
+static UINT8 *ppc_saved_fast_ram = nullptr;
+
+static void ppc603_check_interrupts(void);
+
 static inline UINT8 READ8(UINT32 address)
 {
+	if (__builtin_expect(address < 0x00800000u && ppc_fast_ram != nullptr, 1))
+		return ppc_fast_ram[address ^ 3];
 	return Bus->Read8(address);
 }
 
 static inline UINT16 READ16(UINT32 address)
 {
+	if (__builtin_expect((address & ~0x7FFFFEu) == 0 && ppc_fast_ram != nullptr, 1))
+		return *(UINT16 *)&ppc_fast_ram[address ^ 2];
 	return Bus->Read16(address);
 }
 
 static inline UINT32 READ32(UINT32 address)
 {
+	if (__builtin_expect((address & ~0x7FFFFCu) == 0 && ppc_fast_ram != nullptr, 1))
+		return *(UINT32 *)&ppc_fast_ram[address];
 	return Bus->Read32(address);
 }
 
@@ -337,16 +348,31 @@ static inline UINT64 READ64(UINT32 address)
 
 static inline void WRITE8(UINT32 address, UINT8 data)
 {
+	if (__builtin_expect(address < 0x00800000u && ppc_fast_ram != nullptr, 1))
+	{
+		ppc_fast_ram[address ^ 3] = data;
+		return;
+	}
 	Bus->Write8(address,data);
 }
 
 static inline void WRITE16(UINT32 address, UINT16 data)
 {
+	if (__builtin_expect((address & ~0x7FFFFEu) == 0 && ppc_fast_ram != nullptr, 1))
+	{
+		*(UINT16 *)&ppc_fast_ram[address ^ 2] = data;
+		return;
+	}
 	Bus->Write16(address,data);
 }
 
 static inline void WRITE32(UINT32 address, UINT32 data)
 {
+	if (__builtin_expect((address & ~0x7FFFFCu) == 0 && ppc_fast_ram != nullptr, 1))
+	{
+		*(UINT32 *)&ppc_fast_ram[address] = data;
+		return;
+	}
 	Bus->Write32(address,data);
 }
 
@@ -663,12 +689,9 @@ static void (* optable59[1024])(UINT32);
 static void (* optable63[1024])(UINT32);
 static void (* optable[64])(UINT32);
 
-#include "ppc603.c"
-
-/********************************************************************/
-
 #include "ppc_ops.c"
 #include "ppc_ops.h"
+#include "ppc603.c"
 
 /* Initialization and shutdown */
 
@@ -917,6 +940,18 @@ int ppc_get_timer_ratio()
 void ppc_attach_bus(IBus *BusPtr)
 {
 	Bus = BusPtr;
+	ppc_fast_ram = nullptr;
+	ppc_saved_fast_ram = nullptr;
+}
+
+void ppc_set_fast_ram(UINT8 *ramPtr)
+{
+	ppc_saved_fast_ram = ramPtr;
+#ifdef SUPERMODEL_DEBUGGER
+	ppc_fast_ram = (PPCDebug == NULL) ? ramPtr : nullptr;
+#else
+	ppc_fast_ram = ramPtr;
+#endif
 }
 
 void ppc_save_state(CBlockFile *SaveState)
@@ -1116,6 +1151,7 @@ void ppc_attach_debugger(Debugger::CPPCDebug *PPCDebugPtr)
 	if (PPCDebug != NULL)
 		ppc_detach_debugger();
 	PPCDebug = PPCDebugPtr;
+	ppc_fast_ram = nullptr;
 	Bus = PPCDebug->AttachBus(Bus);
 }
 
@@ -1125,6 +1161,7 @@ void ppc_detach_debugger()
 		return;
 	Bus = PPCDebug->DetachBus(); 
 	PPCDebug = NULL;
+	ppc_fast_ram = ppc_saved_fast_ram;
 }
 
 void ppc_break()
