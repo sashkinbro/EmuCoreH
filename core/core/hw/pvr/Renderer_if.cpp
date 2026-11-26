@@ -540,7 +540,25 @@ static void rend_lockstep_unblock()
 	lockstepCond.notify_all();
 }
 
-void rend_lockstep_run()
+// Frontend thread state of the run in progress
+static bool lockstepRunning;
+static std::exception_ptr lockstepFailure;
+
+// Executes one queued message. A render failure is rethrown once the run is
+// over, so that the emu thread isn't left running (or blocked) while the
+// frontend handles it.
+static bool rend_lockstep_execute(int timeoutMs)
+{
+	try {
+		return pvrQueue.executeOne(timeoutMs);
+	} catch (...) {
+		if (!lockstepFailure)
+			lockstepFailure = std::current_exception();
+		return true;
+	}
+}
+
+bool rend_lockstep_begin()
 {
 	FC_PROFILE_SCOPE;
 
@@ -549,28 +567,26 @@ void rend_lockstep_run()
 	{
 		const std::lock_guard<std::mutex> lock(lockstepMutex);
 		if (lockstepAborted)
-			return;
+			return false;
 		lockstepDone = false;
 		lockstepGranted = true;
 	}
 	lockstepCond.notify_all();
+	lockstepRunning = true;
+	lockstepFailure = nullptr;
 
-	// A render failure is rethrown once the run is over, so that the emu thread
-	// isn't left running (or blocked) while the frontend handles it.
-	std::exception_ptr failure;
-	const auto executeOne = [&failure](int timeoutMs) {
-		try {
-			return pvrQueue.executeOne(timeoutMs);
-		} catch (...) {
-			if (!failure)
-				failure = std::current_exception();
-			return true;
-		}
-	};
-
-	while (backlog > 0 && executeOne(0))
+	while (backlog > 0 && rend_lockstep_execute(0))
 		backlog--;
+	return true;
+}
 
+void rend_lockstep_end()
+{
+	FC_PROFILE_SCOPE;
+
+	if (!lockstepRunning)
+		return;
+	lockstepRunning = false;
 	// Wait for the end of the run. New render messages are left in the queue for
 	// the next run, unless the emu thread is blocked waiting for them.
 	using clock = std::chrono::steady_clock;
@@ -582,7 +598,7 @@ void rend_lockstep_run()
 		if (lockstepBlocked > 0)
 		{
 			lock.unlock();
-			if (executeOne(1))
+			if (rend_lockstep_execute(1))
 				idleSince = {};
 			else if (idleSince == clock::time_point{})
 				idleSince = clock::now();
@@ -600,8 +616,18 @@ void rend_lockstep_run()
 		}
 	}
 	lock.unlock();
-	if (failure)
+	if (lockstepFailure)
+	{
+		std::exception_ptr failure = lockstepFailure;
+		lockstepFailure = nullptr;
 		std::rethrow_exception(failure);
+	}
+}
+
+void rend_lockstep_run()
+{
+	if (rend_lockstep_begin())
+		rend_lockstep_end();
 }
 
 class SwapIntervalDetector

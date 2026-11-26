@@ -157,6 +157,11 @@ public:
 	 */
 	bool render();
 	/**
+	 * Lockstep threaded rendering: wait for the end of the emulation run started
+	 * by render(), serving the render queue meanwhile. No-op otherwise.
+	 */
+	void finishRender();
+	/**
 	 * Set the network state.
 	 */
 	void setNetworkState(bool online);

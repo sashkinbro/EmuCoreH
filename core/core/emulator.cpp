@@ -1104,10 +1104,16 @@ bool Emulator::render()
 		return false;
 	if (rend_is_lockstep())
 	{
-		rend_lockstep_run();
+		// The run is completed by finishRender()
+		rend_lockstep_begin();
 		return true;
 	}
 	return rend_single_frame(true); // FIXME stop flag?
+}
+
+void Emulator::finishRender()
+{
+	rend_lockstep_end();
 }
 
 void Emulator::vblank()

@@ -223,7 +223,7 @@ char content_name[PATH_MAX];
 char g_roms_dir[PATH_MAX];
 static std::mutex mtx_serialization;
 static bool gl_ctx_resetting = false;
-static bool is_dupe;
+static bool is_dupe = true;
 static u64 startTime;
 
 // Disk swapping
@@ -1337,12 +1337,18 @@ void retro_run()
 	if (environ_cb(RETRO_ENVIRONMENT_GET_FASTFORWARDING, &fastforward))
 		settings.input.fastForwardMode = fastforward;
 
-	is_dupe = true;
+	const bool lockstep = rend_is_lockstep();
+	// In lockstep mode is_dupe is reset after the frame is presented, so that a
+	// Present executed after video_cb (while the run ends) isn't lost.
+	if (!lockstep)
+		is_dupe = true;
 	try {
-		if (rend_is_lockstep())
+		if (lockstep)
 		{
 			// One emulation run per frame, the frame presented is the one rendered
 			// during the previous run. retro_rend_present() clears is_dupe.
+			// The run is started here and completed after the frame is presented,
+			// so that the presentation overlaps emulation too.
 			startTime = sh4_sched_now64();
 			emu.render();
 		}
@@ -1389,7 +1395,31 @@ void retro_run()
 
 	video_cb(is_dupe ? 0 : RETRO_HW_FRAME_BUFFER_VALID, framebufferWidth, framebufferHeight, 0);
 
-	if (!config::ThreadedRendering || config::LimitFPS || rend_is_lockstep())
+	if (lockstep)
+	{
+		is_dupe = true;
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+		if (isOpenGL(config::RendererType))
+			glsm_ctl(GLSM_CTL_STATE_BIND, nullptr);
+#endif
+		try {
+			emu.finishRender();
+			rend_rethrow_deferred_exception();
+		} catch (const std::exception& e) {
+			ERROR_LOG(COMMON, "%s", e.what());
+			os_notify(e.what(), 5000);
+			environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+		} catch (...) {
+			os_notify("Renderer failed", 5000);
+			environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+		}
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+		if (isOpenGL(config::RendererType))
+			glsm_ctl(GLSM_CTL_STATE_UNBIND, nullptr);
+#endif
+	}
+
+	if (!config::ThreadedRendering || config::LimitFPS || lockstep)
 		retro_audio_upload();
 	else
 		retro_audio_flush_buffer();
@@ -1415,6 +1445,7 @@ void retro_reset()
 {
 	std::lock_guard<std::mutex> lock(mtx_serialization);
 
+	is_dupe = true;
 	emu.unloadGame();
 
 	config::ScreenStretching = 100;
@@ -2269,6 +2300,7 @@ bool retro_load_game(const struct retro_game_info *game)
 		previous_cabinet_buttons[port] = 0;
 	}
 	first_run = true;
+	is_dupe = true;
 	fps_spg = 0.0;
 	fps_current = 0.0;
 	libretro_vsync_swap_interval = 1;

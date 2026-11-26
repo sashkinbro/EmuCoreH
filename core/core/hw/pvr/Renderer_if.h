@@ -22,7 +22,9 @@ void rend_lockstep_abort();
 bool rend_lockstep_aborted();
 bool rend_lockstep_wait_grant();	// emu thread
 void rend_lockstep_done();			// emu thread
-void rend_lockstep_run();			// frontend thread
+void rend_lockstep_run();			// frontend thread: begin + end
+bool rend_lockstep_begin();		// frontend thread: grant a run, execute the previous run's work
+void rend_lockstep_end();			// frontend thread: serve the queue until the run is done
 class cResetEvent;
 void rend_lockstep_wait(cResetEvent& event);	// emu thread blocking wait
 void rend_swap_frame(u32 fb_r_sof1);
