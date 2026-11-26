@@ -816,6 +816,20 @@ impl<const CHANNELS: usize, const RHYTHM: bool> Opll<CHANNELS, RHYTHM> {
         }
     }
 
+    /// Number of consecutive `tick()` calls, starting now, that would only decrement the divider.
+    #[inline]
+    #[must_use]
+    pub fn unclocked_ticks(&self) -> u64 {
+        u64::from(self.divider.wrapping_sub(1))
+    }
+
+    /// Equivalent to `ticks` calls to `tick()`; `ticks` must not exceed `unclocked_ticks()`.
+    #[inline]
+    pub fn skip_unclocked_ticks(&mut self, ticks: u64) {
+        debug_assert!(ticks <= self.unclocked_ticks());
+        self.divider -= ticks as u8;
+    }
+
     pub fn tick(&mut self) {
         self.divider -= 1;
         if self.divider == 0 {

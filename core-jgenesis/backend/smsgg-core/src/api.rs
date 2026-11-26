@@ -333,14 +333,18 @@ impl EmulatorTrait for SmsGgEmulator {
         self.psg_mclk_counter += mclk_cycles;
 
         while self.psg_mclk_counter >= PSG_DIVIDER {
-            if self.ym2413.is_none() {
-                // Without FM, PSG ticks that only decrement its divider have no other effect
-                let skipped =
-                    self.psg.skip_unclocked_ticks(u64::from(self.psg_mclk_counter / PSG_DIVIDER));
-                if skipped != 0 {
-                    self.psg_mclk_counter -= skipped as u32 * PSG_DIVIDER;
-                    continue;
+            // Ticks that only decrement the PSG and FM dividers have no other effect; batch them
+            let mut max_skip = u64::from(self.psg_mclk_counter / PSG_DIVIDER);
+            if let Some(ym2413) = &self.ym2413 {
+                max_skip = max_skip.min(ym2413.unclocked_ticks());
+            }
+            let skipped = self.psg.skip_unclocked_ticks(max_skip);
+            if skipped != 0 {
+                if let Some(ym2413) = &mut self.ym2413 {
+                    ym2413.skip_unclocked_ticks(skipped);
                 }
+                self.psg_mclk_counter -= skipped as u32 * PSG_DIVIDER;
+                continue;
             }
 
             self.psg_mclk_counter -= PSG_DIVIDER;
