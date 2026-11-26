@@ -212,14 +212,60 @@ void naomi_cart_LoadBios(const char *filename)
 
 static void loadMameRom(const std::string& path, const std::string& fileName, LoadProgress *progress)
 {
-	const Game *game = FindGame(fileName.c_str());
-	if (game == nullptr)
-		throw NaomiCartException(Ts("Unknown game"));
-
 	// Open archive and parent archive if any
 	std::unique_ptr<Archive> archive(OpenArchive(path));
 	if (archive != NULL)
 		INFO_LOG(NAOMI, "Opened %s", path.c_str());
+
+	const Game *game = FindGame(fileName.c_str());
+	if (game == nullptr)
+	{
+		// Accept archives that wrap a single decrypted .dat/.bin Naomi ROM.
+		if (archive != nullptr)
+		{
+			std::unique_ptr<ArchiveFile> first(archive->OpenFirstFile());
+			std::unique_ptr<ArchiveFile> second(archive->OpenFileByIndex(1));
+			if (first && !second && first->getName() != nullptr)
+			{
+				const std::string entryExt = get_file_extension(first->getName());
+				const size_t romSize = first->length();
+				if ((entryExt == "dat" || entryExt == "bin") && romSize > 0 && romSize <= (512u << 20))
+				{
+					if (!loadBios("naomi", NULL, NULL, config::Region))
+					{
+						WARN_LOG(NAOMI, "Warning: Region %d bios not found in naomi.zip", config::Region.get());
+						if (!loadBios("naomi", NULL, NULL, -1) && !bios_loaded)
+							throw FlycastException(Ts("Error: cannot load BIOS from naomi.zip"));
+					}
+					bios_loaded = true;
+					u8 *romBase = (u8 *)malloc(romSize);
+					if (romBase == nullptr)
+						throw FlycastException(Ts("Out of memory"));
+					u32 offset = 0;
+					while (offset < romSize)
+					{
+						u32 n = first->Read(romBase + offset, static_cast<u32>(romSize - offset));
+						if (n == 0)
+						{
+							free(romBase);
+							throw FlycastException(Ts("Error: Failed to load BIN/DAT file"));
+						}
+						offset += n;
+					}
+					if (config::GGPOEnable)
+					{
+						MD5Sum md5;
+						md5.add(romBase, static_cast<u32>(romSize));
+						md5.getDigest(settings.network.md5.game);
+					}
+					DEBUG_LOG(NAOMI, "Loaded zipped decrypted ROM %s (%zu bytes)", first->getName(), romSize);
+					CurrentCartridge = new DecryptedCartridge(romBase, static_cast<u32>(romSize));
+					return;
+				}
+			}
+		}
+		throw NaomiCartException(Ts("Unknown game"));
+	}
 
 	std::unique_ptr<Archive> parent_archive;
 	if (game->parent_name != nullptr)

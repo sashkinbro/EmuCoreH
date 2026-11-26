@@ -38,6 +38,8 @@ public:
 	virtual ~Archive() = default;
 	virtual ArchiveFile *OpenFile(const char *name) = 0;
 	virtual ArchiveFile *OpenFileByCrc(u32 crc) = 0;
+	virtual ArchiveFile *OpenFirstFile() { return nullptr; }
+	virtual ArchiveFile *OpenFileByIndex(size_t) { return nullptr; }
 
 protected:
 	virtual bool Open(hostfs::File *file) = 0;

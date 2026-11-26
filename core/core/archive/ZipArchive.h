@@ -34,8 +34,8 @@ public:
 	bool Open(hostfs::File *file) override;
 	bool Open(const void *data, size_t size);
 
-	ArchiveFile *OpenFirstFile();
-	ArchiveFile *OpenFileByIndex(size_t index);
+	ArchiveFile *OpenFirstFile() override;
+	ArchiveFile *OpenFileByIndex(size_t index) override;
 
 private:
 	zip_t *zip = nullptr;
