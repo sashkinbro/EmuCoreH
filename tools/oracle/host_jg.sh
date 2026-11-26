@@ -8,7 +8,7 @@
 #   tools/oracle/host_jg.sh compare <baseline-dir> <candidate-dir>
 #
 # Env:
-#   JG_CONTENT  ROM folder (default E:/Sega)            JG_BIOS  BIOS folder (default "$JG_CONTENT/bios DreamCust")
+#   JG_CONTENT  ROM folder (default D:/Sega or E:/Sega) JG_BIOS  BIOS folder (default "$JG_CONTENT/bios DreamCust")
 #   RUNS        processes per suite (default 3); digest must agree across runs, ms = median
 #   EVERY       checkpoint interval (default 300, like the device oracle)
 #   JOBS        suites run in parallel (default 1; >1 is fine for hash checks, not for timing)
@@ -28,7 +28,13 @@ source "$here/suites.sh"
 crate="$root/tools/jg-host-oracle"
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) exe=.exe; tc_default=1.98.1-x86_64-pc-windows-gnu;; *) exe=; tc_default=1.98.1;; esac
 BIN="${BIN:-$crate/target/release/jg-host-oracle$exe}"
-CONTENT="${JG_CONTENT:-E:/Sega}"
+if [ -n "${JG_CONTENT:-}" ]; then
+  CONTENT="$JG_CONTENT"
+elif [ -d "D:/Sega" ]; then
+  CONTENT="D:/Sega"
+else
+  CONTENT="E:/Sega"
+fi
 BIOS="${JG_BIOS:-$CONTENT/bios DreamCust}"
 RUNS="${RUNS:-3}"
 EVERY="${EVERY:-300}"
