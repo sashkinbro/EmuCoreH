@@ -182,12 +182,12 @@ class ControlSkinBitmaps(
 val LocalControlSkin = staticCompositionLocalOf<ControlSkinBitmaps?> { null }
 
 private val SkinControlIds = listOf(
-    "dpad_up", "dpad_down", "dpad_left", "dpad_right", "select", "start"
+    "dpad_up", "dpad_down", "dpad_left", "dpad_right", "select", "start", "left_input_toggle"
 )
 
 private const val SkinBlankPrefix = "blank_"
 
-/** Store skin art that drops in as is: the d-pad arrows and, without a console label, Select/Start. */
+/** Store skin art shared across consoles, plus Select/Start when no console label is needed. */
 private val drawableControlIds: Map<Int, String> by lazy {
     SkinControlIds.mapNotNull { id -> overlayDrawableForControl(id)?.let { it to id } }.toMap()
 }
