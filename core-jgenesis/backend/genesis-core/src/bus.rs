@@ -9,6 +9,7 @@ use genesis_components::ym2612::Ym2612;
 use genesis_components::{GenesisEmulatorConfigExt, vdp};
 use genesis_config::{GenesisEmulatorConfig, GenesisRegion};
 use jgenesis_common::frontend::{PartialClone, TimingMode};
+use jgenesis_common::hostcache::HostCache;
 use jgenesis_common::num::{GetBit, U16Ext};
 use m68000_emu::debug::DummyM68000Debugger;
 use s32x_core::api::debug::Dummy32XDebugger;
@@ -23,6 +24,59 @@ use z80_emu::traits::InterruptLine;
 pub mod debug;
 
 const MARS: [u8; 4] = *b"MARS";
+const MAX_32X_BATCH_MCLK: u64 = 1024;
+
+#[derive(Debug, Clone, Copy)]
+enum BufferedPwmEvent {
+    Frequency(f64),
+    Sample(f64, f64),
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct BufferedPwmOutput {
+    last_frequency: Option<f64>,
+    events: Vec<BufferedPwmEvent>,
+}
+
+impl BufferedPwmOutput {
+    fn drain_into(&mut self, out: &mut impl Sega32XAudioOutput) {
+        for event in self.events.drain(..) {
+            match event {
+                BufferedPwmEvent::Frequency(freq) => out.update_pwm_source_frequency(freq),
+                BufferedPwmEvent::Sample(l, r) => out.collect_pwm((l, r)),
+            }
+        }
+    }
+
+    fn clear(&mut self) {
+        self.events.clear();
+        self.last_frequency = None;
+    }
+}
+
+impl Sega32XAudioOutput for BufferedPwmOutput {
+    fn collect_pwm(&mut self, (l, r): (f64, f64)) {
+        self.events.push(BufferedPwmEvent::Sample(l, r));
+    }
+
+    fn update_pwm_source_frequency(&mut self, frequency: f64) {
+        if self.last_frequency != Some(frequency) {
+            self.last_frequency = Some(frequency);
+            self.events.push(BufferedPwmEvent::Frequency(frequency));
+        }
+    }
+}
+
+#[inline]
+fn genesis_vdp_info(vdp: &Vdp) -> GenesisVdpInfo {
+    GenesisVdpInfo {
+        scanline: vdp.scanline(),
+        scanline_mclk: vdp.scanline_mclk(),
+        frame_size: vdp.frame_size(),
+        border_size: vdp.border_size(),
+        scanlines_in_current_frame: vdp.scanlines_in_current_frame(),
+    }
+}
 
 pub trait GenesisAudioOutput: SegaCdAudioOutput + Sega32XAudioOutput {
     fn collect_ym2612(&mut self, sample: (f64, f64));
@@ -162,6 +216,10 @@ pub struct GenesisBus {
     pub open_bus: u16,
     pub m68k_opcode: u16,
     pub m68k_reset: bool,
+    #[partial_clone(default)]
+    pending_32x_mclk: HostCache<u64>,
+    #[partial_clone(default)]
+    pwm_buffer: HostCache<BufferedPwmOutput>,
 }
 
 impl GenesisBus {
@@ -212,6 +270,26 @@ impl GenesisBus {
             open_bus: 0,
             m68k_opcode: 0,
             m68k_reset: true,
+            pending_32x_mclk: HostCache::default(),
+            pwm_buffer: HostCache::default(),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn sync_32x(&mut self) {
+        let pending = self.pending_32x_mclk.0;
+        if pending == 0 {
+            return;
+        }
+        self.pending_32x_mclk.0 = 0;
+        let vdp_info = genesis_vdp_info(&self.vdp);
+        if let Some(sega_32x) = &mut self.sega_32x {
+            sega_32x.tick::<false>(
+                pending,
+                vdp_info,
+                &mut self.pwm_buffer.0,
+                &mut Dummy32XDebugger,
+            );
         }
     }
 
@@ -247,6 +325,13 @@ impl GenesisBus {
             self.cycles.psg_cycle();
         }
 
+        if self.pending_32x_mclk.0 != 0
+            && (self.vdp.should_halt_cpu()
+                || self.sega_32x.as_ref().is_some_and(Sega32X::rom_to_vram_dma))
+        {
+            self.sync_32x();
+        }
+
         let vdp_tick_effect = self.vdp.tick(
             mclk_cycles,
             &mut VdpView {
@@ -279,31 +364,38 @@ impl GenesisBus {
             }
         }
 
-        if let Some(sega_32x) = &mut self.sega_32x {
-            let genesis_vdp_info = GenesisVdpInfo {
-                scanline: self.vdp.scanline(),
-                scanline_mclk: self.vdp.scanline_mclk(),
-                frame_size: self.vdp.frame_size(),
-                border_size: self.vdp.border_size(),
-                scanlines_in_current_frame: self.vdp.scanlines_in_current_frame(),
-            };
+        if !self.pwm_buffer.events.is_empty() {
+            self.pwm_buffer.drain_into(audio_output);
+        }
 
-            if DEBUG && let Some(debugger) = &mut debugger {
-                let mut s32x_debugger =
-                    debugger.for_32x(self.sega_cd.as_mut(), genesis_components!(self));
-                sega_32x.tick::<true>(
-                    mclk_cycles,
-                    genesis_vdp_info,
-                    audio_output,
-                    &mut *s32x_debugger,
-                );
-            } else {
-                sega_32x.tick::<false>(
-                    mclk_cycles,
-                    genesis_vdp_info,
-                    audio_output,
-                    &mut Dummy32XDebugger,
-                );
+        if let Some(sega_32x) = &mut self.sega_32x {
+            self.pending_32x_mclk.0 += mclk_cycles;
+            let should_flush = DEBUG
+                || vdp_tick_effect == VdpTickEffect::FrameComplete
+                || self.pending_32x_mclk.0 >= MAX_32X_BATCH_MCLK
+                || self.pending_32x_mclk.0 >= sega_32x.mclk_cycles_until_next_vdp_event();
+
+            if should_flush {
+                let pending = mem::take(&mut self.pending_32x_mclk.0);
+                let genesis_vdp_info = genesis_vdp_info(&self.vdp);
+
+                if DEBUG && let Some(debugger) = &mut debugger {
+                    let mut s32x_debugger =
+                        debugger.for_32x(self.sega_cd.as_mut(), genesis_components!(self));
+                    sega_32x.tick::<true>(
+                        pending,
+                        genesis_vdp_info,
+                        audio_output,
+                        &mut *s32x_debugger,
+                    );
+                } else {
+                    sega_32x.tick::<false>(
+                        pending,
+                        genesis_vdp_info,
+                        audio_output,
+                        &mut Dummy32XDebugger,
+                    );
+                }
             }
         }
 
@@ -349,6 +441,8 @@ impl GenesisBus {
     }
 
     pub fn reload_config(&mut self, config: &GenesisEmulatorConfig) {
+        self.sync_32x();
+
         if let Some(sega_cd) = &mut self.sega_cd {
             sega_cd.reload_config(config);
         }
@@ -369,6 +463,9 @@ impl GenesisBus {
     }
 
     pub fn reset(&mut self) {
+        self.pending_32x_mclk.0 = 0;
+        self.pwm_buffer.0.clear();
+
         if let Some(sega_cd) = &mut self.sega_cd {
             sega_cd.reset();
         }
@@ -439,10 +536,12 @@ impl GenesisBus {
                 }
             }
             0x800000..=0x9FFFFF
-                if let Some(sega_32x) = &mut self.sega_32x
-                    && sega_32x.adapter_enabled() =>
+                if self.sega_32x.as_ref().is_some_and(Sega32X::adapter_enabled) =>
             {
-                sega_32x.m68k_read_memory::<WORD>(address, self.open_bus)
+                if (0x840000..=0x87FFFF).contains(&address) {
+                    self.sync_32x();
+                }
+                self.sega_32x.as_mut().unwrap().m68k_read_memory::<WORD>(address, self.open_bus)
             }
             0xA00000..=0xA0FFFF if self.z80_signals.busack() => {
                 // Z80 memory map; 68k can only access when the Z80 is running and removed from the bus
@@ -485,8 +584,12 @@ impl GenesisBus {
                 }
             }
             0xA15000..=0xA15FFF => {
-                if let Some(sega_32x) = &mut self.sega_32x {
-                    sega_32x.m68k_read_register::<WORD>(address, self.open_bus)
+                if self.sega_32x.is_some() {
+                    self.sync_32x();
+                    self.sega_32x
+                        .as_mut()
+                        .unwrap()
+                        .m68k_read_register::<WORD>(address, self.open_bus)
                 } else if let Some(cartridge) = &mut self.cartridge {
                     cartridge.read::<WORD>(address, self.open_bus)
                 } else {
@@ -526,9 +629,11 @@ impl GenesisBus {
             0x000000..=0x3FFFFF => {
                 // If cartridge is present, maps to cartridge
                 // Otherwise maps to Sega CD BIOS ROM / PRG RAM / Word RAM
-                if let Some(sega_32x) = &mut self.sega_32x
-                    && sega_32x.cartridge_mut().is_some()
-                {
+                if self.sega_32x.as_ref().is_some_and(|sega_32x| sega_32x.cartridge().is_some()) {
+                    if (0x70..0x74).contains(&address) {
+                        self.sync_32x();
+                    }
+                    let sega_32x = self.sega_32x.as_mut().unwrap();
                     if sega_32x.adapter_enabled() {
                         sega_32x.m68k_write_cartridge::<WORD>(address, value);
                     } else if let Some(cartridge) = sega_32x.cartridge_mut() {
@@ -563,10 +668,12 @@ impl GenesisBus {
                 }
             }
             0x800000..=0x9FFFFF
-                if let Some(sega_32x) = &mut self.sega_32x
-                    && sega_32x.adapter_enabled() =>
+                if self.sega_32x.as_ref().is_some_and(Sega32X::adapter_enabled) =>
             {
-                sega_32x.m68k_write_memory::<WORD>(address, value);
+                if (0x840000..=0x87FFFF).contains(&address) {
+                    self.sync_32x();
+                }
+                self.sega_32x.as_mut().unwrap().m68k_write_memory::<WORD>(address, value);
             }
             0xA00000..=0xA0FFFF if self.z80_signals.busack() => {
                 // Z80 memory map; writable by the 68k only when the Z80 is removed from the bus
@@ -603,8 +710,9 @@ impl GenesisBus {
                 cartridge.write::<WORD>(address, value);
             }
             0xA15000..=0xA15FFF => {
-                if let Some(sega_32x) = &mut self.sega_32x {
-                    sega_32x.m68k_write_register::<WORD>(address, value);
+                if self.sega_32x.is_some() {
+                    self.sync_32x();
+                    self.sega_32x.as_mut().unwrap().m68k_write_register::<WORD>(address, value);
                 } else if let Some(cartridge) = &mut self.cartridge {
                     // SVP maps registers to $A15xxx
                     cartridge.write::<WORD>(address, value);

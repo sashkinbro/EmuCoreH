@@ -31,11 +31,13 @@ impl DebugSh2Bus {
         }
 
         let Some(OtherCpu { cpu: other_cpu, cycle_counter: other_cycle_counter }) =
-            &mut self.bus.other_sh2
+            self.bus.other_sh2.as_ref()
         else {
             return;
         };
 
+        let mut other_cpu = *other_cpu;
+        let other_cycle_counter = *other_cycle_counter;
         let cycle_limit = cmp::min(self.bus.cycle_counter, self.bus.cycle_limit);
 
         // SAFETY: Similar to Sh2Bus::maybe_sync_other_cpu but also attaches a pointer to the
@@ -43,13 +45,7 @@ impl DebugSh2Bus {
         // are not used while the other CPU is executing against the debug bus.
         unsafe {
             let mut other_bus = Self {
-                bus: Sh2Bus {
-                    s32x_bus: self.bus.s32x_bus,
-                    other_sh2: None,
-                    which: self.bus.which.other(),
-                    cycle_counter: other_cycle_counter.read(),
-                    cycle_limit,
-                },
+                bus: self.bus.fork_other(other_cycle_counter.read(), cycle_limit),
                 debugger: self.debugger,
                 other_sh2: ptr::from_mut(cpu),
             };

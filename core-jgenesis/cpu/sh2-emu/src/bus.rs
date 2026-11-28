@@ -10,12 +10,13 @@ use crate::instructions::OpcodeTable;
 use bincode::{Decode, Encode};
 use std::fmt::{Display, Formatter};
 
+#[repr(C, u8)]
 #[derive(Debug, Clone, Copy, Encode, Decode)]
 pub enum AccessContext {
-    Fetch,
-    Data { pc: u32, opcode: u16 },
-    InterruptVector,
-    Dma { channel: usize },
+    Fetch = 0,
+    Data { pc: u32, opcode: u16 } = 1,
+    InterruptVector = 2,
+    Dma { channel: usize } = 3,
 }
 
 impl Display for AccessContext {
@@ -193,7 +194,39 @@ pub trait BusInterface: Sized {
         None
     }
 
+    /// Optional raw pointer to 256 KiB native-endian SDRAM (`0x0600_0000..=0x0603_FFFF` /
+    /// `0x2600_0000..=0x2603_FFFF`) for inline JIT reads and writes.
+    ///
+    /// # Safety
+    /// Returning non-null promises the pointer stays valid for `[0..131072]` native `u16` words
+    /// for the entire synchronous slice borrow, with reads costing `10` extra cycles and writes `1`.
+    unsafe fn native_sdram_ptr(&mut self) -> *mut u16 {
+        std::ptr::null_mut()
+    }
+
+    /// Optional `(ptr, byte_len)` of a flat big-endian Cartridge ROM slice (`(null, 0)` if unavailable)
+    #[inline]
+    unsafe fn native_rom_slice(&mut self) -> (*const u16, u32) {
+        (std::ptr::null(), 0)
+    }
+
+    /// Combined `(sdram_ptr, rom_ptr, rom_len)` fast fetch for native JIT setup.
+    #[inline(always)]
+    unsafe fn native_memory_ptrs(&mut self) -> (*mut u16, *const u16, u32) {
+        unsafe {
+            let (rom_ptr, rom_len) = self.native_rom_slice();
+            (self.native_sdram_ptr(), rom_ptr, rom_len)
+        }
+    }
+
     fn opcode_table<'a>() -> &'a OpcodeTable<Self>;
+
+    /// Stable per-bus-type identifier invariant across codegen units (used by the block cache to
+    /// verify that stored call-out handlers match `Self`).
+    #[inline(always)]
+    fn bus_type_id() -> usize {
+        std::ptr::from_ref(Self::opcode_table()) as usize
+    }
 
     /// Opt-in to bit-exact idle-loop skipping (see the `idle` module). A bus that sets this must
     /// implement every `idle_*` method below exactly; it must not be a debugger bus.
@@ -267,6 +300,12 @@ macro_rules! impl_sh2_opcode_table {
                 ::std::sync::LazyLock::new(|| $crate::OpcodeTable::new());
 
             &*TABLE
+        }
+
+        #[inline(always)]
+        fn bus_type_id() -> usize {
+            static ID: u8 = 0;
+            (&raw const ID) as usize
         }
     };
 }

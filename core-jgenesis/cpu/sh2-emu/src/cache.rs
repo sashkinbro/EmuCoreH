@@ -138,17 +138,35 @@ impl Default for FetchMemo {
     }
 }
 
-/// See `CpuCache::native_layout`; `ways`, `lru` and `ram` locate `Box` pointers
+pub(crate) const INVALID_TAG: u32 = u32::MAX;
+
+#[derive(Debug, Clone)]
+struct EntryTags {
+    tags: [[u32; WAYS]; CACHE_ENTRIES],
+    synced: bool,
+}
+
+impl Default for EntryTags {
+    fn default() -> Self {
+        Self { tags: [[INVALID_TAG; WAYS]; CACHE_ENTRIES], synced: false }
+    }
+}
+
+/// See `CpuCache::native_layout`; `ram` holds a `Box` pointer while `lru` and `entry_tags` are inline
 #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
 pub(crate) struct NativeLayout {
-    pub(crate) ways: usize,
     pub(crate) lru: usize,
     pub(crate) ram: usize,
     pub(crate) enabled: usize,
     pub(crate) memo_line: usize,
-    pub(crate) way_size: usize,
-    pub(crate) way_tags: usize,
-    pub(crate) way_valid: usize,
+    pub(crate) memo_ram_base: usize,
+    pub(crate) epoch: usize,
+    pub(crate) gens_any: usize,
+    pub(crate) gens_conf: usize,
+    pub(crate) gens_code: usize,
+    pub(crate) gens_lines: usize,
+    pub(crate) gens_code_lines: usize,
+    pub(crate) entry_tags: usize,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -156,7 +174,7 @@ pub struct CpuCache {
     // Store cache as u16s because the most common fetches are opcodes which are 16-bit
     ram: Box<[u16; CACHE_RAM_LEN_WORDS]>,
     ways: Box<[Way; WAYS]>,
-    lru_bits: Box<[u8; CACHE_ENTRIES]>,
+    lru_bits: [u8; CACHE_ENTRIES],
     control: CacheControlRegister,
     fetch_memo: HostCache<FetchMemo>,
     // Host-only counter bumped whenever cache contents, residency or configuration change.
@@ -164,6 +182,7 @@ pub struct CpuCache {
     // cached code and data an observed iteration used are still exactly the same.
     epoch: HostCache<u32>,
     gens: HostCache<LineGens>,
+    entry_tags: HostCache<EntryTags>,
 }
 
 impl CpuCache {
@@ -171,12 +190,51 @@ impl CpuCache {
         Self {
             ram: vec![0; CACHE_RAM_LEN_WORDS].into_boxed_slice().try_into().unwrap(),
             ways: Box::new(array::from_fn(|_| Way::new())),
-            lru_bits: Box::new(array::from_fn(|_| 0)),
+            lru_bits: [0; CACHE_ENTRIES],
             control: CacheControlRegister::default(),
             fetch_memo: HostCache::default(),
             epoch: HostCache::default(),
             gens: HostCache::default(),
+            entry_tags: HostCache(EntryTags {
+                tags: [[INVALID_TAG; WAYS]; CACHE_ENTRIES],
+                synced: true,
+            }),
         }
+    }
+
+    #[inline(always)]
+    pub(crate) fn enabled(&self) -> bool {
+        self.control.cache_enabled
+    }
+
+    #[cfg_attr(not(any(test, feature = "jit-arm64")), allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn entry_tags_synced(&self) -> bool {
+        self.entry_tags.synced
+    }
+
+    #[cfg_attr(not(any(test, feature = "jit-arm64")), allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn ensure_entry_tags(&mut self) {
+        if !self.entry_tags.synced {
+            self.rebuild_entry_tags();
+        }
+    }
+
+    #[cfg_attr(not(any(test, feature = "jit-arm64")), allow(dead_code))]
+    #[cold]
+    #[inline(never)]
+    fn rebuild_entry_tags(&mut self) {
+        for (entry, row) in self.entry_tags.tags.iter_mut().enumerate() {
+            for way in 0..WAYS {
+                row[way] = if self.ways[way].valid_bits.bit(entry as u8) {
+                    self.ways[way].tags[entry]
+                } else {
+                    INVALID_TAG
+                };
+            }
+        }
+        self.entry_tags.synced = true;
     }
 
     #[inline(always)]
@@ -234,28 +292,35 @@ impl CpuCache {
     /// Field offsets the block compiler's inline cache-hit reads use (relative to `CpuCache`
     /// unless noted)
     #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
-    pub(crate) fn native_layout() -> NativeLayout {
+    pub(crate) const fn native_layout() -> NativeLayout {
         use std::mem::offset_of;
         NativeLayout {
-            ways: offset_of!(CpuCache, ways),
             lru: offset_of!(CpuCache, lru_bits),
             ram: offset_of!(CpuCache, ram),
             enabled: offset_of!(CpuCache, control) + offset_of!(CacheControlRegister, cache_enabled),
             memo_line: offset_of!(CpuCache, fetch_memo) + offset_of!(HostCache<FetchMemo>, 0) + offset_of!(FetchMemo, line),
-            way_size: size_of::<Way>(),
-            way_tags: offset_of!(Way, tags),
-            way_valid: offset_of!(Way, valid_bits),
+            memo_ram_base: offset_of!(CpuCache, fetch_memo) + offset_of!(HostCache<FetchMemo>, 0) + offset_of!(FetchMemo, ram_base),
+            epoch: offset_of!(CpuCache, epoch) + offset_of!(HostCache<u32>, 0),
+            gens_any: offset_of!(CpuCache, gens) + offset_of!(HostCache<LineGens>, 0) + offset_of!(LineGens, any),
+            gens_conf: offset_of!(CpuCache, gens) + offset_of!(HostCache<LineGens>, 0) + offset_of!(LineGens, conf),
+            gens_code: offset_of!(CpuCache, gens) + offset_of!(HostCache<LineGens>, 0) + offset_of!(LineGens, code),
+            gens_lines: offset_of!(CpuCache, gens) + offset_of!(HostCache<LineGens>, 0) + offset_of!(LineGens, lines),
+            gens_code_lines: offset_of!(CpuCache, gens) + offset_of!(HostCache<LineGens>, 0) + offset_of!(LineGens, code_lines),
+            entry_tags: offset_of!(CpuCache, entry_tags)
+                + offset_of!(HostCache<EntryTags>, 0)
+                + offset_of!(EntryTags, tags),
         }
     }
 
-    /// Address of the code counter (block compiler: validation of chained blocks)
-    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    /// Address of the code counter (tests: legacy check)
+    #[cfg(test)]
+    #[allow(dead_code)]
     pub(crate) fn code_gen_ptr(&self) -> *const u32 {
         &raw const self.gens.0.code
     }
 
-    /// Address of the fetch memo's line field (block compiler: inline memo check)
-    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    /// Address of the fetch memo's line field (tests: legacy check)
+    #[cfg(test)]
     pub(crate) fn fetch_memo_line_ptr(&self) -> *const u32 {
         &raw const self.fetch_memo.0.line
     }
@@ -338,6 +403,12 @@ impl CpuCache {
         if cache_entry_index(self.fetch_memo.line) == entry_idx {
             self.invalidate_fetch_memo();
         }
+    }
+
+    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn invalidate_fetch_memo_for_address(&mut self, address: u32) {
+        self.invalidate_fetch_memo_entry(cache_entry_index(address));
     }
 
     /// Cached read for an instruction fetch. Identical to `read_u16`, including LRU updates.
@@ -486,8 +557,10 @@ impl CpuCache {
         };
 
         self.bump_line(way_idx, entry_idx);
-        self.ways[way_idx].tags[entry_idx] = tag_address(address);
+        let tag = tag_address(address);
+        self.ways[way_idx].tags[entry_idx] = tag;
         self.ways[way_idx].valid_bits |= 1 << entry_idx;
+        self.entry_tags.tags[entry_idx][way_idx] = tag;
         self.update_lru_bits(way_idx, entry_idx);
 
         let ram_addr = cache_ram_addr(way_idx, entry_idx) >> 1;
@@ -609,6 +682,8 @@ impl CpuCache {
         for way in self.ways.as_mut() {
             way.valid_bits = 0;
         }
+        self.entry_tags.tags.fill([INVALID_TAG; WAYS]);
+        self.entry_tags.synced = true;
 
         self.lru_bits.fill(0);
     }
@@ -624,6 +699,7 @@ impl CpuCache {
         for way in self.ways.as_mut() {
             way.valid_bits &= mask;
         }
+        self.entry_tags.tags[idx] = [INVALID_TAG; WAYS];
 
         // TODO should associative purge clear the LRU bits?
         self.lru_bits[idx] = 0;
@@ -657,6 +733,7 @@ impl CpuCache {
         }
 
         self.ways[way_idx].tags[entry_idx] = tag;
+        self.entry_tags.tags[entry_idx][way_idx] = if valid { tag } else { INVALID_TAG };
         self.lru_bits[entry_idx] = lru_bits;
     }
 

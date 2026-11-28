@@ -21,16 +21,55 @@ use crate::Sh2;
 use crate::bus::BusInterface;
 use crate::predecode::{Flow, flow, handler_for, is_register_only};
 
+#[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct LineRef {
     // Address bits 4-31 of the line
     pub(crate) addr: u32,
     pub(crate) gen_value: u32,
+    pub(crate) ram_base: u16,
     pub(crate) way: u8,
     pub(crate) entry: u8,
+    pub(crate) lru_and: u8,
+    pub(crate) lru_or: u8,
+    pub(crate) _pad: u16,
 }
 
-const EMPTY_LINE: LineRef = LineRef { addr: 0, gen_value: 0, way: 0, entry: 0 };
+impl LineRef {
+    #[inline(always)]
+    pub(crate) fn new(addr: u32, gen_value: u32, way: u8, entry: u8) -> Self {
+        let mut line = Self { addr, gen_value, ram_base: 0, way, entry, lru_and: 0xFF, lru_or: 0, _pad: 0 };
+        line.set_location(way, entry, gen_value);
+        line
+    }
+
+    #[inline(always)]
+    pub(crate) fn set_location(&mut self, way: u8, entry: u8, gen_value: u32) {
+        self.way = way;
+        self.entry = entry;
+        self.gen_value = gen_value;
+        self.ram_base = (u16::from(way) << 9) | (u16::from(entry) << 3);
+        let (lru_and, lru_or) = match way {
+            0 => (0xC7, 0x00),
+            1 => (0xF9, 0x20),
+            2 => (0xFE, 0x14),
+            _ => (0xFF, 0x0B),
+        };
+        self.lru_and = lru_and;
+        self.lru_or = lru_or;
+    }
+}
+
+const EMPTY_LINE: LineRef = LineRef {
+    addr: 0,
+    gen_value: 0,
+    ram_base: 0,
+    way: 0,
+    entry: 0,
+    lru_and: 0xFF,
+    lru_or: 0,
+    _pad: 0,
+};
 
 #[derive(Clone, Debug)]
 pub(crate) struct Block {
@@ -54,9 +93,13 @@ pub(crate) struct Block {
     pub(crate) runs: u16,
     #[cfg_attr(not(any(test, feature = "jit-arm64")), allow(dead_code))]
     pub(crate) no_native: bool,
+    #[cfg_attr(not(any(test, feature = "jit-arm64")), allow(dead_code))]
+    pub(crate) slot: u16,
+    #[cfg_attr(not(any(test, feature = "jit-arm64")), allow(dead_code))]
+    pub(crate) last_materialize: bool,
     /// Native chaining records of links 0 and 1 (read by compiled code)
     #[cfg(any(test, feature = "jit-arm64"))]
-    pub(crate) chain: [super::native::Chain; 2],
+    pub(crate) chain: [usize; 2],
 }
 
 impl Block {
@@ -74,8 +117,10 @@ impl Block {
             entry: 0,
             runs: 0,
             no_native: false,
+            slot: 0,
+            last_materialize: false,
             #[cfg(any(test, feature = "jit-arm64"))]
-            chain: [super::native::Chain::default(); 2],
+            chain: [0; 2],
         }
     }
 
@@ -125,9 +170,7 @@ impl Block {
                     return false;
                 }
             }
-            line.way = way;
-            line.entry = entry;
-            line.gen_value = cache.line_gen(way, entry);
+            line.set_location(way, entry, cache.line_gen(way, entry));
         }
         self.conf = cache.conf_gen();
         self.seen.set(cache.code_gen());
@@ -497,6 +540,8 @@ impl Sh2 {
     /// Data-array fetches have no side effects at all (no LRU update, no memo, no cycles); writes
     /// to the array bump the change counter of the storage line exactly like cache line changes,
     /// so both regions validate the same way.
+    #[cold]
+    #[inline(never)]
     pub(super) fn jit_form<Bus: BusInterface>(&self, pc: u32) -> Option<Block> {
         let region = pc >> 29;
         if region != 0 && region != 6 {
@@ -536,12 +581,7 @@ impl Sh2 {
                 if nlines == MAX_LINES {
                     break;
                 }
-                block.lines[nlines] = LineRef {
-                    addr: line_addr,
-                    gen_value: self.cache.line_gen(way, entry),
-                    way,
-                    entry,
-                };
+                block.lines[nlines] = LineRef::new(line_addr, self.cache.line_gen(way, entry), way, entry);
                 block.nlines += 1;
             }
 
@@ -600,6 +640,17 @@ impl Sh2 {
             return None;
         }
         block.ops = ops[..usize::from(block.n)].into();
+        let last = &block.ops[usize::from(block.n) - 1];
+        #[cfg(any(test, feature = "jit-arm64"))]
+        {
+            block.last_materialize = last.kind != K_CALLOUT
+                || super::native::inline_read(last).is_some()
+                || super::native::inline_write(last).is_some();
+        }
+        #[cfg(not(any(test, feature = "jit-arm64")))]
+        {
+            block.last_materialize = last.kind != K_CALLOUT;
+        }
         compute_segments(&mut block);
         Some(block)
     }

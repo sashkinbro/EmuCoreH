@@ -104,9 +104,14 @@ fn parse_input(script: &str) -> Vec<(u64, u64, u32)> {
 }
 
 fn parse_args() -> Args {
+    let default_bios = if std::path::Path::new("D:/Sega/bios DreamCust").exists() {
+        PathBuf::from("D:/Sega/bios DreamCust")
+    } else {
+        PathBuf::from("E:/Sega/bios DreamCust")
+    };
     let mut args = Args {
         rom: PathBuf::new(),
-        bios: PathBuf::from("E:/Sega/bios DreamCust"),
+        bios: default_bios,
         frames: 600,
         mode: Mode::Verify,
         input: parse_input(DEFAULT_INPUT),

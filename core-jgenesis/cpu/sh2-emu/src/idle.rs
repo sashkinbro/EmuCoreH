@@ -83,7 +83,7 @@ impl Clone for Tally {
 
 /// Loop heads that were observed and found unskippable
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct RejectedFilter([u32; REJECTED_SLOTS]);
+pub(crate) struct RejectedFilter(pub(crate) [u32; REJECTED_SLOTS]);
 
 impl Default for RejectedFilter {
     fn default() -> Self {
@@ -93,7 +93,7 @@ impl Default for RejectedFilter {
 
 impl RejectedFilter {
     #[inline(always)]
-    fn slot(head: u32) -> usize {
+    pub(crate) fn slot(head: u32) -> usize {
         (((head >> 1) ^ (head >> 9)) as usize) & (REJECTED_SLOTS - 1)
     }
 
@@ -107,12 +107,19 @@ impl RejectedFilter {
     }
 }
 
+#[repr(C)]
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct IdleWatch(pub u32);
+pub(crate) struct IdleWatch {
+    pub(crate) head: u32,
+    /// Inline copy of `idle.cycles` when `idle.phase == Phase::Verified`, else `0` (lets
+    /// `idle_cannot_skip` run without touching the boxed `IdleState` on every JIT slice entry).
+    pub(crate) min_cycles: u32,
+    pub(crate) min_insns: u8,
+}
 
 impl Default for IdleWatch {
     fn default() -> Self {
-        Self(NO_WATCH)
+        Self { head: NO_WATCH, min_cycles: 0, min_insns: 0 }
     }
 }
 
@@ -229,20 +236,25 @@ fn op_size_len(size: u8) -> u32 {
 
 #[inline(always)]
 fn registers_match(a: &Sh2Registers, b: &Sh2Registers, skip_gpr: Option<usize>) -> bool {
+    if a.pc != b.pc
+        || a.sr.t != b.sr.t
+        || a.sr.s != b.sr.s
+        || a.sr.interrupt_mask != b.sr.interrupt_mask
+        || a.sr.q != b.sr.q
+        || a.sr.m != b.sr.m
+        || a.next_pc != b.next_pc
+        || a.next_op_in_delay_slot != b.next_op_in_delay_slot
+        || a.pr != b.pr
+        || a.gbr != b.gbr
+        || a.vbr != b.vbr
+        || a.macl != b.macl
+        || a.mach != b.mach
+    {
+        return false;
+    }
     match skip_gpr {
-        None => a == b,
-        Some(n) => {
-            (0..16).all(|i| i == n || a.gpr[i] == b.gpr[i])
-                && a.sr == b.sr
-                && a.gbr == b.gbr
-                && a.vbr == b.vbr
-                && a.macl == b.macl
-                && a.mach == b.mach
-                && a.pr == b.pr
-                && a.pc == b.pc
-                && a.next_pc == b.next_pc
-                && a.next_op_in_delay_slot == b.next_op_in_delay_slot
-        }
+        None => a.gpr == b.gpr,
+        Some(n) => a.gpr[..n] == b.gpr[..n] && a.gpr[n + 1..] == b.gpr[n + 1..],
     }
 }
 
@@ -256,11 +268,25 @@ impl Sh2 {
         }
     }
 
+    #[inline(always)]
+    fn sync_idle_watch(&mut self) {
+        let idle = &*self.idle;
+        self.idle_watch.0 = if idle.phase == Phase::Verified && idle.cycles != 0 {
+            IdleWatch {
+                head: idle.head,
+                min_cycles: idle.cycles.min(u64::from(u32::MAX)) as u32,
+                min_insns: idle.instructions.min(255) as u8,
+            }
+        } else {
+            IdleWatch { head: idle.head, min_cycles: 0, min_insns: 0 }
+        };
+    }
+
     /// Called by taken backward branches. Arms `target` unless it is already watched.
     #[inline(always)]
     pub(crate) fn note_backward_branch<Bus: BusInterface>(&mut self, target: u32) {
         if Bus::IDLE_LOOPS
-            && target != self.idle_watch.0.0
+            && target != self.idle_watch.0.head
             && !self.idle_rejected.contains(target)
         {
             self.idle_candidate(target);
@@ -300,45 +326,32 @@ impl Sh2 {
             idle.quiescent_backoff.set(0);
         }
 
-        self.idle_watch.0.0 = target;
+        self.sync_idle_watch();
     }
 
     fn idle_reject(&mut self, head: u32) {
         self.idle_rejected.insert(head);
-        self.idle_watch.0.0 = NO_WATCH;
         self.idle.head = NO_WATCH;
+        self.sync_idle_watch();
     }
 
-    /// Arrival at the watched head with `ticks` instructions left in the slice. Returns the
-    /// remaining ticks, or `None` if `execute` must return now (slice or cycle budget exhausted).
-    #[inline(never)]
-    pub(crate) fn idle_arrival<Bus: BusInterface>(
-        &mut self,
-        bus: &mut Bus,
-        opcode_table: &OpcodeTable<Bus>,
-        ticks: u64,
-    ) -> Option<u64> {
-        // Most arrivals find that not even one iteration of a verified loop fits in what is left
-        // of the slice and cycle budget: leave without entering the large slow path
-        if self.idle.phase == Phase::Verified {
-            let idle = &*self.idle;
-            let start = bus.idle_cycle_counter();
-            let limit = bus.idle_cycle_limit();
-            if idle.cycles == 0
-                || limit <= start
-                || ticks < idle.instructions
-                || (limit - 1 - start) < idle.cycles
-            {
-                return Some(ticks);
-            }
+    /// Whether a verified watched loop is guaranteed unable to skip any iteration in `(ticks, bus)`.
+    #[inline(always)]
+    pub(crate) fn idle_cannot_skip<Bus: BusInterface>(&self, bus: &Bus, ticks: u64) -> bool {
+        let w = self.idle_watch.0;
+        if w.min_cycles == 0 {
+            return false;
         }
-
-        self.idle_arrival_slow(bus, opcode_table, ticks)
+        let start = bus.idle_cycle_counter();
+        let limit = bus.idle_cycle_limit();
+        limit <= start
+            || ticks < u64::from(w.min_insns)
+            || (limit - 1 - start) < u64::from(w.min_cycles)
     }
 
     #[cold]
     #[inline(never)]
-    fn idle_arrival_slow<Bus: BusInterface>(
+    pub(crate) fn idle_arrival_slow<Bus: BusInterface>(
         &mut self,
         bus: &mut Bus,
         opcode_table: &OpcodeTable<Bus>,
@@ -356,7 +369,7 @@ impl Sh2 {
             Phase::Verified => ticks,
         };
 
-        if self.idle.phase != Phase::Verified || self.registers.pc != self.idle_watch.0.0 {
+        if self.idle.phase != Phase::Verified || self.registers.pc != self.idle_watch.0.head {
             return Some(ticks);
         }
 
@@ -495,6 +508,7 @@ impl Sh2 {
                     .map(|(_, &touch)| touch)
                     .collect();
                 idle.touches = kept;
+                self.sync_idle_watch();
             }
             None => {
                 self.idle.attempts += 1;
@@ -579,6 +593,7 @@ impl Sh2 {
         if self.cache.epoch() != idle.epoch {
             self.idle.phase = Phase::Armed;
             self.idle.attempts = 0;
+            self.sync_idle_watch();
             return ticks;
         }
 
@@ -588,6 +603,7 @@ impl Sh2 {
                 idle.mismatches.set(0);
                 self.idle.phase = Phase::Armed;
                 self.idle.attempts = 0;
+                self.sync_idle_watch();
             }
             return ticks;
         }

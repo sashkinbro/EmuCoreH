@@ -14,6 +14,7 @@ impl GenesisBus {
         m68k: &'m68k mut M68000,
         z80: &'z80 mut Z80,
     ) -> GenesisDebugView<'m68k, 'z80, 'bus, 'bus, 'bus, 'bus> {
+        self.sync_32x();
         let components = genesis_components!(self);
 
         let (s32x_debug_view, s32x_cartridge) =

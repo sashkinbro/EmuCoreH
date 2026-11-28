@@ -40,6 +40,7 @@ fn decode_bitmask(n: u32, immr: u32, imms: u32, width: u32) -> u64 {
 }
 
 impl Sim {
+    #[allow(dead_code)]
     pub(crate) fn set_x(&mut self, r: usize, value: u64) {
         self.x[r] = value;
     }
@@ -111,8 +112,42 @@ impl Sim {
     ///
     /// # Safety
     /// The code may access any memory; the caller vouches for every address it computes.
+    #[allow(dead_code)]
     pub(crate) unsafe fn call(&mut self, code: *const u32, arg: u64, host: &mut dyn FnMut(u64, u64, u64) -> u64) -> u64 {
-        self.x[0] = arg;
+        unsafe { self.call2(code, arg, 0, host) }
+    }
+
+    /// Calls generated code with `x0..x5 = args` (AAPCS64, raw memory access) and returns `(x0, x1)`.
+    /// `BLR` calls `host(target, x0, x1)` instead of jumping.
+    ///
+    /// # Safety
+    /// The code may access any memory; the caller vouches for every address it computes.
+    pub(crate) unsafe fn call6(
+        &mut self,
+        code: *const u32,
+        args: [u64; 6],
+        host: &mut dyn FnMut(u64, u64, u64) -> u64,
+    ) -> (u64, u64) {
+        self.x[..6].copy_from_slice(&args);
+        let x0 = unsafe { self.exec(code, None, host) };
+        (x0, self.x[1])
+    }
+
+    /// Calls generated code with `x0 = arg0`, `x1 = arg1` (AAPCS64, raw memory access) and returns `x0`.
+    /// `BLR` calls `host(target, x0, x1)` instead of jumping.
+    ///
+    /// # Safety
+    /// The code may access any memory; the caller vouches for every address it computes.
+    #[allow(dead_code)]
+    pub(crate) unsafe fn call2(
+        &mut self,
+        code: *const u32,
+        arg0: u64,
+        arg1: u64,
+        host: &mut dyn FnMut(u64, u64, u64) -> u64,
+    ) -> u64 {
+        self.x[0] = arg0;
+        self.x[1] = arg1;
         unsafe { self.exec(code, None, host) }
     }
 
@@ -135,9 +170,17 @@ impl Sim {
             let bits = if sf { 64 } else { 32 };
 
             if word == 0xD65F_03C0 {
-                return self.x[0];
+                if self.x[30] == 0 {
+                    return self.x[0];
+                }
+                base = self.x[30] as *const u32;
+                pc = 0;
             } else if word & 0xFC00_0000 == 0x1400_0000 {
                 // B
+                pc = at + ((((word & 0x03FF_FFFF) as i32) << 6 >> 6) as isize);
+            } else if word & 0xFC00_0000 == 0x9400_0000 {
+                // BL
+                self.x[30] = unsafe { base.offset(pc) } as u64;
                 pc = at + ((((word & 0x03FF_FFFF) as i32) << 6 >> 6) as isize);
             } else if word & 0xFF00_0010 == 0x5400_0000 {
                 // B.cond
@@ -275,14 +318,24 @@ impl Sim {
                 let result = self.add_with_flags(a, if sub { !b } else { b }, carry, sf, flags);
                 self.set(rd, result, sf);
             } else if word & 0x1F00_0000 == 0x0A00_0000 {
-                // Logical (shifted register), shift amount 0 only
-                assert_eq!((word >> 10) & 0x3F, 0, "logical shift unsupported");
-                let mut b = self.reg(rm, sf);
+                // Logical (shifted register)
+                let amount = (word >> 10) & 0x3F;
+                let mask = if sf { u64::MAX } else { 0xFFFF_FFFF };
+                let raw_b = self.reg(rm, sf);
+                let mut b = if amount == 0 {
+                    raw_b
+                } else {
+                    match (word >> 22) & 3 {
+                        0 => (raw_b << amount) & mask,
+                        1 => raw_b >> amount,
+                        2 => ((sext(raw_b, bits) >> amount) as u64) & mask,
+                        _ => ((raw_b >> amount) | (raw_b << (bits - amount))) & mask,
+                    }
+                };
                 if (word >> 21) & 1 == 1 {
                     b = !b;
                 }
                 let a = self.reg(rn, sf);
-                let mask = if sf { u64::MAX } else { 0xFFFF_FFFF };
                 let result = match (word >> 29) & 3 {
                     0 | 3 => a & b,
                     1 => a | b,
@@ -363,13 +416,19 @@ impl Sim {
                 let swapped = ((v & 0x00FF_00FF_00FF_00FF) << 8) | ((v >> 8) & 0x00FF_00FF_00FF_00FF);
                 self.set(rd, swapped, sf);
             } else if word & 0x1FE0_0000 == 0x1A80_0000 {
-                // CSEL / CSINC
+                // CSEL / CSINC / CSINV / CSNEG
                 let cond = (word >> 12) & 0xF;
                 let value = if self.cond(cond) {
                     self.reg(rn, sf)
                 } else {
-                    let m = self.reg(rm, sf);
-                    if (word >> 10) & 3 == 1 { m.wrapping_add(1) } else { m }
+                    let mut m = self.reg(rm, sf);
+                    if (word >> 30) & 1 == 1 {
+                        m = !m;
+                    }
+                    if (word >> 10) & 3 == 1 {
+                        m = m.wrapping_add(1);
+                    }
+                    m
                 };
                 self.set(rd, value, sf);
             } else if word & 0x7FE0_8000 == 0x1B00_0000 {
@@ -377,6 +436,16 @@ impl Sim {
                 let ra = (word >> 10) & 0x1F;
                 let value = self.reg(rn, sf).wrapping_mul(self.reg(rm, sf)).wrapping_add(self.reg(ra, sf));
                 self.set(rd, value, sf);
+            } else if word & 0xFF60_FC00 == 0x9B20_7C00 {
+                // SMULL (0x9B20_7C00) / UMULL (0x9BA0_7C00)
+                let a = self.reg(rn, false);
+                let b = self.reg(rm, false);
+                let value = if (word >> 23) & 1 == 0 {
+                    ((a as i32 as i64).wrapping_mul(b as i32 as i64)) as u64
+                } else {
+                    a.wrapping_mul(b)
+                };
+                self.set(rd, value, true);
             } else if word & 0x3B00_0000 == 0x3900_0000 {
                 // LDR/STR (unsigned offset): size in bits 30-31, load if bit 22
                 let size = word >> 30;

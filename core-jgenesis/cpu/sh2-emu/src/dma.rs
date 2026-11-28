@@ -294,6 +294,7 @@ impl DmaController {
     }
 
     /// Whether any channel is enabled and not complete (so `channel_ready` could do work)
+    #[inline(always)]
     pub(crate) fn any_channel_pending(&self) -> bool {
         self.channels.iter().any(|channel| channel.control.dma_enabled && !channel.control.dma_complete)
     }

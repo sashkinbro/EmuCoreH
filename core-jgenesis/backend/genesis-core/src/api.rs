@@ -15,6 +15,7 @@ use jgenesis_common::frontend::{
     AudioOutput, EmulatorTrait, InputPoller, Modal, PartialClone, RenderFrameOptions, Renderer,
     SaveWriter, TickEffect, TickResult, TimingMode,
 };
+use jgenesis_common::hostcache::HostCache;
 use m68000_emu::M68000;
 use s32x_core::api::Sega32X;
 use segacd_core::api::{SegaCd, SegaCdLoadError, SegaCdLoadResult};
@@ -83,6 +84,8 @@ pub struct GenesisEmulator {
     audio_resampler: GenesisAudioResampler,
     hardware: GenesisHardware,
     config: GenesisEmulatorConfig,
+    #[partial_clone(default)]
+    inputs_polled_this_frame: HostCache<bool>,
 }
 
 impl GenesisEmulator {
@@ -194,7 +197,16 @@ impl GenesisEmulator {
 
         let audio_resampler = GenesisAudioResampler::new(hardware, timing_mode, &config);
 
-        let mut emulator = Self { m68k, z80, bus, timing_mode, audio_resampler, hardware, config };
+        let mut emulator = Self {
+            m68k,
+            z80,
+            bus,
+            timing_mode,
+            audio_resampler,
+            hardware,
+            config,
+            inputs_polled_this_frame: HostCache(false),
+        };
 
         // Reset CPU so that execution will start from the right place
         emulator.bus.m68k_reset = true;
@@ -268,8 +280,11 @@ impl GenesisEmulator {
         I: InputPoller<GenesisInputs>,
         S: SaveWriter,
     {
-        if let Some(inputs) = input_poller.poll_if_changed() {
-            self.bus.input.set_inputs(*inputs);
+        if !self.inputs_polled_this_frame.0 {
+            if let Some(inputs) = input_poller.poll_if_changed() {
+                self.bus.input.set_inputs(*inputs);
+            }
+            self.inputs_polled_this_frame.0 = true;
         }
         self.bus.m68k_opcode = self.m68k.next_opcode();
 
@@ -327,6 +342,8 @@ impl GenesisEmulator {
         self.audio_resampler.output_samples(audio_output).map_err(GenesisError::Audio)?;
 
         if vdp_tick_effect == VdpTickEffect::FrameComplete {
+            self.inputs_polled_this_frame.0 = false;
+
             if let Some(sega_32x) = &mut self.bus.sega_32x
                 && sega_32x.adapter_enabled()
             {

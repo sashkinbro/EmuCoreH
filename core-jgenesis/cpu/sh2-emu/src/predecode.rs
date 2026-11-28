@@ -199,7 +199,7 @@ impl<Bus: BusInterface> ExecutionBody<Bus> for Predecoded {
     }
 
     #[inline(always)]
-    fn block(&mut self, cpu: &mut Sh2, bus: &mut Bus, ticks: u64) -> (u64, bool) {
+    fn block(&mut self, cpu: &mut Sh2, bus: &mut Bus, ticks: u64, _allow_start_watch: bool) -> (u64, bool) {
         cpu.run_block(bus, ticks)
     }
 }
@@ -453,8 +453,8 @@ impl Sh2 {
         let mut limit = u64::from(block.n).min(ticks) as usize;
         // Arrival at a watched loop head is handled by the caller. The watch only changes in
         // handlers of taken branches, after which this function leaves the block anyway.
-        let watch_idx = (self.idle_watch.0.0.wrapping_sub(pc) >> 1) as usize;
-        if self.idle_watch.0.0.wrapping_sub(pc) & 1 == 0 && watch_idx < limit {
+        let watch_idx = (self.idle_watch.0.head.wrapping_sub(pc) >> 1) as usize;
+        if self.idle_watch.0.head.wrapping_sub(pc) & 1 == 0 && watch_idx < limit {
             limit = watch_idx;
         }
 

@@ -66,6 +66,12 @@ impl WatchdogTimer {
         }
     }
 
+    #[inline(always)]
+    pub(crate) fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    #[inline(always)]
     pub fn tick(&mut self, system_cycles: u64) {
         if !self.enabled {
             return;

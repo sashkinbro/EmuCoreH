@@ -104,8 +104,10 @@ fn trace_log_enabled(name: &str) -> bool {
 trait ExecutionBody<Bus: BusInterface> {
     // Idle-loop skipping observes iterations through the interpreter's own access paths
     const IDLE_LOOPS: bool = false;
+    const CHECK_BEFORE_IDLE: bool = false;
+    const USE_BLOCKS: bool = false;
     fn opcode(&mut self, cpu: &mut Sh2, bus: &mut Bus, opcode: u16) -> bool;
-    fn block(&mut self, _cpu: &mut Sh2, _bus: &mut Bus, _ticks: u64) -> (u64, bool) {
+    fn block(&mut self, _cpu: &mut Sh2, _bus: &mut Bus, _ticks: u64, _allow_start_watch: bool) -> (u64, bool) {
         (0, false)
     }
 }
@@ -273,19 +275,26 @@ impl Sh2 {
             return;
         }
 
-        for _ in 0..ticks {
-            if !self.try_tick_dma(bus) {
-                break;
+        if self.dmac.operation.dma_master_enabled
+            && !self.dmac.operation.address_error
+            && self.dmac.any_channel_pending()
+        {
+            for _ in 0..ticks {
+                if !self.try_tick_dma(bus) {
+                    break;
+                }
             }
         }
 
         // This immutable bus-type table is shared by every instruction in a slice.
-        // Resolve its LazyLock once instead of issuing an acquire load per opcode.
-        let opcode_table = Bus::opcode_table();
+        // Resolve its LazyLock once before non-block loops, and lazily in block mode so
+        // fast JIT slices avoid the Acquire atomic load completely.
+        let mut cached_opcode_table = if B::USE_BLOCKS { None } else { Some(Bus::opcode_table()) };
 
         // Interrupts cannot trigger in a delay slot per the SH7604 hardware manual
         // Before checking for interrupts, make sure the CPU is not in a delay slot
         if self.registers.next_op_in_delay_slot {
+            let opcode_table = *cached_opcode_table.get_or_insert_with(|| Bus::opcode_table());
             self.execute_single_instruction(bus, body, opcode_table);
             ticks -= 1;
         }
@@ -315,24 +324,42 @@ impl Sh2 {
         }
 
         while ticks != 0 {
-            let (executed, stopped) = body.block(self, bus, ticks);
-            if executed != 0 {
-                ticks -= executed;
-                if stopped {
-                    return;
+            if B::CHECK_BEFORE_IDLE {
+                let (executed, stopped) = body.block(self, bus, ticks, false);
+                if executed != 0 {
+                    ticks -= executed;
+                    if stopped {
+                        return;
+                    }
+                    continue;
                 }
-                continue;
             }
+            let mut allow_start_watch = false;
             if Bus::IDLE_LOOPS
                 && B::IDLE_LOOPS
-                && self.registers.pc == self.idle_watch.0.0
+                && self.registers.pc == self.idle_watch.0.head
                 && !self.registers.next_op_in_delay_slot
             {
-                match self.idle_arrival(bus, opcode_table, ticks) {
-                    Some(remaining) if remaining != 0 => ticks = remaining,
-                    _ => return,
+                if !self.idle_cannot_skip(bus, ticks) {
+                    let opcode_table = *cached_opcode_table.get_or_insert_with(|| Bus::opcode_table());
+                    match self.idle_arrival_slow(bus, opcode_table, ticks) {
+                        Some(remaining) if remaining != 0 => ticks = remaining,
+                        _ => return,
+                    }
+                }
+                allow_start_watch = true;
+            }
+            if !B::CHECK_BEFORE_IDLE && B::USE_BLOCKS && !*self.idle_recording {
+                let (executed, stopped) = body.block(self, bus, ticks, allow_start_watch);
+                if executed != 0 {
+                    ticks -= executed;
+                    if stopped {
+                        return;
+                    }
+                    continue;
                 }
             }
+            let opcode_table = *cached_opcode_table.get_or_insert_with(|| Bus::opcode_table());
             self.execute_single_instruction(bus, body, opcode_table);
             ticks -= 1;
             // Interrupts are sampled at the start of every execute() slice and
@@ -418,8 +445,11 @@ impl Sh2 {
     }
     /// Advance internal peripherals by `system_cycles`, specifically the watchdog timer (WDT) and
     /// the serial interface (SCI). Also updates internal interrupt state.
-    #[inline]
+    #[inline(always)]
     pub fn tick_peripherals<Bus: BusInterface>(&mut self, system_cycles: u64, bus: &mut Bus) {
+        if !self.watchdog_timer.is_enabled() && self.serial.is_idle() {
+            return;
+        }
         self.watchdog_timer.tick(system_cycles);
         self.serial.process(system_cycles, bus);
         self.update_internal_interrupt_level();
@@ -565,6 +595,50 @@ impl Sh2 {
             6 => self.cache.read_data_array_u32(address),
             7 => self.read_internal_register_longword(address),
             _ => unreachable!("u32 >> 29 is always 0-7"),
+        }
+    }
+
+    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn read_cached_miss_byte<Bus: BusInterface>(&mut self, address: u32, bus: &mut Bus) -> u8 {
+        bus.check_read_byte(address, self);
+        if self.cache.should_replace_data() {
+            let cache_line =
+                bus.apply_read_cache_line(address & CACHE_LINE_MASK, self.data_ctx, self);
+            let longword = self.cache.replace(address, cache_line);
+            longword.to_be_bytes()[(address & 3) as usize]
+        } else {
+            self.cache.invalidate_fetch_memo_for_address(address);
+            bus.apply_read_byte(address & EXTERNAL_ADDRESS_MASK, self.data_ctx, self)
+        }
+    }
+
+    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn read_cached_miss_word<Bus: BusInterface>(&mut self, address: u32, bus: &mut Bus) -> u16 {
+        bus.check_read_word(address, self);
+        if self.cache.should_replace_data() {
+            let cache_line =
+                bus.apply_read_cache_line(address & CACHE_LINE_MASK, self.data_ctx, self);
+            let longword = self.cache.replace(address, cache_line);
+            (longword >> (16 * (((address >> 1) & 1) ^ 1))) as u16
+        } else {
+            self.cache.invalidate_fetch_memo_for_address(address);
+            bus.apply_read_word(address & EXTERNAL_ADDRESS_MASK, self.data_ctx, self)
+        }
+    }
+
+    #[cfg_attr(any(feature = "jit-runtime", not(any(test, feature = "jit-arm64"))), allow(dead_code))]
+    #[inline(always)]
+    pub(crate) fn read_cached_miss_longword<Bus: BusInterface>(&mut self, address: u32, bus: &mut Bus) -> u32 {
+        bus.check_read_longword(address, self);
+        if self.cache.should_replace_data() {
+            let cache_line =
+                bus.apply_read_cache_line(address & CACHE_LINE_MASK, self.data_ctx, self);
+            self.cache.replace(address, cache_line)
+        } else {
+            self.cache.invalidate_fetch_memo_for_address(address);
+            bus.apply_read_longword(address & EXTERNAL_ADDRESS_MASK, self.data_ctx, self)
         }
     }
 

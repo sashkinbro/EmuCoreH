@@ -77,6 +77,9 @@ pub struct OtherCpu {
 pub struct Sh2Bus {
     s32x_bus: NonNull<Sega32XBus>,
     other_sh2: Option<OtherCpu>,
+    sdram_ptr: *mut u16,
+    rom_ptr: *const u16,
+    rom_len: u32,
     pub which: WhichCpu,
     pub cycle_counter: u64,
     pub cycle_limit: u64,
@@ -244,8 +247,26 @@ impl Sh2Bus {
             cycle_counter: other_cycles.into(),
         });
 
+        let sdram_ptr = s32x_bus.sdram.as_mut_ptr();
+        let (rom_ptr, rom_len) = if s32x_bus.registers.dma.rom_to_vram {
+            (std::ptr::null(), 0)
+        } else if let Some(words) = s32x_bus.cartridge.as_ref().and_then(|c| c.native_flat_rom()) {
+            (words.as_ptr(), (words.len().saturating_mul(2)).min(0x40_0000) as u32)
+        } else {
+            (std::ptr::null(), 0)
+        };
+
         Sh2BusGuard {
-            bus: Sh2Bus { s32x_bus: s32x_bus.into(), other_sh2, which, cycle_counter, cycle_limit },
+            bus: Sh2Bus {
+                s32x_bus: s32x_bus.into(),
+                other_sh2,
+                sdram_ptr,
+                rom_ptr,
+                rom_len,
+                which,
+                cycle_counter,
+                cycle_limit,
+            },
             _bus_marker: PhantomData,
             _cartridge_marker: PhantomData,
             _other_marker: PhantomData,
@@ -281,8 +302,29 @@ impl Sh2Bus {
         if !self.need_to_sync_other(address) {
             return;
         }
+        if let Some(other) = &self.other_sh2 {
+            let limit = cmp::min(self.cycle_limit, self.cycle_counter);
+            // SAFETY: other.cycle_counter points to the peer SH-2's live cycle counter.
+            if unsafe { other.cycle_counter.read() } >= limit {
+                return;
+            }
+        }
 
         self.sync_other_cpu();
+    }
+
+    #[inline(always)]
+    pub(super) fn fork_other(&self, cycle_counter: u64, cycle_limit: u64) -> Self {
+        Self {
+            s32x_bus: self.s32x_bus,
+            sdram_ptr: self.sdram_ptr,
+            rom_ptr: self.rom_ptr,
+            rom_len: self.rom_len,
+            which: self.which.other(),
+            cycle_counter,
+            cycle_limit,
+            other_sh2: None,
+        }
     }
 
     #[inline(never)]
@@ -299,13 +341,7 @@ impl Sh2Bus {
         // bus copy.
         unsafe {
             let limit = cmp::min(self.cycle_limit, self.cycle_counter);
-            let mut bus = Sh2Bus {
-                s32x_bus: self.s32x_bus,
-                which: self.which.other(),
-                cycle_counter: other_cycle_counter.read(),
-                cycle_limit: limit,
-                other_sh2: None,
-            };
+            let mut bus = self.fork_other(other_cycle_counter.read(), limit);
 
             while bus.cycle_counter < bus.cycle_limit {
                 other_cpu.as_mut().execute(crate::api::SH2_EXECUTION_SLICE_LEN, &mut bus);
@@ -763,6 +799,30 @@ impl BusInterface for Sh2Bus {
         })
     }
 
+    unsafe fn native_sdram_ptr(&mut self) -> *mut u16 {
+        self.s32x_bus().sdram.as_mut_ptr()
+    }
+
+    unsafe fn native_rom_slice(&mut self) -> (*const u16, u32) {
+        let s32x = self.s32x_bus_shared();
+        if s32x.registers.dma.rom_to_vram {
+            return (std::ptr::null(), 0);
+        }
+        let Some(cartridge) = s32x.cartridge.as_ref() else {
+            return (std::ptr::null(), 0);
+        };
+        let Some(words) = cartridge.native_flat_rom() else {
+            return (std::ptr::null(), 0);
+        };
+        let bytes = (words.len().saturating_mul(2)).min(0x40_0000) as u32;
+        (words.as_ptr(), bytes)
+    }
+
+    #[inline(always)]
+    unsafe fn native_memory_ptrs(&mut self) -> (*mut u16, *const u16, u32) {
+        (self.sdram_ptr, self.rom_ptr, self.rom_len)
+    }
+
     sh2_emu::impl_sh2_opcode_table!(Sh2Bus);
 
     const IDLE_LOOPS: bool = true;
@@ -827,13 +887,7 @@ impl BusInterface for Sh2Bus {
         // SAFETY: Same pointers and bus copy as `sync_other_cpu`
         unsafe {
             let counter = other_cycle_counter.read();
-            let mut bus = Sh2Bus {
-                s32x_bus: self.s32x_bus,
-                which: self.which.other(),
-                cycle_counter: counter,
-                cycle_limit: counter,
-                other_sh2: None,
-            };
+            let mut bus = self.fork_other(counter, counter);
             other_cpu.as_mut().idle_quiescent(&mut bus, counter)
         }
     }

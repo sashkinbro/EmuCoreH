@@ -632,7 +632,7 @@ impl<Bus: crate::bus::BusInterface> crate::ExecutionBody<Bus> for NativeExecutor
         executed
     }
 
-    fn block(&mut self, cpu: &mut crate::Sh2, bus: &mut Bus, ticks: u64) -> (u64, bool) {
+    fn block(&mut self, cpu: &mut crate::Sh2, bus: &mut Bus, ticks: u64, _allow_start_watch: bool) -> (u64, bool) {
         #[cfg(all(
             target_arch = "aarch64",
             target_endian = "little",

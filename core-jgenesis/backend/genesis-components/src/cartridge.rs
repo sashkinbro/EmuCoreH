@@ -511,6 +511,18 @@ impl Cartridge {
         }
     }
 
+    #[must_use]
+    #[inline(always)]
+    pub fn native_flat_rom(&self) -> Option<&[u16]> {
+        if !self.cheat_overrides.is_empty() {
+            return None;
+        }
+        match &self.mapper {
+            Mapper::Basic(mapper) if !mapper.ram_mapped => Some(&self.rom.0),
+            _ => None,
+        }
+    }
+
     #[inline]
     pub fn read<const WORD: bool>(&mut self, address: u32, open_bus: u16) -> u16 {
         if WORD {

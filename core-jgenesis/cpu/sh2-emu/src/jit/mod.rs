@@ -80,14 +80,18 @@ pub fn set_jit_native(enabled: bool) {
 
 /// Threaded runs of a block before it is compiled
 #[cfg(any(test, feature = "jit-arm64"))]
-const COMPILE_AFTER: u16 = if cfg!(test) { 1 } else { 8 };
+const COMPILE_AFTER_R0: u16 = if cfg!(test) { 1 } else { 8 };
+#[cfg(any(test, feature = "jit-arm64"))]
+const COMPILE_AFTER_R6: u16 = if cfg!(test) { 1 } else { 16 };
 
 #[cfg(feature = "jit-verify")]
 pub use verify::{set_jit_verify, set_jit_verify_deep_every};
 
 pub(crate) const MAX_OPS: usize = 32;
 pub(crate) const MAX_LINES: usize = 6;
-const SLOTS: usize = 8192;
+pub(crate) const SETS: usize = 2048;
+pub(crate) const WAYS: usize = 4;
+pub(crate) const SLOTS: usize = SETS * WAYS;
 
 // Micro-op kinds
 /// Register-only instruction, never leaves the block
@@ -163,8 +167,10 @@ pub(crate) struct Link {
 }
 
 // Interior-mutable validation stamp (relaxed atomic only to keep `Sh2` `Sync`)
+#[repr(transparent)]
 #[derive(Default, Debug)]
 pub(crate) struct Seen(AtomicU32);
+const _: () = assert!(std::mem::size_of::<Seen>() == 4);
 
 impl Clone for Seen {
     fn clone(&self) -> Self {
@@ -186,19 +192,37 @@ impl Seen {
 
 pub(crate) struct JitCache {
     table: Vec<Block>,
-    // Address of the opcode table the call-out handlers were taken from
+    set_victim: Box<[u8; SETS]>,
+    #[cfg(any(test, feature = "jit-arm64"))]
+    fast_table: Vec<native::FastSlot>,
+    // Identifier for the bus type the call-out handlers were taken from
     table_id: usize,
     #[cfg(any(test, feature = "jit-arm64"))]
-    store: arena::Store,
+    pool_id: u64,
+    #[cfg(any(test, feature = "jit-arm64"))]
+    pool_gen: u64,
+    #[cfg(any(test, feature = "jit-arm64"))]
+    enter_stub: usize,
+    #[cfg(any(test, feature = "jit-arm64"))]
+    ctx: Box<native::Ctx>,
 }
 
 impl Default for JitCache {
     fn default() -> Self {
         Self {
             table: Vec::new(),
+            set_victim: Box::new([0; SETS]),
+            #[cfg(any(test, feature = "jit-arm64"))]
+            fast_table: Vec::new(),
             table_id: 0,
             #[cfg(any(test, feature = "jit-arm64"))]
-            store: arena::Store::default(),
+            pool_id: 0,
+            #[cfg(any(test, feature = "jit-arm64"))]
+            pool_gen: 0,
+            #[cfg(any(test, feature = "jit-arm64"))]
+            enter_stub: 0,
+            #[cfg(any(test, feature = "jit-arm64"))]
+            ctx: Box::default(),
         }
     }
 }
@@ -216,23 +240,94 @@ impl Debug for JitCache {
     }
 }
 
+#[cfg(any(test, feature = "jit-arm64"))]
+#[inline(always)]
+fn fast_slot_index(pc: u32) -> usize {
+    (((pc >> 1) ^ (pc >> 10)) as usize) & (native::FAST_SLOTS - 1)
+}
+
+#[cfg(any(test, feature = "jit-arm64"))]
+#[inline(always)]
+fn opcodes_hash(ops: &[Uop]) -> u64 {
+    let mut h = 0xcbf2_9ce4_8422_2325u64 ^ (ops.len() as u64);
+    for op in ops {
+        h ^= u64::from(op.opcode);
+        h = h.wrapping_mul(0x0000_0100_0000_01B3);
+    }
+    h
+}
+
 impl JitCache {
     #[inline(always)]
     fn ensure_table(&mut self, table_id: usize) {
         if self.table_id != table_id || self.table.is_empty() {
-            // Compiled code references the old bus type's handlers through its trampoline
             #[cfg(any(test, feature = "jit-arm64"))]
-            self.store.reset();
+            {
+                self.ctx.invalidate();
+                self.fast_table.clear();
+                self.fast_table.resize(native::FAST_SLOTS, native::FastSlot::default());
+                self.pool_id = 0;
+                self.pool_gen = 0;
+                self.enter_stub = 0;
+            }
             self.table.clear();
             self.table.resize_with(SLOTS, Block::empty);
+            self.set_victim.fill(0);
             self.table_id = table_id;
+        }
+    }
+
+    #[cfg(any(test, feature = "jit-arm64"))]
+    #[inline(always)]
+    fn sync_pool(&mut self) {
+        let meta = arena::pool::pool_meta();
+        if self.pool_id != meta.id || self.pool_gen != meta.epoch {
+            for block in &mut self.table {
+                block.entry = 0;
+                block.runs = 0;
+            }
+            self.fast_table.fill(native::FastSlot::default());
+            self.pool_id = meta.id;
+            self.pool_gen = meta.epoch;
+            self.enter_stub = meta.enter;
+        } else if self.enter_stub == 0 && meta.enter != 0 {
+            self.enter_stub = meta.enter;
+        }
+    }
+
+    #[cfg(any(test, feature = "jit-arm64"))]
+    #[inline(always)]
+    fn update_fast_slot(&mut self, slot: usize) {
+        let block = &self.table[slot];
+        if block.entry == 0 {
+            return;
+        }
+        let f = &mut self.fast_table[fast_slot_index(block.start)];
+        *f = native::FastSlot {
+            pc: block.start,
+            seen: block.seen.get(),
+            slot: slot as u16,
+            n: block.n,
+            _pad: [0; 5],
+            entry: block.entry,
+            block: std::ptr::from_ref(block) as usize,
+        };
+    }
+
+    #[cfg(any(test, feature = "jit-arm64"))]
+    #[inline(always)]
+    fn invalidate_fast_slot(&mut self, pc: u32, block_ptr: usize) {
+        let f = &mut self.fast_table[fast_slot_index(pc)];
+        if f.block == block_ptr {
+            f.pc = u32::MAX;
+            f.entry = 0;
         }
     }
 }
 
 #[inline(always)]
-fn slot_index(pc: u32) -> usize {
-    (((pc >> 1) ^ (pc >> 12)) as usize) & (SLOTS - 1)
+fn set_base(pc: u32) -> usize {
+    ((((pc >> 1) ^ (pc >> 12)) as usize) & (SETS - 1)) << 2
 }
 
 /// Host statistics of the block engine (difftest/benchmark builds only count them)
@@ -323,6 +418,7 @@ pub(crate) struct Jit;
 
 impl<Bus: BusInterface> ExecutionBody<Bus> for Jit {
     const IDLE_LOOPS: bool = true;
+    const USE_BLOCKS: bool = true;
 
     #[inline(always)]
     fn opcode(&mut self, _: &mut Sh2, _: &mut Bus, _: u16) -> bool {
@@ -330,8 +426,8 @@ impl<Bus: BusInterface> ExecutionBody<Bus> for Jit {
     }
 
     #[inline(always)]
-    fn block(&mut self, cpu: &mut Sh2, bus: &mut Bus, ticks: u64) -> (u64, bool) {
-        cpu.jit_run(bus, ticks)
+    fn block(&mut self, cpu: &mut Sh2, bus: &mut Bus, ticks: u64, allow_start_watch: bool) -> (u64, bool) {
+        cpu.jit_run(bus, ticks, allow_start_watch)
     }
 }
 
@@ -344,31 +440,184 @@ pub(crate) struct Exit {
 }
 
 impl Sh2 {
+    #[inline(always)]
+    pub(super) fn jit_prepare_slice<Bus: BusInterface>(&mut self, bus: &mut Bus) {
+        self.jit.ensure_table(Bus::bus_type_id());
+        #[cfg(any(test, feature = "jit-arm64"))]
+        {
+            self.jit.sync_pool();
+            self.cache.ensure_entry_tags();
+            let cpu_ptr: *mut Sh2 = self;
+            let fast_ptr = self.jit.fast_table.as_ptr();
+            let ctx = self.jit.ctx.as_mut();
+            if ctx.cpu != cpu_ptr {
+                ctx.init_static::<Bus>(cpu_ptr, fast_ptr);
+            }
+            // SAFETY: synchronous execution borrows `bus` exclusively for this slice
+            unsafe { ctx.set_bus(std::ptr::from_mut(bus)) };
+        }
+        #[cfg(not(any(test, feature = "jit-arm64")))]
+        let _ = bus;
+    }
+
     #[inline]
     pub(crate) fn execute_jit<Bus: BusInterface>(&mut self, ticks: u64, bus: &mut Bus) {
         #[cfg(feature = "jit-verify")]
         if verify::verify_enabled() {
             return self.execute_verified(ticks, bus);
         }
-        self.jit.ensure_table(std::ptr::from_ref(Bus::opcode_table()) as usize);
+        self.jit_prepare_slice(bus);
         self.execute_with_body(ticks, bus, &mut Jit);
     }
 
     #[cfg(test)]
     pub(crate) fn execute_jit_for_test<Bus: BusInterface>(&mut self, ticks: u64, bus: &mut Bus) {
-        self.jit.ensure_table(std::ptr::from_ref(Bus::opcode_table()) as usize);
+        self.jit_prepare_slice(bus);
         self.execute_with_body(ticks, bus, &mut Jit);
+    }
+
+    #[cfg(any(test, feature = "jit-arm64"))]
+    #[cold]
+    #[inline(never)]
+    fn jit_fast_revalidate(&mut self, idx: usize, block_ptr: *const Block, code_gen: u32) -> bool {
+        // SAFETY: `block_ptr` points into `self.jit.table`, which is fixed-size after `ensure_table`
+        // and disjoint from `fast_table` and `self.cache`.
+        let ok = unsafe { &*block_ptr }.valid(&self.cache);
+        if ok {
+            self.jit.fast_table[idx].seen = code_gen;
+        }
+        ok
     }
 
     /// Runs blocks starting at the current pc, following chained exits, for up to `ticks`
     /// instructions. Returns the number executed and whether `should_stop_execution` became
     /// true. Executing nothing is always allowed: the caller then single-steps the interpreter.
-    #[inline]
-    pub(crate) fn jit_run<Bus: BusInterface>(&mut self, bus: &mut Bus, ticks: u64) -> (u64, bool) {
-        let mut total = 0u64;
-        // Exit of the previous block in this call: (slot, version, link index)
-        let mut prev: Option<(usize, u32, u8)> = None;
+    #[inline(always)]
+    pub(crate) fn jit_run<Bus: BusInterface>(
+        &mut self,
+        bus: &mut Bus,
+        ticks: u64,
+        allow_start_watch: bool,
+    ) -> (u64, bool) {
+        let pc = self.registers.pc;
+        let region = pc >> 29;
+        if (region != 0 && region != 6)
+            || pc & 1 != 0
+            || self.registers.next_op_in_delay_slot
+            || (region == 0 && !self.cache.enabled())
+        {
+            return (0, false);
+        }
+        debug_assert_ne!(ticks, 0);
+        debug_assert!(!*self.idle_recording);
 
+        #[cfg(any(test, feature = "jit-arm64"))]
+        {
+            debug_assert!(self.cache.entry_tags_synced());
+            let raw_watch = self.idle_watch.0.head;
+            let watch = if raw_watch == crate::idle::NO_WATCH || self.idle_cannot_skip(bus, ticks) {
+                crate::idle::NO_WATCH
+            } else {
+                raw_watch
+            };
+            let idx = fast_slot_index(pc);
+            let code_gen = self.cache.code_gen();
+            // SAFETY: `jit_prepare_slice` allocated `fast_table` with `FAST_SLOTS` elements.
+            let fs = unsafe { self.jit.fast_table.get_unchecked(idx) };
+            if fs.pc == pc && fs.entry != 0 {
+                let fs_seen = fs.seen;
+                let target_entry = fs.entry;
+                let block_ptr = fs.block as *const Block;
+                let bn = usize::from(fs.n);
+                if fs_seen == code_gen || self.jit_fast_revalidate(idx, block_ptr, code_gen) {
+                    let to_watch = watch.wrapping_sub(pc);
+                    let watch_hit = (to_watch != 0 || !allow_start_watch)
+                        && to_watch & 1 == 0
+                        && ((to_watch >> 1) as usize) < bn;
+                    if bn <= ticks as usize && !watch_hit {
+                        let enter_stub = self.jit.enter_stub;
+                        let cpu_ptr: *mut Sh2 = self;
+                        let bus_ptr: *mut Bus = bus;
+                        stat!(s => s.block_runs += 1; s.native_runs += 1);
+                        // SAFETY: blocks and code store stay immutable while native code runs;
+                        // `ctx` is a disjoint heap allocation owned by `self.jit`, and deriving `ctx_ptr`
+                        // from `cpu_ptr` keeps `cpu_ptr` and `bus_ptr` valid across the native call.
+                        let (exit, last, end_watch) = unsafe {
+                            let ctx_ptr: *mut native::Ctx = &raw mut *(*cpu_ptr).jit.0.ctx;
+                            (*ctx_ptr).watch = watch;
+                            let (exit, last) = native::run_with_ctx(
+                                ctx_ptr,
+                                cpu_ptr,
+                                bus_ptr,
+                                block_ptr,
+                                bn,
+                                target_entry,
+                                enter_stub,
+                                ticks,
+                                arena::Store::CALL,
+                            );
+                            (exit, last, (*ctx_ptr).watch)
+                        };
+                        let executed = exit.executed as u64;
+                        stat!(s => s.instructions += executed);
+                        #[cfg(feature = "jit-verify")]
+                        bus.jit_checkpoint(ticks - executed, self);
+                        if exit.stopped {
+                            return (executed, true);
+                        }
+                        // Also fast-return on full-slice completion or idle-watch landing so
+                        // `jit_run_continue` / `jit_run_loop` are never entered needlessly.
+                        if executed == 0 || executed == ticks || self.registers.pc == end_watch {
+                            return (executed, false);
+                        }
+                        return self.jit_run_continue::<Bus>(bus, ticks, executed, exit.link, last);
+                    }
+                }
+            }
+        }
+
+        self.jit_run_slow::<Bus>(bus, ticks, allow_start_watch)
+    }
+
+    #[cfg(any(test, feature = "jit-arm64"))]
+    #[cold]
+    #[inline(never)]
+    fn jit_run_continue<Bus: BusInterface>(
+        &mut self,
+        bus: &mut Bus,
+        ticks: u64,
+        total: u64,
+        link: u8,
+        last: *const Block,
+    ) -> (u64, bool) {
+        let prev = (link != LINK_NONE).then(|| {
+            // SAFETY: `last` points into `self.jit.table`, which is never resized.
+            let slot = unsafe { usize::from((*last).slot) };
+            (slot, self.jit.table[slot].version, link)
+        });
+        self.jit_run_loop::<Bus>(bus, ticks, total, prev, false)
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn jit_run_slow<Bus: BusInterface>(
+        &mut self,
+        bus: &mut Bus,
+        ticks: u64,
+        allow_start_watch: bool,
+    ) -> (u64, bool) {
+        self.jit_run_loop::<Bus>(bus, ticks, 0, None, allow_start_watch)
+    }
+
+    #[inline(never)]
+    fn jit_run_loop<Bus: BusInterface>(
+        &mut self,
+        bus: &mut Bus,
+        ticks: u64,
+        mut total: u64,
+        mut prev: Option<(usize, u32, u8)>,
+        allow_start_watch: bool,
+    ) -> (u64, bool) {
         loop {
             let pc = self.registers.pc;
             stat!(s => if pc >> 29 != 0 && pc >> 29 != 6 {
@@ -377,41 +626,74 @@ impl Sh2 {
                     s.uncached_regions[((pc >> 25) & 3) as usize] += 1;
                 }
             });
+            let remaining = ticks - total;
+            let raw_watch = self.idle_watch.0.head;
+            let watch = if raw_watch == crate::idle::NO_WATCH || self.idle_cannot_skip(bus, remaining) {
+                crate::idle::NO_WATCH
+            } else {
+                raw_watch
+            };
+            let start_watch_ok = total == 0 && allow_start_watch;
             // A pending delay slot belongs to a branch the interpreter executed; the watched idle
-            // loop head is handled by the caller's arrival logic
+            // loop head is handled by the caller's arrival logic except when skipping is impossible.
             if (pc >> 29 != 0 && pc >> 29 != 6)
                 || pc & 1 != 0
                 || self.registers.next_op_in_delay_slot
-                || pc == self.idle_watch.0.0
+                || (pc == watch && !start_watch_ok)
+                || *self.idle_recording
                 || total == ticks
             {
                 break;
             }
 
-            let slot = self.jit_lookup::<Bus>(pc, prev);
-            let Some(slot) = slot else {
-                stat!(s => s.form_misses += 1);
-                break;
+            // Fast path for compiled blocks on first entry (1 L1d cache line in fast_table)
+            #[cfg(any(test, feature = "jit-arm64"))]
+            let (mut slot, mut version, fast_block): (usize, u32, Option<*const Block>) = if prev.is_none() {
+                let fs = &self.jit.fast_table[fast_slot_index(pc)];
+                if fs.pc == pc && fs.seen == self.cache.code_gen() && fs.entry != 0 {
+                    // SAFETY: `fs.block` points into `self.jit.table`, which is never resized
+                    let block_ptr = fs.block as *const Block;
+                    let b: &Block = unsafe { &*block_ptr };
+                    (usize::from(fs.slot), b.version, Some(block_ptr))
+                } else {
+                    (0, 0, None)
+                }
+            } else {
+                (0, 0, None)
             };
 
             #[cfg(any(test, feature = "jit-arm64"))]
-            self.jit_prepare_native(slot);
+            let block_ptr: *const Block = if let Some(bp) = fast_block {
+                bp
+            } else {
+                let Some(s) = self.jit_lookup::<Bus>(pc, prev) else {
+                    stat!(s => s.form_misses += 1);
+                    break;
+                };
+                self.jit_prepare_native(s);
+                let b: &Block = unsafe { &*std::ptr::from_ref(&self.jit.table[s]) };
+                slot = s;
+                version = b.version;
+                std::ptr::from_ref(b)
+            };
+            #[cfg(any(test, feature = "jit-arm64"))]
+            let block: &Block = unsafe { &*block_ptr };
 
-            // SAFETY: the table is only modified by `jit_lookup`/`jit_link` in this function,
-            // never by instruction handlers, bus callbacks or nested executions (those run other
-            // `Sh2` values), and it is never resized after allocation. The block therefore stays
-            // untouched while it executes.
-            let block: &Block = unsafe { &*std::ptr::from_ref(&self.jit.table[slot]) };
-            #[allow(unused_mut)]
-            let mut slot = slot;
-            #[allow(unused_mut)]
-            let mut version = block.version;
+            #[cfg(not(any(test, feature = "jit-arm64")))]
+            let (slot, version, block): (usize, u32, &Block) = {
+                let Some(s) = self.jit_lookup::<Bus>(pc, prev) else {
+                    stat!(s => s.form_misses += 1);
+                    break;
+                };
+                let b: &Block = unsafe { &*std::ptr::from_ref(&self.jit.table[s]) };
+                (s, b.version, b)
+            };
 
-            let mut n = usize::from(block.n).min((ticks - total) as usize);
+            let mut n = usize::from(block.n).min(remaining as usize);
             // Arrival at the watched loop head is handled by the caller. The watch only changes in
             // taken branches, which end the block.
-            let to_watch = self.idle_watch.0.0.wrapping_sub(pc);
-            if to_watch & 1 == 0 && ((to_watch >> 1) as usize) < n {
+            let to_watch = watch.wrapping_sub(pc);
+            if (to_watch != 0 || !start_watch_ok) && to_watch & 1 == 0 && ((to_watch >> 1) as usize) < n {
                 n = (to_watch >> 1) as usize;
             }
             if n == 0 {
@@ -422,24 +704,32 @@ impl Sh2 {
             #[cfg(any(test, feature = "jit-arm64"))]
             let exit = if block.entry != 0 && n == usize::from(block.n) {
                 stat!(s => s.native_runs += 1);
-                let cpu: *mut Sh2 = self;
-                // SAFETY: the blocks and the code store are not modified while compiled code runs
-                // (compilation happens only in `jit_prepare_native`); `cpu`/`bus` are this call's
-                // exclusive borrows
+                let enter_stub = self.jit.enter_stub;
+                let block_n = usize::from(block.n);
+                let target_entry = block.entry;
+                let cpu_ptr: *mut Sh2 = self;
+                let bus_ptr: *mut Bus = bus;
+                // SAFETY: blocks and code store are not modified while compiled code runs;
+                // deriving `ctx_ptr` from `cpu_ptr` keeps `cpu_ptr` and `bus_ptr` valid across the call.
                 let (exit, last) = unsafe {
-                    native::run(
-                        cpu,
-                        std::ptr::from_mut(bus),
-                        std::ptr::from_ref(block),
-                        block.entry,
-                        ticks - total,
+                    let ctx_ptr: *mut native::Ctx = &raw mut *(*cpu_ptr).jit.0.ctx;
+                    (*ctx_ptr).watch = watch;
+                    native::run_with_ctx(
+                        ctx_ptr,
+                        cpu_ptr,
+                        bus_ptr,
+                        block_ptr,
+                        block_n,
+                        target_entry,
+                        enter_stub,
+                        remaining,
                         arena::Store::CALL,
                     )
                 };
                 // Native chaining may have left the block in another slot
-                if !std::ptr::eq(last, block) {
+                if !std::ptr::eq(last, block_ptr) {
                     // SAFETY: `last` points into the table, which is never resized
-                    slot = unsafe { last.offset_from(self.jit.table.as_ptr()) } as usize;
+                    slot = unsafe { usize::from((*last).slot) };
                     version = self.jit.table[slot].version;
                 }
                 exit
@@ -478,7 +768,8 @@ impl Sh2 {
             return;
         }
         block.runs += 1;
-        if block.runs >= COMPILE_AFTER {
+        let threshold = if block.start >> 29 == 6 { COMPILE_AFTER_R6 } else { COMPILE_AFTER_R0 };
+        if block.runs >= threshold {
             self.jit_compile(slot);
         }
     }
@@ -487,79 +778,177 @@ impl Sh2 {
     #[cold]
     #[inline(never)]
     fn jit_compile(&mut self, slot: usize) {
-        let Some(code) = native::compile(&self.jit.table[slot]) else {
-            stat!(s => s.compile_rejects += 1);
-            self.jit.table[slot].no_native = true;
-            return;
+        let jit = &mut *self.jit;
+        let pc = jit.table[slot].start;
+        let h = opcodes_hash(&jit.table[slot].ops);
+        let (published, meta, freshly_compiled) = {
+            let block = &jit.table[slot];
+            arena::pool::pool_compile_or_get(pc, h, &block.ops, |stubs| native::compile(block, stubs))
         };
-        let entry = match self.jit.store.publish(&code) {
-            Some(entry) => entry,
-            None => {
-                // Store full: drop every compiled block and start over
-                for block in &mut self.jit.table {
+        if jit.pool_id != meta.id || jit.pool_gen != meta.epoch {
+            for (idx, block) in jit.table.iter_mut().enumerate() {
+                if idx != slot {
                     block.entry = 0;
                     block.runs = 0;
                 }
-                self.jit.store.reset();
-                match self.jit.store.publish(&code) {
-                    Some(entry) => entry,
-                    None => {
-                        self.jit.table[slot].no_native = true;
-                        return;
-                    }
-                }
             }
-        };
-        stat!(s => s.compiled += 1);
-        self.jit.table[slot].entry = entry;
+            jit.fast_table.fill(native::FastSlot::default());
+            jit.pool_id = meta.id;
+            jit.pool_gen = meta.epoch;
+        }
+        if meta.enter != 0 {
+            jit.enter_stub = meta.enter;
+        }
+        match published {
+            Some(entry) => {
+                if freshly_compiled {
+                    stat!(s => s.compiled += 1);
+                }
+                jit.table[slot].entry = entry;
+                jit.update_fast_slot(slot);
+            }
+            None => {
+                stat!(s => s.compile_rejects += 1);
+                jit.table[slot].no_native = true;
+            }
+        }
     }
 
     /// Finds (or forms) a valid block for `pc`, following and updating the previous exit's link
-    #[inline(always)]
+    #[inline(never)]
     fn jit_lookup<Bus: BusInterface>(&mut self, pc: u32, prev: Option<(usize, u32, u8)>) -> Option<usize> {
-        let mut slot = slot_index(pc);
+        let base = set_base(pc);
+        let mut found = None;
         let mut linked = false;
         if let Some((from, from_version, link)) = prev {
             let l = self.jit.table[from].links[usize::from(link)];
             if l.pc == pc {
                 let target = &self.jit.table[usize::from(l.slot)];
                 if target.version == l.version && target.n != 0 && target.start == pc {
-                    slot = usize::from(l.slot);
+                    found = Some(usize::from(l.slot));
                     linked = true;
                 }
             }
             let _ = from_version;
         }
 
-        let cached = &mut self.jit.table[slot];
-        let refreshed = cached.n != 0
-            && cached.start == pc
-            && !cached.valid(&self.cache)
-            && cached.refresh(&self.cache);
-        if refreshed {
-            stat!(s => s.blocks_refreshed += 1);
-            for line in &cached.lines[..usize::from(cached.nlines)] {
-                self.cache.mark_code_line(line.way, line.entry);
+        let code_gen = self.cache.code_gen();
+        #[cfg(any(test, feature = "jit-arm64"))]
+        let mut fast_dirty = false;
+        if let Some(s) = found {
+            let cached = &mut self.jit.table[s];
+            if cached.seen.get() != code_gen {
+                if cached.valid(&self.cache) {
+                    #[cfg(any(test, feature = "jit-arm64"))]
+                    {
+                        fast_dirty = true;
+                    }
+                } else if cached.refresh(&self.cache) {
+                    stat!(s => s.blocks_refreshed += 1);
+                    for line in &cached.lines[..usize::from(cached.nlines)] {
+                        self.cache.mark_code_line(line.way, line.entry);
+                    }
+                    #[cfg(any(test, feature = "jit-arm64"))]
+                    {
+                        fast_dirty = true;
+                    }
+                } else {
+                    found = None;
+                    linked = false;
+                }
+            }
+        } else {
+            for candidate in base..base + WAYS {
+                let cached = &mut self.jit.table[candidate];
+                if cached.n != 0 && cached.start == pc {
+                    if cached.seen.get() == code_gen {
+                        found = Some(candidate);
+                    } else if cached.valid(&self.cache) {
+                        #[cfg(any(test, feature = "jit-arm64"))]
+                        {
+                            fast_dirty = true;
+                        }
+                        found = Some(candidate);
+                    } else if cached.refresh(&self.cache) {
+                        stat!(s => s.blocks_refreshed += 1);
+                        for line in &cached.lines[..usize::from(cached.nlines)] {
+                            self.cache.mark_code_line(line.way, line.entry);
+                        }
+                        #[cfg(any(test, feature = "jit-arm64"))]
+                        {
+                            fast_dirty = true;
+                        }
+                        found = Some(candidate);
+                    }
+                    break;
+                }
             }
         }
-        let cached = &self.jit.table[slot];
-        if !(cached.n != 0 && cached.start == pc && cached.valid(&self.cache)) {
-            stat!(s => if cached.n != 0 && cached.start != pc { s.slot_conflicts += 1 });
+
+        let slot = if let Some(s) = found {
+            #[cfg(any(test, feature = "jit-arm64"))]
+            if fast_dirty {
+                self.jit.update_fast_slot(s);
+            }
+            s
+        } else {
             let formed = self.jit_form::<Bus>(pc)?;
             stat!(s => s.blocks_formed += 1);
             for line in &formed.lines[..usize::from(formed.nlines)] {
                 self.cache.mark_code_line(line.way, line.entry);
             }
-            let version = self.jit.table[slot].version.wrapping_add(1);
-            let entry = &mut self.jit.table[slot];
-            *entry = formed;
-            entry.version = version;
-            entry.seen.set(self.cache.code_gen());
+            let slice = &self.jit.table[base..base + WAYS];
+            let victim_way = (0..WAYS)
+                .find(|&w| slice[w].n == 0 || slice[w].start == pc)
+                .or_else(|| (0..WAYS).find(|&w| slice[w].seen.get() != code_gen))
+                .or_else(|| (0..WAYS).find(|&w| slice[w].entry == 0))
+                .unwrap_or_else(|| {
+                    let set_idx = base >> 2;
+                    let v = &mut self.jit.set_victim[set_idx];
+                    let w = usize::from(*v & 3);
+                    *v = (w as u8).wrapping_add(1) & 3;
+                    w
+                });
+            let slot = base + victim_way;
+            let cached = &self.jit.table[slot];
+            let old_start = cached.start;
+            let old_n = cached.n;
+            let old_ptr = std::ptr::from_ref(cached) as usize;
+            stat!(s => if cached.n != 0 && cached.start != pc { s.slot_conflicts += 1 });
+            #[cfg(any(test, feature = "jit-arm64"))]
+            if old_n != 0 {
+                self.jit.invalidate_fast_slot(old_start, old_ptr);
+            }
+            #[cfg(not(any(test, feature = "jit-arm64")))]
+            let _ = (old_start, old_n, old_ptr);
+            let jit = &mut *self.jit;
+            let cached = &mut jit.table[slot];
+            let version = cached.version.wrapping_add(1);
+            *cached = formed;
+            cached.version = version;
+            cached.slot = slot as u16;
+            cached.seen.set(code_gen);
+            #[cfg(any(test, feature = "jit-arm64"))]
+            {
+                let ops = &jit.table[slot].ops;
+                let h = opcodes_hash(ops);
+                if let Some((entry, meta)) = arena::pool::pool_lookup(pc, h, ops)
+                    && meta.id == jit.pool_id
+                    && meta.epoch == jit.pool_gen
+                {
+                    jit.table[slot].entry = entry;
+                    jit.enter_stub = meta.enter;
+                    jit.update_fast_slot(slot);
+                }
+            }
             linked = false;
-        }
+            slot
+        };
 
         if !linked && let Some((from, from_version, link)) = prev {
             let target_version = self.jit.table[slot].version;
+            #[cfg(any(test, feature = "jit-arm64"))]
+            let target_ptr = std::ptr::from_ref(&self.jit.table[slot]) as usize;
             let source = &mut self.jit.table[from];
             // The previous block may have been replaced by the block just formed
             if source.version == from_version {
@@ -567,8 +956,7 @@ impl Sh2 {
                     Link { pc, slot: slot as u16, version: target_version };
                 #[cfg(any(test, feature = "jit-arm64"))]
                 {
-                    let target = std::ptr::from_ref(&self.jit.table[slot]) as usize;
-                    self.jit.table[from].chain[usize::from(link)] = native::Chain::new(target, target_version);
+                    source.chain[usize::from(link)] = target_ptr;
                 }
             }
         }
@@ -618,13 +1006,13 @@ impl Sh2 {
     }
 
     /// Executes the first `n` micro-ops of `block` (fewer if it is left early)
-    #[inline(always)]
+    #[inline(never)]
     fn jit_exec<Bus: BusInterface>(&mut self, bus: &mut Bus, block: &Block, n: usize) -> Exit {
         self.jit_exec_from(bus, block, 0, n)
     }
 
     /// Executes micro-ops `start..n` of `block`; `start` must be a segment start or a call-out
-    #[inline(always)]
+    #[inline(never)]
     pub(crate) fn jit_exec_from<Bus: BusInterface>(
         &mut self,
         bus: &mut Bus,
@@ -815,18 +1203,23 @@ impl Sh2 {
     /// Interpreter state after the native micro-op `op` was the last one executed
     #[inline(always)]
     pub(crate) fn jit_materialize(&mut self, op: &Uop) {
-        if op.kind == K_DELAYED {
+        self.jit_materialize_fields(op.addr, op.opcode, op.kind, op.flags);
+    }
+
+    #[inline(always)]
+    pub(crate) fn jit_materialize_fields(&mut self, addr: u32, opcode: u16, kind: u8, flags: u8) {
+        if kind == K_DELAYED {
             // `next_pc` and the delay flag were set by the branch
-            self.registers.pc = op.addr.wrapping_add(2);
-        } else if op.flags & F_SLOT != 0 {
+            self.registers.pc = addr.wrapping_add(2);
+        } else if flags & F_SLOT != 0 {
             self.registers.pc = self.registers.next_pc;
             self.registers.next_pc = self.registers.pc.wrapping_add(2);
             self.registers.next_op_in_delay_slot = false;
         } else {
-            self.registers.pc = op.addr.wrapping_add(2);
-            self.registers.next_pc = op.addr.wrapping_add(4);
+            self.registers.pc = addr.wrapping_add(2);
+            self.registers.next_pc = addr.wrapping_add(4);
             self.registers.next_op_in_delay_slot = false;
         }
-        self.data_ctx = AccessContext::Data { pc: op.addr, opcode: op.opcode };
+        self.data_ctx = AccessContext::Data { pc: addr, opcode };
     }
 }

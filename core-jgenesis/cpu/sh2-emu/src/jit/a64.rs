@@ -92,8 +92,11 @@ enum FixKind {
 #[derive(Default)]
 pub(crate) struct Asm {
     pub(crate) code: Vec<u32>,
-    labels: Vec<Option<usize>>,
-    fixups: Vec<(usize, Label, FixKind)>,
+    cold: Vec<u32>,
+    in_cold: bool,
+    labels: Vec<Option<(bool, usize)>>,
+    fixups: Vec<(bool, usize, Label, FixKind)>,
+    abs_fixups: Vec<(bool, usize, usize, bool)>,
 }
 
 /// Encodes `value` as an AArch64 logical immediate `(N, immr, imms)` for an operand of `size`,
@@ -142,12 +145,32 @@ impl Asm {
         Self::default()
     }
 
+    pub(crate) fn set_cold(&mut self, cold: bool) {
+        self.in_cold = cold;
+    }
+
+    pub(crate) fn hot_len(&self) -> usize {
+        self.code.len()
+    }
+
+    pub(crate) fn cold_len(&self) -> usize {
+        self.cold.len()
+    }
+
     pub(crate) fn emit(&mut self, word: u32) {
-        self.code.push(word);
+        if self.in_cold {
+            self.cold.push(word);
+        } else {
+            self.code.push(word);
+        }
     }
 
     pub(crate) fn pos(&self) -> usize {
-        self.code.len()
+        if self.in_cold {
+            self.cold.len()
+        } else {
+            self.code.len()
+        }
     }
 
     pub(crate) fn new_label(&mut self) -> Label {
@@ -157,15 +180,23 @@ impl Asm {
 
     pub(crate) fn bind(&mut self, label: Label) {
         assert!(self.labels[label.0].is_none(), "label bound twice");
-        self.labels[label.0] = Some(self.code.len());
+        self.labels[label.0] = Some((self.in_cold, self.pos()));
     }
 
-    /// Resolves every branch to a label; panics on unbound labels or out-of-range branches
-    pub(crate) fn finish(mut self) -> Vec<u32> {
-        for &(at, label, kind) in &self.fixups {
-            let target = self.labels[label.0].expect("unbound label");
-            let delta = target as i64 - at as i64;
-            let word = &mut self.code[at];
+    /// Resolves every branch to a label; panics if split code or deferred calls were emitted.
+    pub(crate) fn finish(self) -> Vec<u32> {
+        assert!(self.cold.is_empty() && self.abs_fixups.is_empty(), "use finish_split");
+        self.finish_split(0, 0).0
+    }
+
+    /// Resolves every relative and deferred absolute branch with `hot_base` and `cold_base`.
+    pub(crate) fn finish_split(mut self, hot_base: usize, cold_base: usize) -> (Vec<u32>, Vec<u32>) {
+        for &(src_cold, at, label, kind) in &self.fixups {
+            let (dst_cold, target) = self.labels[label.0].expect("unbound label");
+            let site_addr = (if src_cold { cold_base } else { hot_base }) + at * 4;
+            let target_addr = (if dst_cold { cold_base } else { hot_base }) + target * 4;
+            let delta = (target_addr as i64 - site_addr as i64) >> 2;
+            let word = if src_cold { &mut self.cold[at] } else { &mut self.code[at] };
             match kind {
                 FixKind::B26 => {
                     assert!((-(1 << 25)..(1 << 25)).contains(&delta), "branch out of range");
@@ -181,8 +212,20 @@ impl Asm {
                 }
             }
         }
+        for &(src_cold, at, target_addr, is_bl) in &self.abs_fixups {
+            let site_addr = (if src_cold { cold_base } else { hot_base }) + at * 4;
+            let delta = (target_addr as isize - site_addr as isize) >> 2;
+            assert!(
+                (-(1 << 25)..(1 << 25)).contains(&delta),
+                "abs branch target {target_addr:#x} out of +-128MB range from {site_addr:#x}"
+            );
+            let word = if src_cold { &mut self.cold[at] } else { &mut self.code[at] };
+            let op = if is_bl { 0x9400_0000 } else { 0x1400_0000 };
+            *word = op | ((delta as u32) & 0x03FF_FFFF);
+        }
         self.fixups.clear();
-        std::mem::take(&mut self.code)
+        self.abs_fixups.clear();
+        (std::mem::take(&mut self.code), std::mem::take(&mut self.cold))
     }
 
     // ---- Moves ----
@@ -324,8 +367,25 @@ impl Asm {
         self.logical_reg(0x2A00_0000, size, rd, rn, rm);
     }
 
+    pub(crate) fn orr_shifted(&mut self, size: Size, rd: R, rn: R, rm: R, shift: Shift, amount: u32) {
+        assert!(amount < size.bits());
+        self.emit(
+            size.sf()
+                | 0x2A00_0000
+                | ((shift as u32) << 22)
+                | (u32::from(rm.0) << 16)
+                | (amount << 10)
+                | (u32::from(rn.0) << 5)
+                | u32::from(rd.0),
+        );
+    }
+
     pub(crate) fn eor(&mut self, size: Size, rd: R, rn: R, rm: R) {
         self.logical_reg(0x4A00_0000, size, rd, rn, rm);
+    }
+
+    pub(crate) fn bic(&mut self, size: Size, rd: R, rn: R, rm: R) {
+        self.logical_reg(0x0A20_0000, size, rd, rn, rm);
     }
 
     pub(crate) fn ands(&mut self, size: Size, rd: R, rn: R, rm: R) {
@@ -464,6 +524,17 @@ impl Asm {
         );
     }
 
+    pub(crate) fn csinv(&mut self, size: Size, rd: R, rn: R, rm: R, cond: Cond) {
+        self.emit(
+            size.sf()
+                | 0x5A80_0000
+                | (u32::from(rm.0) << 16)
+                | ((cond as u32) << 12)
+                | (u32::from(rn.0) << 5)
+                | u32::from(rd.0),
+        );
+    }
+
     /// `cset rd, cond` (CSINC rd, zr, zr, !cond)
     pub(crate) fn cset(&mut self, size: Size, rd: R, cond: Cond) {
         self.csinc(size, rd, ZR, ZR, cond.invert());
@@ -533,6 +604,10 @@ impl Asm {
         self.emit(0xB860_6800 | (u32::from(rm.0) << 16) | (u32::from(shifted) << 12) | (u32::from(rn.0) << 5) | u32::from(rt.0));
     }
 
+    pub(crate) fn str_w_reg(&mut self, rt: R, rn: R, rm: R, shifted: bool) {
+        self.emit(0xB820_6800 | (u32::from(rm.0) << 16) | (u32::from(shifted) << 12) | (u32::from(rn.0) << 5) | u32::from(rt.0));
+    }
+
     /// `lsr rd, rn, rm` (LSRV)
     pub(crate) fn lsrv(&mut self, size: Size, rd: R, rn: R, rm: R) {
         self.emit(size.sf() | 0x1AC0_2400 | (u32::from(rm.0) << 16) | (u32::from(rn.0) << 5) | u32::from(rd.0));
@@ -550,6 +625,10 @@ impl Asm {
 
     pub(crate) fn ldrh_reg(&mut self, rt: R, rn: R, rm: R, shifted: bool) {
         self.emit(0x7860_6800 | (u32::from(rm.0) << 16) | (u32::from(shifted) << 12) | (u32::from(rn.0) << 5) | u32::from(rt.0));
+    }
+
+    pub(crate) fn strh_reg(&mut self, rt: R, rn: R, rm: R, shifted: bool) {
+        self.emit(0x7820_6800 | (u32::from(rm.0) << 16) | (u32::from(shifted) << 12) | (u32::from(rn.0) << 5) | u32::from(rt.0));
     }
 
     /// `stp xt1, xt2, [sp, #-imm]!` (pre-index, 64-bit)
@@ -583,39 +662,51 @@ impl Asm {
     // ---- Branches ----
 
     pub(crate) fn b(&mut self, label: Label) {
-        self.fixups.push((self.pos(), label, FixKind::B26));
+        self.fixups.push((self.in_cold, self.pos(), label, FixKind::B26));
+        self.emit(0x1400_0000);
+    }
+
+    /// PC-relative unconditional branch to an already-published target address, resolved at `finish_split`.
+    pub(crate) fn b_abs_deferred(&mut self, target: usize) {
+        self.abs_fixups.push((self.in_cold, self.pos(), target, false));
         self.emit(0x1400_0000);
     }
 
     pub(crate) fn bl(&mut self, label: Label) {
-        self.fixups.push((self.pos(), label, FixKind::B26));
+        self.fixups.push((self.in_cold, self.pos(), label, FixKind::B26));
+        self.emit(0x9400_0000);
+    }
+
+    /// PC-relative branch-and-link to an already-published target address, resolved at `finish_split`.
+    pub(crate) fn bl_abs_deferred(&mut self, target: usize) {
+        self.abs_fixups.push((self.in_cold, self.pos(), target, true));
         self.emit(0x9400_0000);
     }
 
     pub(crate) fn b_cond(&mut self, cond: Cond, label: Label) {
-        self.fixups.push((self.pos(), label, FixKind::B19));
+        self.fixups.push((self.in_cold, self.pos(), label, FixKind::B19));
         self.emit(0x5400_0000 | cond as u32);
     }
 
     pub(crate) fn cbz(&mut self, size: Size, rt: R, label: Label) {
-        self.fixups.push((self.pos(), label, FixKind::B19));
+        self.fixups.push((self.in_cold, self.pos(), label, FixKind::B19));
         self.emit(size.sf() | 0x3400_0000 | u32::from(rt.0));
     }
 
     pub(crate) fn cbnz(&mut self, size: Size, rt: R, label: Label) {
-        self.fixups.push((self.pos(), label, FixKind::B19));
+        self.fixups.push((self.in_cold, self.pos(), label, FixKind::B19));
         self.emit(size.sf() | 0x3500_0000 | u32::from(rt.0));
     }
 
     pub(crate) fn tbz(&mut self, rt: R, bit: u32, label: Label) {
         assert!(bit < 64);
-        self.fixups.push((self.pos(), label, FixKind::B14));
+        self.fixups.push((self.in_cold, self.pos(), label, FixKind::B14));
         self.emit(((bit >> 5) << 31) | 0x3600_0000 | ((bit & 0x1F) << 19) | u32::from(rt.0));
     }
 
     pub(crate) fn tbnz(&mut self, rt: R, bit: u32, label: Label) {
         assert!(bit < 64);
-        self.fixups.push((self.pos(), label, FixKind::B14));
+        self.fixups.push((self.in_cold, self.pos(), label, FixKind::B14));
         self.emit(((bit >> 5) << 31) | 0x3700_0000 | ((bit & 0x1F) << 19) | u32::from(rt.0));
     }
 
@@ -667,7 +758,9 @@ mod tests {
             ("sbcs w1, w2, w3", 0x7a030041, Box::new(|a| a.sbcs(W, R(1), R(2), R(3)))),
             ("and w1, w2, w3", 0x0a030041, Box::new(|a| a.and(W, R(1), R(2), R(3)))),
             ("orr w1, w2, w3", 0x2a030041, Box::new(|a| a.orr(W, R(1), R(2), R(3)))),
+            ("orr w12, w12, w13, lsr #8", 0x2a4d218c, Box::new(|a| a.orr_shifted(W, R(12), R(12), R(13), Shift::Lsr, 8))),
             ("eor w1, w2, w3", 0x4a030041, Box::new(|a| a.eor(W, R(1), R(2), R(3)))),
+            ("bic w1, w2, w3", 0x0a230041, Box::new(|a| a.bic(W, R(1), R(2), R(3)))),
             ("tst w1, w2", 0x6a02003f, Box::new(|a| a.tst(W, R(1), R(2)))),
             ("mvn w1, w2", 0x2a2203e1, Box::new(|a| a.mvn(W, R(1), R(2)))),
             ("mov w20, w21", 0x2a1503f4, Box::new(|a| a.mov(W, R(20), R(21)))),
@@ -692,6 +785,9 @@ mod tests {
             ("sxtw x1, w2", 0x93407c41, Box::new(|a| a.sxtw(R(1), R(2)))),
             ("rev16 w1, w2", 0x5ac00441, Box::new(|a| a.rev16(W, R(1), R(2)))),
             ("csel w1, w2, w3, eq", 0x1a830041, Box::new(|a| a.csel(W, R(1), R(2), R(3), Cond::Eq))),
+            ("csinv w10, wzr, wzr, eq", 0x5a9f03ea, Box::new(|a| a.csinv(W, R(10), ZR, ZR, Cond::Eq))),
+            ("csinv w23, w23, wzr, ne", 0x5a9f12f7, Box::new(|a| a.csinv(W, R(23), R(23), ZR, Cond::Ne))),
+            ("csinc w10, w10, wzr, ne", 0x1a9f154a, Box::new(|a| a.csinc(W, R(10), R(10), ZR, Cond::Ne))),
             ("cset w9, eq", 0x1a9f17e9, Box::new(|a| a.cset(W, R(9), Cond::Eq))),
             ("cset w9, hs", 0x1a9f37e9, Box::new(|a| a.cset(W, R(9), Cond::Hs))),
             ("mul w1, w2, w3", 0x1b037c41, Box::new(|a| a.mul(W, R(1), R(2), R(3)))),
@@ -710,6 +806,8 @@ mod tests {
             ("ldrh w1, [x2, x3, lsl #1]", 0x78637841, Box::new(|a| a.ldrh_reg(R(1), R(2), R(3), true))),
             ("ldrh w1, [x2, x3]", 0x78636841, Box::new(|a| a.ldrh_reg(R(1), R(2), R(3), false))),
             ("ldr w1, [x2, x3]", 0xb8636841, Box::new(|a| a.ldr_w_reg(R(1), R(2), R(3), false))),
+            ("str w1, [x2, x3]", 0xb8236841, Box::new(|a| a.str_w_reg(R(1), R(2), R(3), false))),
+            ("strh w1, [x2, x3]", 0x78236841, Box::new(|a| a.strh_reg(R(1), R(2), R(3), false))),
             ("lsr x14, x14, x11", 0x9acb25ce, Box::new(|a| a.lsrv(X, R(14), R(14), R(11)))),
             ("ldrb w17, [x16, x11]", 0x386b6a11, Box::new(|a| a.ldrb_reg(R(17), R(16), R(11)))),
             ("strb w17, [x16, x11]", 0x382b6a11, Box::new(|a| a.strb_reg(R(17), R(16), R(11)))),
@@ -743,6 +841,29 @@ mod tests {
         let code = a.finish();
         // llvm-objdump of the same sequence
         assert_eq!(code, vec![0x34000081, 0x37180062, 0x54ffffc1, 0x17fffffd, 0x97fffffc]);
+    }
+
+    #[test]
+    fn split_hot_cold_resolves_branches() {
+        let stub = 0x1000usize;
+        let hot_base = 0x1040usize;
+        let cold_base = 0x2000usize;
+        let mut a = Asm::new();
+        let top = a.new_label();
+        let cold_lbl = a.new_label();
+        let ret_lbl = a.new_label();
+        a.bind(top);
+        a.cbz(W, R(1), cold_lbl); // hot[0] at 0x1040 -> cold[0] at 0x2000: delta = +0xFC0 / 4 = +0x3F0
+        a.bl_abs_deferred(stub); // hot[1] at 0x1044 -> 0x1000: delta = -0x11 (0x3FFFEF)
+        a.bind(ret_lbl);
+        a.ret(); // hot[2]
+        a.set_cold(true);
+        a.bind(cold_lbl);
+        a.b(ret_lbl); // cold[0] at 0x2000 -> hot[2] at 0x1048: delta = -0xFEE / 4... wait 0x1048 - 0x2000 = -0xFB8 / 4 = -0x3EE
+        a.b_abs_deferred(stub); // cold[1] at 0x2004 -> 0x1000: delta = -0x401
+        let (hot, cold) = a.finish_split(hot_base, cold_base);
+        assert_eq!(hot, vec![0x3400_7E01, 0x97FF_FFEF, 0xD65F_03C0]);
+        assert_eq!(cold, vec![0x17FF_FC12, 0x17FF_FBFF]);
     }
 
     #[test]

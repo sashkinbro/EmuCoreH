@@ -579,13 +579,14 @@ struct Shadow;
 
 impl ExecutionBody<ReplayBus> for Shadow {
     const IDLE_LOOPS: bool = true;
+    const CHECK_BEFORE_IDLE: bool = true;
 
     #[inline(always)]
     fn opcode(&mut self, _: &mut Sh2, _: &mut ReplayBus, _: u16) -> bool {
         false
     }
 
-    fn block(&mut self, cpu: &mut Sh2, bus: &mut ReplayBus, ticks: u64) -> (u64, bool) {
+    fn block(&mut self, cpu: &mut Sh2, bus: &mut ReplayBus, ticks: u64, _allow_start_watch: bool) -> (u64, bool) {
         bus.checkpoint(cpu, ticks);
         (0, false)
     }
@@ -607,7 +608,7 @@ impl Sh2 {
         let limit = bus.idle_cycle_limit();
 
         let mut rec = RecBus::new(bus);
-        self.jit.ensure_table(std::ptr::from_ref(RecBus::opcode_table()) as usize);
+        self.jit_prepare_slice(&mut rec);
         self.execute_with_body(ticks, &mut rec, &mut Jit);
         let end_counter = bus.idle_cycle_counter();
         let log = rec.log.into_inner();

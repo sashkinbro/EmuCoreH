@@ -572,6 +572,7 @@ impl Vdp {
         frame_buffer[((address & 0x1FFFF) >> 1) as usize]
     }
 
+    #[inline]
     pub fn write_frame_buffer_byte(&mut self, address: u32, value: u8) {
         log::trace!(
             "Frame buffer byte write {:05X} {value:02X} (word addr {:04X})",
@@ -593,6 +594,7 @@ impl Vdp {
         }
     }
 
+    #[inline]
     pub fn write_frame_buffer_word(&mut self, address: u32, value: u16) {
         log::trace!(
             "Frame buffer write {:05X} {value:04X} (word addr {:04X})",
@@ -604,6 +606,7 @@ impl Vdp {
         frame_buffer[((address & 0x1FFFF) >> 1) as usize] = value;
     }
 
+    #[inline]
     pub fn frame_buffer_overwrite_word(&mut self, address: u32, value: u16) {
         log::trace!(
             "Overwrite image write {:05X} {value:04X} (word addr {:04X})",
@@ -629,6 +632,7 @@ impl Vdp {
         }
     }
 
+    #[inline]
     #[must_use]
     pub fn frame_buffer_write_latency(&mut self, cycles: u64) -> u64 {
         if cycles <= self.state.last_fb_write_cycles {
@@ -639,6 +643,13 @@ impl Vdp {
 
         // Progress times in FIFO
         let cycle_diff = cycles - self.state.last_fb_write_cycles;
+        if cycle_diff >= 20 {
+            // At most 4 entries each <= 5 are in the FIFO; all drain completely
+            self.state.fb_write_timing_fifo.clear();
+            self.state.fb_write_timing_fifo.push_back(5);
+            self.state.last_fb_write_cycles = cycles;
+            return 1;
+        }
         // Equivalent to decrementing the front entry once per elapsed cycle (entries are pushed
         // as 5 and popped on reaching 0, so they are never 0 here), done one entry at a time
         let mut remaining = cycle_diff;

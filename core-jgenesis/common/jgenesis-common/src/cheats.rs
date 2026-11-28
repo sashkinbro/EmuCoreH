@@ -43,6 +43,12 @@ impl<const START_ADDRESS: usize, const END_ADDRESS: usize>
     }
 
     #[must_use]
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.memory_overrides.is_empty()
+    }
+
+    #[must_use]
     pub fn get(&self, address: u32) -> Option<u16> {
         if self.memory_overrides.is_empty() {
             return None;

@@ -44,6 +44,11 @@ impl SerialInterface {
         }
     }
 
+    #[inline(always)]
+    pub(crate) fn is_idle(&self) -> bool {
+        !self.rx_enabled && self.transfer_clocks == 0 && !(self.tx_enabled && !self.tx_data_empty)
+    }
+
     pub fn process<B: BusInterface>(&mut self, sh2_clocks_elapsed: u64, bus: &mut B) {
         if self.rx_enabled
             && !self.rx_data_full

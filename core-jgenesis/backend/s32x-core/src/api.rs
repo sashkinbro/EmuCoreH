@@ -28,7 +28,7 @@ const M68K_DIVIDER: u64 = genesis_config::NATIVE_M68K_DIVIDER;
 const SH2_MULTIPLIER: u64 = crate::SH2_CLOCK_MULTIPLIER;
 
 // Prefer to execute SH-2 instructions in longer chunks when possible for better performance
-pub(crate) const SH2_EXECUTION_SLICE_LEN: u64 = 50;
+pub(crate) const SH2_EXECUTION_SLICE_LEN: u64 = 256;
 
 pub trait Sega32XAudioOutput {
     fn collect_pwm(&mut self, sample: (f64, f64));
@@ -300,6 +300,13 @@ impl Sega32X {
     #[inline]
     pub fn rom_to_vram_dma(&self) -> bool {
         self.bus.registers.dma.rom_to_vram
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn mclk_cycles_until_next_vdp_event(&self) -> u64 {
+        let h_interrupt_enabled = self.bus.registers.either_h_interrupt_enabled();
+        self.bus.vdp.mclk_cycles_until_next_event(h_interrupt_enabled)
     }
 
     #[must_use]
