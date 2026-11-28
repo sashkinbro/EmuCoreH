@@ -396,6 +396,7 @@ fun EmulationScreen(
     saveSlot: Int? = null,
     rendererOverride: Int? = null,
     restoredAfterProcessDeath: Boolean = false,
+    launchedFromNativeUi: Boolean = false,
     onExit: (activePlayTimeMs: Long) -> Unit,
     viewModel: EmulationViewModel = viewModel()
 ) {
@@ -1315,9 +1316,11 @@ fun EmulationScreen(
             }
         }
 
-        // Toast notifications
+        val toastMessage = uiState.toastMessage?.takeUnless { message ->
+            launchedFromNativeUi && (message == "saved" || message == "loaded")
+        }
         AnimatedVisibility(
-            visible = uiState.toastMessage != null,
+            visible = toastMessage != null,
             enter = fadeIn(tween(150)) + scaleIn(initialScale = 0.85f, animationSpec = tween(150)),
             exit = fadeOut(tween(150)) + scaleOut(targetScale = 0.85f, animationSpec = tween(150)),
             modifier = Modifier
@@ -1325,7 +1328,7 @@ fun EmulationScreen(
                 .padding(top = 48.dp, start = overlayHorizontalSafeInset, end = overlayHorizontalSafeInset)
                 .zIndex(40f)
         ) {
-            val message = when (uiState.toastMessage) {
+            val message = when (toastMessage) {
                 "saved" -> stringResource(R.string.emulation_saved)
                 "save_failed" -> stringResource(R.string.emulation_save_failed)
                 "loaded" -> stringResource(R.string.emulation_loaded)
@@ -1471,7 +1474,7 @@ fun EmulationScreen(
             }
         }
 
-        // Full screen loading overlay specifically for loading save state
+        // Keep the scrim and intercept taps while the core restores a state.
         AnimatedVisibility(
             visible = (uiState.isActionInProgress && uiState.actionLabel == "loading") || uiState.statusMessage == "status_loading_state",
             enter = fadeIn(tween(200)),
@@ -1489,30 +1492,35 @@ fun EmulationScreen(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier
-                        .clip(neonShape(24.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
-                        .padding(horizontal = 32.dp, vertical = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 4.dp
-                    )
-                    Text(
-                        text = stringResource(R.string.emulation_status_loading_state),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                if (!launchedFromNativeUi) {
+                    Column(
+                        modifier = Modifier
+                            .clip(neonShape(24.dp))
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+                            .padding(horizontal = 32.dp, vertical = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 4.dp
+                        )
+                        Text(
+                            text = stringResource(R.string.emulation_status_loading_state),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         }
 
         AnimatedVisibility(
-            visible = uiState.statusMessage != null && !uiState.isActionInProgress && uiState.statusMessage != "status_loading_state",
+            visible = !launchedFromNativeUi &&
+                uiState.statusMessage != null &&
+                !uiState.isActionInProgress &&
+                uiState.statusMessage != "status_loading_state",
             enter = fadeIn(tween(250)) + scaleIn(initialScale = 0.9f, animationSpec = tween(250)),
             exit = fadeOut(tween(200)) + scaleOut(targetScale = 0.9f, animationSpec = tween(200)),
             modifier = Modifier

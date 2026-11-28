@@ -118,7 +118,8 @@ data class EmulationRoute(
     val saveSlot: Int? = null,
     val bootBios: Boolean = false,
     val renderer: Int? = null,
-    val exitAppOnExit: Boolean = false
+    val exitAppOnExit: Boolean = false,
+    val launchedFromNativeUi: Boolean = false
 )
 
 internal fun EmulationRoute.isMeaningfulReviewSession(): Boolean =
@@ -512,12 +513,14 @@ fun AppNavigation(
                             requestDiscAction(game, LibraryDiscAction.START)
                         },
                         onGamePathClick = { gamePath ->
-                            navController.navigate(EmulationRoute(gamePath = gamePath)) {
+                            navController.navigate(EmulationRoute(gamePath = gamePath, launchedFromNativeUi = true)) {
                                 launchSingleTop = true
                             }
                         },
                         onSaveSelected = { gamePath, saveSlot ->
-                            navController.navigate(EmulationRoute(gamePath = gamePath, saveSlot = saveSlot)) {
+                            navController.navigate(
+                                EmulationRoute(gamePath = gamePath, saveSlot = saveSlot, launchedFromNativeUi = true)
+                            ) {
                                 launchSingleTop = true
                             }
                         },
@@ -738,6 +741,7 @@ fun AppNavigation(
                     saveSlot = route.saveSlot,
                     rendererOverride = route.renderer,
                     restoredAfterProcessDeath = blockRestoredEmulationRoute,
+                    launchedFromNativeUi = route.launchedFromNativeUi,
                     onExit = { activePlayTimeMs ->
                         if (route.exitAppOnExit) {
                             activity?.finishAndRemoveTask()

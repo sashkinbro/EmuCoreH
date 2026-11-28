@@ -1,6 +1,10 @@
 package com.sbro.emucoreh.ui.common
 
+import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas as AndroidCanvas
+import android.graphics.Rect
 import android.view.MotionEvent
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
@@ -56,7 +60,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -180,12 +186,12 @@ class ControlSkinBitmaps(
 val LocalControlSkin = staticCompositionLocalOf<ControlSkinBitmaps?> { null }
 
 private val SkinControlIds = listOf(
-    "dpad_up", "dpad_down", "dpad_left", "dpad_right", "select", "start"
+    "dpad_up", "dpad_down", "dpad_left", "dpad_right", "select", "start", "left_input_toggle"
 )
 
 private const val SkinBlankPrefix = "blank_"
 
-/** Store skin art that drops in as is: the d-pad arrows and, without a console label, Select/Start. */
+/** Store skin art shared across consoles, plus Select/Start when no console label is needed. */
 private val drawableControlIds: Map<Int, String> by lazy {
     SkinControlIds.mapNotNull { id -> overlayDrawableForControl(id)?.let { it to id } }.toMap()
 }
@@ -238,16 +244,113 @@ private fun ControlSkinBitmaps.artFor(
     return SkinArt(id, labelOverride ?: label, labelColors[part] ?: Color.White)
 }
 
-private fun decodeSkinBitmap(file: java.io.File, targetPx: Int): ImageBitmap? = runCatching {
+private fun decodeSkinBitmap(file: java.io.File, targetPx: Int): Bitmap? = runCatching {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeFile(file.path, bounds)
     val minSide = minOf(bounds.outWidth, bounds.outHeight)
     if (minSide <= 0) return@runCatching null
     var sample = 1
     while (minSide / (sample * 2) >= targetPx) sample *= 2
-    BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inSampleSize = sample })
-        ?.asImageBitmap()
+    BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply {
+        inSampleSize = sample
+        inPreferredConfig = Bitmap.Config.ARGB_8888
+    })
 }.getOrNull()
+
+private fun skinArtworkBounds(bitmap: Bitmap): Rect {
+    val bounds = Rect()
+    val faintBounds = Rect()
+    val row = IntArray(bitmap.width)
+    for (y in 0 until bitmap.height) {
+        bitmap.getPixels(row, 0, row.size, 0, y, row.size, 1)
+        for (x in row.indices) {
+            val alpha = row[x] ushr 24
+            // A barely visible shadow or resampling fringe must not size the button.
+            if (alpha >= 16) {
+                bounds.union(x, y, x + 1, y + 1)
+            } else if (alpha != 0) {
+                faintBounds.union(x, y, x + 1, y + 1)
+            }
+        }
+    }
+    return if (bounds.isEmpty) faintBounds else bounds
+}
+
+internal fun fitSkinToReference(
+    source: Size,
+    destination: Size,
+    reference: Size,
+    visibleFraction: ScaleFactor,
+    referenceScale: ContentScale
+): ScaleFactor {
+    val scale = referenceScale.computeScaleFactor(reference, destination)
+    val viewport = Size(
+        minOf(destination.width, reference.width * scale.scaleX),
+        minOf(destination.height, reference.height * scale.scaleY)
+    )
+    // A round skin button can replace a narrow arrow. Match the larger visible dimension
+    // without distorting the shape or exceeding the standard button's viewport.
+    val extent = maxOf(viewport.width * visibleFraction.scaleX, viewport.height * visibleFraction.scaleY)
+    val fit = ContentScale.Fit.computeScaleFactor(source, viewport).scaleX
+    val artworkScale = minOf(fit, extent / maxOf(source.width, source.height))
+    return ScaleFactor(artworkScale, artworkScale)
+}
+
+private fun referenceArtworkScale(
+    context: Context,
+    @DrawableRes drawableRes: Int,
+    referenceScale: ContentScale
+): ContentScale {
+    val drawable = context.getDrawable(drawableRes) ?: return ContentScale.Fit
+    val width = drawable.intrinsicWidth
+    val height = drawable.intrinsicHeight
+    if (width <= 0 || height <= 0) return ContentScale.Fit
+    val reference = Size(width.toFloat(), height.toFloat())
+    val rasterScale = 128f / maxOf(width, height)
+    val rasterWidth = (width * rasterScale).roundToInt().coerceAtLeast(1)
+    val rasterHeight = (height * rasterScale).roundToInt().coerceAtLeast(1)
+    val bitmap = Bitmap.createBitmap(rasterWidth, rasterHeight, Bitmap.Config.ARGB_8888)
+    drawable.setBounds(0, 0, rasterWidth, rasterHeight)
+    drawable.draw(AndroidCanvas(bitmap))
+    val bounds = skinArtworkBounds(bitmap)
+    bitmap.recycle()
+    if (bounds.isEmpty) return ContentScale.Fit
+    val visibleFraction = ScaleFactor(bounds.width() / rasterWidth.toFloat(), bounds.height() / rasterHeight.toFloat())
+    return object : ContentScale {
+        override fun computeScaleFactor(srcSize: Size, dstSize: Size): ScaleFactor =
+            fitSkinToReference(srcSize, dstSize, reference, visibleFraction, referenceScale)
+    }
+}
+
+@Composable
+private fun rememberSkinArtworkScale(
+    @DrawableRes drawableRes: Int,
+    referenceScale: ContentScale = ContentScale.Fit
+): ContentScale {
+    val context = LocalContext.current
+    return remember(context, drawableRes, referenceScale) {
+        referenceArtworkScale(context, drawableRes, referenceScale)
+    }
+}
+
+/** Trim transparent margins and keep the same framing for the two press states. */
+internal fun fitSkinArtwork(normal: Bitmap, pressed: Bitmap?): Pair<Bitmap, Bitmap?> {
+    fun crop(bitmap: Bitmap, bounds: Rect): Bitmap =
+        if (bounds.isEmpty) bitmap
+        else Bitmap.createBitmap(bitmap, bounds.left, bounds.top, bounds.width(), bounds.height())
+
+    val normalBounds = skinArtworkBounds(normal)
+    val pressedArtwork = pressed?.let { bitmap ->
+        val bounds = skinArtworkBounds(bitmap)
+        if (normal.width == bitmap.width && normal.height == bitmap.height) {
+            normalBounds.union(bounds)
+            crop(bitmap, normalBounds)
+        } else {
+            crop(bitmap, bounds)
+        }
+    }
+    return crop(normal, normalBounds) to pressedArtwork
+}
 
 /** Loads the applied Store controls skin once per pack id (and density) on Dispatchers.IO. */
 @Composable
@@ -265,23 +368,28 @@ fun rememberAppliedControlSkin(): ControlSkinBitmaps? {
                 val pack = StoreControlSkins.load(context, id) ?: return@withContext null
                 val controlPx = (200f * density).roundToInt().coerceIn(64, 512)
                 val analogPx = (320f * density).roundToInt().coerceIn(64, 512)
-                fun decodeAll(files: Map<String, java.io.File>): Map<String, ImageBitmap> {
-                    val out = HashMap<String, ImageBitmap>()
-                    files.forEach { (controlId, file) ->
-                        val isAnalog = controlId == "analog_base" || controlId == "analog_stick"
-                        if (!isAnalog && controlId !in SkinControlIds && !controlId.startsWith(SkinBlankPrefix)) return@forEach
-                        decodeSkinBitmap(file, if (isAnalog) analogPx else controlPx)
-                            ?.let { out[controlId] = it }
+                val images = HashMap<String, ImageBitmap>()
+                val pressedImages = HashMap<String, ImageBitmap>()
+                for (controlId in pack.images.keys + pack.pressed.keys) {
+                    val isAnalog = controlId == "analog_base" || controlId == "analog_stick"
+                    if (!isAnalog && controlId !in SkinControlIds) continue
+                    val targetPx = if (isAnalog) analogPx else controlPx
+                    val normal = pack.images[controlId]?.let { decodeSkinBitmap(it, targetPx) }
+                    val pressed = pack.pressed[controlId]?.let { decodeSkinBitmap(it, targetPx) }
+                    if (normal != null) {
+                        val (normalArt, pressedArt) = fitSkinArtwork(normal, pressed)
+                        images[controlId] = normalArt.asImageBitmap()
+                        if (pressedArt != null) pressedImages[controlId] = pressedArt.asImageBitmap()
+                    } else if (pressed != null) {
+                        pressedImages[controlId] = fitSkinArtwork(pressed, null).first.asImageBitmap()
                     }
-                    return out
                 }
-                val images = decodeAll(pack.images)
                 if (images.isEmpty()) {
                     null
                 } else {
                     ControlSkinBitmaps(
                         images = images,
-                        pressed = decodeAll(pack.pressed),
+                        pressed = pressedImages,
                         opacity = pack.opacity,
                         tintFilter = pack.tint?.let { ColorFilter.tint(Color(it), BlendMode.Modulate) },
                         pressEffect = pack.pressEffect,
@@ -497,11 +605,12 @@ fun VectorOverlayButton(
             else -> Unit
         }
         if (skinShown != null) {
+            val artworkPadding = if (labelOverride != null) minOf(width, height) * 0.025f else 0.dp
             Image(
                 bitmap = skinShown,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize().padding(artworkPadding),
+                contentScale = if (labelOverride != null) ContentScale.Fit else rememberSkinArtworkScale(drawableRes, contentScale),
                 colorFilter = skin?.tintFilter,
                 filterQuality = FilterQuality.Medium
             )
@@ -511,7 +620,7 @@ fun VectorOverlayButton(
             }
         } else if (labelOverride != null) {
             if (visualStyle == TouchControlVisualStyle.CLASSIC) {
-                Box(Modifier.fillMaxSize().padding(minOf(width.value, height.value).dp * 0.025f)
+                Box(Modifier.fillMaxSize().padding(minOf(width, height) * 0.025f)
                     .border(minOf(width.value, height.value).dp * 0.02f, Color(0xFFEEEEEE), styleShape))
             }
             Text(
@@ -1184,7 +1293,7 @@ fun VectorAnalogStick(
                     bitmap = analogSkinBase,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
+                    contentScale = rememberSkinArtworkScale(R.drawable.ic_controller_analog_base),
                     alpha = skinAlpha,
                     colorFilter = skin?.tintFilter,
                     filterQuality = FilterQuality.Medium
@@ -1205,7 +1314,7 @@ fun VectorAnalogStick(
                     modifier = Modifier
                         .size(analogSize * 0.52f)
                         .offset { IntOffset(displayedThumbOffset.x.roundToInt(), displayedThumbOffset.y.roundToInt()) },
-                    contentScale = ContentScale.Fit,
+                    contentScale = rememberSkinArtworkScale(R.drawable.ic_controller_analog_stick),
                     alpha = skinAlpha,
                     colorFilter = skin?.tintFilter,
                     filterQuality = FilterQuality.Medium
